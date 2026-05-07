@@ -48,6 +48,7 @@ def get_price_history(ticker: str, period: str = "1y", interval: str = "1d") -> 
     })
 
     required_columns = ["date", "open", "high", "low", "close"]
+
     for col in required_columns:
         if col not in data.columns:
             raise ValueError(f"Colonne manquante dans les données : {col}")
@@ -110,6 +111,7 @@ def calculate_atr(data: pd.DataFrame, window: int = 14) -> float:
 def safe_performance(prices: pd.Series, days: int):
     if len(prices) <= days:
         return None
+
     return float(prices.iloc[-1] / prices.iloc[-days] - 1)
 
 
@@ -133,7 +135,7 @@ def calculate_performance_table(prices: pd.Series) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def calculate_52w_levels(prices: pd.Series):
+def calculate_52w_levels(prices: pd.Series) -> dict:
     lookback = min(len(prices), 252)
     recent = prices.tail(lookback)
 
@@ -158,13 +160,15 @@ def monte_carlo_simulation(
     volatility: float,
     days: int = 30,
     simulations: int = 1000
-):
+) -> np.ndarray:
     dt = 1 / 252
+
     paths = np.zeros((days, simulations))
     paths[0] = start_price
 
     for t in range(1, days):
         random_shocks = np.random.normal(0, 1, simulations)
+
         paths[t] = paths[t - 1] * np.exp(
             (drift - 0.5 * volatility ** 2) * dt
             + volatility * np.sqrt(dt) * random_shocks
@@ -177,7 +181,12 @@ def monte_carlo_simulation(
 # SIGNAL / PLAN
 # ============================================================
 
-def generate_signal(momentum: float, volatility: float, risk_reward: float, max_drawdown: float):
+def generate_signal(
+    momentum: float,
+    volatility: float,
+    risk_reward: float,
+    max_drawdown: float
+):
     score = 0
 
     if momentum > 0.05:
@@ -220,7 +229,11 @@ def generate_signal(momentum: float, volatility: float, risk_reward: float, max_
     return score, signal
 
 
-def calculate_basic_trade_levels(price: float, volatility: float, momentum: float):
+def calculate_basic_trade_levels(
+    price: float,
+    volatility: float,
+    momentum: float
+) -> dict:
     daily_vol = volatility / np.sqrt(252)
 
     if momentum > 0:
@@ -234,6 +247,7 @@ def calculate_basic_trade_levels(price: float, volatility: float, momentum: floa
 
     downside = entry_price - stop_loss
     upside = take_profit - entry_price
+
     risk_reward = upside / downside if downside > 0 else 0
 
     return {
@@ -244,7 +258,12 @@ def calculate_basic_trade_levels(price: float, volatility: float, momentum: floa
     }
 
 
-def calculate_trading_plan(price: float, atr: float, momentum: float, volatility: float):
+def calculate_trading_plan(
+    price: float,
+    atr: float,
+    momentum: float,
+    volatility: float
+) -> dict:
     if atr <= 0:
         atr = price * 0.02
 
@@ -293,7 +312,13 @@ def calculate_trading_plan(price: float, atr: float, momentum: float, volatility
     }
 
 
-def generate_commentary(signal: str, momentum: float, volatility: float, max_drawdown: float, risk_reward: float):
+def generate_commentary(
+    signal: str,
+    momentum: float,
+    volatility: float,
+    max_drawdown: float,
+    risk_reward: float
+) -> str:
     comments = []
 
     if signal == "BUY_ZONE":
@@ -336,7 +361,7 @@ def generate_commentary(signal: str, momentum: float, volatility: float, max_dra
     return " ".join(comments)
 
 
-def analyze_ticker(price_data: pd.DataFrame):
+def analyze_ticker(price_data: pd.DataFrame) -> dict:
     close = price_data["close"].dropna()
 
     if len(close) < 60:
@@ -424,8 +449,8 @@ def render_header():
 
     st.markdown(
         """
-        Terminal quant V2.1 : analyse quantitative, snapshot, trading plan, ATR,
-        niveaux d’entrée/sortie, risk/reward et simulation Monte Carlo.
+        Terminal quant V2.2 : analyse quantitative, snapshot, trading plan, risk monitor,
+        ATR, niveaux d’entrée/sortie, risk/reward et simulation Monte Carlo.
         
         Les résultats sont des analyses quantitatives mécaniques, pas des conseils d'investissement.
         """
@@ -448,7 +473,12 @@ def render_main_metrics(analysis: dict):
     col8.metric("Max Drawdown", f"{analysis['max_drawdown']:.2%}")
 
 
-def render_price_chart(price_data: pd.DataFrame, ticker: str, analysis: dict, use_trading_plan: bool = False):
+def render_price_chart(
+    price_data: pd.DataFrame,
+    ticker: str,
+    analysis: dict,
+    use_trading_plan: bool = False
+):
     fig = go.Figure()
 
     fig.add_trace(go.Candlestick(
@@ -513,7 +543,7 @@ def render_monte_carlo(analysis: dict):
     mc_paths = analysis["monte_carlo_paths"]
     mc_fig = go.Figure()
 
-    max_paths_to_display = 50
+    max_paths_to_display = min(50, mc_paths.shape[1])
 
     for i in range(max_paths_to_display):
         mc_fig.add_trace(go.Scatter(
@@ -545,7 +575,7 @@ def render_snapshot_mode(ticker: str, price_data: pd.DataFrame, analysis: dict):
 
     performance_df = calculate_performance_table(price_data["close"])
     performance_df["Performance"] = performance_df["Performance"].apply(
-        lambda x: None if x is None else f"{x:.2%}"
+        lambda x: "N/A" if x is None else f"{x:.2%}"
     )
 
     st.dataframe(performance_df, use_container_width=True)
@@ -673,6 +703,139 @@ def render_trading_plan_mode(ticker: str, price_data: pd.DataFrame, analysis: di
     render_monte_carlo(analysis)
 
 
+def render_risk_monitor_mode(ticker: str, price_data: pd.DataFrame, analysis: dict):
+    st.subheader(f"Risk Monitor — {ticker}")
+
+    render_main_metrics(analysis)
+
+    st.info(analysis["commentary"])
+
+    st.divider()
+
+    price = analysis["latest_price"]
+    atr = analysis["atr"]
+    volatility = analysis["volatility"]
+    daily_vol = volatility / np.sqrt(252)
+    atr_pct = atr / price if price > 0 else 0
+
+    plan = analysis["trading_plan"]
+    levels_52w = analysis["levels_52w"]
+    mc_paths = analysis["monte_carlo_paths"]
+
+    final_prices = mc_paths[-1, :]
+    min_prices = mc_paths.min(axis=0)
+    max_prices = mc_paths.max(axis=0)
+
+    prob_finish_negative = float(np.mean(final_prices < price))
+    prob_loss_5 = float(np.mean(final_prices <= price * 0.95))
+
+    prob_touch_stop_short = float(np.mean(min_prices <= plan["stop_short"]))
+    prob_touch_stop_structural = float(np.mean(min_prices <= plan["stop_structural"]))
+
+    prob_touch_target_1 = float(np.mean(max_prices >= plan["target_1"]))
+    prob_touch_target_2 = float(np.mean(max_prices >= plan["target_2"]))
+
+    expected_return_mc = float(np.mean(final_prices / price - 1))
+    median_return_mc = float(np.median(final_prices / price - 1))
+
+    risk_table = pd.DataFrame([{
+        "Prix actuel": price,
+        "Volatilité annualisée": volatility,
+        "Volatilité quotidienne estimée": daily_vol,
+        "ATR 14": atr,
+        "ATR % prix": atr_pct,
+        "Max Drawdown": analysis["max_drawdown"],
+        "Distance High 52W": levels_52w["distance_high"],
+        "Distance Low 52W": levels_52w["distance_low"],
+        "Régime de risque": plan["risk_regime"]
+    }])
+
+    st.subheader("Tableau de risque")
+
+    display_risk_table = risk_table.copy()
+
+    percent_cols = [
+        "Volatilité annualisée",
+        "Volatilité quotidienne estimée",
+        "ATR % prix",
+        "Max Drawdown",
+        "Distance High 52W",
+        "Distance Low 52W"
+    ]
+
+    for col in percent_cols:
+        display_risk_table[col] = display_risk_table[col].apply(lambda x: f"{x:.2%}")
+
+    st.dataframe(display_risk_table, use_container_width=True)
+
+    st.divider()
+
+    st.subheader("Probabilités Monte Carlo à 30 jours")
+
+    prob_df = pd.DataFrame([{
+        "Finir en perte": prob_finish_negative,
+        "Finir sous -5%": prob_loss_5,
+        "Toucher Stop court terme": prob_touch_stop_short,
+        "Toucher Stop structurel": prob_touch_stop_structural,
+        "Toucher Target 1": prob_touch_target_1,
+        "Toucher Target 2": prob_touch_target_2,
+        "Expected Return MC": expected_return_mc,
+        "Median Return MC": median_return_mc
+    }])
+
+    display_prob_df = prob_df.copy()
+
+    for col in display_prob_df.columns:
+        display_prob_df[col] = display_prob_df[col].apply(lambda x: f"{x:.2%}")
+
+    st.dataframe(display_prob_df, use_container_width=True)
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric("Prob. toucher stop court", f"{prob_touch_stop_short:.2%}")
+    col2.metric("Prob. toucher target 1", f"{prob_touch_target_1:.2%}")
+    col3.metric("Finir en perte", f"{prob_finish_negative:.2%}")
+    col4.metric("Expected Return MC", f"{expected_return_mc:.2%}")
+
+    st.divider()
+
+    st.subheader("Diagnostic risque")
+
+    if volatility > 0.60 or prob_touch_stop_short > 0.45:
+        st.error(
+            "Risque élevé. Le titre est très volatil ou la probabilité de toucher le stop court terme est importante. "
+            "Une entrée agressive serait fragile."
+        )
+    elif volatility > 0.35 or prob_touch_stop_short > 0.30:
+        st.warning(
+            "Risque modéré à élevé. Le trade peut être intéressant, mais il nécessite une taille de position réduite "
+            "et un stop strict."
+        )
+    else:
+        st.success(
+            "Risque relativement contenu selon les métriques actuelles. Le trade reste à valider avec le momentum "
+            "et le contexte de marché."
+        )
+
+    if prob_touch_target_1 > prob_touch_stop_short:
+        st.success(
+            "Le modèle Monte Carlo donne une probabilité d'atteindre Target 1 supérieure à celle de toucher le stop court terme."
+        )
+    else:
+        st.warning(
+            "Le modèle Monte Carlo donne une probabilité de toucher le stop court terme supérieure ou proche de celle d'atteindre Target 1."
+        )
+
+    st.divider()
+
+    st.subheader("Graphique avec niveaux de risque")
+    render_price_chart(price_data, ticker, analysis, use_trading_plan=True)
+
+    st.divider()
+
+    render_monte_carlo(analysis)
+
+
 # ============================================================
 # APP
 # ============================================================
@@ -698,7 +861,7 @@ with st.sidebar:
 
     mode = st.selectbox(
         "Mode d'analyse",
-        ["Snapshot", "Trading Plan"],
+        ["Snapshot", "Trading Plan", "Risk Monitor"],
         index=0
     )
 
@@ -716,6 +879,9 @@ if run_analysis:
 
         elif mode == "Trading Plan":
             render_trading_plan_mode(ticker, price_data, analysis)
+
+        elif mode == "Risk Monitor":
+            render_risk_monitor_mode(ticker, price_data, analysis)
 
     except Exception as e:
         st.error(f"Erreur : {e}")
