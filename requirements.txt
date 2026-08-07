@@ -4,3 +4,4 @@ numpy
 yfinance
 plotly
 requests
+-r ml_lab/requirements.txt

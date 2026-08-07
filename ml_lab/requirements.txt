@@ -1,0 +1,7 @@
+# Institutional ML core
+scikit-learn>=1.5,<2.0
+
+# CPU-compatible neural runtimes; GPU acceleration is detected at runtime.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.6,<3.0
+tensorflow-cpu>=2.18,<3.0

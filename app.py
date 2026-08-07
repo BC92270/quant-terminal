@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
+from ml_lab.research_lab import render_ml_research_lab_v1
 
 
 st.set_page_config(
@@ -861,7 +862,7 @@ with st.sidebar:
 
     mode = st.selectbox(
         "Mode d'analyse",
-        ["Snapshot", "Trading Plan", "Risk Monitor"],
+        ["Snapshot", "Trading Plan", "Risk Monitor", "ML Research Lab"],
         index=0
     )
 
@@ -882,6 +883,8 @@ if run_analysis:
 
         elif mode == "Risk Monitor":
             render_risk_monitor_mode(ticker, price_data, analysis)
+        elif mode == "ML Research Lab":
+            render_ml_research_lab_v1(ticker, price_data, analysis)
 
     except Exception as e:
         st.error(f"Erreur : {e}")
