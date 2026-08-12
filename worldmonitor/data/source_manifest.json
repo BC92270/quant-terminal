@@ -1,0 +1,67 @@
+{
+  "assets": {
+    "country_atlas.json.gz": {
+      "bytes": 77574,
+      "sha256": "b8ce8151505ae31371a89391574d3abf51539c5e7981a369d5adb155112d006a"
+    },
+    "layer_registry.json": {
+      "bytes": 42894,
+      "sha256": "2cf2cdaa157f1d4a18e469d68a53d557aaa4370eb3fab71fcc7c621602fd4068"
+    },
+    "static_objects.json.gz": {
+      "bytes": 124910,
+      "sha256": "b7733d37d1be31e5d22ddb416f07e91398c8bfe9d16e48f9bf9d5017a15078a7"
+    },
+    "world_bank_wdi.json.gz": {
+      "bytes": 49304,
+      "sha256": "6306ed131e9ac0e743ada7d765333a9af0ae2091c6f7094c187e29cecb47784b"
+    }
+  },
+  "built_at_utc": "2026-08-12T19:51:26+00:00",
+  "compiler_status_rows": 35,
+  "country_indicator_coverage": {
+    "countries_scored": 193,
+    "countries_with_any": 193,
+    "max_indicators": 17,
+    "median_indicators": 15,
+    "official_series": 19
+  },
+  "country_profiles": 195,
+  "layer_groups": 31,
+  "layers": 134,
+  "live_backed_layers": 73,
+  "presets": 21,
+  "quant_model": "WM-IQ 1.0",
+  "reference_archives": [
+    {
+      "bytes": 1300115,
+      "name": "iLoveZIP_Create (1).zip",
+      "sha256": "1482791c4734ba2c98b122ac9f20ff69d968a8f4541968c628c3168a09412484"
+    },
+    {
+      "bytes": 816401,
+      "name": "iLoveZIP_Create (2).zip",
+      "sha256": "459e722c60a47d7a35f1d3ee00d51a7d03f207ece2155f41721f781f1282e85e"
+    },
+    {
+      "bytes": 5783049,
+      "name": "iLoveZIP_Create (3).zip",
+      "sha256": "9ab113b7bd9e5f5a92b01b5c9bc07f9c023c7a2ab9f3663589918fa8ff770f98"
+    },
+    {
+      "bytes": 605382,
+      "name": "iLoveZIP_Create (5).zip",
+      "sha256": "5b811d10df6272484d5620f008c51df9c501de6f9d7d99c771eaa01bbcb5dd5e"
+    },
+    {
+      "bytes": 1038120,
+      "name": "iLoveZIP_Create.zip",
+      "sha256": "6fed061cc416eff6cdc5998662f932c7e778cf2f62ceb107f399963a7c8e3719"
+    }
+  ],
+  "runtime_source": "compiled-local-assets",
+  "schema_version": 1,
+  "static_layers_with_data": 61,
+  "static_objects": 2159,
+  "zip_runtime_dependency": false
+}
