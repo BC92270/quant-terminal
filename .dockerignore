@@ -1,0 +1,13 @@
+.git
+.github
+.industrialization
+.pytest_cache
+**/__pycache__
+*.py[cod]
+.coverage
+htmlcov
+tests
+docs
+.quant_data
+.quant_audit
+.env*

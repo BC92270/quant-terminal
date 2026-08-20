@@ -4,3 +4,6 @@ numpy
 yfinance
 plotly
 requests
+-r ml_lab/requirements.txt
+openai-agents>=0.16.0
+pydantic>=2.8

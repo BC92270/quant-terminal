@@ -54,6 +54,18 @@ def _pp(value: float | None, digits: int = 2, signed: bool = False) -> str:
     return f"{sign}{value:.{digits}f} pp"
 
 
+def _rate_delta_pp(value: float | None, digits: int = 2, signed: bool = False) -> str:
+    """Format a decimal-rate difference as percentage points.
+
+    Example: -0.1149 -> -11.49 pp. This avoids mixing decimal rates with
+    quantities that are already stored in percentage-point units.
+    """
+    value = _safe_float(value)
+    if value is None:
+        return "N/A"
+    return _pp(value * 100.0, digits=digits, signed=signed)
+
+
 def _price(value: float | None, digits: int = 2) -> str:
     value = _safe_float(value)
     if value is None:

@@ -170,6 +170,23 @@ def _summarize_paths(
         "simulations": int(n),
         "effective_monitoring": barrier["effective_monitoring"],
         "bridge_requested_but_unavailable": barrier["bridge_requested_but_unavailable"],
+        "calibration_model": model_metadata.get("calibration_model"),
+        "calibration_status": model_metadata.get("calibration_status", "NOT_REQUIRED"),
+        "calibration_converged": bool(model_metadata.get("calibration_converged", True)),
+        "calibration_warning": model_metadata.get("calibration_warning", ""),
+        "fallback_used": bool(model_metadata.get("fallback_used", False)),
+        "persistence": model_metadata.get("persistence"),
+        "initial_conditional_vol_ann": model_metadata.get("initial_conditional_vol_ann"),
+        "long_run_vol_ann": model_metadata.get("long_run_vol_ann"),
+        "conditional_distribution": model_metadata.get("conditional_distribution"),
+        "eligibility_status": model_metadata.get("eligibility_status", "INELIGIBLE"),
+        "eligibility_reasons": list(model_metadata.get("eligibility_reasons", [])),
+        "eligible_for_aggregation": bool(model_metadata.get("eligible_for_aggregation", False)),
+        "research_only": bool(model_metadata.get("research_only", True)),
+        "barrier_monitoring_requested": model_metadata.get("barrier_monitoring_requested", monitoring),
+        "barrier_monitoring_effective": model_metadata.get("barrier_monitoring_effective", monitoring),
+        "barrier_monitoring_forced": bool(model_metadata.get("barrier_monitoring_forced", False)),
+        "barrier_monitoring_warning": model_metadata.get("barrier_monitoring_warning", ""),
     }
     summary.update(drawdown)
 

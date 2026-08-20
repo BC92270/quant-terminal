@@ -1,0 +1,4 @@
+# Quant AI uses the terminal's existing Streamlit, pandas and numpy runtime.
+# Provider connections use Python's standard-library HTTPS client, so the client
+# can choose OpenAI, Anthropic, Gemini, OpenRouter, Mistral, Groq or any
+# OpenAI-compatible endpoint without installing a provider-specific SDK.

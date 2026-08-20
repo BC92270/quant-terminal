@@ -5,8 +5,43 @@ from typing import Any, Dict, Mapping
 
 import numpy as np
 
-from .config import BarrierLevels, EPS
+from .config import BARRIER_MONITORING_OPTIONS, BRIDGE_COMPATIBLE_MODELS, MODEL_ALIASES, BarrierLevels, EPS
 from .utils import _safe_float, _wilson_interval
+
+
+def barrier_monitoring_capabilities(model: str) -> Dict[str, Any]:
+    normalized = MODEL_ALIASES.get(model, model)
+    supports_bridge = normalized in BRIDGE_COMPATIBLE_MODELS
+    options = list(BARRIER_MONITORING_OPTIONS if supports_bridge else ("Clôture de chaque pas",))
+    return {
+        "model": normalized,
+        "supports_bridge": supports_bridge,
+        "options": options,
+        "default": "Brownian bridge (GBM)" if supports_bridge else "Clôture de chaque pas",
+        "explanation": (
+            "Brownian bridge continuous monitoring is valid for the continuous Gaussian GBM engine."
+            if supports_bridge
+            else "This engine uses discrete end-of-step monitoring; Brownian bridge is not mathematically compatible."
+        ),
+    }
+
+
+def resolve_barrier_monitoring(model: str, requested: str) -> Dict[str, Any]:
+    capabilities = barrier_monitoring_capabilities(model)
+    requested = str(requested or capabilities["default"])
+    effective = requested if requested in capabilities["options"] else capabilities["default"]
+    forced = effective != requested
+    return {
+        **capabilities,
+        "requested": requested,
+        "effective": effective,
+        "forced": forced,
+        "warning": (
+            f"{requested} is incompatible with {capabilities['model']}; discrete end-of-step monitoring was enforced."
+            if forced
+            else ""
+        ),
+    }
 
 def _build_levels(
     base: Mapping[str, Any],

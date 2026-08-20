@@ -1,0 +1,59 @@
+name: Fixed Income Industrialization
+
+on:
+  pull_request:
+    paths:
+      - "fixed_income/**"
+      - "fixed_income_credit.py"
+      - "tests/test_fixed_income_*.py"
+      - "scripts/validate_fixed_income.py"
+      - "pyproject.toml"
+      - "requirements*.txt"
+      - ".github/workflows/fixed-income-ci.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "fixed_income/**"
+      - "fixed_income_credit.py"
+      - "tests/test_fixed_income_*.py"
+      - "scripts/validate_fixed_income.py"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Compile production modules
+        run: |
+          python -m compileall -q fixed_income
+          python -m py_compile fixed_income_credit.py
+
+      - name: Run fail-closed validation gate
+        run: python scripts/validate_fixed_income.py
+
+      - name: Run fixed-income tests
+        run: pytest -q tests/test_fixed_income_*.py --disable-warnings
+
+      - name: Coverage visibility
+        run: pytest -q tests/test_fixed_income_*.py --cov=fixed_income --cov-report=term-missing --cov-fail-under=70

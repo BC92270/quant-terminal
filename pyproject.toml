@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant-terminal-fixed-income"
+version = "8.0.0"
+description = "Institutional fixed-income and credit analytics core"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "pandas",
+    "plotly",
+    "requests",
+    "scipy",
+    "streamlit",
+    "yfinance",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5"]
+
+[tool.setuptools.packages.find]
+include = ["fixed_income*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --strict-config"
+filterwarnings = [
+    "ignore:No runtime found:Warning",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["fixed_income"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 70
