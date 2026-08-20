@@ -49,7 +49,7 @@ def main() -> None:
     if not sources.is_dir():
         raise SystemExit(f"source directory not found: {sources}")
 
-    import worldmonitor_bridge_legacy_v211 as legacy
+    from legacy import worldmonitor_runtime_v211 as legacy
     from worldmonitor.config import ASSET_SCHEMA_VERSION, QUANT_MODEL_VERSION
     from worldmonitor.quant import score_country_profiles
 

@@ -10,7 +10,13 @@ if str(ROOT) not in sys.path:
 
 from market_psychology.behavioral_data import _cftc_availability_date
 from market_psychology.behavioral_memory import _episode_tags, build_behavioral_memory
-from tests.test_v2_3 import _target, _latent_history, _behavioral_data, _news, _scores
+from tests.psychologi_lab.test_v2_3 import (
+    _behavioral_data,
+    _latent_history,
+    _news,
+    _scores,
+    _target,
+)
 
 
 def test_cftc_report_date_is_not_daily_available_until_after_release_cycle():

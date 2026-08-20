@@ -5318,7 +5318,7 @@ if st.session_state.get("quant_ai_open", False):
         st.error(f"Quant AI import error: {QUANT_AI_IMPORT_ERROR}")
         st.info(
             "Expected files: quant_ai_lab.py and quant_ai/ at project root. "
-            "Install the optional Agents SDK dependency with requirements_quant_ai.txt."
+            "Install the core dependencies with requirements.txt."
         )
 
     st.stop()

@@ -16,7 +16,7 @@ from market_psychology.walk_forward import (
     evaluate_mechanisms_walk_forward,
     evaluate_memory_walk_forward,
 )
-from tests.test_v2_3 import _target, _latent_history, _behavioral_data
+from tests.psychologi_lab.test_v2_3 import _behavioral_data, _latent_history, _target
 
 
 def _history(n=1250):

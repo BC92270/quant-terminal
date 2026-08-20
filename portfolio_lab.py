@@ -19568,7 +19568,11 @@ def _render_governance_v2(model: dict[str, Any]) -> None:
                 saved["Opened At"] = ""
             for index in saved.index:
                 if not str(saved.at[index, "Exception ID"] or "").strip():
-                    saved.at[index, "Exception ID"] = f"PL-{hashlib.sha256(f'{now}|{index}|{saved.at[index, 'Description']}'.encode('utf-8')).hexdigest()[:10].upper()}"
+                    description = saved.at[index, "Description"] if "Description" in saved.columns else ""
+                    digest = hashlib.sha256(
+                        f"{now}|{index}|{description}".encode("utf-8")
+                    ).hexdigest()
+                    saved.at[index, "Exception ID"] = f"PL-{digest[:10].upper()}"
                 if not str(saved.at[index, "Opened At"] or "").strip():
                     saved.at[index, "Opened At"] = now
             st.session_state[PL211_EXCEPTION_KEY] = saved

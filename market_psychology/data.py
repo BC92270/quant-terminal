@@ -568,7 +568,6 @@ def fetch_price_history(symbol: str, period: str = "2y", interval: str = "1d") -
     return fetch_price_history_uncached(symbol, period=period, interval=interval)
 
 
-@st.cache_data(ttl=600, show_spinner=False)
 def fetch_market_pack(
     target_symbol: str,
     period: str = "2y",

@@ -279,7 +279,7 @@ def _segment_runtime_cache_dir() -> Path:
 
 
 def _segment_seed_dir() -> Path:
-    return Path(__file__).resolve().parent / "data_cache" / "segments"
+    return Path(__file__).resolve().parent / "data" / "segments"
 
 
 def _segment_snapshot_paths(symbol: str) -> list[Path]:
@@ -1285,4 +1285,3 @@ def build_institutional_bundle(symbol: str, company_data: dict | None = None) ->
         "source_flags": source_flags,
         "source_quality": source_quality,
     }
-

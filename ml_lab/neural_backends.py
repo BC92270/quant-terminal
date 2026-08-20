@@ -122,7 +122,7 @@ def predict_torch_sequence_model(
         raise ValueError(f"Modèle PyTorch inconnu : {model_name}")
     if importlib.util.find_spec("torch") is None:
         raise RuntimeError(
-            "PyTorch runtime absent. Installe ml_lab/requirements.txt avant "
+            "PyTorch runtime absent. Installe requirements-ml.txt avant "
             "de sélectionner un challenger PyTorch."
         )
 

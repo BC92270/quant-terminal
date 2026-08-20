@@ -137,17 +137,25 @@ def _bootstrap_weight_intervals(
     models = candidates["Model"].astype(str).tolist()
     if repetitions <= 0 or forecasts.empty or len(models) == 0:
         return {model: (float("nan"), float("nan"), float("nan")) for model in models}
-    dates = pd.Index(forecasts.loc[forecasts["model"].isin(models), "origin_date"].dropna().unique())
-    if len(dates) < 4:
+    eligible_forecasts = forecasts.loc[
+        forecasts["model"].isin(models) & forecasts["origin_date"].notna()
+    ]
+    date_groups = [
+        group
+        for _, group in eligible_forecasts.groupby("origin_date", sort=False)
+    ]
+    if len(date_groups) < 4:
         return {model: (float("nan"), float("nan"), float("nan")) for model in models}
 
     rng = np.random.default_rng(int(seed))
     draws = np.zeros((int(repetitions), len(models)), dtype=float)
-    indexed = {date: forecasts[forecasts["origin_date"] == date] for date in dates}
 
     for rep in range(int(repetitions)):
-        sampled_dates = rng.choice(dates.to_numpy(), size=len(dates), replace=True)
-        sampled = pd.concat([indexed[date] for date in sampled_dates], ignore_index=True)
+        sampled_indices = rng.integers(0, len(date_groups), size=len(date_groups))
+        sampled = pd.concat(
+            [date_groups[int(index)] for index in sampled_indices],
+            ignore_index=True,
+        )
         mean_crps = sampled.groupby("model", sort=False)["crps"].mean()
         boot = candidates.copy()
         boot["Mean CRPS"] = boot["Model"].map(mean_crps).fillna(boot["Mean CRPS"])

@@ -1,0 +1,6 @@
+# Optional neural runtimes. The terminal starts and the non-neural ML lab works
+# without these large packages.
+-r requirements.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+tensorflow-cpu>=2.18,<3.0
+torch>=2.6,<3.0

@@ -4,16 +4,22 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV QT_FI_ENVIRONMENT=production
 ENV QT_FI_DATA_DIR=/var/lib/quant-terminal/data
+ENV QT_FI_CACHE_DIR=/var/lib/quant-terminal/cache
 ENV QT_FI_AUDIT_DIR=/var/lib/quant-terminal/audit
 
 WORKDIR /app
 
 RUN useradd --create-home --uid 10001 quant
-COPY requirements.txt requirements-dev.txt ./
-RUN python -m pip install --no-cache-dir --upgrade pip     && python -m pip install --no-cache-dir -r requirements.txt scipy
+COPY requirements.txt ./
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-RUN mkdir -p /var/lib/quant-terminal/data /var/lib/quant-terminal/audit     && chown -R quant:quant /app /var/lib/quant-terminal
+RUN mkdir -p \
+        /var/lib/quant-terminal/data \
+        /var/lib/quant-terminal/cache \
+        /var/lib/quant-terminal/audit \
+    && chown -R quant:quant /app /var/lib/quant-terminal
 
 USER quant
 EXPOSE 8501

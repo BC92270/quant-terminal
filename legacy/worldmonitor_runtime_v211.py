@@ -1,5 +1,5 @@
 # ============================================================
-# worldmonitor_bridge_v211.py
+# Legacy WorldMonitor renderer retained behind the packaged runtime adapter.
 # ============================================================
 # Quant Terminal · World Monitor Bridge V2.11
 # ------------------------------------------------------------

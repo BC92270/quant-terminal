@@ -1,9 +1,11 @@
-streamlit
-pandas
+# Core runtime. Neural frameworks are intentionally isolated in requirements-ml.txt.
+beautifulsoup4
 numpy
-yfinance
+pandas
 plotly
 requests
--r ml_lab/requirements.txt
-openai-agents>=0.16.0
-pydantic>=2.8
+scikit-learn>=1.5,<2.0
+scipy
+statsmodels
+streamlit
+yfinance
