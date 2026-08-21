@@ -9,6 +9,12 @@ ne remplace ni un moteur de portefeuille agrégé, ni un système d'exécution.
 
 - `risk_control/engine.py` contient uniquement des calculs purs, déterministes
   et testables. Il ne dépend pas de Streamlit.
+- `risk_control/advanced.py` orchestre les challengers GJR-GARCH Student-t,
+  Markov/EVT, les intervalles bootstrap, la pondération hors échantillon et le
+  contrat de décomposition factorielle.
+- `risk_control/data_fabric.py` déclare les contrats de données et active les
+  enrichissements NBBO/options dès qu'une clé compatible est configurée, sans
+  exposer le secret dans les logs ou exports.
 - `risk_monitor.py` adapte les résultats au trading plan existant et rend les
   vues interactives.
 - `market_data_gateway.py` attache la provenance dans
@@ -21,13 +27,18 @@ ne remplace ni un moteur de portefeuille agrégé, ni un système d'exécution.
 
 ### Risque de queue
 
-Le même horizon et le même niveau de confiance sont appliqués à quatre
-challengers :
+Le même horizon et le même niveau de confiance sont appliqués à huit
+benchmarks et challengers gouvernés :
 
 1. simulation historique sur rendements glissants réels ;
 2. modèle gaussien paramétrique sur log-rendements ;
 3. simulation Student-t calibrée ;
 4. filtered historical simulation avec volatilité EWMA.
+5. FHS conditionnelle calibrée par GJR-GARCH Student-t ;
+6. simulation de régimes Markov calme/volatile/crise ;
+7. injection de queue EVT dans les scénarios ;
+8. benchmark pondéré selon la couverture conditionnelle observée hors
+   échantillon.
 
 La VaR est le quantile défavorable. L'Expected Shortfall est la moyenne des
 pertes au-delà de ce quantile. Les valeurs de rendement sont négatives dans le
@@ -35,9 +46,17 @@ cockpit ; leur conversion en dollars utilise le notionnel saisi. La dispersion
 des ES est affichée comme un indicateur explicite de risque de spécification.
 
 Une couche EVT Peaks over Threshold réutilise le moteur Monte Carlo existant.
-Elle n'est activée qu'avec au moins 120 rendements et affiche l'éligibilité du
-fit, le nombre d'excès, le paramètre de forme, le test KS et la stabilité du
-seuil. Elle reste un diagnostic challenger et ne remplace pas l'ES principale.
+Elle n'est activée qu'avec au moins 120 rendements. Son seuil s'adapte à la
+profondeur de l'historique pour viser environ 30 excès, sans descendre sous le
+90e percentile ni dépasser le 95e. Elle affiche l'éligibilité du fit, le
+paramètre de forme, le test KS, la stabilité du seuil et 80 réplications
+bootstrap. Elle reste un diagnostic challenger et ne remplace pas l'ES
+principale.
+
+Le laboratoire avancé ajoute également 240 réplications moving-block pour
+mesurer l'incertitude de VaR/ES. Les intervalles sont affichés à côté des
+estimations ponctuelles : un historique court ne peut donc plus produire une
+fausse impression de précision sans avertissement visible.
 
 ### Validation
 
@@ -53,6 +72,11 @@ et gaussienne EWMA. Le cockpit produit :
 Moins de 100 observations de validation entraînent le statut `LIMITED`. Une
 p-value faible entraîne `WARNING` ou `FAIL`; le résultat ne peut donc pas être
 présenté comme validé sur une fenêtre trop courte.
+
+Le benchmark pondéré n'utilise que ces deux historiques de prévision. Son poids
+combine l'erreur de taux d'exception et la p-value de couverture
+conditionnelle. Les modèles GJR, Markov et EVT restent `CHALLENGER` ou
+`RESEARCH` tant qu'une validation walk-forward compatible n'est pas attachée.
 
 ### Position, liquidité et stress inverse
 
@@ -80,6 +104,23 @@ des doublons, des prix inchangés et de la couverture volume. Une source
 `fallback`, `reference`, différée ou à récence non spécifiée déclenche toujours
 une alerte de provenance distincte, même si la série est exploitable.
 
+### Data Fabric
+
+La vue `Data Fabric` expose l'état de chaque contrat sans jamais afficher la
+valeur d'une clé :
+
+- `TWELVE_DATA_API_KEY` / `ALPHA_VANTAGE_API_KEY` : historique OHLCV ;
+- `TRADIER_API_TOKEN`, `MASSIVE_API_KEY` ou `THETADATA_API_KEY` : cotation,
+  chaîne options, IV, Greeks et open interest selon entitlement ;
+- `DATABENTO_API_KEY` : contrat prêt pour profondeur de marché et futures ;
+- `FRED_API_KEY` et gateway partagé : contrat prêt pour matrice factorielle ;
+- payload Portfolio Lab : contrat prêt pour positions, hedges, Greeks et limites.
+
+Tradier, Massive et ThetaData sont auto-routés pour l'enrichissement options.
+En l'absence de clé ou d'entitlement, le moteur conserve l'OHLCV et marque le
+bloc comme `READY FOR KEY` ou `CONFIGURED NO DATA` au lieu d'inventer des
+données.
+
 ## Références de conception
 
 Le cockpit s'inspire de principes publics, sans revendiquer leur conformité
@@ -98,8 +139,10 @@ réglementaire :
 
 ## Limites connues
 
-- Le moteur est mono-position. Les corrélations, concentrations et hedges
-  cross-asset doivent être contrôlés dans Portfolio Lab / Correlation Matrix.
+- Le contrôle principal reste mono-position. Le calcul de décomposition
+  factorielle est opérationnel, mais attend une matrice de rendements alignés ;
+  les concentrations et hedges agrégés restent la responsabilité de Portfolio
+  Lab / Correlation Matrix.
 - Le volume de clôture ne remplace pas un carnet d'ordres, un spread ni une
   courbe d'impact propriétaire.
 - Les distributions ajustées sur un an peuvent manquer des régimes de crise.

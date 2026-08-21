@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from .advanced import build_advanced_research_snapshot
+
 try:
     from monte_carlo.tail_event import (
         assess_evt_threshold_stability,
@@ -653,10 +655,19 @@ def position_and_reverse_stress(
 
 
 def evt_diagnostics(returns: pd.Series) -> dict[str, Any]:
-    if fit_evt_tail is None or len(_finite_series(returns)) < 120:
+    clean = _finite_series(returns)
+    if fit_evt_tail is None or len(clean) < 120:
         return {"status": "INELIGIBLE", "reason": "At least 120 returns and SciPy EVT support are required."}
-    logs = np.log1p(np.clip(_finite_series(returns).to_numpy(dtype=float), -0.999999, None))
-    fit = fit_evt_tail(logs, threshold_quantile=0.95, bootstrap_repetitions=0, seed=42)
+    logs = np.log1p(np.clip(clean.to_numpy(dtype=float), -0.999999, None))
+    # Target roughly 30 exceedances on shorter histories, while retaining the
+    # conventional 95th-percentile POT threshold on deeper samples.
+    threshold_quantile = float(np.clip(1.0 - 30.0 / len(logs), 0.90, 0.95))
+    fit = fit_evt_tail(
+        logs,
+        threshold_quantile=threshold_quantile,
+        bootstrap_repetitions=80,
+        seed=42,
+    )
     if not fit.get("ok"):
         return fit
     stability_table = evt_threshold_stability(logs) if evt_threshold_stability is not None else pd.DataFrame()
@@ -767,24 +778,35 @@ def build_institutional_risk_snapshot(
     parameters: RiskParameters,
     stop_short: float | None = None,
     stop_structural: float | None = None,
+    factor_returns: pd.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Build the complete single-position institutional risk-control snapshot."""
 
     parameters = parameters.normalized()
     frame = prepare_market_frame(price_data)
     returns = simple_returns(frame)
-    tail_models = build_tail_model_comparison(
+    base_tail_models = build_tail_model_comparison(
         returns,
         horizon=parameters.horizon_days,
         confidence=parameters.confidence,
         decay=parameters.ewma_lambda,
         seed=parameters.seed,
     )
+    backtests = var_backtests(returns, confidence=parameters.confidence, decay=parameters.ewma_lambda)
+    advanced = build_advanced_research_snapshot(
+        returns,
+        horizon=parameters.horizon_days,
+        confidence=parameters.confidence,
+        seed=parameters.seed,
+        base_tail_models=base_tail_models,
+        backtest_summary=backtests["summary"],
+        factor_returns=factor_returns,
+    )
+    tail_models = advanced["tail_models"]
     eligible = tail_models.dropna(subset=["VaR", "ES"]) if not tail_models.empty else pd.DataFrame()
     conservative_var = float(eligible["VaR"].min()) if not eligible.empty else None
     conservative_es = float(eligible["ES"].min()) if not eligible.empty else None
     dispersion_es = float(eligible["ES"].max() - eligible["ES"].min()) if len(eligible) >= 2 else None
-    backtests = var_backtests(returns, confidence=parameters.confidence, decay=parameters.ewma_lambda)
     drawdown = drawdown_diagnostics(frame)
     diagnostics = distribution_diagnostics(returns)
     regime = volatility_regime(returns, parameters.ewma_lambda)
@@ -824,6 +846,7 @@ def build_institutional_risk_snapshot(
         "position": position,
         "scenarios": scenarios,
         "evt": evt_diagnostics(returns),
+        "advanced": advanced,
     }
     snapshot["alerts"] = build_alert_matrix(snapshot)
     critical = int((snapshot["alerts"]["Severity"] == "CRITICAL").sum())

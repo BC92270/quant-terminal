@@ -18,6 +18,8 @@ from risk_control.engine import (
     simple_returns,
     var_backtests,
 )
+from risk_control.advanced import factor_risk_decomposition
+from risk_control.data_fabric import risk_data_readiness
 
 
 def _market_frame(seed: int = 19, rows: int = 700) -> pd.DataFrame:
@@ -139,6 +141,55 @@ def test_snapshot_preserves_provider_lineage_and_builds_actionable_controls():
     assert not result["alerts"].empty
     assert {"Custom shock", "Conservative model ES"}.issubset(set(result["scenarios"]["Scenario"]))
     assert result["position"]["binding_notional_limit"] is not None
+    assert {
+        "GJR-GARCH-t FHS",
+        "Markov regime Student-t proxy",
+        "EVT tail injection",
+        "OOS weighted benchmark",
+    }.issubset(set(result["tail_models"]["Model"]))
+    assert result["advanced"]["uncertainty"]["ok"] is True
+    assert result["advanced"]["catalog"].shape[0] == 6
+
+
+def test_factor_contract_activates_without_changing_the_snapshot_api():
+    returns = simple_returns(_market_frame(rows=500))
+    rng = np.random.default_rng(91)
+    factors = pd.DataFrame(
+        {
+            "Market": 0.65 * returns.to_numpy() + rng.normal(0.0, 0.004, len(returns)),
+            "Rates": rng.normal(0.0, 0.003, len(returns)),
+            "USD": rng.normal(0.0, 0.002, len(returns)),
+        },
+        index=returns.index,
+    )
+    result = factor_risk_decomposition(returns, factors)
+
+    assert result["ok"] is True
+    assert result["status"] == "ACTIVE"
+    assert result["observations"] == len(returns)
+    assert set(result["table"]["Factor"]) == {"Market", "Rates", "USD"}
+    assert 0.0 <= result["r_squared"] <= 1.0
+
+
+def test_data_fabric_is_credential_aware_without_exposing_secret_values(monkeypatch):
+    for name in (
+        "TRADIER_API_TOKEN",
+        "MASSIVE_API_KEY",
+        "THETADATA_API_KEY",
+        "DATABENTO_API_KEY",
+        "TWELVE_DATA_API_KEY",
+        "ALPHA_VANTAGE_API_KEY",
+        "FRED_API_KEY",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    marker = "never-render-this-secret"
+    table = risk_data_readiness({"TRADIER_API_TOKEN": marker})
+
+    nbbo = table.loc[table["Capability"] == "NBBO / executable spread"].iloc[0]
+    options = table.loc[table["Capability"] == "Options IV / Greeks / OI"].iloc[0]
+    assert nbbo["State"] == "CONFIGURED"
+    assert options["State"] == "CONFIGURED"
+    assert marker not in table.to_string()
 
 
 def test_fallback_or_delayed_provider_creates_provenance_warning():
@@ -229,5 +280,7 @@ def test_risk_monitor_streamlit_smoke_has_no_runtime_exception(tmp_path):
     )
     app = streamlit_testing.AppTest.from_file(str(harness), default_timeout=40).run()
     assert not app.exception
-    assert app.tabs[0].label == "Control Tower"
-    assert app.tabs[-1].label == "Audit & Export"
+    assert app.tabs[0].label == "Control"
+    assert "Advanced" in [tab.label for tab in app.tabs]
+    assert "Data Fabric" in [tab.label for tab in app.tabs]
+    assert app.tabs[-1].label == "Audit"

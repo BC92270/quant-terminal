@@ -24,7 +24,12 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 
-from risk_control import RiskParameters, build_institutional_risk_snapshot
+from risk_control import (
+    RiskParameters,
+    build_institutional_risk_snapshot,
+    load_risk_market_enrichment,
+    risk_data_readiness,
+)
 
 
 # ============================================================
@@ -1869,22 +1874,46 @@ def _risk_css():
     st.markdown(
         """
         <style>
-        .risk-hero{border:1px solid rgba(56,189,248,.24);border-radius:16px;padding:14px 17px;
-          background:linear-gradient(115deg,rgba(4,17,33,.98),rgba(8,28,50,.93) 58%,rgba(20,13,42,.90));
-          box-shadow:inset 0 0 42px rgba(56,189,248,.045),0 12px 38px rgba(0,0,0,.20);margin:2px 0 10px}
-        .risk-kicker{font-size:.67rem;font-weight:900;letter-spacing:.19em;text-transform:uppercase;color:#67e8f9}
-        .risk-title{font-size:1.34rem;font-weight:950;color:#f8fafc;margin-top:3px;letter-spacing:-.025em}
-        .risk-sub{font-size:.77rem;line-height:1.45;color:#9fb4c9;margin-top:4px;max-width:1050px}
-        .risk-chip{display:inline-block;margin:9px 6px 0 0;padding:3px 8px;border-radius:999px;
-          border:1px solid rgba(103,232,249,.20);background:rgba(2,10,22,.55);color:#cbd5e1;font-size:.64rem;font-weight:800}
-        .risk-command{border-left:3px solid #38bdf8;background:rgba(8,23,42,.72);padding:9px 12px;
-          border-radius:3px 11px 11px 3px;margin:8px 0 10px;color:#dbeafe;font-size:.78rem}
+        .risk-hero{position:relative;overflow:hidden;border:1px solid rgba(82,196,255,.28);border-radius:18px;padding:17px 19px 15px;
+          background:radial-gradient(circle at 86% 15%,rgba(124,58,237,.19),transparent 31%),
+          linear-gradient(118deg,rgba(3,13,28,.99),rgba(7,29,53,.96) 58%,rgba(17,11,38,.94));
+          box-shadow:inset 0 1px rgba(255,255,255,.035),inset 0 0 55px rgba(56,189,248,.045),0 18px 48px rgba(0,0,0,.24);margin:2px 0 12px}
+        .risk-hero:after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.18;
+          background-image:linear-gradient(rgba(103,232,249,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(103,232,249,.08) 1px,transparent 1px);background-size:28px 28px}
+        .risk-kicker{position:relative;z-index:1;font-size:.65rem;font-weight:900;letter-spacing:.20em;text-transform:uppercase;color:#67e8f9}
+        .risk-title{position:relative;z-index:1;font-size:1.48rem;font-weight:950;color:#f8fafc;margin-top:4px;letter-spacing:-.035em}
+        .risk-sub{position:relative;z-index:1;font-size:.78rem;line-height:1.5;color:#9fb4c9;margin-top:5px;max-width:1050px}
+        .risk-chip{position:relative;z-index:1;display:inline-block;margin:10px 6px 0 0;padding:4px 9px;border-radius:999px;
+          border:1px solid rgba(103,232,249,.22);background:rgba(2,10,22,.66);color:#cbd5e1;font-size:.61rem;font-weight:850;letter-spacing:.035em}
+        .risk-command{border:1px solid rgba(56,189,248,.18);border-left:3px solid #38bdf8;
+          background:linear-gradient(90deg,rgba(8,31,55,.88),rgba(6,18,34,.78));padding:10px 13px;
+          border-radius:4px 12px 12px 4px;margin:9px 0 12px;color:#dbeafe;font-size:.76rem;box-shadow:0 8px 22px rgba(0,0,0,.13)}
+        .risk-section{margin:16px 0 8px;padding:0 0 8px;border-bottom:1px solid rgba(83,169,222,.15)}
+        .risk-section-kicker{font-size:.59rem;font-weight:900;letter-spacing:.18em;color:#67e8f9;text-transform:uppercase}
+        .risk-section-title{font-size:1.03rem;font-weight:900;color:#eef6ff;margin-top:2px;letter-spacing:-.015em}
+        .risk-section-copy{font-size:.71rem;color:#8399af;margin-top:3px;line-height:1.4}
+        .risk-model-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:7px;margin:2px 5px 2px 0;
+          background:rgba(10,29,50,.82);border:1px solid rgba(76,181,235,.18);font-size:.62rem;color:#bad3e8;font-weight:750}
+        .risk-model-badge b{color:#6ee7b7}
         .risk-status-green{color:#34d399}.risk-status-amber{color:#fbbf24}.risk-status-red{color:#fb7185}
         div[data-testid="stMetric"]{border:1px solid rgba(91,198,255,.16)!important;
-          background:linear-gradient(180deg,rgba(8,21,40,.78),rgba(4,12,25,.75))!important;
-          border-radius:13px!important;padding:10px 12px!important;min-height:86px!important}
-        div[data-testid="stMetric"] label{font-size:.69rem!important;letter-spacing:.035em!important;text-transform:uppercase!important}
-        div[data-testid="stMetricValue"]{font-size:1.17rem!important}
+          background:radial-gradient(circle at 90% 0,rgba(56,189,248,.09),transparent 35%),linear-gradient(180deg,rgba(8,23,43,.88),rgba(4,13,27,.82))!important;
+          border-radius:14px!important;padding:11px 13px!important;min-height:88px!important;box-shadow:inset 0 1px rgba(255,255,255,.025),0 8px 24px rgba(0,0,0,.12)!important}
+        div[data-testid="stMetric"] label{font-size:.65rem!important;letter-spacing:.065em!important;text-transform:uppercase!important;color:#90a8bd!important}
+        div[data-testid="stMetricValue"]{font-size:1.16rem!important;color:#f2f8ff!important;letter-spacing:-.02em!important}
+        div[data-testid="stDataFrame"]{border:1px solid rgba(84,172,224,.14);border-radius:12px;overflow:hidden;background:rgba(4,14,27,.55)}
+        div[data-baseweb="tab-list"]{gap:3px;background:rgba(3,12,24,.70);padding:4px;border:1px solid rgba(83,169,222,.12);border-radius:11px}
+        button[data-baseweb="tab"]{font-size:.70rem!important;font-weight:780!important;border-radius:8px!important;padding:.46rem .65rem!important}
+        button[data-baseweb="tab"][aria-selected="true"]{background:linear-gradient(180deg,rgba(22,71,108,.80),rgba(10,38,65,.86))!important;color:#e9f7ff!important}
+        div[data-testid="stExpander"]{border:1px solid rgba(83,169,222,.14)!important;border-radius:12px!important;background:rgba(4,14,27,.38)!important}
+        @media(max-width:900px){.risk-title{font-size:1.25rem}.risk-sub{font-size:.73rem}.risk-chip{font-size:.56rem}div[data-baseweb="tab-list"]{overflow-x:auto}}
+        @media(max-width:800px){
+          div[data-testid="stHorizontalBlock"]:has(div[data-testid="stMetric"]){flex-wrap:wrap!important;gap:.7rem!important}
+          div[data-testid="stHorizontalBlock"]:has(div[data-testid="stMetric"])>div[data-testid="stColumn"]{min-width:calc(33.333% - .7rem)!important;flex:1 1 calc(33.333% - .7rem)!important}
+        }
+        @media(max-width:560px){
+          div[data-testid="stHorizontalBlock"]:has(div[data-testid="stMetric"])>div[data-testid="stColumn"]{min-width:calc(50% - .7rem)!important;flex:1 1 calc(50% - .7rem)!important}
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -1894,14 +1923,25 @@ def _risk_css():
 def _plot_layout(title: str, height: int = 420) -> dict:
     return {
         "height": height,
-        "title": title,
+        "title": dict(text=title, x=0.015, xanchor="left", font=dict(size=15, color="#f1f7ff")),
         "template": "plotly_dark",
-        "margin": dict(l=38, r=24, t=65, b=40),
+        "margin": dict(l=42, r=24, t=64, b=42),
         "paper_bgcolor": "rgba(0,0,0,0)",
-        "plot_bgcolor": "rgba(6,15,28,.58)",
-        "font": dict(color="#dbeafe"),
+        "plot_bgcolor": "rgba(5,15,29,.62)",
+        "font": dict(color="#c9d9e8", family="Inter, ui-sans-serif, system-ui"),
         "hovermode": "x unified",
+        "hoverlabel": dict(bgcolor="#071526", bordercolor="#27465f", font_color="#edf7ff"),
+        "legend": dict(orientation="h", yanchor="bottom", y=1.01, xanchor="right", x=1, font=dict(size=10)),
     }
+
+
+def _section_header(kicker: str, title: str, copy: str):
+    st.markdown(
+        f"<div class='risk-section'><div class='risk-section-kicker'>{html.escape(kicker)}</div>"
+        f"<div class='risk-section-title'>{html.escape(title)}</div>"
+        f"<div class='risk-section-copy'>{html.escape(copy)}</div></div>",
+        unsafe_allow_html=True,
+    )
 
 
 def render_risk_radar(ctx: dict):
@@ -1932,14 +1972,34 @@ def render_risk_radar(ctx: dict):
 
 
 def render_tail_model_chart(intel: dict):
-    table = intel["tail_models"].dropna(subset=["VaR", "ES"])
+    table = intel["tail_models"].dropna(subset=["VaR", "ES"]).sort_values("ES", ascending=False)
     if table.empty:
         st.info("Comparaison multi-modèles indisponible.")
         return
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=table["Model"], y=table["VaR"], name="VaR", marker_color="#38bdf8"))
-    fig.add_trace(go.Bar(x=table["Model"], y=table["ES"], name="Expected Shortfall", marker_color="#c084fc"))
-    fig.update_layout(**_plot_layout("Dispersion des estimations de queue", 420), barmode="group", yaxis_tickformat=".1%")
+    for _, row in table.iterrows():
+        fig.add_trace(go.Scatter(
+            x=[row["ES"], row["VaR"]], y=[row["Model"], row["Model"]], mode="lines",
+            line=dict(color="rgba(100,143,176,.46)", width=4), showlegend=False, hoverinfo="skip",
+        ))
+    fig.add_trace(go.Scatter(
+        x=table["VaR"], y=table["Model"], name="VaR", mode="markers",
+        marker=dict(size=10, color="#38bdf8", line=dict(width=1, color="#d9f5ff")),
+        customdata=table[["Status", "Method"]],
+        hovertemplate="<b>%{y}</b><br>VaR %{x:.2%}<br>Status %{customdata[0]}<br>%{customdata[1]}<extra></extra>",
+    ))
+    fig.add_trace(go.Scatter(
+        x=table["ES"], y=table["Model"], name="Expected Shortfall", mode="markers",
+        marker=dict(size=11, color="#c084fc", symbol="diamond", line=dict(width=1, color="#f1dcff")),
+        customdata=table[["Status", "Method"]],
+        hovertemplate="<b>%{y}</b><br>ES %{x:.2%}<br>Status %{customdata[0]}<br>%{customdata[1]}<extra></extra>",
+    ))
+    layout = _plot_layout("Model challenge · VaR to Expected Shortfall", max(430, 78 + 52 * len(table)))
+    layout.update(
+        xaxis=dict(title="Loss return", tickformat=".1%", gridcolor="rgba(116,157,188,.13)", zerolinecolor="rgba(116,157,188,.28)"),
+        yaxis=dict(title=None, automargin=True, categoryorder="array", categoryarray=table["Model"].tolist()),
+    )
+    fig.update_layout(**layout)
     st.plotly_chart(fig, width="stretch")
 
 
@@ -1970,19 +2030,102 @@ def render_drawdown_regime_chart(intel: dict):
 
 
 def render_scenario_chart(intel: dict):
-    table = intel["scenarios"]
+    table = intel["scenarios"].sort_values("P&L / NAV", ascending=True)
     if table.empty:
         st.info("Scénarios indisponibles.")
         return
     colors = ["#fb7185" if value == "YES" else "#38bdf8" for value in table["Limit breached"]]
     fig = go.Figure(go.Bar(
-        x=table["Scenario"], y=table["P&L / NAV"], marker_color=colors,
+        y=table["Scenario"], x=table["P&L / NAV"], marker_color=colors, orientation="h",
         text=table["P&L / NAV"].map(lambda value: f"{value:.1%}"), textposition="outside",
-        hovertemplate="%{x}<br>P&L / NAV %{y:.2%}<extra></extra>",
+        customdata=table[["Asset shock", "Position P&L", "Liquidity overlay", "Loss-limit usage"]],
+        hovertemplate="<b>%{y}</b><br>P&L / NAV %{x:.2%}<br>Asset shock %{customdata[0]:.2%}<br>Position P&L $%{customdata[1]:,.0f}<br>Liquidity $%{customdata[2]:,.0f}<br>Limit usage %{customdata[3]:.1%}<extra></extra>",
     ))
     limit = intel["parameters"].loss_limit_pct
-    fig.add_hline(y=-limit, line_color="#f43f5e", line_dash="dash", annotation_text=f"Loss limit -{limit:.1%}")
-    fig.update_layout(**_plot_layout("Scenario loss map · position + liquidity overlay", 455), yaxis_tickformat=".1%")
+    fig.add_vline(x=-limit, line_color="#f43f5e", line_dash="dash", annotation_text=f"Loss limit -{limit:.1%}")
+    layout = _plot_layout("Scenario loss map · position + liquidity overlay", max(455, 88 + 43 * len(table)))
+    layout.update(
+        xaxis=dict(tickformat=".1%", gridcolor="rgba(116,157,188,.13)", zerolinecolor="rgba(116,157,188,.30)"),
+        yaxis=dict(automargin=True),
+        showlegend=False,
+    )
+    fig.update_layout(**layout)
+    st.plotly_chart(fig, width="stretch")
+
+
+def render_uncertainty_chart(intel: dict):
+    uncertainty = intel.get("advanced", {}).get("uncertainty", {})
+    table = uncertainty.get("table", pd.DataFrame())
+    if not isinstance(table, pd.DataFrame) or table.empty:
+        st.info(uncertainty.get("reason", "Bootstrap uncertainty is unavailable."))
+        return
+    error_plus = table["CI high"] - table["Median"]
+    error_minus = table["Median"] - table["CI low"]
+    colors = ["#38bdf8", "#c084fc"]
+    fig = go.Figure(go.Scatter(
+        x=table["Median"], y=table["Metric"], mode="markers",
+        marker=dict(size=14, color=colors, line=dict(width=1.5, color="#edf8ff")),
+        error_x=dict(type="data", symmetric=False, array=error_plus, arrayminus=error_minus, color="#7dd3fc", thickness=3, width=8),
+        customdata=table[["CI low", "CI high", "CI width"]],
+        hovertemplate="<b>%{y}</b><br>Median %{x:.2%}<br>95% CI %{customdata[0]:.2%} → %{customdata[1]:.2%}<br>Width %{customdata[2]:.2%}<extra></extra>",
+    ))
+    layout = _plot_layout("Parameter uncertainty · moving-block bootstrap 95% interval", 310)
+    layout.update(
+        xaxis=dict(tickformat=".1%", gridcolor="rgba(116,157,188,.13)", zerolinecolor="rgba(116,157,188,.28)"),
+        yaxis=dict(automargin=True),
+        showlegend=False,
+    )
+    fig.update_layout(**layout)
+    st.plotly_chart(fig, width="stretch")
+
+
+def render_nonlinear_scenario_chart(intel: dict):
+    nonlinear = intel.get("advanced", {}).get("nonlinear", {})
+    table = nonlinear.get("summary", pd.DataFrame())
+    if not isinstance(table, pd.DataFrame) or table.empty:
+        st.info(nonlinear.get("reason", "Nonlinear scenarios are unavailable."))
+        return
+    metrics = [
+        column for column in (
+            "p05_terminal_return", "expected_shortfall", "median_max_drawdown", "p05_max_drawdown"
+        ) if column in table
+    ]
+    heat = table.set_index("Scenario")[metrics].copy()
+    labels = {
+        "p05_terminal_return": "Terminal P05",
+        "expected_shortfall": "Expected shortfall",
+        "median_max_drawdown": "Median max DD",
+        "p05_max_drawdown": "Max DD P05",
+    }
+    fig = go.Figure(go.Heatmap(
+        z=heat.to_numpy(dtype=float), x=[labels.get(column, column) for column in heat.columns], y=heat.index,
+        colorscale=[[0, "#7f1d3a"], [0.45, "#1e3a5f"], [1, "#0f766e"]], zmid=-0.05,
+        text=np.vectorize(lambda value: f"{value:.1%}")(heat.to_numpy(dtype=float)), texttemplate="%{text}",
+        colorbar=dict(title="Return", tickformat=".0%", thickness=10),
+        hovertemplate="<b>%{y}</b><br>%{x}: %{z:.2%}<extra></extra>",
+    ))
+    layout = _plot_layout("Nonlinear scenario surface · regime, EVT and liquidity feedback", max(405, 125 + 48 * len(heat)))
+    layout.update(xaxis=dict(side="top"), yaxis=dict(automargin=True), hovermode="closest")
+    fig.update_layout(**layout)
+    st.plotly_chart(fig, width="stretch")
+
+
+def render_regime_mix(intel: dict):
+    mix = intel.get("advanced", {}).get("nonlinear", {}).get("regime_mix", {})
+    if not mix:
+        st.info("Regime simulation mix unavailable.")
+        return
+    labels = [str(label).title() for label in mix]
+    values = [float(value) for value in mix.values()]
+    fig = go.Figure(go.Bar(
+        x=values, y=labels, orientation="h",
+        marker_color=["#34d399", "#fbbf24", "#fb7185"][: len(values)],
+        text=[f"{value:.1%}" for value in values], textposition="inside",
+        hovertemplate="%{y}: %{x:.2%}<extra></extra>",
+    ))
+    layout = _plot_layout("Simulated regime occupancy", 300)
+    layout.update(xaxis=dict(range=[0, 1], tickformat=".0%", gridcolor="rgba(116,157,188,.13)"), showlegend=False)
+    fig.update_layout(**layout)
     st.plotly_chart(fig, width="stretch")
 
 
@@ -2035,8 +2178,47 @@ def _institutional_export(ctx: dict, intel: dict) -> pd.DataFrame:
         ("Current drawdown", fmt_pct(intel["drawdown"].get("current_drawdown"))),
         ("Data quality", fmt_score(intel["data_quality"].get("score"))),
         ("Provider", intel["data_quality"].get("provider", {}).get("provider", "Unknown")),
+        ("Advanced model count", str(len(intel.get("advanced", {}).get("catalog", pd.DataFrame())))),
+        ("GJR-GARCH state", intel.get("advanced", {}).get("gjr", {}).get("status", "N/A")),
+        ("Bootstrap confidence", intel.get("advanced", {}).get("uncertainty", {}).get("status", "N/A")),
+        ("Factor model state", intel.get("advanced", {}).get("factors", {}).get("status", "N/A")),
     ]
     return pd.concat([base, pd.DataFrame(extra, columns=["Champ", "Valeur"])], ignore_index=True)
+
+
+def _streamlit_secrets() -> dict[str, object]:
+    try:
+        return dict(st.secrets)
+    except Exception:
+        return {}
+
+
+@st.cache_data(ttl=600, max_entries=32, show_spinner=False)
+def _cached_institutional_snapshot(
+    price_data: pd.DataFrame,
+    price: float,
+    parameters_dict: dict,
+    stop_short: float | None,
+    stop_structural: float | None,
+    factor_returns: pd.DataFrame | None,
+) -> dict:
+    return build_institutional_risk_snapshot(
+        price_data,
+        price=price,
+        parameters=RiskParameters(**parameters_dict),
+        stop_short=stop_short,
+        stop_structural=stop_structural,
+        factor_returns=factor_returns,
+    )
+
+
+@st.cache_data(ttl=600, max_entries=48, show_spinner=False)
+def _cached_market_enrichment(ticker: str, underlying_price: float) -> dict:
+    return load_risk_market_enrichment(
+        ticker,
+        underlying_price=underlying_price,
+        secrets=_streamlit_secrets(),
+    )
 
 
 # ============================================================
@@ -2051,12 +2233,12 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
         f"""
         <div class="risk-hero">
           <div class="risk-kicker">INSTITUTIONAL RISK CONTROL · LIVE WORKBENCH</div>
-          <div class="risk-title">{safe_ticker} / Multi-model Risk Monitor</div>
-          <div class="risk-sub">Mesure, challenge et contrôle du risque de marché, de queue, de modèle,
-          de liquidité et de position. Toutes les sorties sont recalculées à partir des hypothèses affichées.</div>
-          <span class="risk-chip">VaR + EXPECTED SHORTFALL</span><span class="risk-chip">EWMA / STUDENT-t / FHS</span>
-          <span class="risk-chip">REVERSE STRESS</span><span class="risk-chip">LIQUIDITY CAPACITY</span>
-          <span class="risk-chip">OUTCOME ANALYSIS</span>
+          <div class="risk-title">{safe_ticker} / Adaptive Multi-Model Risk Monitor</div>
+          <div class="risk-sub">Institutional pre-trade control, nonlinear tail research and model governance in one auditable surface.
+          Every result is recomputed from the visible assumptions; unavailable proprietary inputs remain explicitly gated.</div>
+          <span class="risk-chip">VaR + EXPECTED SHORTFALL</span><span class="risk-chip">GJR-GARCH-t / FHS</span>
+          <span class="risk-chip">MARKOV REGIMES</span><span class="risk-chip">DYNAMIC EVT + BOOTSTRAP</span>
+          <span class="risk-chip">REVERSE STRESS</span><span class="risk-chip">DATA FABRIC READY</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -2105,12 +2287,30 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
         ewma_lambda=ewma_lambda,
     )
     ctx = build_risk_context_v2(ticker, price_data, analysis, selected_horizon)
-    intel = build_institutional_risk_snapshot(
-        price_data,
-        price=ctx["price"],
-        parameters=parameters,
-        stop_short=ctx["stop_short"],
-        stop_structural=ctx["stop_structural"],
+    factor_returns = analysis.get("factor_returns")
+    if not isinstance(factor_returns, pd.DataFrame):
+        factor_returns = None
+    with st.spinner("Calibrating conditional volatility, nonlinear scenarios and uncertainty…"):
+        intel = _cached_institutional_snapshot(
+            price_data,
+            ctx["price"],
+            parameters.normalized().__dict__,
+            ctx["stop_short"],
+            ctx["stop_structural"],
+            factor_returns,
+        )
+    secrets = _streamlit_secrets()
+    data_readiness = risk_data_readiness(secrets)
+    auto_enrichment_ready = bool(
+        data_readiness.loc[
+            data_readiness["Capability"].isin(["NBBO / executable spread", "Options IV / Greeks / OI"]),
+            "State",
+        ].eq("CONFIGURED").any()
+    )
+    enrichment = (
+        _cached_market_enrichment(ticker, ctx["price"])
+        if auto_enrichment_ready
+        else {"ok": False, "status": "READY_FOR_KEY", "quote": {}, "options": {}, "attempts": []}
     )
 
     status_class = {"GREEN": "risk-status-green", "AMBER": "risk-status-amber", "RED": "risk-status-red"}[intel["control_status"]]
@@ -2120,7 +2320,8 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
         f"{selected_horizon}D / {confidence:.1%} · {side.upper()} ${position_notional:,.0f} · "
         f"Source {html.escape(str(provider))} · {len(intel['returns']):,} returns · "
         f"{int((intel['alerts']['Severity'] == 'CRITICAL').sum())} critical / "
-        f"{int((intel['alerts']['Severity'] == 'WARNING').sum())} warnings</div>",
+        f"{int((intel['alerts']['Severity'] == 'WARNING').sum())} warnings · "
+        f"{len(intel['tail_models'])} tail models · Data fabric {enrichment.get('status', 'READY')}</div>",
         unsafe_allow_html=True,
     )
 
@@ -2133,18 +2334,23 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
     m6.metric("Model validation", intel["validation_status"])
 
     tabs = st.tabs([
-        "Control Tower",
-        "Tail & Models",
-        "Stress / Reverse",
-        "Liquidity & Sizing",
-        "Model Validation",
+        "Control",
+        "Tail Models",
+        "Advanced",
+        "Stress",
+        "Liquidity",
+        "Validation",
         "Market Map",
-        "Audit & Export",
+        "Data Fabric",
+        "Audit",
     ])
 
     with tabs[0]:
-        st.subheader("Exception-first control tower")
-        st.caption("Critical and warning controls are sorted first; each line maps a measurement to an operating response.")
+        _section_header(
+            "CONTROL PLANE",
+            "Exception-first control tower",
+            "Critical and warning controls lead the view; every measurement maps to an explicit operating response.",
+        )
         alerts = intel["alerts"].copy()
         for index, value in enumerate(alerts["Current"]):
             if isinstance(value, (float, np.floating)) and np.isfinite(value):
@@ -2155,11 +2361,15 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
             render_risk_radar(ctx)
         with right:
             render_drawdown_regime_chart(intel)
-        st.subheader("Legacy pre-trade decomposition")
+        _section_header("RISK ATTRIBUTION", "Pre-trade decomposition", "Normalized drivers connect the control state to the underlying evidence.")
         st.dataframe(build_risk_decomposition_table(ctx), width="stretch", hide_index=True)
 
     with tabs[1]:
-        st.subheader("Multi-model tail-risk challenge")
+        _section_header(
+            "TAIL MODEL STACK",
+            "Production benchmarks and governed challengers",
+            f"{len(intel['tail_models'])} complementary estimators separate empirical history, parametric tails, conditional volatility, regimes and outcome weighting.",
+        )
         t1, t2, t3, t4 = st.columns(4)
         t1.metric("Worst VaR", fmt_pct(intel["conservative_var"]))
         t2.metric("Worst ES", fmt_pct(intel["conservative_es"]))
@@ -2172,7 +2382,7 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
         st.dataframe(display_models, width="stretch", hide_index=True)
         render_tail_model_chart(intel)
 
-        st.subheader("Distribution & path diagnostics")
+        _section_header("DISTRIBUTION", "Path and asymmetry diagnostics", "Realized distribution statistics contextualize model output without replacing tail controls.")
         diagnostics = intel["distribution"]
         drawdown = intel["drawdown"]
         diag_table = pd.DataFrame([
@@ -2208,11 +2418,68 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
                     st.caption(f"Threshold stability: {evt.get('stability', {}).get('status', 'N/A')}")
                     st.dataframe(stability_table, width="stretch", hide_index=True)
 
-        with st.expander("Legacy Monte Carlo distribution", expanded=False):
+        with st.expander("Monte Carlo distribution evidence", expanded=False):
             render_return_distribution(ctx)
 
     with tabs[2]:
-        st.subheader("Forward, historical and reverse stress testing")
+        _section_header(
+            "RESEARCH LAB",
+            "Conditional volatility, nonlinear regimes and uncertainty",
+            "Advanced challengers remain visibly separated from validated benchmarks until their outcome gates pass.",
+        )
+        advanced = intel.get("advanced", {})
+        gjr = advanced.get("gjr", {})
+        uncertainty = advanced.get("uncertainty", {})
+        benchmark = advanced.get("benchmark", {})
+        gfit = gjr.get("fit", {})
+        gparams = gfit.get("parameters", {})
+        a1, a2, a3, a4, a5 = st.columns(5)
+        a1.metric("GJR-GARCH", gjr.get("status", "N/A"))
+        a2.metric("Persistence", fmt_num(gfit.get("persistence")))
+        a3.metric("Student-t df", fmt_num(gparams.get("degrees_of_freedom")))
+        a4.metric("Bootstrap confidence", uncertainty.get("status", "N/A"))
+        a5.metric("OOS ensemble", benchmark.get("status", "N/A"))
+        catalog = advanced.get("catalog", pd.DataFrame())
+        if isinstance(catalog, pd.DataFrame) and not catalog.empty:
+            st.dataframe(catalog, width="stretch", hide_index=True)
+
+        left, right = st.columns([1.12, 0.88])
+        with left:
+            render_uncertainty_chart(intel)
+        with right:
+            render_regime_mix(intel)
+        render_nonlinear_scenario_chart(intel)
+
+        weights = benchmark.get("weight_table", pd.DataFrame())
+        with st.expander("Outcome-weighted benchmark governance", expanded=False):
+            if isinstance(weights, pd.DataFrame) and not weights.empty:
+                display_weights = _format_risk_table(
+                    weights,
+                    ["Exception rate", "Expected rate", "Conditional p-value", "Weight", "VaR", "ES"],
+                )
+                st.dataframe(display_weights, width="stretch", hide_index=True)
+                st.caption(str(benchmark.get("method", "")))
+            else:
+                st.info("The ensemble remains blocked until two benchmark histories clear their validation gate.")
+
+        factors = advanced.get("factors", {})
+        with st.expander("Multi-factor decomposition contract", expanded=False):
+            if factors.get("ok"):
+                f1, f2, f3 = st.columns(3)
+                f1.metric("Factor R²", fmt_pct(factors.get("r_squared")))
+                f2.metric("Systematic vol", fmt_pct(factors.get("factor_volatility")))
+                f3.metric("Idiosyncratic vol", fmt_pct(factors.get("idiosyncratic_volatility")))
+                st.dataframe(factors.get("table", pd.DataFrame()), width="stretch", hide_index=True)
+            else:
+                st.info(factors.get("reason", "Factor matrix unavailable."))
+                st.dataframe(factors.get("contract", pd.DataFrame()), width="stretch", hide_index=True)
+
+    with tabs[3]:
+        _section_header(
+            "SCENARIO ENGINE",
+            "Forward, historical and reverse stress testing",
+            "Deterministic loss controls are paired with nonlinear research paths and liquidity overlays.",
+        )
         p = intel["position"]
         r1, r2, r3, r4 = st.columns(4)
         r1.metric("Shock to loss limit", fmt_pct(p["shock_to_loss_limit"]))
@@ -2228,7 +2495,7 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
         )
         st.dataframe(display_scenarios, width="stretch", hide_index=True)
         render_scenario_chart(intel)
-        with st.expander("Legacy deterministic price-level stress", expanded=False):
+        with st.expander("Deterministic price-level stress evidence", expanded=False):
             legacy_stress = ctx["stress_tests"].copy()
             if not legacy_stress.empty:
                 legacy_stress["Prix stressé"] = legacy_stress["Prix stressé"].map(fmt_price)
@@ -2236,8 +2503,8 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
                     legacy_stress[column] = legacy_stress[column].map(fmt_pct)
                 st.dataframe(legacy_stress, width="stretch", hide_index=True)
 
-    with tabs[3]:
-        st.subheader("Liquidity-adjusted position control")
+    with tabs[4]:
+        _section_header("LIQUIDITY", "Liquidity-adjusted position control", "Capacity, impact and sizing remain disabled rather than imputed when source fields are absent.")
         liquidity = intel["liquidity"]
         l1, l2, l3, l4 = st.columns(4)
         l1.metric("Liquidity status", liquidity.get("status", "N/A"))
@@ -2262,7 +2529,7 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
         else:
             st.warning("Volume absent or insufficient: capacity and market-impact controls are disabled, not imputed.")
 
-        st.subheader("Binding notional limits")
+        _section_header("CAPITAL ALLOCATION", "Binding notional limits", "The strictest approved stop or Expected Shortfall constraint determines position capacity.")
         sizing = p["table"].copy()
         sizing = _format_risk_table(sizing, ["Usage"], ["Value"])
         st.dataframe(sizing, width="stretch", hide_index=True)
@@ -2272,8 +2539,8 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
         s3.metric("Binding limit", "N/A" if p["binding_notional_limit"] is None else f"${p['binding_notional_limit']:,.0f}")
         st.caption("Capacity uses median dollar volume and the selected maximum ADV participation. The sizing limit binds to the more conservative of stop-loss and ES capital.")
 
-    with tabs[4]:
-        st.subheader("Model validation & outcome analysis")
+    with tabs[5]:
+        _section_header("MODEL GOVERNANCE", "Validation and outcome analysis", "Coverage, independence, specification risk and challenger state are visible in one audit trail.")
         summary = intel["backtests"].get("summary", pd.DataFrame()).copy()
         if summary.empty:
             st.warning("At least 80 daily returns are required for rolling out-of-sample VaR validation.")
@@ -2285,18 +2552,21 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
             "Kupiec tests unconditional coverage; Christoffersen tests exception independence. "
             "LIMITED means the out-of-sample window is too short for a strong validation claim."
         )
-        st.subheader("Specification risk register")
+        _section_header("SPECIFICATION", "Model risk register", "Known limitations are paired with an explicit mitigation or a data gate.")
         specification = pd.DataFrame([
             {"Model / control": "Historical simulation", "Primary limitation": "History may omit future regimes", "Mitigation": "Student-t, FHS, EVT and stress comparison"},
             {"Model / control": "Gaussian VaR", "Primary limitation": "Thin tails and square-root horizon assumption", "Mitigation": "Never used alone; compare ES dispersion"},
             {"Model / control": "Student-t", "Primary limitation": "IID fitted innovations", "Mitigation": "EWMA-filtered history and outcome tests"},
+            {"Model / control": "GJR-GARCH-t FHS", "Primary limitation": "Parameter instability on short histories", "Mitigation": "Stationarity gate, bootstrap intervals and challenger-only role"},
+            {"Model / control": "Markov regimes", "Primary limitation": "State transitions are scenario assumptions", "Mitigation": "Research-only label and visible regime occupancy"},
+            {"Model / control": "EVT", "Primary limitation": "Few tail exceedances and threshold sensitivity", "Mitigation": "Adaptive threshold, 80-draw bootstrap and stability panel"},
             {"Model / control": "Liquidity impact", "Primary limitation": "Proxy without order-book/spread data", "Mitigation": "Explicit ADV participation; treat as overlay"},
             {"Model / control": "Single-position view", "Primary limitation": "No cross-asset diversification/concentration", "Mitigation": "Use Portfolio Lab for aggregate exposures"},
         ])
         st.dataframe(specification, width="stretch", hide_index=True)
 
-    with tabs[5]:
-        st.subheader("Market structure, barriers and simulated path geometry")
+    with tabs[6]:
+        _section_header("MARKET GEOMETRY", "Barriers and simulated path structure", "Trading-plan levels are challenged against the same horizon and path evidence used by the risk engine.")
         render_risk_map_chart(ticker, price_data, ctx)
         b_msg_type, b_msg = barrier_comment(ctx)
         {"success": st.success, "warning": st.warning, "error": st.error}.get(b_msg_type, st.info)(b_msg)
@@ -2313,8 +2583,61 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
                 "Expected return": fmt_pct(ctx["expected_return"]),
             }]), width="stretch", hide_index=True)
 
-    with tabs[6]:
-        st.subheader("Data lineage, assumptions and export")
+    with tabs[7]:
+        _section_header(
+            "DATA FABRIC",
+            "Credential-aware institutional enrichment",
+            "Each adapter is already wired: configuring the named secret activates its loader without a code change.",
+        )
+        configured_count = int((data_readiness["State"] == "CONFIGURED").sum())
+        ready_count = int((data_readiness["State"] == "READY FOR KEY").sum())
+        d1, d2, d3, d4 = st.columns(4)
+        d1.metric("Fabric state", enrichment.get("status", "READY"))
+        d2.metric("Configured feeds", str(configured_count))
+        d3.metric("Ready for key", str(ready_count))
+        d4.metric("Active enrichment", enrichment.get("provider") or "BASE OHLCV")
+        st.dataframe(
+            data_readiness[["Capability", "State", "Provider", "Activation"]],
+            width="stretch",
+            hide_index=True,
+        )
+        with st.expander("Capability coverage & engine hooks", expanded=False):
+            st.dataframe(
+                data_readiness[["Capability", "Coverage", "Engine hook"]],
+                width="stretch",
+                hide_index=True,
+            )
+
+        quote = enrichment.get("quote", {}) or {}
+        options = enrichment.get("options", {}) or {}
+        if quote:
+            _section_header("EXECUTION MARK", "Underlying quote and spread", "Entitled bid/ask data supersedes proxy-only execution diagnostics when available.")
+            q1, q2, q3, q4 = st.columns(4)
+            q1.metric("Bid", fmt_price(quote.get("bid")))
+            q2.metric("Ask", fmt_price(quote.get("ask")))
+            q3.metric("Mid", fmt_price(quote.get("mid")))
+            q4.metric("Quoted spread", fmt_pct_adaptive(quote.get("spread_pct")))
+        if options:
+            _section_header("IMPLIED RISK", "Options surface snapshot", f"Nearest eligible expiry: {enrichment.get('expiration', 'N/A')}")
+            o1, o2, o3, o4, o5 = st.columns(5)
+            o1.metric("Contracts", f"{int(options.get('contracts') or 0):,}")
+            o2.metric("ATM IV", fmt_pct(options.get("atm_iv")))
+            o3.metric("Put / call OI", fmt_num(options.get("put_call_oi")))
+            o4.metric("25Δ put-call IV", fmt_pct(options.get("risk_reversal_25d")))
+            o5.metric("Greeks coverage", fmt_pct(options.get("greeks_coverage")))
+        if not quote and not options:
+            st.info("The base OHLCV engine is active. Add one of the displayed secrets to unlock executable-spread and implied-risk enrichment automatically.")
+        attempts = enrichment.get("attempts", [])
+        if attempts:
+            with st.expander("Sanitized adapter diagnostics", expanded=False):
+                for attempt in attempts:
+                    st.caption(f"• {attempt}")
+
+        _section_header("FUTURE INPUTS", "Portfolio and factor contracts", "The computation hooks are present; only synchronized positions, factors or depth snapshots are missing.")
+        st.dataframe(advanced.get("factors", {}).get("contract", pd.DataFrame()), width="stretch", hide_index=True)
+
+    with tabs[8]:
+        _section_header("AUDIT TRAIL", "Data lineage, assumptions and export", "Reproduce the decision with source provenance, normalized controls and a machine-readable manifest.")
         q1, q2, q3, q4 = st.columns(4)
         q1.metric("Data quality", fmt_score(intel["data_quality"].get("score")))
         q2.metric("Quality status", intel["data_quality"].get("status", "N/A"))
@@ -2343,6 +2666,17 @@ def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict
             "validation_status": intel["validation_status"],
             "parameters": intel["parameters_dict"],
             "provider": intel["data_quality"].get("provider", {}),
+            "data_fabric": {
+                "status": enrichment.get("status"),
+                "provider": enrichment.get("provider"),
+                "expiration": enrichment.get("expiration"),
+            },
+            "research": {
+                "gjr_garch": advanced.get("gjr", {}).get("status"),
+                "bootstrap_confidence": advanced.get("uncertainty", {}).get("status"),
+                "oos_benchmark": advanced.get("benchmark", {}).get("status"),
+                "factor_model": advanced.get("factors", {}).get("status"),
+            },
             "risk": {
                 "conservative_var": intel["conservative_var"],
                 "conservative_es": intel["conservative_es"],

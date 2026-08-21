@@ -1,5 +1,9 @@
 # Core runtime. Neural frameworks are intentionally isolated in requirements-ml.txt.
 beautifulsoup4
+# Official institutional market-data clients used by the credential-aware
+# routers. ThetaData's direct v3 client is vendor-limited to Python 3.12+.
+databento>=0.82,<0.83
+thetadata>=1.0.9,<1.1; python_version >= "3.12"
 numpy
 pandas
 plotly
