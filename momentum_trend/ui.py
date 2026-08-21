@@ -159,13 +159,24 @@ def render_momentum_trend_terminal(
         st.error(f"Momentum / Trend engine unavailable: {exc}")
         return None
 
+    data_context = price_data.attrs.get("data_context", {}) if hasattr(price_data, "attrs") else {}
+    provider = str(data_context.get("provider") or "Inherited terminal feed")
+    recency = str(data_context.get("recency") or "UNSPECIFIED")
+    provider_status = str(data_context.get("status") or "unknown").upper()
+    fallback_note = " · FALLBACK" if data_context.get("fallback_used") else ""
+
     _command_bar(result)
+    st.caption(
+        f"Market data · {provider} · {provider_status} · {recency}{fallback_note}. "
+        "The model never upgrades reference or delayed data to real-time status."
+    )
     _kpis(result)
     _decision_ticket(result)
     status_pills = [
         f'<span class="mt-pill {_tone(result.regime.confidence)}">REGIME {result.regime.confidence:.0%}</span>',
         f'<span class="mt-pill {_tone(result.ensemble.confidence)}">ENSEMBLE {result.ensemble.confidence:.0%}</span>',
         f'<span class="mt-pill {_tone(result.quality.quality_score/100)}">DATA {result.quality.quality_score:.0f}/100</span>',
+        f'<span class="mt-pill">FEED {escape(provider.upper())}</span>',
         f'<span class="mt-pill {"warn" if result.regime.transition_risk>.35 else "good"}">TRANSITION {result.regime.transition_risk:.0%}</span>',
         f'<span class="mt-pill">AS OF {result.as_of:%Y-%m-%d %H:%M}</span>',
     ]

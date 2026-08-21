@@ -6,6 +6,8 @@ plotly
 requests
 scikit-learn>=1.5,<2.0
 scipy
-statsmodels
+# 0.14.0 imports SciPy's removed private `_lazywhere`; 0.14.5+ vendors the
+# compatibility path and remains compatible with current SciPy releases.
+statsmodels>=0.14.5,<0.16
 streamlit
 yfinance

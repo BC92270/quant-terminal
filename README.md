@@ -37,8 +37,15 @@ métier nouvelle doit vivre dans les packages de domaine :
 | Recherche ML | `ml_lab/` |
 | Momentum et tendance | `momentum_trend/` |
 | Monte Carlo et dérivés | `monte_carlo/` |
+| Contrôle des risques | `risk_control/` |
 | Comité Quant AI | `quant_ai/` |
 | Intelligence géopolitique | `worldmonitor/` |
+
+Le routeur multi-actifs s'appuie sur `security_master.py` pour fusionner le
+catalogue éditorial avec les identités fournisseur mises en cache dans SQLite.
+Une synchronisation SEC peut être lancée avec
+`python scripts/sync_security_master.py` ; OpenFIGI reste la couche de
+symbologie mondiale optionnelle.
 
 Les anciens renderers encore requis sont isolés dans `legacy/`. Ils ne sont pas
 une destination autorisée pour de nouvelles fonctionnalités. Voir
@@ -68,6 +75,12 @@ pas installé.
 - Les snapshots de référence versionnés doivent vivre sous le package qui les
   consomme, dans un répertoire `data/` clairement identifié.
 
+Copiez les seules variables utiles depuis `.env.providers.example`, puis
+contrôlez la couverture sans exposer les valeurs avec
+`python scripts/audit_data_providers.py`. Les flux historiques routés utilisent
+une passerelle explicite Twelve Data → Alpha Vantage → source publique adaptée
+à l'actif → Yahoo ; Options utilise ThetaData → Massive → Tradier → Yahoo.
+
 ## Documentation
 
 - `docs/ARCHITECTURE.md` : frontières, flux et règles de dépendances.
@@ -76,3 +89,6 @@ pas installé.
 - `docs/WORLDMONITOR_INSTITUTIONAL_RESEARCH.md` : sources et trajectoire quant.
 - `docs/QUANT_AI_ARCHITECTURE.md` : architecture du comité Quant AI.
 - `docs/fixed_income_runbook.md` : exploitation du cœur fixed income.
+- `docs/SECURITY_MASTER.md` : identités, fournisseurs et synchronisation du catalogue.
+- `docs/DATA_PROVIDERS.md` : matrice par section, clés optionnelles, fallbacks et provenance.
+- `docs/RISK_MONITOR.md` : modèles, contrôles, validation, liquidité et limites du Risk Monitor.

@@ -10,17 +10,21 @@
 # Intégration app.py :
 # from risk_monitor import render_risk_monitor_v2
 #
-# Puis :
-# def render_risk_monitor_mode(ticker, price_data, analysis):
-#     render_risk_monitor_v2(ticker=ticker, price_data=price_data, analysis=analysis)
+# Puis appeler directement :
+# render_risk_monitor_v2(ticker=ticker, price_data=price_data, analysis=analysis)
 # ============================================================
 
 from __future__ import annotations
+
+import html
+import json
 
 import numpy as np
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
+
+from risk_control import RiskParameters, build_institutional_risk_snapshot
 
 
 # ============================================================
@@ -97,6 +101,26 @@ def fmt_pp(value):
     if value is None:
         return "N/A"
     return f"{value * 100:.2f} pts"
+
+
+def fmt_pct_adaptive(value):
+    value = safe_float(value)
+    if value is None:
+        return "N/A"
+    if value != 0 and abs(value) < 0.0001:
+        return "<0.01%" if value > 0 else ">-0.01%"
+    if abs(value) < 0.01:
+        return f"{value:.3%}"
+    return f"{value:.2%}"
+
+
+def fmt_days(value):
+    value = safe_float(value)
+    if value is None:
+        return "N/A"
+    if 0 < value < 0.01:
+        return "<0.01 d"
+    return f"{value:.2f} d"
 
 
 def dataframe_has_columns(df: pd.DataFrame, cols: list[str]) -> bool:
@@ -246,7 +270,8 @@ def select_mc_row(analysis: dict, horizon: int) -> tuple[pd.Series | dict, pd.Da
     match = table[table["Horizon"].astype(str) == horizon_label]
 
     if match.empty:
-        return table.iloc[0], table
+        # Never label a row from another horizon as if it matched the request.
+        return {}, table
 
     return match.iloc[0], table
 
@@ -1655,7 +1680,7 @@ def render_risk_map_chart(ticker: str, price_data: pd.DataFrame, ctx: dict):
         zeroline=False,
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def render_mc_risk_cone(ctx: dict):
@@ -1781,7 +1806,7 @@ def render_mc_risk_cone(ctx: dict):
     fig.update_yaxes(gridcolor="rgba(148, 163, 184, 0.18)")
     fig.update_xaxes(showgrid=False)
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def render_return_distribution(ctx: dict):
@@ -1833,332 +1858,509 @@ def render_return_distribution(ctx: dict):
     fig.update_xaxes(tickformat=".0%")
     fig.update_yaxes(gridcolor="rgba(148, 163, 184, 0.18)")
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
+
+
+# ============================================================
+# INSTITUTIONAL VIEWS
+# ============================================================
+
+def _risk_css():
+    st.markdown(
+        """
+        <style>
+        .risk-hero{border:1px solid rgba(56,189,248,.24);border-radius:16px;padding:14px 17px;
+          background:linear-gradient(115deg,rgba(4,17,33,.98),rgba(8,28,50,.93) 58%,rgba(20,13,42,.90));
+          box-shadow:inset 0 0 42px rgba(56,189,248,.045),0 12px 38px rgba(0,0,0,.20);margin:2px 0 10px}
+        .risk-kicker{font-size:.67rem;font-weight:900;letter-spacing:.19em;text-transform:uppercase;color:#67e8f9}
+        .risk-title{font-size:1.34rem;font-weight:950;color:#f8fafc;margin-top:3px;letter-spacing:-.025em}
+        .risk-sub{font-size:.77rem;line-height:1.45;color:#9fb4c9;margin-top:4px;max-width:1050px}
+        .risk-chip{display:inline-block;margin:9px 6px 0 0;padding:3px 8px;border-radius:999px;
+          border:1px solid rgba(103,232,249,.20);background:rgba(2,10,22,.55);color:#cbd5e1;font-size:.64rem;font-weight:800}
+        .risk-command{border-left:3px solid #38bdf8;background:rgba(8,23,42,.72);padding:9px 12px;
+          border-radius:3px 11px 11px 3px;margin:8px 0 10px;color:#dbeafe;font-size:.78rem}
+        .risk-status-green{color:#34d399}.risk-status-amber{color:#fbbf24}.risk-status-red{color:#fb7185}
+        div[data-testid="stMetric"]{border:1px solid rgba(91,198,255,.16)!important;
+          background:linear-gradient(180deg,rgba(8,21,40,.78),rgba(4,12,25,.75))!important;
+          border-radius:13px!important;padding:10px 12px!important;min-height:86px!important}
+        div[data-testid="stMetric"] label{font-size:.69rem!important;letter-spacing:.035em!important;text-transform:uppercase!important}
+        div[data-testid="stMetricValue"]{font-size:1.17rem!important}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _plot_layout(title: str, height: int = 420) -> dict:
+    return {
+        "height": height,
+        "title": title,
+        "template": "plotly_dark",
+        "margin": dict(l=38, r=24, t=65, b=40),
+        "paper_bgcolor": "rgba(0,0,0,0)",
+        "plot_bgcolor": "rgba(6,15,28,.58)",
+        "font": dict(color="#dbeafe"),
+        "hovermode": "x unified",
+    }
+
+
+def render_risk_radar(ctx: dict):
+    labels = ["Volatility", "Tail", "Stop", "Drawdown", "Asymmetry", "Data risk"]
+    values = [
+        ctx["volatility_risk_score"],
+        ctx["tail_risk_score"],
+        ctx["stop_risk_score"],
+        ctx["drawdown_risk_score"],
+        ctx["asymmetry_risk_score"],
+        100 - ctx["data_confidence_score"],
+    ]
+    fig = go.Figure(go.Scatterpolar(
+        r=values + values[:1], theta=labels + labels[:1], fill="toself",
+        line=dict(color="#38bdf8", width=2), fillcolor="rgba(56,189,248,.18)",
+        hovertemplate="%{theta}: %{r:.0f}/100<extra></extra>",
+    ))
+    fig.update_layout(
+        **_plot_layout("Risk factor radar · score élevé = risque élevé", 410),
+        polar=dict(
+            bgcolor="rgba(0,0,0,0)",
+            radialaxis=dict(range=[0, 100], gridcolor="rgba(148,163,184,.18)", tickfont=dict(size=9)),
+            angularaxis=dict(gridcolor="rgba(148,163,184,.18)"),
+        ),
+        showlegend=False,
+    )
+    st.plotly_chart(fig, width="stretch")
+
+
+def render_tail_model_chart(intel: dict):
+    table = intel["tail_models"].dropna(subset=["VaR", "ES"])
+    if table.empty:
+        st.info("Comparaison multi-modèles indisponible.")
+        return
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=table["Model"], y=table["VaR"], name="VaR", marker_color="#38bdf8"))
+    fig.add_trace(go.Bar(x=table["Model"], y=table["ES"], name="Expected Shortfall", marker_color="#c084fc"))
+    fig.update_layout(**_plot_layout("Dispersion des estimations de queue", 420), barmode="group", yaxis_tickformat=".1%")
+    st.plotly_chart(fig, width="stretch")
+
+
+def render_drawdown_regime_chart(intel: dict):
+    drawdown = intel["drawdown"].get("series", pd.Series(dtype=float))
+    vol = intel["regime"].get("series_20d", pd.Series(dtype=float))
+    if drawdown.empty and vol.empty:
+        st.info("Historique insuffisant pour les régimes et drawdowns.")
+        return
+    fig = go.Figure()
+    if not drawdown.empty:
+        fig.add_trace(go.Scatter(
+            x=drawdown.index, y=drawdown, name="Drawdown", fill="tozeroy",
+            line=dict(color="#fb7185", width=1.6), fillcolor="rgba(251,113,133,.15)",
+        ))
+    if not vol.empty:
+        fig.add_trace(go.Scatter(
+            x=vol.index, y=vol, name="Realized vol 20D", yaxis="y2",
+            line=dict(color="#fbbf24", width=1.7),
+        ))
+    layout = _plot_layout("Drawdown path & realized-volatility regime", 440)
+    layout.update(
+        yaxis=dict(title="Drawdown", tickformat=".0%", gridcolor="rgba(148,163,184,.14)"),
+        yaxis2=dict(title="Volatility", tickformat=".0%", overlaying="y", side="right", showgrid=False),
+    )
+    fig.update_layout(**layout)
+    st.plotly_chart(fig, width="stretch")
+
+
+def render_scenario_chart(intel: dict):
+    table = intel["scenarios"]
+    if table.empty:
+        st.info("Scénarios indisponibles.")
+        return
+    colors = ["#fb7185" if value == "YES" else "#38bdf8" for value in table["Limit breached"]]
+    fig = go.Figure(go.Bar(
+        x=table["Scenario"], y=table["P&L / NAV"], marker_color=colors,
+        text=table["P&L / NAV"].map(lambda value: f"{value:.1%}"), textposition="outside",
+        hovertemplate="%{x}<br>P&L / NAV %{y:.2%}<extra></extra>",
+    ))
+    limit = intel["parameters"].loss_limit_pct
+    fig.add_hline(y=-limit, line_color="#f43f5e", line_dash="dash", annotation_text=f"Loss limit -{limit:.1%}")
+    fig.update_layout(**_plot_layout("Scenario loss map · position + liquidity overlay", 455), yaxis_tickformat=".1%")
+    st.plotly_chart(fig, width="stretch")
+
+
+def render_backtest_chart(intel: dict):
+    series = intel["backtests"].get("series", pd.DataFrame())
+    if series.empty:
+        st.info("Backtest VaR indisponible : historique insuffisant.")
+        return
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=series.index, y=series["Return"], name="Actual return", mode="markers", marker=dict(size=4, color="#94a3b8")))
+    for model, color in (("Historical VaR", "#38bdf8"), ("EWMA Gaussian VaR", "#c084fc")):
+        fig.add_trace(go.Scatter(x=series.index, y=series[model], name=model, line=dict(color=color, width=1.5)))
+        exceptions = series[series[f"{model} exception"]]
+        fig.add_trace(go.Scatter(
+            x=exceptions.index, y=exceptions["Return"], name=f"{model} breach", mode="markers",
+            marker=dict(size=8, color="#fb7185", symbol="x"), visible="legendonly" if "EWMA" in model else True,
+        ))
+    fig.update_layout(**_plot_layout("Daily VaR exceptions · out-of-sample outcome analysis", 470), yaxis_tickformat=".1%")
+    st.plotly_chart(fig, width="stretch")
+
+
+def _format_risk_table(table: pd.DataFrame, percent_columns: list[str] | None = None, money_columns: list[str] | None = None) -> pd.DataFrame:
+    result = table.copy()
+    for column in percent_columns or []:
+        if column in result:
+            result[column] = result[column].map(fmt_pct)
+    for column in money_columns or []:
+        if column in result:
+            result[column] = result[column].map(lambda value: "N/A" if safe_float(value) is None else f"${safe_float(value):,.0f}")
+    return result
+
+
+def _institutional_export(ctx: dict, intel: dict) -> pd.DataFrame:
+    base = build_export_summary(ctx)
+    extra = [
+        ("Control status", intel["control_status"]),
+        ("Validation status", intel["validation_status"]),
+        ("Selected confidence", fmt_pct(intel["parameters"].confidence)),
+        ("Position notional", f"${intel['parameters'].position_notional:,.0f}"),
+        ("Portfolio NAV", f"${intel['parameters'].portfolio_nav:,.0f}"),
+        ("Position side", intel["parameters"].side),
+        ("Loss limit", fmt_pct(intel["parameters"].loss_limit_pct)),
+        ("Conservative VaR", fmt_pct(intel["conservative_var"])),
+        ("Conservative ES", fmt_pct(intel["conservative_es"])),
+        ("ES capital", f"${intel['position']['es_dollars']:,.0f}"),
+        ("Model ES dispersion", fmt_pct(intel["model_dispersion_es"])),
+        ("Liquidity status", intel["liquidity"].get("status", "N/A")),
+        ("Days to liquidate", fmt_num(intel["liquidity"].get("days_to_liquidate"))),
+        ("Volatility regime", intel["regime"].get("label", "N/A")),
+        ("Current drawdown", fmt_pct(intel["drawdown"].get("current_drawdown"))),
+        ("Data quality", fmt_score(intel["data_quality"].get("score"))),
+        ("Provider", intel["data_quality"].get("provider", {}).get("provider", "Unknown")),
+    ]
+    return pd.concat([base, pd.DataFrame(extra, columns=["Champ", "Valeur"])], ignore_index=True)
 
 
 # ============================================================
 # MAIN RENDER
 # ============================================================
 
-def render_risk_monitor_v2(
-    ticker: str,
-    price_data: pd.DataFrame,
-    analysis: dict,
-):
-    st.subheader(f"Risk Monitor V2 — {ticker}")
-
-    if not isinstance(analysis, dict) or not analysis:
-        st.error("Analyse indisponible : le dictionnaire analysis est vide.")
-        return
-
-    selected_horizon = st.selectbox(
-        "Horizon de risque",
-        [7, 30, 90],
-        index=1,
-        key=f"risk_monitor_v2_horizon_{ticker}"
+def render_risk_monitor_v2(ticker: str, price_data: pd.DataFrame, analysis: dict):
+    _risk_css()
+    analysis = analysis if isinstance(analysis, dict) else {}
+    safe_ticker = html.escape(str(ticker))
+    st.markdown(
+        f"""
+        <div class="risk-hero">
+          <div class="risk-kicker">INSTITUTIONAL RISK CONTROL · LIVE WORKBENCH</div>
+          <div class="risk-title">{safe_ticker} / Multi-model Risk Monitor</div>
+          <div class="risk-sub">Mesure, challenge et contrôle du risque de marché, de queue, de modèle,
+          de liquidité et de position. Toutes les sorties sont recalculées à partir des hypothèses affichées.</div>
+          <span class="risk-chip">VaR + EXPECTED SHORTFALL</span><span class="risk-chip">EWMA / STUDENT-t / FHS</span>
+          <span class="risk-chip">REVERSE STRESS</span><span class="risk-chip">LIQUIDITY CAPACITY</span>
+          <span class="risk-chip">OUTCOME ANALYSIS</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-    ctx = build_risk_context_v2(
-        ticker=ticker,
-        price_data=price_data,
-        analysis=analysis,
-        horizon=selected_horizon,
-    )
-
-    msg_type, msg = risk_message(ctx)
-
-    # ------------------------------------------------------------
-    # Executive risk tape
-    # ------------------------------------------------------------
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
-
-    c1.metric("État risque", ctx["risk_state_label"])
-    c2.metric("Score composite", fmt_score(ctx["overall_risk_score"]))
-    c3.metric("Budget risque", ctx["risk_budget_label"])
-    c4.metric("Risque principal", main_risk_driver(ctx))
-    c5.metric("Prob. stop", fmt_pct(ctx["prob_stop_short"]))
-    c6.metric("MC ES95", fmt_pct(ctx["mc_es_95"]))
-
-    if msg_type == "success":
-        st.success(msg)
-    elif msg_type == "warning":
-        st.warning(msg)
-    elif msg_type == "error":
-        st.error(msg)
-    else:
-        st.info(msg)
-
-    st.caption(f"Raison moteur : {ctx['risk_state_reason']}")
-
-    st.caption(
-        f"Prix {fmt_price(ctx['price'])} · "
-        f"Vol {fmt_pct(ctx['volatility'])} · "
-        f"ATR% {fmt_pct(ctx['atr_pct'])} · "
-        f"Max DD {fmt_pct(ctx['max_drawdown'])} · "
-        f"Target1 {fmt_pct(ctx['prob_target_1'])} · "
-        f"Stop court {fmt_pct(ctx['prob_stop_short'])} · "
-        f"Espérance MC {fmt_pct(ctx['expected_return'])}"
-    )
-
-    tabs = st.tabs([
-        "Executive",
-        "VaR / ES",
-        "Barrier Risk",
-        "Stress Tests",
-        "Risk Map",
-        "MC Cone",
-        "Export",
-    ])
-
-    # ------------------------------------------------------------
-    # Executive
-    # ------------------------------------------------------------
-    with tabs[0]:
-        st.subheader("Risk Decomposition Matrix")
-
-        st.caption("Lecture : dans cette table, plus le score est élevé, plus le risque est élevé.")
-
-        st.dataframe(
-            build_risk_decomposition_table(ctx),
-            use_container_width=True,
-            hide_index=True,
-        )
-
-        st.subheader("Position Risk / Sizing Guardrail")
-
-        st.dataframe(
-            build_guardrail_table(ctx),
-            use_container_width=True,
-            hide_index=True,
-        )
-
-        k1, k2, k3, k4, k5 = st.columns(5)
-        k1.metric("Vol Risk", fmt_score(ctx["volatility_risk_score"]))
-        k2.metric("Tail Risk", fmt_score(ctx["tail_risk_score"]))
-        k3.metric("Stop Risk", fmt_score(ctx["stop_risk_score"]))
-        k4.metric("Asym Risk", fmt_score(ctx["asymmetry_risk_score"]))
-        k5.metric("Data Confidence", fmt_score(ctx["data_confidence_score"]))
-
-    # ------------------------------------------------------------
-    # VaR / ES
-    # ------------------------------------------------------------
-    with tabs[1]:
-        st.subheader("VaR / Expected Shortfall")
-
-        v1, v2, v3, v4 = st.columns(4)
-        v1.metric("MC VaR 95", fmt_pct(ctx["mc_var_95"]))
-        v2.metric("MC ES 95", fmt_pct(ctx["mc_es_95"]))
-        v3.metric("Hist VaR 95", fmt_pct(ctx["hist_var_95"]))
-        v4.metric("Hist ES 95", fmt_pct(ctx["hist_es_95"]))
-
-        st.dataframe(
-            build_var_es_table(ctx),
-            use_container_width=True,
-            hide_index=True,
-        )
-
-        st.subheader("Distribution des rendements simulés")
-
-        render_return_distribution(ctx)
-
-    # ------------------------------------------------------------
-    # Barrier Risk
-    # ------------------------------------------------------------
-    with tabs[2]:
-        st.subheader("Stop / Target Barrier Risk")
-
-        b_msg_type, b_msg = barrier_comment(ctx)
-
-        if b_msg_type == "success":
-            st.success(b_msg)
-        elif b_msg_type == "warning":
-            st.warning(b_msg)
-        elif b_msg_type == "error":
-            st.error(b_msg)
-        else:
-            st.info(b_msg)
+    with st.expander("Risk assumptions & control limits", expanded=True):
+        a1, a2, a3, a4 = st.columns(4)
+        with a1:
+            selected_horizon = st.selectbox("Holding horizon", [1, 5, 10, 20, 30, 60, 90], index=2, key=f"risk_horizon_{ticker}")
+        with a2:
+            confidence_label = st.selectbox("Tail confidence", ["95.0%", "97.5%", "99.0%"], index=1, key=f"risk_confidence_{ticker}")
+        with a3:
+            side = st.selectbox("Position side", ["Long", "Short"], index=0, key=f"risk_side_{ticker}")
+        with a4:
+            ewma_lambda = st.selectbox("EWMA decay", [0.90, 0.94, 0.97], index=1, key=f"risk_ewma_{ticker}")
 
         b1, b2, b3, b4 = st.columns(4)
-        b1.metric("Stop court", fmt_pct(ctx["prob_stop_short"]))
-        b2.metric("Target 1", fmt_pct(ctx["prob_target_1"]))
-        b3.metric("Spread T1 / Stop", fmt_pp(ctx["asymmetry"]))
-        b4.metric("Expected Return", fmt_pct(ctx["expected_return"]))
+        with b1:
+            portfolio_nav = st.number_input("Portfolio NAV ($)", min_value=1_000.0, value=1_000_000.0, step=50_000.0, key=f"risk_nav_{ticker}")
+        with b2:
+            position_notional = st.number_input("Position notional ($)", min_value=0.0, value=100_000.0, step=10_000.0, key=f"risk_notional_{ticker}")
+        with b3:
+            loss_limit_bps = st.number_input("Loss limit (bp NAV)", min_value=1.0, max_value=10_000.0, value=100.0, step=10.0, key=f"risk_limit_{ticker}")
+        with b4:
+            adv_participation_pct = st.number_input("Max ADV participation (%)", min_value=0.1, max_value=100.0, value=10.0, step=1.0, key=f"risk_adv_{ticker}")
 
-        st.dataframe(
-            build_barrier_table(ctx),
-            use_container_width=True,
-            hide_index=True,
-        )
+        c1, c2, c3 = st.columns([1, 1, 2])
+        with c1:
+            volatility_stress = st.number_input("Volatility shock (×)", min_value=1.0, max_value=10.0, value=2.0, step=0.25, key=f"risk_vol_stress_{ticker}")
+        with c2:
+            custom_shock_pct = st.number_input("Custom asset shock (%)", min_value=-99.0, max_value=500.0, value=-10.0, step=1.0, key=f"risk_custom_shock_{ticker}")
+        with c3:
+            st.caption("Sizing and liquidity are scenario controls, not personalized advice. The impact estimate is an explicit square-root proxy, not an executable quote.")
 
-    # ------------------------------------------------------------
-    # Stress Tests
-    # ------------------------------------------------------------
-    with tabs[3]:
-        st.subheader("Stress Test Dashboard")
+    confidence = {"95.0%": 0.95, "97.5%": 0.975, "99.0%": 0.99}[confidence_label]
+    parameters = RiskParameters(
+        horizon_days=selected_horizon,
+        confidence=confidence,
+        portfolio_nav=portfolio_nav,
+        position_notional=position_notional,
+        side=side,
+        loss_limit_pct=loss_limit_bps / 10_000.0,
+        adv_participation=adv_participation_pct / 100.0,
+        volatility_stress=volatility_stress,
+        custom_shock=custom_shock_pct / 100.0,
+        ewma_lambda=ewma_lambda,
+    )
+    ctx = build_risk_context_v2(ticker, price_data, analysis, selected_horizon)
+    intel = build_institutional_risk_snapshot(
+        price_data,
+        price=ctx["price"],
+        parameters=parameters,
+        stop_short=ctx["stop_short"],
+        stop_structural=ctx["stop_structural"],
+    )
 
-        stress = ctx["stress_tests"].copy()
+    status_class = {"GREEN": "risk-status-green", "AMBER": "risk-status-amber", "RED": "risk-status-red"}[intel["control_status"]]
+    provider = intel["data_quality"].get("provider", {}).get("provider", "Unknown")
+    st.markdown(
+        f"<div class='risk-command'><b class='{status_class}'>● CONTROL {intel['control_status']}</b> · "
+        f"{selected_horizon}D / {confidence:.1%} · {side.upper()} ${position_notional:,.0f} · "
+        f"Source {html.escape(str(provider))} · {len(intel['returns']):,} returns · "
+        f"{int((intel['alerts']['Severity'] == 'CRITICAL').sum())} critical / "
+        f"{int((intel['alerts']['Severity'] == 'WARNING').sum())} warnings</div>",
+        unsafe_allow_html=True,
+    )
 
-        s_msg_type, s_msg = stress_summary(ctx)
+    m1, m2, m3, m4, m5, m6 = st.columns(6)
+    m1.metric("Control status", intel["control_status"])
+    m2.metric(f"Conservative ES {confidence:.1%}", fmt_pct(intel["conservative_es"]))
+    m3.metric("ES capital", f"${intel['position']['es_dollars']:,.0f}")
+    m4.metric("Exit capacity", fmt_days(intel["liquidity"].get("days_to_liquidate")))
+    m5.metric("Vol regime", intel["regime"].get("label", "N/A"))
+    m6.metric("Model validation", intel["validation_status"])
 
-        if s_msg_type == "success":
-            st.success(s_msg)
-        elif s_msg_type == "warning":
-            st.warning(s_msg)
-        elif s_msg_type == "error":
-            st.error(s_msg)
-        else:
-            st.info(s_msg)
+    tabs = st.tabs([
+        "Control Tower",
+        "Tail & Models",
+        "Stress / Reverse",
+        "Liquidity & Sizing",
+        "Model Validation",
+        "Market Map",
+        "Audit & Export",
+    ])
 
-        if stress.empty:
-            st.info("Stress tests indisponibles.")
-        else:
-            display = stress.copy()
+    with tabs[0]:
+        st.subheader("Exception-first control tower")
+        st.caption("Critical and warning controls are sorted first; each line maps a measurement to an operating response.")
+        alerts = intel["alerts"].copy()
+        for index, value in enumerate(alerts["Current"]):
+            if isinstance(value, (float, np.floating)) and np.isfinite(value):
+                alerts.at[index, "Current"] = f"{value:.2%}" if abs(value) <= 5 else f"{value:,.2f}"
+        st.dataframe(alerts, width="stretch", hide_index=True)
+        left, right = st.columns([1, 1.35])
+        with left:
+            render_risk_radar(ctx)
+        with right:
+            render_drawdown_regime_chart(intel)
+        st.subheader("Legacy pre-trade decomposition")
+        st.dataframe(build_risk_decomposition_table(ctx), width="stretch", hide_index=True)
 
-            for col in ["Prix stressé"]:
-                display[col] = display[col].apply(fmt_price)
+    with tabs[1]:
+        st.subheader("Multi-model tail-risk challenge")
+        t1, t2, t3, t4 = st.columns(4)
+        t1.metric("Worst VaR", fmt_pct(intel["conservative_var"]))
+        t2.metric("Worst ES", fmt_pct(intel["conservative_es"]))
+        t3.metric("ES dispersion", fmt_pct(intel["model_dispersion_es"]))
+        t4.metric("Tail capital / limit", fmt_pct(intel["position"]["es_dollars"] / max(intel["position"]["loss_limit_dollars"], 1e-12)))
+        model_table = intel["tail_models"].copy()
+        model_table["VaR P&L"] = model_table["VaR"].abs() * position_notional
+        model_table["ES P&L"] = model_table["ES"].abs() * position_notional
+        display_models = _format_risk_table(model_table, ["VaR", "ES"], ["VaR P&L", "ES P&L"])
+        st.dataframe(display_models, width="stretch", hide_index=True)
+        render_tail_model_chart(intel)
 
-            for col in ["Choc", "Distance stop court", "Distance stop structurel", "Rebond requis vers Target 1"]:
-                display[col] = display[col].apply(fmt_pct)
-
-            st.dataframe(
-                display,
-                use_container_width=True,
-                hide_index=True,
-            )
-
-            chart = stress.copy()
-            chart["Prix stressé"] = pd.to_numeric(chart["Prix stressé"], errors="coerce")
-
-            fig = go.Figure()
-
-            fig.add_trace(go.Bar(
-                x=chart["Scénario"],
-                y=chart["Prix stressé"],
-                text=chart["Prix stressé"].apply(fmt_price),
-                textposition="auto",
-                name="Prix stressé",
-            ))
-
-            fig.add_hline(
-                y=ctx["stop_short"],
-                line_dash="dash",
-                line_color="#f59e0b",
-                annotation_text=f"Stop court {fmt_price(ctx['stop_short'])}",
-                annotation_position="right",
-            )
-
-            fig.add_hline(
-                y=ctx["stop_structural"],
-                line_dash="dot",
-                line_color="#ef4444",
-                annotation_text=f"Stop structurel {fmt_price(ctx['stop_structural'])}",
-                annotation_position="right",
-            )
-
-            stress_y_values = [
-                safe_float(ctx["stop_structural"]),
-                safe_float(ctx["stop_short"]),
-                safe_float(ctx["price"]),
-                *[safe_float(x) for x in chart["Prix stressé"].tolist()],
-            ]
-            stress_y_values = [x for x in stress_y_values if x is not None]
-
-            if stress_y_values:
-                y_min = min(stress_y_values) * 0.96
-                y_max = max(stress_y_values) * 1.03
-            else:
-                y_min, y_max = None, None
-
-            fig.update_layout(
-                height=430,
-                title="Prix stressé vs niveaux d'invalidation",
-                xaxis_title="Scénario",
-                yaxis_title="Prix stressé",
-                template="plotly_dark",
-                margin=dict(l=40, r=120, t=70, b=45),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(10, 14, 22, 0.55)",
-            )
-
-            if y_min is not None and y_max is not None:
-                fig.update_yaxes(range=[y_min, y_max])
-
-            st.plotly_chart(fig, use_container_width=True)
-
-    # ------------------------------------------------------------
-    # Risk Map
-    # ------------------------------------------------------------
-    with tabs[4]:
-        st.subheader("Risk Map — prix, stops, VaR, ES et zones critiques")
-
-        render_risk_map_chart(ticker, price_data, ctx)
-
-        levels_df = pd.DataFrame([
-            {"Niveau": "Target 2", "Prix": fmt_price(ctx["target_2"]), "Lecture": "Objectif étendu"},
-            {"Niveau": "Target 1", "Prix": fmt_price(ctx["target_1"]), "Lecture": "Objectif principal"},
-            {"Niveau": "Prix actuel", "Prix": fmt_price(ctx["price"]), "Lecture": "Référence actuelle"},
-            {"Niveau": "Zone haute", "Prix": fmt_price(ctx["zone_high"]), "Lecture": "Haut de zone d'entrée"},
-            {"Niveau": "Zone basse", "Prix": fmt_price(ctx["zone_low"]), "Lecture": "Bas de zone d'entrée"},
-            {"Niveau": "Stop court", "Prix": fmt_price(ctx["stop_short"]), "Lecture": "Invalidation rapide"},
-            {"Niveau": "Stop structurel", "Prix": fmt_price(ctx["stop_structural"]), "Lecture": "Invalidation large"},
-            {"Niveau": "MC P5", "Prix": fmt_price(ctx["mc_p5_price"]), "Lecture": "Percentile défavorable simulé"},
-            {"Niveau": "MC VaR95", "Prix": fmt_price(ctx["mc_var_95_price"]), "Lecture": "Seuil VaR 95 simulé"},
-            {"Niveau": "MC ES95", "Prix": fmt_price(ctx["mc_es_95_price"]), "Lecture": "Perte moyenne du mauvais 5% simulé"},
+        st.subheader("Distribution & path diagnostics")
+        diagnostics = intel["distribution"]
+        drawdown = intel["drawdown"]
+        diag_table = pd.DataFrame([
+            {"Metric": "Annualized volatility", "Value": fmt_pct(diagnostics.get("annual_volatility")), "Interpretation": "Unconditional realized volatility"},
+            {"Metric": "Downside deviation", "Value": fmt_pct(diagnostics.get("downside_deviation")), "Interpretation": "Annualized negative-return deviation"},
+            {"Metric": "Skewness", "Value": fmt_num(diagnostics.get("skewness")), "Interpretation": "Negative values signal left-tail asymmetry"},
+            {"Metric": "Excess kurtosis", "Value": fmt_num(diagnostics.get("excess_kurtosis")), "Interpretation": "Positive values signal fat tails"},
+            {"Metric": "Omega (0% MAR)", "Value": fmt_num(diagnostics.get("omega_zero")), "Interpretation": "Probability-weighted gains / losses proxy"},
+            {"Metric": "Sortino (0% MAR)", "Value": fmt_num(diagnostics.get("sortino_zero_mar")), "Interpretation": "Return per unit of downside deviation"},
+            {"Metric": "Ulcer index", "Value": fmt_pct(drawdown.get("ulcer_index")), "Interpretation": "Depth and persistence of drawdowns"},
+            {"Metric": "Max underwater duration", "Value": f"{drawdown.get('max_underwater_days', 'N/A')} bars", "Interpretation": "Longest time below a prior high"},
         ])
+        st.dataframe(diag_table, width="stretch", hide_index=True)
 
-        with st.expander("Voir les niveaux affichés sur la Risk Map", expanded=False):
-            st.dataframe(levels_df, use_container_width=True, hide_index=True)
+        evt = intel["evt"]
+        with st.expander("Extreme Value Theory · Peaks over Threshold", expanded=False):
+            if not evt.get("ok"):
+                st.info(evt.get("reason", "EVT diagnostics unavailable."))
+            else:
+                e1, e2, e3, e4 = st.columns(4)
+                e1.metric("EVT status", evt.get("status", "N/A"))
+                e2.metric("Shape ξ", fmt_num(evt.get("shape")))
+                e3.metric("Exceedances", str(evt.get("exceedances", "N/A")))
+                e4.metric("KS p-value", fmt_num(evt.get("ks_p_value")))
+                metrics = evt.get("metrics", {})
+                st.dataframe(pd.DataFrame([
+                    {"Tail level": "99.0%", "EVT VaR": fmt_pct(-metrics.get("var_99_loss")) if metrics.get("var_99_loss") is not None else "N/A", "EVT ES": fmt_pct(-metrics.get("es_99_loss")) if metrics.get("es_99_loss") is not None else "N/A"},
+                    {"Tail level": "99.5%", "EVT VaR": fmt_pct(-metrics.get("var_995_loss")) if metrics.get("var_995_loss") is not None else "N/A", "EVT ES": fmt_pct(-metrics.get("es_995_loss")) if metrics.get("es_995_loss") is not None else "N/A"},
+                    {"Tail level": "99.9%", "EVT VaR": fmt_pct(-metrics.get("var_999_loss")) if metrics.get("var_999_loss") is not None else "N/A", "EVT ES": fmt_pct(-metrics.get("es_999_loss")) if metrics.get("es_999_loss") is not None else "N/A"},
+                ]), width="stretch", hide_index=True)
+                stability_table = evt.get("stability_table", pd.DataFrame())
+                if isinstance(stability_table, pd.DataFrame) and not stability_table.empty:
+                    st.caption(f"Threshold stability: {evt.get('stability', {}).get('status', 'N/A')}")
+                    st.dataframe(stability_table, width="stretch", hide_index=True)
 
-    # ------------------------------------------------------------
-    # MC Cone
-    # ------------------------------------------------------------
+        with st.expander("Legacy Monte Carlo distribution", expanded=False):
+            render_return_distribution(ctx)
+
+    with tabs[2]:
+        st.subheader("Forward, historical and reverse stress testing")
+        p = intel["position"]
+        r1, r2, r3, r4 = st.columns(4)
+        r1.metric("Shock to loss limit", fmt_pct(p["shock_to_loss_limit"]))
+        r2.metric("Shock to short stop", fmt_pct(p["stop_short_return"]))
+        r3.metric("Shock to structural stop", fmt_pct(p["stop_structural_return"]))
+        worst_scenario = intel["scenarios"].sort_values("P&L / NAV").iloc[0] if not intel["scenarios"].empty else None
+        r4.metric("Worst scenario / NAV", fmt_pct(worst_scenario["P&L / NAV"] if worst_scenario is not None else None))
+        st.caption("Reverse stress starts from a limit breach and solves for the asset shock that produces it under the selected side and notional.")
+        display_scenarios = _format_risk_table(
+            intel["scenarios"],
+            ["Asset shock", "P&L / NAV", "Loss-limit usage"],
+            ["Position P&L", "Liquidity overlay"],
+        )
+        st.dataframe(display_scenarios, width="stretch", hide_index=True)
+        render_scenario_chart(intel)
+        with st.expander("Legacy deterministic price-level stress", expanded=False):
+            legacy_stress = ctx["stress_tests"].copy()
+            if not legacy_stress.empty:
+                legacy_stress["Prix stressé"] = legacy_stress["Prix stressé"].map(fmt_price)
+                for column in ["Choc", "Distance stop court", "Distance stop structurel", "Rebond requis vers Target 1"]:
+                    legacy_stress[column] = legacy_stress[column].map(fmt_pct)
+                st.dataframe(legacy_stress, width="stretch", hide_index=True)
+
+    with tabs[3]:
+        st.subheader("Liquidity-adjusted position control")
+        liquidity = intel["liquidity"]
+        l1, l2, l3, l4 = st.columns(4)
+        l1.metric("Liquidity status", liquidity.get("status", "N/A"))
+        l2.metric("Position / ADV", fmt_pct_adaptive(liquidity.get("position_adv")))
+        l3.metric("Days to liquidate", fmt_days(liquidity.get("days_to_liquidate")))
+        l4.metric("Impact proxy", fmt_pct_adaptive(liquidity.get("impact_proxy")))
+        if liquidity.get("available"):
+            liquid_table = liquidity["table"].copy()
+            def format_liquidity_row(row):
+                metric = str(row["Metric"])
+                value = row["Value"]
+                if "dollar ADV" in metric:
+                    return "N/A" if safe_float(value) is None else f"${safe_float(value):,.0f}"
+                if metric in {"Position / ADV", "Square-root impact proxy"}:
+                    return fmt_pct_adaptive(value)
+                if metric == "Days to liquidate":
+                    return fmt_days(value)
+                return fmt_num(value)
+
+            liquid_table["Value"] = liquid_table.apply(format_liquidity_row, axis=1).astype(str)
+            st.dataframe(liquid_table, width="stretch", hide_index=True)
+        else:
+            st.warning("Volume absent or insufficient: capacity and market-impact controls are disabled, not imputed.")
+
+        st.subheader("Binding notional limits")
+        sizing = p["table"].copy()
+        sizing = _format_risk_table(sizing, ["Usage"], ["Value"])
+        st.dataframe(sizing, width="stretch", hide_index=True)
+        s1, s2, s3 = st.columns(3)
+        s1.metric("Max notional / stop", "N/A" if p["max_notional_stop"] is None else f"${p['max_notional_stop']:,.0f}")
+        s2.metric("Max notional / ES", "N/A" if p["max_notional_es"] is None else f"${p['max_notional_es']:,.0f}")
+        s3.metric("Binding limit", "N/A" if p["binding_notional_limit"] is None else f"${p['binding_notional_limit']:,.0f}")
+        st.caption("Capacity uses median dollar volume and the selected maximum ADV participation. The sizing limit binds to the more conservative of stop-loss and ES capital.")
+
+    with tabs[4]:
+        st.subheader("Model validation & outcome analysis")
+        summary = intel["backtests"].get("summary", pd.DataFrame()).copy()
+        if summary.empty:
+            st.warning("At least 80 daily returns are required for rolling out-of-sample VaR validation.")
+        else:
+            summary = _format_risk_table(summary, ["exception_rate", "expected_rate", "kupiec_p_value", "independence_p_value", "conditional_p_value"])
+            st.dataframe(summary, width="stretch", hide_index=True)
+            render_backtest_chart(intel)
+        st.caption(
+            "Kupiec tests unconditional coverage; Christoffersen tests exception independence. "
+            "LIMITED means the out-of-sample window is too short for a strong validation claim."
+        )
+        st.subheader("Specification risk register")
+        specification = pd.DataFrame([
+            {"Model / control": "Historical simulation", "Primary limitation": "History may omit future regimes", "Mitigation": "Student-t, FHS, EVT and stress comparison"},
+            {"Model / control": "Gaussian VaR", "Primary limitation": "Thin tails and square-root horizon assumption", "Mitigation": "Never used alone; compare ES dispersion"},
+            {"Model / control": "Student-t", "Primary limitation": "IID fitted innovations", "Mitigation": "EWMA-filtered history and outcome tests"},
+            {"Model / control": "Liquidity impact", "Primary limitation": "Proxy without order-book/spread data", "Mitigation": "Explicit ADV participation; treat as overlay"},
+            {"Model / control": "Single-position view", "Primary limitation": "No cross-asset diversification/concentration", "Mitigation": "Use Portfolio Lab for aggregate exposures"},
+        ])
+        st.dataframe(specification, width="stretch", hide_index=True)
+
     with tabs[5]:
-        st.subheader("Monte Carlo Risk Cone")
+        st.subheader("Market structure, barriers and simulated path geometry")
+        render_risk_map_chart(ticker, price_data, ctx)
+        b_msg_type, b_msg = barrier_comment(ctx)
+        {"success": st.success, "warning": st.warning, "error": st.error}.get(b_msg_type, st.info)(b_msg)
+        st.dataframe(build_barrier_table(ctx), width="stretch", hide_index=True)
+        with st.expander("Monte Carlo cone & barrier proof", expanded=False):
+            render_mc_risk_cone(ctx)
+            st.dataframe(pd.DataFrame([{
+                "Requested horizon": ctx["horizon_label"],
+                "Prob. positive": fmt_pct(ctx["prob_positive"]),
+                "Prob. loss > 5%": fmt_pct(ctx["prob_loss_5"]),
+                "Prob. short stop": fmt_pct(ctx["prob_stop_short"]),
+                "Prob. structural stop": fmt_pct(ctx["prob_stop_structural"]),
+                "Prob. Target 1": fmt_pct(ctx["prob_target_1"]),
+                "Expected return": fmt_pct(ctx["expected_return"]),
+            }]), width="stretch", hide_index=True)
 
-        render_mc_risk_cone(ctx)
-
-        proof_df = pd.DataFrame([{
-            "Horizon": ctx["horizon_label"],
-            "Prob. positif": fmt_pct(ctx["prob_positive"]),
-            "Prob. perte > 5%": fmt_pct(ctx["prob_loss_5"]),
-            "Prob. perte > 10%": fmt_pct(ctx["prob_loss_10"]),
-            "Prob. stop court": fmt_pct(ctx["prob_stop_short"]),
-            "Prob. stop structurel": fmt_pct(ctx["prob_stop_structural"]),
-            "Prob. Target 1": fmt_pct(ctx["prob_target_1"]),
-            "Expected Return": fmt_pct(ctx["expected_return"]),
-            "Median Return": fmt_pct(ctx["median_return"]),
-            "MC Score": fmt_score(ctx["mc_score"]),
-            "P5": fmt_price(ctx["mc_p5_price"]),
-            "P50": fmt_price(ctx["mc_p50_price"]),
-            "P95": fmt_price(ctx["mc_p95_price"]),
-        }])
-
-        st.dataframe(
-            proof_df,
-            use_container_width=True,
-            hide_index=True,
-        )
-
-    # ------------------------------------------------------------
-    # Export
-    # ------------------------------------------------------------
     with tabs[6]:
-        st.subheader("Export Risk Summary")
+        st.subheader("Data lineage, assumptions and export")
+        q1, q2, q3, q4 = st.columns(4)
+        q1.metric("Data quality", fmt_score(intel["data_quality"].get("score")))
+        q2.metric("Quality status", intel["data_quality"].get("status", "N/A"))
+        q3.metric("Provider", provider)
+        q4.metric("Usable returns", f"{len(intel['returns']):,}")
+        quality_checks = intel["data_quality"]["checks"].copy()
+        for index, value in enumerate(quality_checks["Value"]):
+            if isinstance(value, (float, np.floating)) and np.isfinite(value) and abs(value) <= 1:
+                quality_checks.at[index, "Value"] = fmt_pct(value)
+        quality_checks["Value"] = quality_checks["Value"].map(lambda value: "N/A" if value is None else str(value))
+        st.dataframe(quality_checks, width="stretch", hide_index=True)
+        st.caption("Provider lineage")
+        st.json(intel["data_quality"].get("provider", {}) or {"provider": "Unknown", "status": "No gateway context"})
 
-        export_df = build_export_summary(ctx)
+        assumptions_table = pd.DataFrame([
+            {"Assumption": key, "Value": str(value)}
+            for key, value in intel["parameters_dict"].items()
+        ])
+        st.dataframe(assumptions_table, width="stretch", hide_index=True)
 
-        st.dataframe(
-            export_df,
-            use_container_width=True,
-            hide_index=True,
-        )
-
-        csv = export_df.to_csv(index=False).encode("utf-8")
-
-        st.download_button(
-            label="Télécharger le résumé risque CSV",
-            data=csv,
-            file_name=f"{ticker}_risk_monitor_v2_{ctx['horizon_label']}.csv",
-            mime="text/csv",
-            key=f"download_risk_monitor_v2_{ticker}_{ctx['horizon_label']}",
-        )
+        export_df = _institutional_export(ctx, intel)
+        st.dataframe(export_df, width="stretch", hide_index=True)
+        manifest = {
+            "ticker": ticker,
+            "control_status": intel["control_status"],
+            "validation_status": intel["validation_status"],
+            "parameters": intel["parameters_dict"],
+            "provider": intel["data_quality"].get("provider", {}),
+            "risk": {
+                "conservative_var": intel["conservative_var"],
+                "conservative_es": intel["conservative_es"],
+                "model_dispersion_es": intel["model_dispersion_es"],
+                "es_dollars": intel["position"]["es_dollars"],
+                "days_to_liquidate": intel["liquidity"].get("days_to_liquidate"),
+            },
+        }
+        d1, d2 = st.columns(2)
+        with d1:
+            st.download_button(
+                "Download control summary CSV", export_df.to_csv(index=False).encode("utf-8"),
+                file_name=f"{ticker}_institutional_risk_{selected_horizon}D.csv", mime="text/csv",
+                key=f"risk_export_csv_{ticker}_{selected_horizon}_{confidence_label}",
+            )
+        with d2:
+            st.download_button(
+                "Download assumptions manifest JSON", json.dumps(manifest, indent=2, default=str).encode("utf-8"),
+                file_name=f"{ticker}_risk_manifest_{selected_horizon}D.json", mime="application/json",
+                key=f"risk_export_json_{ticker}_{selected_horizon}_{confidence_label}",
+            )

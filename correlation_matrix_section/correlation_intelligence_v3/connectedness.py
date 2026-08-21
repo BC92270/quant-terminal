@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+
+
+# NumPy 2 renamed ``trapz`` to ``trapezoid``. Keep the engine compatible with
+# both supported NumPy generations instead of forcing a terminal-wide upgrade.
+_trapezoid = getattr(np, "trapezoid", np.trapz)
 from statsmodels.tsa.api import VAR
 
 from .estimators import trailing
@@ -268,13 +273,13 @@ def spectral_connectedness(
 
     # Gamma_j(omega): variable-specific spectral-density weight integrating to one
     # over positive frequencies. The common 1/(2pi) scale cancels in the ratio.
-    total_spec = np.trapezoid(spectral_diag, freqs, axis=0)
+    total_spec = _trapezoid(spectral_diag, freqs, axis=0)
     total_spec = np.clip(total_spec, 1e-18, None)
     gamma = spectral_diag / total_spec[None, :]
     theta_density = causation * gamma[:, :, None]
 
     # Full-spectrum generalized FEVD before row normalization.
-    theta_full = np.trapezoid(theta_density, freqs, axis=0)
+    theta_full = _trapezoid(theta_density, freqs, axis=0)
     full_row_sums = theta_full.sum(axis=1)
     full_row_sums = np.clip(full_row_sums, 1e-18, None)
     theta_full_norm = theta_full / full_row_sums[:, None]
@@ -292,7 +297,7 @@ def spectral_connectedness(
         mask = (freqs >= lo - 1e-14) & (freqs <= hi + 1e-14)
         if int(mask.sum()) < 2:
             continue
-        theta_band = np.trapezoid(theta_density[mask, :, :], freqs[mask], axis=0)
+        theta_band = _trapezoid(theta_density[mask, :, :], freqs[mask], axis=0)
         # Crucially: normalize by FULL-spectrum row sums, not by within-band row sums.
         theta_band_norm = theta_band / full_row_sums[:, None]
         offdiag = theta_band_norm.sum() - np.trace(theta_band_norm)

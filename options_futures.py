@@ -25,14 +25,19 @@ from derivatives_market_data import (
     DataContext,
     MassiveAPIError,
     ThetaDataAPIError,
+    TradierAPIError,
     fetch_massive_futures_curve,
     fetch_yahoo_futures_curve,
     fetch_massive_option_chain,
     fetch_massive_option_expirations,
     fetch_thetadata_option_chain,
     fetch_thetadata_option_expirations,
+    fetch_tradier_option_chain,
+    fetch_tradier_option_expirations,
     get_massive_api_key,
     get_thetadata_api_key,
+    get_tradier_api_token,
+    get_tradier_sandbox,
     summarize_chain_quality,
 )
 from derivatives_workspaces import (
@@ -425,8 +430,10 @@ def get_option_expirations_auto_cached(
     ticker: str,
     _thetadata_api_key: Optional[str],
     _massive_api_key: Optional[str],
+    _tradier_api_token: Optional[str],
+    _tradier_sandbox: bool = False,
 ) -> Tuple[List[str], Dict[str, Any]]:
-    """ThetaData -> Massive -> Yahoo, with explicit provenance at every fallback."""
+    """ThetaData -> Massive -> Tradier -> Yahoo, with explicit provenance."""
     provider_errors: List[str] = []
     if _thetadata_api_key:
         try:
@@ -445,8 +452,24 @@ def get_option_expirations_auto_cached(
             provider_errors.append(context.message)
         except MassiveAPIError as exc:
             provider_errors.append(str(exc))
+    if _tradier_api_token:
+        try:
+            expirations, context = fetch_tradier_option_expirations(
+                ticker, _tradier_api_token, sandbox=_tradier_sandbox
+            )
+            if expirations:
+                context = DataContext(
+                    **{
+                        **context.to_dict(),
+                        "fallback_used": bool(_thetadata_api_key or _massive_api_key),
+                    }
+                )
+                return expirations, context.to_dict()
+            provider_errors.append(context.message)
+        except TradierAPIError as exc:
+            provider_errors.append(str(exc))
     expirations = get_option_expirations_cached(ticker)
-    upstream_configured = bool(_thetadata_api_key or _massive_api_key)
+    upstream_configured = bool(_thetadata_api_key or _massive_api_key or _tradier_api_token)
     detail = " ".join(dict.fromkeys(error for error in provider_errors if error))
     context = DataContext(
         provider="Yahoo Finance",
@@ -510,8 +533,10 @@ def get_option_chain_auto_cached(
     expiration: str,
     _thetadata_api_key: Optional[str],
     _massive_api_key: Optional[str],
+    _tradier_api_token: Optional[str],
+    _tradier_sandbox: bool = False,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, str, Dict[str, Any]]:
-    """Primary ThetaData OPRA snapshot, then Massive, then public Yahoo fallback."""
+    """ThetaData OPRA, Massive, Tradier, then public Yahoo fallback."""
     provider_errors: List[str] = []
     if _thetadata_api_key:
         try:
@@ -535,13 +560,35 @@ def get_option_chain_auto_cached(
         except MassiveAPIError as exc:
             provider_errors.append(str(exc))
 
+    if _tradier_api_token:
+        try:
+            calls, puts, context = fetch_tradier_option_chain(
+                ticker,
+                expiration,
+                _tradier_api_token,
+                sandbox=_tradier_sandbox,
+            )
+            if not calls.empty or not puts.empty:
+                values = context.to_dict()
+                values["fallback_used"] = bool(_thetadata_api_key or _massive_api_key)
+                if provider_errors:
+                    values["message"] = (
+                        values.get("message", "")
+                        + " Repli après fournisseurs précédents: "
+                        + " ".join(dict.fromkeys(provider_errors))
+                    ).strip()
+                return calls, puts, "OK", values
+            provider_errors.append(context.message)
+        except TradierAPIError as exc:
+            provider_errors.append(str(exc))
+
     calls, puts, status = get_option_chain_cached(ticker, expiration)
     combined = pd.concat(
         [frame for frame in (calls, puts) if frame is not None and not frame.empty],
         ignore_index=True,
     ) if not (calls.empty and puts.empty) else pd.DataFrame()
     quality = summarize_chain_quality(combined)
-    upstream_configured = bool(_thetadata_api_key or _massive_api_key)
+    upstream_configured = bool(_thetadata_api_key or _massive_api_key or _tradier_api_token)
     detail = " ".join(dict.fromkeys(error for error in provider_errors if error))
     context = DataContext(
         provider="Yahoo Finance",
@@ -562,11 +609,18 @@ def fetch_surface_auto_cached(
     expirations: Tuple[str, ...],
     _thetadata_api_key: Optional[str],
     _massive_api_key: Optional[str],
+    _tradier_api_token: Optional[str],
+    _tradier_sandbox: bool = False,
 ) -> pd.DataFrame:
     frames: List[pd.DataFrame] = []
     for expiration in expirations:
         calls, puts, status, _ = get_option_chain_auto_cached(
-            ticker, expiration, _thetadata_api_key, _massive_api_key
+            ticker,
+            expiration,
+            _thetadata_api_key,
+            _massive_api_key,
+            _tradier_api_token,
+            _tradier_sandbox,
         )
         if status != "OK":
             continue
@@ -13039,9 +13093,13 @@ def render_options_futures_v1(ticker: str, price_data: pd.DataFrame, analysis: O
     try:
         thetadata_api_key = get_thetadata_api_key(st.secrets)
         massive_api_key = get_massive_api_key(st.secrets)
+        tradier_api_token = get_tradier_api_token(st.secrets)
+        tradier_sandbox = get_tradier_sandbox(st.secrets)
     except Exception:
         thetadata_api_key = None
         massive_api_key = None
+        tradier_api_token = None
+        tradier_sandbox = False
 
     st.title(f"Options & Futures Intelligence — {ticker}")
 
@@ -13053,12 +13111,12 @@ def render_options_futures_v1(ticker: str, price_data: pd.DataFrame, analysis: O
         return
 
     st.caption(
-        "Workspace décisionnel : ThetaData/OPRA prioritaire, Massive en second provider et Yahoo en fallback public. "
+        "Workspace décisionnel : ThetaData/OPRA prioritaire, Massive puis Tradier, et Yahoo en fallback public. "
         "La provenance, la récence et les limitations d'entitlement restent explicites. Aucun ordre n'est transmis."
     )
 
     expirations, expiration_context = get_option_expirations_auto_cached(
-        ticker, thetadata_api_key, massive_api_key
+        ticker, thetadata_api_key, massive_api_key, tradier_api_token, tradier_sandbox
     )
     if not expirations:
         st.warning("Aucune expiration options disponible. La partie futures reste exploitable.")
@@ -13094,6 +13152,9 @@ def render_options_futures_v1(ticker: str, price_data: pd.DataFrame, analysis: O
         st.caption(
             "Providers options — ThetaData: " + ("configuré" if thetadata_api_key else "non configuré")
             + " · Massive: " + ("configuré" if massive_api_key else "non configuré")
+            + " · Tradier: " + (
+                ("sandbox" if tradier_sandbox else "production") if tradier_api_token else "non configuré"
+            )
             + " · Yahoo: fallback automatique"
         )
 
@@ -13141,7 +13202,12 @@ def render_options_futures_v1(ticker: str, price_data: pd.DataFrame, analysis: O
     if expirations and expiration != "N/A":
         with st.spinner("Téléchargement options chain..."):
             raw_calls, raw_puts, chain_status, data_context = get_option_chain_auto_cached(
-                ticker, str(expiration), thetadata_api_key, massive_api_key
+                ticker,
+                str(expiration),
+                thetadata_api_key,
+                massive_api_key,
+                tradier_api_token,
+                tradier_sandbox,
             )
             # ThetaData Greeks/IV snapshots include the contemporaneous underlying midpoint.
             # Prefer it for option analytics when available; otherwise preserve the terminal spot.
@@ -13163,7 +13229,12 @@ def render_options_futures_v1(ticker: str, price_data: pd.DataFrame, analysis: O
 
         with st.spinner("Construction surface multi-expirations..."):
             surface = fetch_surface_auto_cached(
-                ticker, tuple(selected_expirations), thetadata_api_key, massive_api_key
+                ticker,
+                tuple(selected_expirations),
+                thetadata_api_key,
+                massive_api_key,
+                tradier_api_token,
+                tradier_sandbox,
             )
     else:
         data_context = dict(expiration_context)

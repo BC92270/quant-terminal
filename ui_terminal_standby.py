@@ -683,6 +683,10 @@ html, body {{
 </body>
 </html>"""
 
+    if callable(getattr(st, "iframe", None)):
+        st.iframe(header_html, height=94)
+        return
+
     if components is not None:
         components.html(header_html, height=94, scrolling=False)
         return
@@ -749,35 +753,24 @@ def render_terminal_command_panel(
         vertical_alignment="bottom",
     )
 
-    ticker_input = c1.text_input(
-        "Ticker",
-        value=ticker_default,
-        key="terminal_command_ticker",
-    ).upper().strip()
+    if "terminal_command_ticker" not in st.session_state:
+        st.session_state["terminal_command_ticker"] = ticker_default
+    ticker_input = c1.text_input("Ticker", key="terminal_command_ticker").upper().strip()
 
-    period_input = c2.selectbox(
-        "Période",
-        periods,
-        index=_select_index(periods, period_default, 2),
-        key="terminal_command_period",
-    )
+    if st.session_state.get("terminal_command_period") not in periods:
+        st.session_state["terminal_command_period"] = periods[_select_index(periods, period_default, 2)]
+    period_input = c2.selectbox("Période", periods, key="terminal_command_period")
 
-    interval_input = c3.selectbox(
-        "Intervalle",
-        intervals,
-        index=_select_index(intervals, interval_default, 0),
-        key="terminal_command_interval",
-    )
+    if st.session_state.get("terminal_command_interval") not in intervals:
+        st.session_state["terminal_command_interval"] = intervals[_select_index(intervals, interval_default, 0)]
+    interval_input = c3.selectbox("Intervalle", intervals, key="terminal_command_interval")
 
     # V10 : hors formulaire.
     # Changer le mode déclenche un rerun Streamlit immédiat, donc le module affiché
     # reste synchronisé avec le selectbox.
-    mode_input = c4.selectbox(
-        "Mode",
-        modes,
-        index=_select_index(modes, mode_default, 0),
-        key="terminal_command_mode",
-    )
+    if st.session_state.get("terminal_command_mode") not in modes:
+        st.session_state["terminal_command_mode"] = modes[_select_index(modes, mode_default, 0)]
+    mode_input = c4.selectbox("Mode", modes, key="terminal_command_mode")
 
     run_analysis = c5.button(
         "Analyser",

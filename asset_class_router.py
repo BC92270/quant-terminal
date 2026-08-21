@@ -9056,3 +9056,20 @@ _register_fixed_income_credit_mode()
 # ============================================================
 # END FIXED INCOME & CREDIT ANALYTICS REGISTRATION
 # ============================================================
+
+
+# ============================================================
+# INSTITUTIONAL ROUTER — CLEAN PRESENTATION FACADE
+# ============================================================
+# The historical market-data and analytics engines above remain stable, while
+# the client-adaptive navigation experience lives in a focused, testable module.
+
+from institutional_router import render_institutional_router
+
+
+def render_asset_class_home() -> None:
+    """Render the adaptive multi-window institutional navigator."""
+    render_institutional_router(
+        launch_workspace=_launch_workspace,
+        snapshot_loader=load_market_tape_snapshot,
+    )

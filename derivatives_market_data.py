@@ -21,6 +21,8 @@ from urllib.request import Request, urlopen
 import numpy as np
 import pandas as pd
 
+from provider_config import resolve_secret
+
 
 MASSIVE_API_ROOT = "https://api.massive.com"
 MASSIVE_SECRET_NAMES: Tuple[str, ...] = (
@@ -32,6 +34,16 @@ THETADATA_SECRET_NAMES: Tuple[str, ...] = (
     "THETADATA_API_KEY",
     "THETA_DATA_API_KEY",
     "THETA_API_KEY",
+)
+TRADIER_API_ROOT = "https://api.tradier.com"
+TRADIER_SANDBOX_ROOT = "https://sandbox.tradier.com"
+TRADIER_SECRET_NAMES: Tuple[str, ...] = (
+    "TRADIER_API_TOKEN",
+    "TRADIER_ACCESS_TOKEN",
+)
+TRADIER_ENVIRONMENT_NAMES: Tuple[str, ...] = (
+    "TRADIER_ENV",
+    "TRADIER_ENVIRONMENT",
 )
 
 
@@ -45,6 +57,14 @@ class ThetaDataAPIError(RuntimeError):
 
 class MassiveAPIError(RuntimeError):
     """A sanitized Massive REST failure safe to show in the UI."""
+
+    def __init__(self, message: str, status_code: Optional[int] = None):
+        super().__init__(message)
+        self.status_code = status_code
+
+
+class TradierAPIError(RuntimeError):
+    """A sanitized Tradier REST failure safe to show in the UI."""
 
     def __init__(self, message: str, status_code: Optional[int] = None):
         super().__init__(message)
@@ -72,17 +92,7 @@ class DataContext:
 def _get_secret(secrets: Mapping[str, Any], names: Sequence[str]) -> Optional[str]:
     """Return the first configured credential without logging or exposing it."""
 
-    for name in names:
-        try:
-            value = secrets.get(name)
-        except Exception:
-            try:
-                value = secrets[name]
-            except Exception:
-                value = None
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-    return None
+    return resolve_secret(names, secrets) or None
 
 
 def get_thetadata_api_key(secrets: Mapping[str, Any]) -> Optional[str]:
@@ -95,6 +105,19 @@ def get_massive_api_key(secrets: Mapping[str, Any]) -> Optional[str]:
     """Resolve the Massive/Polygon API key from Streamlit-like secrets."""
 
     return _get_secret(secrets, MASSIVE_SECRET_NAMES)
+
+
+def get_tradier_api_token(secrets: Mapping[str, Any]) -> Optional[str]:
+    """Resolve the Tradier bearer token from Streamlit secrets or the environment."""
+
+    return _get_secret(secrets, TRADIER_SECRET_NAMES)
+
+
+def get_tradier_sandbox(secrets: Mapping[str, Any]) -> bool:
+    """Return whether the explicitly configured Tradier environment is sandbox."""
+
+    value = resolve_secret(TRADIER_ENVIRONMENT_NAMES, secrets).strip().lower()
+    return value in {"sandbox", "paper", "test", "testing"}
 
 
 def _safe_float(value: Any) -> float:
@@ -491,6 +514,199 @@ def _append_query(url: str, params: Optional[Mapping[str, Any]]) -> str:
     query = urlencode(clean)
     combined = f"{existing}&{query}" if existing else query
     return urlunsplit((split.scheme, split.netloc, split.path, combined, split.fragment))
+
+
+def _tradier_iso_timestamp(value: Any) -> Optional[str]:
+    if value in (None, ""):
+        return None
+    numeric = _iso_timestamp(value)
+    if numeric is not None:
+        return numeric
+    try:
+        stamp = pd.Timestamp(value)
+        if pd.isna(stamp):
+            return None
+        if stamp.tzinfo is None:
+            stamp = stamp.tz_localize("America/New_York", ambiguous="NaT", nonexistent="shift_forward")
+        if pd.isna(stamp):
+            return None
+        return stamp.tz_convert("UTC").isoformat()
+    except Exception:
+        return None
+
+
+def tradier_get_json(
+    path: str,
+    access_token: str,
+    *,
+    sandbox: bool = False,
+    params: Optional[Mapping[str, Any]] = None,
+    timeout: float = 12.0,
+) -> Dict[str, Any]:
+    """Call a documented Tradier market-data endpoint with a bearer header."""
+
+    if not access_token:
+        raise TradierAPIError("Token API Tradier absent.")
+    if not str(path).startswith("/"):
+        raise TradierAPIError("Route Tradier invalide.")
+    root = TRADIER_SANDBOX_ROOT if sandbox else TRADIER_API_ROOT
+    url = _append_query(root + path, params)
+    request = Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "Accept": "application/json",
+            "User-Agent": "QuantTerminal/derivatives-workspace",
+        },
+        method="GET",
+    )
+    try:
+        with urlopen(request, timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        status = int(getattr(exc, "code", 0) or 0)
+        if status == 401:
+            raise TradierAPIError("Authentification Tradier refusée.", status) from None
+        if status == 403:
+            raise TradierAPIError("Entitlement Tradier insuffisant pour cet endpoint.", status) from None
+        if status == 429:
+            raise TradierAPIError("Limite de requêtes Tradier atteinte.", status) from None
+        raise TradierAPIError(f"Tradier HTTP {status or 'error'}.", status) from None
+    except (URLError, TimeoutError) as exc:
+        raise TradierAPIError(f"Tradier indisponible: {type(exc).__name__}.") from None
+    except json.JSONDecodeError:
+        raise TradierAPIError("Réponse Tradier JSON invalide.") from None
+    if not isinstance(payload, dict):
+        raise TradierAPIError("Réponse Tradier non structurée.")
+    if payload.get("errors"):
+        raise TradierAPIError("Tradier a refusé la requête ou l'entitlement.")
+    return payload
+
+
+def fetch_tradier_option_expirations(
+    ticker: str,
+    access_token: str,
+    *,
+    sandbox: bool = False,
+) -> Tuple[List[str], DataContext]:
+    """Load active US option expirations from Tradier Markets."""
+
+    payload = tradier_get_json(
+        "/v1/markets/options/expirations",
+        access_token,
+        sandbox=sandbox,
+        params={"symbol": str(ticker).upper().strip(), "includeAllRoots": "true", "strikes": "false"},
+    )
+    values = (payload.get("expirations") or {}).get("date")
+    if isinstance(values, str):
+        values = [values]
+    parsed = pd.to_datetime(pd.Series(values or [], dtype=object), errors="coerce").dropna()
+    today = pd.Timestamp.now(tz="America/New_York").date()
+    expirations = sorted({stamp.strftime("%Y-%m-%d") for stamp in parsed if stamp.date() >= today})
+    return expirations, DataContext(
+        provider="Tradier",
+        feed="US options reference",
+        status="ok" if expirations else "empty",
+        recency="REFERENCE",
+        rows=len(expirations),
+        pages=1,
+        message="Expirations Tradier Markets." if expirations else "Aucune expiration active retournée par Tradier.",
+    )
+
+
+def fetch_tradier_option_chain(
+    ticker: str,
+    expiration: str,
+    access_token: str,
+    *,
+    sandbox: bool = False,
+) -> Tuple[pd.DataFrame, pd.DataFrame, DataContext]:
+    """Load one Tradier option chain and retain vendor IV and ORATS Greeks."""
+
+    payload = tradier_get_json(
+        "/v1/markets/options/chains",
+        access_token,
+        sandbox=sandbox,
+        params={
+            "symbol": str(ticker).upper().strip(),
+            "expiration": str(expiration),
+            "greeks": "true",
+        },
+    )
+    values = (payload.get("options") or {}).get("option")
+    if isinstance(values, dict):
+        values = [values]
+    rows: List[Dict[str, Any]] = []
+    for item in values or []:
+        if not isinstance(item, dict):
+            continue
+        greeks = item.get("greeks") if isinstance(item.get("greeks"), dict) else {}
+        quote_stamp = _tradier_iso_timestamp(item.get("trade_date") or greeks.get("updated_at"))
+        rows.append(
+            {
+                "contractSymbol": item.get("symbol"),
+                "strike": item.get("strike"),
+                "lastPrice": item.get("last"),
+                "bid": item.get("bid"),
+                "ask": item.get("ask"),
+                "bidSize": item.get("bidsize"),
+                "askSize": item.get("asksize"),
+                "change": item.get("change"),
+                "percentChange": item.get("change_percentage"),
+                "volume": item.get("volume"),
+                "openInterest": item.get("open_interest"),
+                "impliedVolatility": greeks.get("mid_iv", greeks.get("smv_vol")),
+                "option_type": item.get("option_type", item.get("type")),
+                "expiration": item.get("expiration_date", expiration),
+                "contractMultiplier": item.get("contract_size", 100),
+                "delta_vendor": greeks.get("delta"),
+                "gamma_vendor": greeks.get("gamma"),
+                "theta_vendor": greeks.get("theta"),
+                "vega_vendor": greeks.get("vega"),
+                "rho_vendor": greeks.get("rho"),
+                "quoteTimestamp": quote_stamp,
+                "tradeTimestamp": _tradier_iso_timestamp(item.get("trade_date")),
+                "quoteTimeframe": "DELAYED" if sandbox else "ENTITLEMENT",
+                "tradeTimeframe": "DELAYED" if sandbox else "ENTITLEMENT",
+                "underlyingPrice": item.get("underlying_price"),
+                "provider": "Tradier / OPRA",
+            }
+        )
+    frame = pd.DataFrame(rows)
+    if not frame.empty:
+        numeric = [
+            "strike", "lastPrice", "bid", "ask", "bidSize", "askSize", "change",
+            "percentChange", "volume", "openInterest", "impliedVolatility",
+            "contractMultiplier", "delta_vendor", "gamma_vendor", "theta_vendor",
+            "vega_vendor", "rho_vendor", "underlyingPrice",
+        ]
+        for column in numeric:
+            frame[column] = pd.to_numeric(frame[column], errors="coerce")
+        frame["option_type"] = frame["option_type"].astype(str).str.lower().replace({"c": "call", "p": "put"})
+        frame = frame.sort_values(["option_type", "strike"], na_position="last").reset_index(drop=True)
+    calls = frame.loc[frame["option_type"].eq("call")].copy() if not frame.empty else pd.DataFrame()
+    puts = frame.loc[frame["option_type"].eq("put")].copy() if not frame.empty else pd.DataFrame()
+    latest = None
+    if not frame.empty:
+        stamps = pd.to_datetime(frame["quoteTimestamp"], errors="coerce", utc=True).dropna()
+        if not stamps.empty:
+            latest = stamps.max().isoformat()
+    recency = "DELAYED 15M / SANDBOX" if sandbox else "ACCOUNT ENTITLEMENT"
+    return calls, puts, DataContext(
+        provider="Tradier / OPRA",
+        feed="US options chain + ORATS Greeks",
+        status="ok" if not frame.empty else "empty",
+        recency=recency,
+        quote_timestamp=latest,
+        rows=len(frame),
+        pages=1,
+        message=(
+            "Chaîne Tradier; IV/Greeks de courtoisie ORATS."
+            if not frame.empty
+            else "Chaîne Tradier vide pour cette expiration."
+        ),
+        quality=summarize_chain_quality(frame),
+    )
 
 
 def _validated_url(path_or_url: str) -> str:
@@ -1183,4 +1399,3 @@ def fetch_yahoo_futures_curve(
             "curve_method": "explicit Yahoo contracts / contract-month slope",
         },
     )
-
