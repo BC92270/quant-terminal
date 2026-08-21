@@ -6,7 +6,9 @@ import pandas as pd
 
 # NumPy 2 renamed ``trapz`` to ``trapezoid``. Keep the engine compatible with
 # both supported NumPy generations instead of forcing a terminal-wide upgrade.
-_trapezoid = getattr(np, "trapezoid", np.trapz)
+_trapezoid = getattr(np, "trapezoid", None)
+if _trapezoid is None:  # NumPy < 2.0 compatibility
+    _trapezoid = np.trapz
 from statsmodels.tsa.api import VAR
 
 from .estimators import trailing
