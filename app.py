@@ -26,6 +26,7 @@ from risk_monitor import render_risk_monitor_v2
 from trading_plan import render_trading_plan_v2
 from correlation_matrix import render_correlation_intelligence_v1
 from options_futures import render_options_futures_v1
+from market_data_gateway import MarketDataProviderError, fetch_price_history as fetch_provider_price_history
 
 # ============================================================
 # COMPANY INTELLIGENCE — MODULAR PACKAGE
@@ -321,42 +322,21 @@ def make_statement_chart_df(statement: pd.DataFrame, row_map: dict[str, list[str
 
 @st.cache_data(ttl=300)
 def get_price_history(ticker: str, period: str = "1y", interval: str = "1d") -> pd.DataFrame:
-    data = yf.download(
-        ticker,
-        period=period,
-        interval=interval,
-        progress=False,
-        auto_adjust=False
-    )
-
-    if data.empty:
-        raise ValueError(f"Aucune donnée trouvée pour le ticker : {ticker}")
-
-    data = data.reset_index()
-
-    data.columns = [
-        col[0].lower() if isinstance(col, tuple) else str(col).lower()
-        for col in data.columns
-    ]
-
-    data = data.rename(columns={
-        "date": "date",
-        "datetime": "date",
-        "open": "open",
-        "high": "high",
-        "low": "low",
-        "close": "close",
-        "adj close": "adj_close",
-        "volume": "volume"
-    })
-
-    required_columns = ["date", "open", "high", "low", "close"]
-
-    for col in required_columns:
-        if col not in data.columns:
-            raise ValueError(f"Colonne manquante dans les données : {col}")
-
-    return data.dropna(subset=["close"])
+    try:
+        secrets = st.secrets
+    except Exception:
+        secrets = None
+    try:
+        data, _ = fetch_provider_price_history(
+            ticker,
+            period=period,
+            interval=interval,
+            secrets=secrets,
+            yahoo_download=yf.download,
+        )
+    except MarketDataProviderError as exc:
+        raise ValueError(f"Aucune donnée trouvée pour le ticker {ticker}: {exc}") from None
+    return data
 
 
 
@@ -5096,7 +5076,19 @@ def _route_query_value(name: str, default: str = "") -> str:
     return str(value or default).strip()
 
 
-if _route_query_value("workspace") == "terminal":
+_route_workspace = _route_query_value("workspace")
+
+if _route_workspace in {"worldmonitor", "market-psychology", "quant-ai"}:
+    # Autonomous workspaces can be opened in independent browser tabs from the
+    # institutional router.  Only a small allow-list of non-sensitive route
+    # names is persisted in the URL.
+    st.session_state["terminal_entered"] = True
+    st.session_state["asset_class_selected"] = True
+    st.session_state["worldmonitor_v211_open"] = _route_workspace == "worldmonitor"
+    st.session_state["market_psychology_lab_open"] = _route_workspace == "market-psychology"
+    st.session_state["quant_ai_open"] = _route_workspace == "quant-ai"
+
+elif _route_workspace == "terminal":
     try:
         _route_asset, _route_symbol, _route_mode = resolve_asset_symbol_and_mode(
             _route_query_value("asset", "Auto"),
@@ -5318,7 +5310,7 @@ if st.session_state.get("quant_ai_open", False):
         st.error(f"Quant AI import error: {QUANT_AI_IMPORT_ERROR}")
         st.info(
             "Expected files: quant_ai_lab.py and quant_ai/ at project root. "
-            "Install the optional Agents SDK dependency with requirements_quant_ai.txt."
+            "Install the core dependencies with requirements.txt."
         )
 
     st.stop()
@@ -5501,10 +5493,15 @@ else:
             )
 
     elif mode_input == "Risk Monitor":
-        render_risk_monitor_mode(ticker, price_data, analysis)
+        render_risk_monitor_v2(ticker, price_data, analysis)
 
     elif mode_input == "Momentum / Trend":
-        render_momentum_trend_mode(ticker, price_data, analysis)
+        if callable(render_momentum_trend_terminal):
+            render_momentum_trend_terminal(ticker, price_data, analysis)
+        else:
+            st.error("Momentum / Trend indisponible : vérifie le package momentum_trend/.")
+            if MOMENTUM_TREND_IMPORT_ERROR is not None:
+                st.exception(MOMENTUM_TREND_IMPORT_ERROR)
 
     elif mode_input == "Monte Carlo Advanced":
         render_monte_carlo_advanced_mode(ticker, price_data, analysis)

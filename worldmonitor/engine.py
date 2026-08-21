@@ -19,7 +19,7 @@ _LAST_RENDER_BUDGET: dict[str, Any] = {}
 def _legacy() -> Any:
     # The mature UI is retained as a compatibility renderer while data access,
     # country intelligence and map budgeting live in this package.
-    import worldmonitor_bridge_legacy_v211 as legacy
+    from legacy import worldmonitor_runtime_v211 as legacy
 
     return legacy
 

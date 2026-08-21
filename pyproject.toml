@@ -1,0 +1,15 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --strict-config"
+norecursedirs = [".git", ".quant_cache", ".industrialization", "backups", "legacy"]
+filterwarnings = [
+    "ignore:No runtime found:Warning",
+]
+
+[tool.coverage.run]
+branch = true
+omit = ["tests/*", "legacy/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

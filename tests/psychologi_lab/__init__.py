@@ -1,0 +1,1 @@
+"""Market Psychology regression tests."""

@@ -7,9 +7,8 @@ import numpy as np
 import pandas as pd
 
 from .config import EPS
-from .utils import (
-    _clamp, _moment_excess_kurtosis, _moment_skew, _normal_ppf, _safe_float,
-)
+from .utils import _clamp, _moment_excess_kurtosis, _moment_skew, _normal_ppf, _safe_float
+
 
 def _normalize_price_data(price_data: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     quality: Dict[str, Any] = {
@@ -74,7 +73,6 @@ def _normalize_price_data(price_data: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[
     df = df.dropna(subset=["close"])
     df = df[df["close"] > 0].copy()
 
-    # Keep true market jumps. Flag them instead of deleting them silently.
     if len(df) >= 2:
         simple_returns = df["close"].pct_change()
         quality["extreme_return_count"] = int((simple_returns.abs() > 0.50).sum())
@@ -96,12 +94,10 @@ def _normalize_price_data(price_data: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[
 def _infer_periods_per_year(dates: pd.Series) -> Tuple[int, str, float | None]:
     if dates is None or len(dates) < 3 or not pd.api.types.is_datetime64_any_dtype(dates):
         return 252, "Daily default", None
-
     deltas = dates.sort_values().diff().dropna().dt.total_seconds() / 86_400.0
     deltas = deltas[(deltas > 0) & np.isfinite(deltas)]
     if deltas.empty:
         return 252, "Daily default", None
-
     median_days = float(deltas.median())
     if median_days <= 2.0:
         return 252, "Daily", median_days
@@ -117,68 +113,42 @@ def _infer_periods_per_year(dates: pd.Series) -> Tuple[int, str, float | None]:
 def _extract_nested_price(payload: Any, max_depth: int = 4) -> Tuple[float | None, str | None]:
     if max_depth < 0 or payload is None:
         return None, None
-
     priority_keys = (
-        "live_price",
-        "current_price",
-        "latest_price",
-        "last_price",
-        "price",
-        "regularMarketPrice",
-        "c",
-        "close",
+        "live_price", "current_price", "latest_price", "last_price", "price",
+        "regularMarketPrice", "c", "close",
     )
     priority_children = (
-        "momentum_v2",
-        "latest",
-        "quote",
-        "finnhub_quote",
-        "live_quote",
-        "market",
-        "meta",
-        "data",
+        "momentum_v2", "latest", "quote", "finnhub_quote", "live_quote", "market", "meta", "data",
     )
-
     if isinstance(payload, Mapping):
         for key in priority_keys:
             if key in payload:
                 value = _safe_float(payload.get(key))
                 if value is not None and value > 0:
                     return value, key
-
         for key in priority_children:
             if key in payload:
                 value, source = _extract_nested_price(payload.get(key), max_depth=max_depth - 1)
                 if value is not None and value > 0:
                     return value, f"{key}.{source}" if source else key
-
         for key, child in payload.items():
             if isinstance(child, Mapping):
                 value, source = _extract_nested_price(child, max_depth=max_depth - 1)
                 if value is not None and value > 0:
                     return value, f"{key}.{source}" if source else str(key)
-
     return None, None
 
 
 def _analysis_live_price(analysis: Mapping[str, Any], fallback: float) -> Tuple[float, str]:
     if not isinstance(analysis, Mapping):
         return fallback, "historique/close"
-
     priority_paths = (
         ("momentum_v2", "latest", "price"),
         ("momentum_v2", "quote", "price"),
         ("momentum_v2", "quote", "c"),
-        ("quote", "price"),
-        ("quote", "c"),
-        ("finnhub_quote", "c"),
-        ("live_price",),
-        ("current_price",),
-        ("last_price",),
-        ("price",),
-        ("latest_price",),
+        ("quote", "price"), ("quote", "c"), ("finnhub_quote", "c"),
+        ("live_price",), ("current_price",), ("last_price",), ("price",), ("latest_price",),
     )
-
     for path in priority_paths:
         current: Any = analysis
         for key in path:
@@ -189,7 +159,6 @@ def _analysis_live_price(analysis: Mapping[str, Any], fallback: float) -> Tuple[
         value = _safe_float(current)
         if value is not None and value > 0:
             return value, "analysis/" + ".".join(path)
-
     value, source = _extract_nested_price(analysis, max_depth=4)
     if value is not None and value > 0:
         return value, f"analysis/{source or 'live quote'}"
@@ -202,12 +171,7 @@ def _atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     close = df["close"].astype(float)
     prev_close = close.shift(1)
     true_range = pd.concat(
-        [
-            high - low,
-            (high - prev_close).abs(),
-            (low - prev_close).abs(),
-        ],
-        axis=1,
+        [high - low, (high - prev_close).abs(), (low - prev_close).abs()], axis=1
     ).max(axis=1)
     return true_range.rolling(period, min_periods=max(3, period // 2)).mean()
 
@@ -217,13 +181,11 @@ def _ewma_variance(log_returns: np.ndarray, decay: float = 0.94) -> np.ndarray:
     values = values[np.isfinite(values)]
     if values.size == 0:
         return np.array([], dtype=float)
-
     decay = _clamp(decay, 0.50, 0.999)
     centered = values - values.mean()
     initial_window = centered[: min(30, centered.size)]
     initial_var = float(np.var(initial_window, ddof=1)) if initial_window.size > 1 else float(centered[0] ** 2)
     initial_var = max(initial_var, 1e-10)
-
     variances = np.empty(values.size, dtype=float)
     variances[0] = initial_var
     for idx in range(1, values.size):
@@ -232,66 +194,88 @@ def _ewma_variance(log_returns: np.ndarray, decay: float = 0.94) -> np.ndarray:
 
 
 def _estimate_student_df(excess_kurtosis: float) -> float:
-    # Student-t excess kurtosis = 6 / (nu - 4), nu > 4.
     if not np.isfinite(excess_kurtosis) or excess_kurtosis <= 0.10:
         return 30.0
-    nu = 6.0 / excess_kurtosis + 4.0
-    return _clamp(nu, 4.25, 30.0)
+    return _clamp(6.0 / excess_kurtosis + 4.0, 4.25, 30.0)
 
 
 def _prepare_base(
     price_data: pd.DataFrame,
     analysis: Mapping[str, Any] | None = None,
     ewma_lambda: float = 0.94,
+    calibration_data: pd.DataFrame | None = None,
+    calibration_window: int | None = None,
+    calibration_source_label: str | None = None,
+    calibration_source_report: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
-    df, quality = _normalize_price_data(price_data)
-    if df.empty or len(df) < 40:
+    display_df, display_quality = _normalize_price_data(price_data)
+    if display_df.empty or len(display_df) < 40:
         return {
             "ok": False,
-            "df": df,
-            "quality": quality,
+            "df": display_df,
+            "quality": display_quality,
             "reason": "Historique prix insuffisant : au moins 40 observations sont requises.",
         }
 
-    close = df["close"].astype(float)
-    simple_returns = close.pct_change().replace([np.inf, -np.inf], np.nan).dropna()
-    log_returns = np.log(close / close.shift(1)).replace([np.inf, -np.inf], np.nan).dropna()
+    calibration_source = "price_data"
+    if isinstance(calibration_data, pd.DataFrame) and not calibration_data.empty:
+        calibration_df, calibration_quality = _normalize_price_data(calibration_data)
+        if calibration_df.empty:
+            calibration_df = display_df.copy()
+            calibration_quality = display_quality.copy()
+            calibration_source = "price_data fallback"
+        else:
+            calibration_source = str(calibration_source_label or "calibration_data")
+    else:
+        calibration_df = display_df.copy()
+        calibration_quality = display_quality.copy()
+        if calibration_source_label:
+            calibration_source = str(calibration_source_label)
 
-    aligned = pd.concat(
-        [simple_returns.rename("simple"), log_returns.rename("log")],
-        axis=1,
-    ).dropna()
+    requested_window = int(calibration_window) if calibration_window not in (None, 0) else None
+    available_rows = int(len(calibration_df))
+    if requested_window is not None:
+        required_rows = requested_window + 1
+        if available_rows > required_rows:
+            calibration_df = calibration_df.tail(required_rows).reset_index(drop=True)
+        elif available_rows < required_rows:
+            calibration_quality.setdefault("warnings", []).append(
+                f"Fenêtre de calibration demandée: {requested_window} rendements; seulement {max(available_rows - 1, 0)} disponibles."
+            )
+
+    display_close = display_df["close"].astype(float)
+    calibration_close = calibration_df["close"].astype(float)
+    simple_returns = calibration_close.pct_change().replace([np.inf, -np.inf], np.nan).dropna()
+    log_returns = np.log(calibration_close / calibration_close.shift(1)).replace([np.inf, -np.inf], np.nan).dropna()
+    aligned = pd.concat([simple_returns.rename("simple"), log_returns.rename("log")], axis=1).dropna()
     simple_returns = aligned["simple"]
     log_returns = aligned["log"]
 
     if len(log_returns) < 30:
         return {
             "ok": False,
-            "df": df,
-            "quality": quality,
+            "df": display_df,
+            "calibration_df": calibration_df,
+            "quality": calibration_quality,
             "reason": "Rendements exploitables insuffisants après normalisation.",
         }
 
-    periods_per_year, frequency_label, median_spacing_days = _infer_periods_per_year(df["date"])
-    close_last = float(close.iloc[-1])
+    periods_per_year, frequency_label, median_spacing_days = _infer_periods_per_year(calibration_df["date"])
+    close_last = float(display_close.iloc[-1])
     live_price, price_source = _analysis_live_price(analysis or {}, close_last)
 
-    atr_series = _atr(df)
+    atr_series = _atr(display_df)
     atr_14 = _safe_float(atr_series.iloc[-1], close_last * 0.03)
     if atr_14 is None or atr_14 <= 0:
         atr_14 = close_last * 0.03
 
     log_values = log_returns.to_numpy(dtype=float)
     mean_log_period = float(np.mean(log_values))
-    sigma_period = float(np.std(log_values, ddof=1))
-    sigma_period = max(sigma_period, 1e-8)
+    sigma_period = max(float(np.std(log_values, ddof=1)), 1e-8)
     vol_ann = sigma_period * math.sqrt(periods_per_year)
-
-    # Under dS/S = mu dt + sigma dW, E[log(S_t/S_0)] = (mu - 0.5 sigma²)t.
     drift_ann = mean_log_period * periods_per_year + 0.5 * vol_ann**2
     expected_return_ann = math.exp(drift_ann) - 1.0
 
-    # Sampling uncertainty of the annualized diffusion drift.
     n_returns = len(log_values)
     mean_log_se = sigma_period / math.sqrt(n_returns)
     drift_se_ann = mean_log_se * periods_per_year
@@ -316,20 +300,31 @@ def _prepare_base(
     excess_kurtosis = _moment_excess_kurtosis(log_values)
     skewness = _moment_skew(log_values)
     student_df = _estimate_student_df(excess_kurtosis)
+    historical_peak = calibration_close.cummax()
+    max_drawdown = float((calibration_close / historical_peak - 1.0).min())
 
-    historical_peak = close.cummax()
-    max_drawdown = float((close / historical_peak - 1.0).min())
-
-    quality["output_rows"] = int(len(df))
+    quality = dict(calibration_quality)
+    quality["warnings"] = list(dict.fromkeys(display_quality.get("warnings", []) + calibration_quality.get("warnings", [])))
+    quality["display_rows"] = int(len(display_df))
+    quality["calibration_rows"] = int(len(calibration_df))
+    quality["output_rows"] = int(len(display_df))
     quality["returns_count"] = int(n_returns)
-    quality["sample_start"] = df["date"].iloc[0]
-    quality["sample_end"] = df["date"].iloc[-1]
+    quality["sample_start"] = calibration_df["date"].iloc[0]
+    quality["sample_end"] = calibration_df["date"].iloc[-1]
+    quality["display_start"] = display_df["date"].iloc[0]
+    quality["display_end"] = display_df["date"].iloc[-1]
     quality["frequency_label"] = frequency_label
     quality["periods_per_year"] = periods_per_year
     quality["median_spacing_days"] = median_spacing_days
+    quality["calibration_source"] = calibration_source
+    quality["calibration_source_report"] = dict(calibration_source_report or {})
+    for warning in (calibration_source_report or {}).get("warnings", []):
+        quality["warnings"].append(str(warning))
+    quality["calibration_window_requested"] = requested_window
+    quality["calibration_window_applied"] = int(n_returns)
 
     if n_returns < 120:
-        quality["warnings"].append("Moins de 120 rendements : drift et queues très incertains.")
+        quality["warnings"].append("Moins de 120 rendements : drift, GARCH et queues très incertains.")
     elif n_returns < 252 and periods_per_year == 252:
         quality["warnings"].append("Moins d'une année de rendements quotidiens.")
     if drift_ci_low < 0 < drift_ci_high:
@@ -338,10 +333,12 @@ def _prepare_base(
         quality["warnings"].append("Asymétrie historique élevée détectée.")
     if excess_kurtosis > 3.0:
         quality["warnings"].append("Excès de kurtosis élevé : queues épaisses significatives.")
+    quality["warnings"] = list(dict.fromkeys(quality["warnings"]))
 
     return {
         "ok": True,
-        "df": df,
+        "df": display_df,
+        "calibration_df": calibration_df,
         "simple_returns": simple_returns,
         "log_returns": log_returns,
         "log_return_values": log_values,
@@ -368,4 +365,8 @@ def _prepare_base(
         "student_df": float(student_df),
         "max_drawdown": float(max_drawdown),
         "quality": quality,
+        "calibration_source": calibration_source,
+        "calibration_source_report": dict(calibration_source_report or {}),
+        "calibration_window_requested": requested_window,
+        "calibration_observations": int(n_returns),
     }

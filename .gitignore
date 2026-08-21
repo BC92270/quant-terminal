@@ -1,0 +1,64 @@
+# Operating-system artifacts
+.DS_Store
+._*
+Thumbs.db
+
+# Python bytecode, caches, and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.ipynb_checkpoints/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Quant Terminal runtime state and generated datasets
+/.quant_cache/
+/.quant_news_archive/
+/.gem_event_cache/
+/.company_intelligence_cache/
+/.market_psychology_external_cache/
+/.market_psychology_memory
+/.quant_ai/
+/.quant_data/
+/.quant_audit/
+/.industrialization/
+/backups/
+*.sqlite
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.log
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.*.example
+.streamlit/secrets.toml
+
+# Temporary editor files and local backups
+*.bak
+*.bak_*
+*.tmp
+*.swp
+*.swo
+*~
+*.zip
+*.patch
+/package-lock.json

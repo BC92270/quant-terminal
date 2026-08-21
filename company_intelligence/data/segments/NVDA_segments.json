@@ -1,0 +1,29 @@
+{
+  "symbol": "NVDA",
+  "snapshot_type": "migration_seed_from_prior_valid_provider_snapshot",
+  "observed_at": "2026-08-09T08:38:00+02:00",
+  "source": "Prior valid FMP revenue-segmentation snapshot observed in Quant Terminal before provider-plan/runtime regression",
+  "product": [
+    {"date": "2026-01-25", "fiscalYear": 2026, "period": "FY", "currency": "USD", "segment": "Data Center", "revenue": 193740000000},
+    {"date": "2026-01-25", "fiscalYear": 2026, "period": "FY", "currency": "USD", "segment": "Gaming", "revenue": 16040000000},
+    {"date": "2026-01-25", "fiscalYear": 2026, "period": "FY", "currency": "USD", "segment": "Professional Visualization", "revenue": 3190000000},
+    {"date": "2026-01-25", "fiscalYear": 2026, "period": "FY", "currency": "USD", "segment": "Automotive", "revenue": 2350000000},
+    {"date": "2026-01-25", "fiscalYear": 2026, "period": "FY", "currency": "USD", "segment": "OEM And Other", "revenue": 619000000},
+    {"date": "2025-01-26", "fiscalYear": 2025, "period": "FY", "currency": "USD", "segment": "Data Center", "revenue": 115190000000},
+    {"date": "2025-01-26", "fiscalYear": 2025, "period": "FY", "currency": "USD", "segment": "Gaming", "revenue": 11350000000},
+    {"date": "2025-01-26", "fiscalYear": 2025, "period": "FY", "currency": "USD", "segment": "Professional Visualization", "revenue": 1880000000},
+    {"date": "2025-01-26", "fiscalYear": 2025, "period": "FY", "currency": "USD", "segment": "Automotive", "revenue": 1690000000},
+    {"date": "2025-01-26", "fiscalYear": 2025, "period": "FY", "currency": "USD", "segment": "OEM And Other", "revenue": 389000000}
+  ],
+  "geographic": [
+    {"date": "2026-01-25", "fiscalYear": 2026, "period": "FY", "currency": "USD", "segment": "UNITED STATES", "revenue": 149620000000},
+    {"date": "2026-01-25", "fiscalYear": 2026, "period": "FY", "currency": "USD", "segment": "TAIWAN, PROVINCE OF CHINA", "revenue": 42340000000},
+    {"date": "2026-01-25", "fiscalYear": 2026, "period": "FY", "currency": "USD", "segment": "CHINA", "revenue": 19680000000},
+    {"date": "2026-01-25", "fiscalYear": 2026, "period": "FY", "currency": "USD", "segment": "Other Americas", "revenue": 4300000000},
+    {"date": "2025-01-26", "fiscalYear": 2025, "period": "FY", "currency": "USD", "segment": "UNITED STATES", "revenue": 61260000000},
+    {"date": "2025-01-26", "fiscalYear": 2025, "period": "FY", "currency": "USD", "segment": "SINGAPORE", "revenue": 23680000000},
+    {"date": "2025-01-26", "fiscalYear": 2025, "period": "FY", "currency": "USD", "segment": "TAIWAN, PROVINCE OF CHINA", "revenue": 20570000000},
+    {"date": "2025-01-26", "fiscalYear": 2025, "period": "FY", "currency": "USD", "segment": "CHINA", "revenue": 17110000000},
+    {"date": "2025-01-26", "fiscalYear": 2025, "period": "FY", "currency": "USD", "segment": "Other Americas", "revenue": 7880000000}
+  ]
+}
