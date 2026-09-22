@@ -1,0 +1,159 @@
+{
+  "algorithm_contract": {
+    "ansatz": "For every seed, start in the authenticated feasible computational-basis witness, alternate the frozen diagonal Phase-II economic objective with the guarded mixer layer, and never infer performance from feasibility preservation.",
+    "canonical_profile": "DUAL_GUARD_CACHED",
+    "canonical_topology": "COMPLETE_SWAP_SCAN",
+    "cost_phase_invariance": "The Phase-II objective separator is diagonal in the computational basis and therefore cannot move support outside the feasible subspace.",
+    "mixer_layer_order": "Canonical deterministic edge order. Noncommuting partial mixers are applied sequentially; an unordered Hamiltonian exponential is not claimed.",
+    "unitary_scope": "Exact feasibility invariance relative to the frozen V3.2 EXACT_K_SUBSPACE predicate; optimization quality, convergence and advantage are outside this contract."
+  },
+  "artifact_contract": {
+    "algorithmic_artifact": "SEALED_FEASIBLE_SUBSPACE_MIXER_ARTIFACT.json",
+    "canonical_payload": "UTF-8 JSON, sorted keys, compact separators, excluding volatile timestamps and self-hash fields",
+    "immutability": "An existing non-identical seal is never overwritten.",
+    "required_hashes": [
+      "parent_v31_raw_file_sha256",
+      "parent_v32_raw_file_sha256",
+      "parent_v32_artifact_sha256",
+            "algorithm_spec_sha256",
+            "algorithm_source_sha256",
+            "validation_manifest_sha256",
+            "validation_source_sha256",
+            "verifier_source_sha256"
+    ]
+  },
+  "candidate_family": {
+    "N": 40,
+    "K": 10,
+    "regime": "BANDS",
+    "seeds": [1103, 2207, 3301, 4409, 5501, 6607, 7703, 8807]
+  },
+  "claim_boundary": {
+    "allowed": "A deterministic guarded-mixer contract preserves the feasible subspace of the frozen V3.2 exact-K predicate and satisfies the declared clean-ancilla proof obligations.",
+    "forbidden": [
+      "globally connected feasible graph",
+      "ergodic mixer",
+      "backend-native circuit",
+      "hardware executable",
+      "QPU ready",
+      "optimization performance",
+      "quantum speedup",
+      "quantum advantage"
+    ],
+    "hardware_executable": false,
+    "qpu_submission_enabled": false
+  },
+  "construction": {
+    "controlled_rotation": "C2-XY(beta)=exp[-i beta (X_i X_j + Y_i Y_j)/2], controlled on the two predicate flags. It only rotates |01> and |10>.",
+    "dual_guard_cached_sequence": [
+      "Compute a := f(x) once at layer entry with the frozen V3.2 oracle.",
+      "For edge e=(i,j), compute b := f(S_e x) into a clean flag using a static bijective relabelling of the data wires in U_f.",
+      "Apply C2-XY_e(beta_e) controlled on a=b=1.",
+      "Uncompute b with the same relabelled oracle.",
+      "Repeat for every edge while retaining a.",
+      "Uncompute a with U_f at layer exit."
+    ],
+    "inductive_invariant": "At every edge boundary, all transient work and neighbor flags are |0>, and the retained flag a equals f(x) on every computational-basis branch. Branches with a=0 are frozen; branches with a=1 can only rotate toward another state with f=1.",
+    "neighbor_oracle": "U_(f o S_e) is a logical wire permutation of U_f. It has the same abstract gate counts and depth. Physical routing or SWAP insertion is backend-specific and remains NOT_RUN.",
+    "oracle_calls_per_layer": "2E+2 for DUAL_GUARD_CACHED; 2E for FEASIBLE_SUPPORT_OPTIMIZED.",
+    "profiles": {
+      "DUAL_GUARD_CACHED": {
+        "cleanliness_domain": "Every exact-K computational-basis input and every superposition over that domain",
+        "guard_flags": 2,
+        "status": "INSTITUTIONAL_REFERENCE"
+      },
+      "FEASIBLE_SUPPORT_OPTIMIZED": {
+        "cleanliness_domain": "Only states whose support is already entirely feasible",
+        "guard_flags": 1,
+        "status": "RESEARCH_ONLY_PRECONDITIONED"
+      }
+    }
+  },
+  "decision_policy": {
+    "complete_topology": "PASS may only mean positive local reachability for every authenticated witness. Global connectivity remains INDETERMINATE without a complete graph proof.",
+    "contract_pass": "Requires authenticated parents, spec/source identities, guard cleanup, exact small-N invariance/unitarity, N=40 witness-edge parity and deterministic resources.",
+    "hardware": "Always BLOCKED in V3.3. Controlled-XY synthesis, native transpilation, routing, calibration, noise and execution are not run.",
+    "ring_topology": "Any authenticated feasible witness with zero feasible ring-swap neighbors rejects the ring topology as an exploration mixer.",
+    "separation": "A passing contract never promotes connectivity, backend readiness, performance or advantage."
+  },
+  "design_disclosure": {
+    "canonical_validation_blinded": false,
+    "pre_spec_observation": "A disclosed exploratory classical audit observed complete-swap witness degrees [65,53,50,55,31,59,61,55] and ring degrees [4,3,2,2,0,7,3,4]. It motivated retaining both topologies and preregistering ring rejection on local isolation.",
+    "purpose": "Preserve chronology and prevent the canonical rerun from being described as blind confirmatory evidence."
+  },
+  "hash_contract": {
+    "algorithm": "SHA-256",
+    "canonicalization": "json.dumps(payload_without_[algorithm_contract_spec_sha,algorithm_contract_spec_sha256], sort_keys=True, separators=(',', ':'), ensure_ascii=False)",
+    "legacy_identifier": "First 20 uppercase hexadecimal characters of algorithm_contract_spec_sha256"
+  },
+  "literature_basis": [
+    {
+      "citation": "Hadfield et al., From the Quantum Approximate Optimization Algorithm to a Quantum Alternating Operator Ansatz",
+      "scope": "Feasible-subspace mixer design criteria and ordered partial mixers",
+      "url": "https://arxiv.org/abs/1709.03489"
+    },
+    {
+      "citation": "Fuchs et al., Constrained mixers for the quantum approximate optimization algorithm",
+      "scope": "Subspace-restricted mixers and explicit decomposition/resource concerns",
+      "url": "https://arxiv.org/abs/2203.06095"
+    }
+  ],
+  "parent_contract": {
+    "expected_parent_v31_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+    "expected_parent_v31_raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "expected_parent_v32_artifact_sha256": "5e6cc7e53f15921f7cbd22ef66f04878b37d54372e04b5bf49f5bb4854050fcd",
+    "expected_parent_v32_compiler_source_sha256": "b76001c8502eec962dc998d1c8ffa37b2886432149fb193f26e52d82cd348c78",
+    "expected_parent_v32_compiler_spec_sha256": "edad55227d611b52884529fe2da4f8f458e80c36367589a3499bdf075060f3aa",
+    "expected_parent_v32_raw_file_sha256": "616cc12808465916dfcfcde6c8e2c9feed1be4b294ad034f29cb7cb36704031b",
+    "expected_parent_v32_validation_manifest_sha256": "bde0dc2e90a355821c8678d2df8ac743820c0a4d2e83701aeeeaab3e1d8e9b91",
+    "required_domain": "EXACT_K_SUBSPACE",
+    "required_hardware_executable": false
+  },
+  "phase": "V3.3",
+  "resource_contract": {
+    "controlled_xy": "Each C2-XY is counted as one algorithmic IR primitive. Its discrete native synthesis, precision, T count and routed depth are NOT_ESTIMATED.",
+    "logical_static_wire_model": "No physical SWAP is inserted for U_(f o S_e); the data-wire permutation preserves provider-neutral counts and dependency depth exactly.",
+    "physical_swap_fallback": "For comparison only, an explicit SWAP-U_f-SWAP implementation adds four SWAPs = twelve CX per edge. It is not the canonical logical construction.",
+    "required_metrics": [
+      "edge_count",
+      "oracle_calls",
+      "controlled_xy_primitives",
+      "logical_qubits_sequential_reuse",
+      "provider_neutral_gate_count",
+      "provider_neutral_depth",
+      "oracle_path_t_count_upper_subtotal",
+      "native_controlled_xy_status",
+      "backend_transpilation_status"
+    ],
+    "t_count_boundary": "The reported T subtotal covers frozen-oracle invocations only and is not a total mixer T-count upper bound."
+  },
+  "roadmap_change_control": {
+    "deferred_to": "V3.4",
+    "new_v33_scope": "Algorithmic enforcement contract, feasibility invariance, connectivity audit and resource falsification",
+    "prior_v33_scope": "Backend-native MCX lowering and routing",
+    "reason": "Backend routing before proving that the algorithm preserves all seven constraints would validate the wrong scientific object. The reordering is explicit and does not claim the prior V3.3 milestone was completed."
+  },
+  "topologies": {
+    "COMPLETE_SWAP_SCAN": {
+      "edge_count_formula": "N(N-1)/2",
+      "N40_edges": 780,
+      "role": "Canonical maximal single-swap neighborhood; global feasible-graph connectivity remains unproved."
+    },
+    "RING_SWAP_SCAN": {
+      "edge_count_formula": "N",
+      "N40_edges": 40,
+      "role": "Sparse control topology retained to detect local isolation; rejection does not invalidate invariance."
+    }
+  },
+  "validation_ladder": {
+    "A_PARENT_CHAIN": "Revalidate the immutable V3.1 and V3.2 identities, internal seals, live compiler source/spec and hardware-false boundary.",
+    "B_GUARD_SYMBOLIC": "Enumerate all f(x), f(Sx) cases and both differing-bit orientations; prove activation only for 1/1 and clean retained/transient flags.",
+    "C_SMALL_N_EXHAUSTIVE": "On a synthetic exact-K constrained predicate, exhaust all basis states and swap edges, test norms, unitary Gram matrices, feasible-support invariance and cleanup for both profiles.",
+    "D_N40_WITNESS_GRAPH": "For every frozen seed, evaluate all 300 nontrivial witness swaps by direct predicate and independent integer-delta arithmetic; audit ring/complete degrees and exact two-hop complete neighborhoods.",
+    "E_RESOURCE_REPRODUCIBILITY": "Recompute every per-seed/topology/profile ledger and require identical canonical hashes in an independent second pass.",
+    "F_NEGATIVE_RESULTS": "Retain ring isolation, global-connectivity indeterminacy, native synthesis NOT_RUN and hardware BLOCKED as first-class results."
+  },
+  "algorithm_contract_spec_version": "PHASE III · EXACT FEASIBLE-SUBSPACE MIXER CONTRACT SPEC · V1",
+    "algorithm_contract_spec_sha": "5119490433952D6A4A61",
+    "algorithm_contract_spec_sha256": "5119490433952d6a4a6151a2890b647479460e3cda4283bf1bc541243d1a8e3e"
+}

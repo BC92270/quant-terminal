@@ -1,0 +1,147 @@
+{
+  "artifact_contract": {
+    "canonical_payload": "UTF-8 JSON, sorted keys, compact separators, excluding volatile timestamps and self-hash fields",
+    "compiler_artifact": "SEALED_GATE_COMPILER_ARTIFACT.json",
+    "immutability": "An existing non-identical seal is never overwritten.",
+    "required_hashes": [
+      "parent_dyadic_artifact_file_sha256",
+      "parent_dyadic_oracle_sha",
+      "compiler_spec_sha256",
+      "compiler_source_sha256",
+      "gate_ir_sha256",
+      "validation_manifest_sha256"
+    ]
+  },
+  "candidate_family": {
+    "N": 40,
+    "K": 10,
+    "regime": "BANDS",
+    "seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ]
+  },
+  "claim_boundary": {
+    "allowed": "A provider-neutral reversible gate IR implements the sealed exact dyadic BANDS feasibility predicate and passes the declared semantic and clean-ancilla controls.",
+    "forbidden": [
+      "hardware executable",
+      "QPU ready",
+      "quantum speedup",
+      "quantum advantage",
+      "constraint-preserving optimizer"
+    ],
+    "hardware_executable": false,
+    "qpu_submission_enabled": false
+  },
+  "compiler": {
+    "canonical_serialization": "One JSON object per gate with stable register indices; SHA-256 is streamed over compact sorted-key JSON lines.",
+    "constant_addition": "Controlled addition modulo 2^w synthesized as descending multi-controlled increments for each set bit of the two's-complement constant.",
+    "gate_ir": [
+      "X",
+      "CX",
+      "CCX",
+      "MCX"
+    ],
+    "gate_set_boundary": "MCX is an abstract reversible gate with an exact clean-ancilla v-chain decomposition contract; backend-native lowering is V3.3.",
+    "inclusive_comparator": "Disjoint lexicographic prefix terms plus equality; signed order is obtained by virtual inversion of the two's-complement sign bit.",
+    "negative_controls": "Control polarity is explicit in every MCX record and is lowered by paired X gates around the positive-control network.",
+    "provider_neutral": true,
+    "reference_compiler_priority": "Correctness, determinism and auditability before optimization.",
+    "resource_decomposition": {
+      "ccx_to_clifford_t": {
+        "cnot": 6,
+        "t_count": 7,
+        "t_depth": 3
+      },
+      "mcx_clean_ancilla_v_chain": "For m controls: m=0 -> X; m=1 -> CX; m=2 -> CCX; m>=3 -> 2m-3 CCX and m-2 clean decomposition ancillas. Negative controls add two X gates each.",
+      "scope": "Fault-tolerant estimates only; logical IR width and optional decomposition-ancilla width are reported separately."
+    }
+  },
+  "gate_compiler_spec_sha": "EDAD55227D611B528845",
+  "gate_compiler_spec_sha256": "edad55227d611b52884529fe2da4f8f458e80c36367589a3499bdf075060f3aa",
+  "gate_compiler_spec_version": "PHASE III · PROOF-CARRYING REVERSIBLE GATE COMPILER SPEC · V1",
+  "hash_contract": {
+    "algorithm": "SHA-256",
+    "canonicalization": "json.dumps(payload_without_[gate_compiler_spec_sha,gate_compiler_spec_sha256], sort_keys=True, separators=(',', ':'), ensure_ascii=False)",
+    "legacy_identifier": "First 20 uppercase hexadecimal characters of gate_compiler_spec_sha256"
+  },
+  "oracle_contract": {
+    "ancilla_postcondition": "Every work, comparator, constraint-flag and aggregate qubit returns to |0> for every computational-basis input.",
+    "bounds": "All group and factor comparisons are inclusive: lower <= value <= upper.",
+    "canonical_unitary": "U_f |x>|y>|0_work> = |x>|y XOR f(x)>|0_work>.",
+    "constant_encoding": "Signed constants are represented modulo 2^w in exact two's complement; source dyadic integers are never rounded.",
+    "domain_variants": {
+      "EXACT_K_SUBSPACE": "f(x) is the conjunction of four group-count and three exact dyadic factor-band predicates; the contract domain is D_K={x: popcount(x)=K}.",
+      "FULL_BINARY": "f(x) additionally includes popcount(x)=K, yielding the complete Phase-II strict BANDS feasibility predicate over all x in {0,1}^N."
+    },
+    "endianness": "little-endian within every register; register index 0 is the least-significant bit",
+    "input_preparation": "State preparation is outside U_f and must never be hidden inside the oracle.",
+    "oracle_output": "caller-owned target qubit, bit-flip convention",
+    "overflow": "Arithmetic is modulo 2^w, but certified widths must contain every allowed partial sum, both inclusive bounds, and zero; any failed range proof blocks compilation.",
+    "qubit_indexing": "contiguous global zero-based indices assigned by canonical register order",
+    "signed_representation": "two's complement",
+    "work_register_policy": "Sequential reuse across constraints; no factor/group accumulator remains live after its flag is computed."
+  },
+  "parent_contract": {
+    "expected_parent_dyadic_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "expected_parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+    "expected_parent_dyadic_spec_sha": "9A6F664368F4AC592281",
+    "expected_parent_phase2_execution_spec_sha": "40D3225B0AFC86BC01DD",
+    "expected_parent_phase2_protocol_sha": "8E5EF191FAE97A75",
+    "expected_parent_phase3_preparation_spec_sha": "CDC693C22A3838B0B3C1",
+    "legacy_parent_validation": "Recompute every seed certificate SHA and the embedded dyadic oracle SHA; never trust status strings or stored hash fields alone.",
+    "required_fidelity_status": "EXACT DYADIC FAMILY PASS · BY CONSTRUCTION",
+    "required_hardware_executable": false
+  },
+  "phase": "V3.2",
+  "preregistration": {
+    "canonical_evaluation_after_spec_seal": true,
+    "development_cases": "Synthetic small-N cases and noncanonical seeds only before spec seal.",
+    "negative_results_retained": true,
+    "no_parent_regeneration": true
+  },
+  "resource_ledger": {
+    "levels": [
+      "LOGICAL_IR",
+      "GATE_LEVEL_ABSTRACT",
+      "TRANSPILED_BACKEND_SPECIFIC",
+      "FAULT_TOLERANT_ESTIMATE"
+    ],
+    "required_metrics": [
+      "data_qubits",
+      "caller_target_qubits",
+      "work_qubits",
+      "constraint_flag_qubits",
+      "aggregate_qubits",
+      "logical_qubits_total",
+      "max_simultaneously_live_ancillas",
+      "controlled_add_count",
+      "comparator_count",
+      "X",
+      "CX",
+      "CCX",
+      "MCX",
+      "abstract_depth",
+      "critical_path_depth",
+      "uncomputation_overhead",
+      "decomposed_ccx",
+      "decomposed_cnot",
+      "t_count",
+      "t_depth_upper_bound",
+      "clean_mcx_decomposition_ancillas"
+    ]
+  },
+  "validation_ladder": {
+    "A_ARITHMETIC": "Exhaustive small-width increment, signed constant addition and inclusive comparator tests.",
+    "B_SEED": "All eight N=40 seed certificates, authoritative witnesses, deterministic exact-K controls, flag decomposition and clean-ancilla checks.",
+    "C_SMALL_N_EXHAUSTIVE": "Zero mismatches for both EXACT_K_SUBSPACE over D_K and FULL_BINARY over all 2^N inputs.",
+    "D_N40_CONTROLS": "Witnesses, deterministic boundary/adversarial vectors and preregistered implementation controls; sampling is never called a proof.",
+    "E_REPRODUCIBILITY": "Two independent compilations must produce identical gate IR hashes, resource ledgers and validation hashes."
+  }
+}

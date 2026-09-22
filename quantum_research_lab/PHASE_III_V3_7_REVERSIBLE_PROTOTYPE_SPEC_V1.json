@@ -1,0 +1,164 @@
+{
+  "acceptance_contract": {
+    "canonical_beta_values": [
+      0.0,
+      0.2718281828459045,
+      0.7853981633974483
+    ],
+    "coherent_two_level_pair_count": 4,
+    "constraint_row_case_count": 72,
+    "exact_k_state_count": 6,
+    "full_domain_basis_state_count": 1024,
+    "numeric_tolerance": 1e-12,
+    "portfolio_edge_case_count": 36,
+    "prototype_pass_decision": "SMALL_INSTANCE_REVERSIBLE_PROTOTYPE_PASSED",
+    "register_width_qubits": 10,
+    "scratch_residual_required": 0
+  },
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "elementary_basis_decomposition": "NOT_IMPLEMENTED",
+    "global_impossibility": "NOT_CLAIMED",
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "production_n40_equivalence": "NOT_CLAIMED",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "selected_model_cnot": "NOT_ESTIMATED",
+    "scope": "REGISTERED_SYNTHETIC_N4_K2_FIXTURE_ONLY"
+  },
+  "fixture_contract": {
+    "classification": "SYNTHETIC_COMPILER_FIXTURE · PROTOTYPE_ONLY",
+    "constraint_rows": [
+      {
+        "coefficients": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "encoding": "UNSIGNED_BINARY",
+        "lower": 1,
+        "name": "EXPOSURE_U",
+        "upper": 4,
+        "width": 3
+      },
+      {
+        "coefficients": [
+          -1,
+          0,
+          1,
+          2
+        ],
+        "encoding": "TWOS_COMPLEMENT",
+        "lower": 0,
+        "name": "EXPOSURE_S",
+        "upper": 2,
+        "width": 3
+      }
+    ],
+    "edges": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "fixture_id": "V37_SYNTHETIC_EXACT_K_N4_K2_V1",
+    "initial_state_contract": "Support is restricted to exact-K feasible portfolios embedded with caches equal to full integer exposure recomputation.",
+    "k": 2,
+    "n": 4,
+    "portfolio_register_order": [
+      "x0",
+      "x1",
+      "x2",
+      "x3"
+    ]
+  },
+  "gate_ir_contract": {
+    "ancilla_qubits": 0,
+    "bit_order": "LITTLE_ENDIAN_INTEGER_INDEX",
+    "control_semantics": "SIGNED_0_OR_1_CONTROL_ON_EVERY_NON_TARGET_QUBIT",
+    "deterministic_pair_order": "EDGE_LEXICOGRAPHIC_THEN_ASCENDING_BASIS_ENDPOINTS",
+    "elementary_basis_decomposition": "NOT_IMPLEMENTED",
+    "logical_primitives": [
+      "PATTERN_MCX",
+      "PATTERN_MCRX"
+    ],
+    "rotation_convention": "MCRX(2β) REALIZES exp(-i β X) ON THE ADDRESSED PAIR",
+    "scratch_qubits": 0,
+    "two_level_schedule": "GRAY_PATH_COMPUTE · MCRX(2β) · REVERSE_GRAY_PATH"
+  },
+  "parent_contract": {
+    "expected_v36_artifact_raw_file_sha256": "147e81ebb891f61ec47dd9b46ab0adfc6a7a73e2e21f5b91e42d99b25de7c26c",
+    "expected_v36_artifact_sha256": "52b9b98a36bf8f6d661b42cdc63f3cc0f6476c207f273a171dcc0516c4c0a54d",
+    "expected_v36_freeze_raw_file_sha256": "a297a23a6a253d378022fecd3890dd3ef014e75f6a16bcc38b94fcbf2ee1cd56",
+    "expected_v36_freeze_sha256": "8e7ea17da37878f6cd363273ca1a44ae8005740f37fd736524da3126813bd04a",
+    "expected_v36_incremental_state": "BLOCKED_PENDING_REVERSIBLE_COMPILER",
+    "expected_v36_next_gate": "CLEAN_REVERSIBLE_INCREMENTAL_EXPOSURE_COMPILER",
+    "expected_v36_spec_raw_file_sha256": "44c308d468ab90c229be94b9d85a7fd8a0c0056beedde7982ffc5ce713f2016e",
+    "expected_v36_spec_sha256": "c13750ace7903d164db6ecef295414a3ad62e2e29d4c9f75b5d4a7be06c8cbdc"
+  },
+  "preregistered_checks": [
+    "V36_PARENT_RAW_AND_SEMANTIC_AUTHENTICATION",
+    "FIXTURE_SELF_HASH_AND_SCHEMA_EXACT",
+    "ALL_6_EXACT_K_STATES_ENUMERATED",
+    "ALL_36_PORTFOLIO_EDGE_CASES_DIFFERENTIAL",
+    "ALL_72_CONSTRAINT_ROW_DELTAS_EXACT",
+    "PROSPECTIVE_PREDICATE_EQUALS_FULL_RECOMPUTE",
+    "FOUR_COHERENT_TWO_LEVEL_PAIRS_COMPILED",
+    "ALL_1024_BASIS_STATES_CHECKED_PER_EDGE_AND_BETA",
+    "OFF_TARGET_IDENTITY_EXACT_WITHIN_TOLERANCE",
+    "COMPILED_ADJOINT_RESTORES_EVERY_BASIS_COLUMN",
+    "COMPLETE_LAYER_UNITARITY_AND_REFERENCE_ACTION",
+    "ZERO_ANCILLA_AND_ZERO_SCRATCH",
+    "DETERMINISTIC_IR_REPLAY",
+    "LOGICAL_RESOURCE_LEDGER_EXACT",
+    "N40_AND_SELECTED_MODEL_GATES_FAIL_CLOSED",
+    "PROVIDER_HARDWARE_AND_ADVANTAGE_BOUNDARIES_ZERO"
+  ],
+  "production_gap": {
+    "backend_native": "NOT_RUN_PROVIDER_FREE_PHASE",
+    "named_backend_routing": "NOT_RUN",
+    "next_falsifiable_gate": "ELEMENTARY_BASIS_DECOMPOSITION_AND_N40_RESOURCE_LEDGER",
+    "production_n40_compiler": "N40_REWRITE_ADMISSION_BLOCKED",
+    "required_before_n40_admission": [
+      "AUTHENTICATED_SEVEN_CONSTRAINT_N40_REGISTER_CONTRACT",
+      "SCALABLE_REVERSIBLE_ARITHMETIC_AND_CACHE_UPDATE_SCHEDULE",
+      "FULL_EQUIVALENCE_AND_CLEANUP_ON_ALL_EIGHT_FROZEN_SEEDS",
+      "ELEMENTARY_ONE_AND_TWO_QUBIT_DECOMPOSITION",
+      "SELECTED_MODEL_CNOT_LEDGER",
+      "MAXIMUM_CNOT_AT_MOST_2500000_ON_ALL_EIGHT_SEEDS",
+      "CONNECTIVITY_AND_ORDERED_LAYER_EVIDENCE"
+    ],
+    "selected_model_budget_gate": "NOT_EVALUATED"
+  },
+  "self_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing v37_spec_sha and v37_spec_sha256",
+  "spec_version": "QUANTUM LAB V3.7 REVERSIBLE INCREMENTAL-EXPOSURE PROTOTYPE · V1",
+  "v37_spec_sha": "69FD4338355410870996",
+  "v37_spec_sha256": "69fd43383554108709960b145436304cc8b687104fd68dc3ffd713e1bcd1cf2c"
+}

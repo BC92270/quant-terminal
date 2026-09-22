@@ -1,0 +1,903 @@
+{
+  "aggregate_evidence": {
+    "all_eight_seeds_complete": true,
+    "connected_seed_count": 6,
+    "disconnected_seed_count": 2,
+    "disconnected_seeds": [
+      2207,
+      7703
+    ],
+    "isolated_component_count": 3,
+    "maximum_component_count": 3,
+    "total_distinct_nine_cores": 91534251,
+    "total_exact_state_graph_edges": 337710603,
+    "total_feasible_vertices": 21655776,
+    "total_nine_core_incidences": 216557760,
+    "total_successful_unions": 21655765
+  },
+  "artifact_sha256": "0fbbddcdf73dde6708814521cc3df741acb53c079e25b6c8829965de56778f01",
+  "artifact_version": "PHASE III · V4.0 GLOBAL CONNECTIVITY COUNTEREXAMPLE ARTIFACT · V1",
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "resource_redesign": "PREREGISTERED_NOT_EVALUATED",
+    "scope": "EXACT_GLOBAL_FEASIBLE_STATE_GRAPH_CONNECTIVITY_AND_FUTURE_RESOURCE_REDESIGN_PREREGISTRATION"
+  },
+  "connectivity_evidence": {
+    "certificate_kind": "DISCONNECTED_COUNTEREXAMPLE",
+    "counterexample_bundle_sha256": "21c543be40fe0811b001c459391b2774ae431e554aea190a0aa08a0d8227d232",
+    "graph_definition": {
+      "edges": "ALL FEASIBLE ONE-OUT ONE-IN SWAPS",
+      "vertices": "ALL N=40 K=10 PORTFOLIOS SATISFYING FOUR GROUP BANDS AND THREE EXACT DYADIC FACTOR BANDS"
+    },
+    "graph_definition_sha256": "965a0e06fd64170c01466aefcbf488b1b0c3d0f84c94538deda1ce49c43bb614",
+    "method": "EXHAUSTIVE_GROUP_MITM_PLUS_NINE_CORE_DSU_V1",
+    "seed_rows": [
+      {
+        "certificate_kind": "CONNECTED_CERTIFICATE",
+        "component_assignment_sha256": "17cbf85d1e8f45fb8d3ffbb48fe074e2a7088af07e213b7c508e70a7ba9333cb",
+        "component_count": 1,
+        "component_representatives": [
+          {
+            "mask_hex": "000000b9ea",
+            "representative_sha256": "34169baa16176bc8aec1894a618e876df4f738b86c77419502e8939c669e5548",
+            "selected_indices": [
+              1,
+              3,
+              5,
+              6,
+              7,
+              8,
+              11,
+              12,
+              13,
+              15
+            ],
+            "size": 5050560
+          }
+        ],
+        "core_index_sha256": "ddf6de1d4b1c96798ec6c22c659e39808643d293ab93ff243a388ff92333f9a7",
+        "coverage_complete": true,
+        "decision": "CONNECTED",
+        "distinct_nine_cores": 20970176,
+        "enumeration_sha256": "73d7e2ed319c20cd0cc47451ac63a768d2c8200582e6f64a4b0ebaa1a848378c",
+        "exact_state_graph_edge_count": 77090945,
+        "expected_nine_core_incidences": 50505600,
+        "feasible_vertex_count": 5050560,
+        "forest_sha256": "ab53dc02c7ec1c89b082ebe33889affca111c3365055e3ccfc9434573fc76fc1",
+        "graph_definition_sha256": "965a0e06fd64170c01466aefcbf488b1b0c3d0f84c94538deda1ce49c43bb614",
+        "group_candidate_count": 180359550,
+        "incidence_invariant_valid": true,
+        "instance_id": "QH-N040-BANDS-S1103",
+        "isolated_counterexamples": [],
+        "largest_component_size": 5050560,
+        "method": "EXHAUSTIVE_GROUP_MITM_PLUS_NINE_CORE_DSU_V1",
+        "observed_nine_core_incidences": 50505600,
+        "parent_certificate_sha": "299583B3B7B65DAFC132",
+        "primary_enumerator": {
+          "group_order": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "primary_factor": 0,
+          "primary_interval_candidate_count": 52942480
+        },
+        "replay": {
+          "all_stable_fields_match": true,
+          "group_order": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "mismatched_fields": [],
+          "primary_factor": 1,
+          "primary_interval_candidate_count": 56952364
+        },
+        "seed": 1103,
+        "seed_evidence_sha256": "9f5143e6090c8f022b257e35444a9fcbb9d9387d3b7d6558e039faac6729f2dc",
+        "smallest_component_size": 5050560,
+        "successful_unions": 5050559,
+        "union_attempts": 29535424,
+        "union_forest_invariant_valid": true,
+        "witness_mask_hex": "e221248800"
+      },
+      {
+        "certificate_kind": "DISCONNECTED_COUNTEREXAMPLE",
+        "component_assignment_sha256": "de2fd17e4ec7f76f6c345a21cbe65cfc0c84a9e2e86dfe4df88b1b50047194ee",
+        "component_count": 2,
+        "component_representatives": [
+          {
+            "mask_hex": "00000237ca",
+            "representative_sha256": "81023e7bda496cd84cc13d5334779c625b6e095fef0dca522a7eb25776a8d111",
+            "selected_indices": [
+              1,
+              3,
+              6,
+              7,
+              8,
+              9,
+              10,
+              12,
+              13,
+              17
+            ],
+            "size": 3981552
+          },
+          {
+            "mask_hex": "08b4208484",
+            "representative_sha256": "f3fa9d0630cecca0f2d78efc0b5be5faecd706970564cc7be4f1a2fa019b5f3a",
+            "selected_indices": [
+              2,
+              7,
+              10,
+              15,
+              21,
+              26,
+              28,
+              29,
+              31,
+              35
+            ],
+            "size": 1
+          }
+        ],
+        "core_index_sha256": "38ade5b2686b7a1391bda083126647e16a752727db483670b490bb57290d08d4",
+        "coverage_complete": true,
+        "decision": "DISCONNECTED",
+        "distinct_nine_cores": 16365783,
+        "enumeration_sha256": "3a1cf658c89f1e4e92917521063a18d39ae204a229bf9fc76449b2cd36417f6e",
+        "exact_state_graph_edge_count": 67310169,
+        "expected_nine_core_incidences": 39815530,
+        "feasible_vertex_count": 3981553,
+        "forest_sha256": "286b9d4a50302c032b1d7381dd149cc6753f07a9b20912d60a255e21b3958035",
+        "graph_definition_sha256": "965a0e06fd64170c01466aefcbf488b1b0c3d0f84c94538deda1ce49c43bb614",
+        "group_candidate_count": 245234250,
+        "incidence_invariant_valid": true,
+        "instance_id": "QH-N040-BANDS-S2207",
+        "isolated_counterexamples": [
+          {
+            "all_neighbors_rejected": true,
+            "audit_universe": 300,
+            "counterexample_sha256": "b500e0ce920176aa347bc51468833469e8a632576c3ef82a79e020ddf956bfd8",
+            "exact_constraint_values": {
+              "FACTOR_1": 45401068155318154,
+              "FACTOR_2": 23060240033275814,
+              "FACTOR_3": 53966679905698000,
+              "GROUP_1": 2,
+              "GROUP_2": 4,
+              "GROUP_3": 2,
+              "GROUP_4": 2
+            },
+            "feasible_neighbor_count": 0,
+            "first_failure_counts": {
+              "FACTOR_1": 104,
+              "FACTOR_2": 41,
+              "FACTOR_3": 23,
+              "GROUP_1": 44,
+              "GROUP_2": 24,
+              "GROUP_3": 32,
+              "GROUP_4": 32
+            },
+            "mask_hex": "08b4208484",
+            "neighbor_ledger_sha256": "6790c04c33b8aa3bc17f8149039a65dcb6e420f84b01397a28a9b77f0526c73a",
+            "neighbors_audited": 300,
+            "selected_indices": [
+              2,
+              7,
+              10,
+              15,
+              21,
+              26,
+              28,
+              29,
+              31,
+              35
+            ],
+            "vertex_exactly_feasible": true
+          }
+        ],
+        "largest_component_size": 3981552,
+        "method": "EXHAUSTIVE_GROUP_MITM_PLUS_NINE_CORE_DSU_V1",
+        "observed_nine_core_incidences": 39815530,
+        "parent_certificate_sha": "B35D69AD2754BB7D34F8",
+        "primary_enumerator": {
+          "group_order": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "primary_factor": 0,
+          "primary_interval_candidate_count": 71834511
+        },
+        "replay": {
+          "all_stable_fields_match": true,
+          "group_order": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "mismatched_fields": [],
+          "primary_factor": 1,
+          "primary_interval_candidate_count": 79253783
+        },
+        "seed": 2207,
+        "seed_evidence_sha256": "af465deb27a942b15aad7131b540a65f63476c52685fc3eeebeb4ec31e89e052",
+        "smallest_component_size": 1,
+        "successful_unions": 3981551,
+        "union_attempts": 23449747,
+        "union_forest_invariant_valid": true,
+        "witness_mask_hex": "40870021a4"
+      },
+      {
+        "certificate_kind": "CONNECTED_CERTIFICATE",
+        "component_assignment_sha256": "4e6fa668354a47d34aa66e092abfd785efa17901179441c0520a7ffe2ff8aa6c",
+        "component_count": 1,
+        "component_representatives": [
+          {
+            "mask_hex": "0000008f79",
+            "representative_sha256": "b9c5ef6534a47f7f5fb5d7f47bce033f8d9ee9c856d6cb49a9013e0aa1b78b2d",
+            "selected_indices": [
+              0,
+              3,
+              4,
+              5,
+              6,
+              8,
+              9,
+              10,
+              11,
+              15
+            ],
+            "size": 623921
+          }
+        ],
+        "core_index_sha256": "314d6a4e1edf98ddd2cf0d47e5b0c61dc70bd9b65bcdd9816c108b7676cafac0",
+        "coverage_complete": true,
+        "decision": "CONNECTED",
+        "distinct_nine_cores": 3122327,
+        "enumeration_sha256": "85660cab146ed5d64df99a6be9ceb769ea55da42bb3a75149c88b0047f572285",
+        "exact_state_graph_edge_count": 7996488,
+        "expected_nine_core_incidences": 6239210,
+        "feasible_vertex_count": 623921,
+        "forest_sha256": "379c910ae40ab51c2a751dbf79d7b9c3bfdad0882c983a6b9b4c1c943a6610e8",
+        "graph_definition_sha256": "965a0e06fd64170c01466aefcbf488b1b0c3d0f84c94538deda1ce49c43bb614",
+        "group_candidate_count": 342922500,
+        "incidence_invariant_valid": true,
+        "instance_id": "QH-N040-BANDS-S3301",
+        "isolated_counterexamples": [],
+        "largest_component_size": 623921,
+        "method": "EXHAUSTIVE_GROUP_MITM_PLUS_NINE_CORE_DSU_V1",
+        "observed_nine_core_incidences": 6239210,
+        "parent_certificate_sha": "6E7AA733B758EAACA0EF",
+        "primary_enumerator": {
+          "group_order": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "primary_factor": 0,
+          "primary_interval_candidate_count": 102979871
+        },
+        "replay": {
+          "all_stable_fields_match": true,
+          "group_order": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "mismatched_fields": [],
+          "primary_factor": 1,
+          "primary_interval_candidate_count": 6809624
+        },
+        "seed": 3301,
+        "seed_evidence_sha256": "18d4c2fe8d7dc8e68d57790381a85d8b831667d2413d6c9a16e904f726729163",
+        "smallest_component_size": 623921,
+        "successful_unions": 623920,
+        "union_attempts": 3116883,
+        "union_forest_invariant_valid": true,
+        "witness_mask_hex": "a0208005a9"
+      },
+      {
+        "certificate_kind": "CONNECTED_CERTIFICATE",
+        "component_assignment_sha256": "97e3360db89b2f179c5cf9f685e12c3834c139f29798f05f7e094b6597b4459b",
+        "component_count": 1,
+        "component_representatives": [
+          {
+            "mask_hex": "0000003e9e",
+            "representative_sha256": "8fac396e95307508756efda6351a496c592a331432239353dfae4981555bfa0c",
+            "selected_indices": [
+              1,
+              2,
+              3,
+              4,
+              7,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "size": 4268642
+          }
+        ],
+        "core_index_sha256": "26dfc555cc89c05d1f2f36e802fe818346dfd6ef5884be00378575f6fcb717e9",
+        "coverage_complete": true,
+        "decision": "CONNECTED",
+        "distinct_nine_cores": 18071213,
+        "enumeration_sha256": "557aa07e482c9041c7fa3b388adbb086bed3a72e69a7f7f1fea4a0c8a21e48ff",
+        "exact_state_graph_edge_count": 62193081,
+        "expected_nine_core_incidences": 42686420,
+        "feasible_vertex_count": 4268642,
+        "forest_sha256": "3bacec23ae16dec4a9f35a1fb8777626a061ddfded33167444ec42170a2c2f0e",
+        "graph_definition_sha256": "965a0e06fd64170c01466aefcbf488b1b0c3d0f84c94538deda1ce49c43bb614",
+        "group_candidate_count": 250877250,
+        "incidence_invariant_valid": true,
+        "instance_id": "QH-N040-BANDS-S4409",
+        "isolated_counterexamples": [],
+        "largest_component_size": 4268642,
+        "method": "EXHAUSTIVE_GROUP_MITM_PLUS_NINE_CORE_DSU_V1",
+        "observed_nine_core_incidences": 42686420,
+        "parent_certificate_sha": "228CD31E7149C95453EF",
+        "primary_enumerator": {
+          "group_order": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "primary_factor": 0,
+          "primary_interval_candidate_count": 78046506
+        },
+        "replay": {
+          "all_stable_fields_match": true,
+          "group_order": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "mismatched_fields": [],
+          "primary_factor": 1,
+          "primary_interval_candidate_count": 75688708
+        },
+        "seed": 4409,
+        "seed_evidence_sha256": "6c0966f0de68a441c09a2aabefdb47f34e21e1d98e547d5552e1282caedc0a1a",
+        "smallest_component_size": 4268642,
+        "successful_unions": 4268641,
+        "union_attempts": 24615207,
+        "union_forest_invariant_valid": true,
+        "witness_mask_hex": "2002126a82"
+      },
+      {
+        "certificate_kind": "CONNECTED_CERTIFICATE",
+        "component_assignment_sha256": "6025d8452c2c40286948300f2db5ba58882309332c90bf5e92e0438b0cb0e79a",
+        "component_count": 1,
+        "component_representatives": [
+          {
+            "mask_hex": "0000006bcb",
+            "representative_sha256": "3e9913a4cf094b684b591d62ce1474cb14bf876849ca43d6dc3c5aa41615d5b6",
+            "selected_indices": [
+              0,
+              1,
+              3,
+              6,
+              7,
+              8,
+              9,
+              11,
+              13,
+              14
+            ],
+            "size": 165775
+          }
+        ],
+        "core_index_sha256": "966ef764a7b5dbfaacd1e4a25b507b274a1a23708d0cd4e38c278d4cea9ca2c0",
+        "coverage_complete": true,
+        "decision": "CONNECTED",
+        "distinct_nine_cores": 873937,
+        "enumeration_sha256": "591185efc19ad92ce57b3466db3dac3f3fc65a27d44af59ffe41efff12d930c5",
+        "exact_state_graph_edge_count": 1842395,
+        "expected_nine_core_incidences": 1657750,
+        "feasible_vertex_count": 165775,
+        "forest_sha256": "d6d07e868ab708eedcbaf539dabafeedb495b6abcefe3af2e132be8795f3aac6",
+        "graph_definition_sha256": "965a0e06fd64170c01466aefcbf488b1b0c3d0f84c94538deda1ce49c43bb614",
+        "group_candidate_count": 342922500,
+        "incidence_invariant_valid": true,
+        "instance_id": "QH-N040-BANDS-S5501",
+        "isolated_counterexamples": [],
+        "largest_component_size": 165775,
+        "method": "EXHAUSTIVE_GROUP_MITM_PLUS_NINE_CORE_DSU_V1",
+        "observed_nine_core_incidences": 1657750,
+        "parent_certificate_sha": "7EC122167C70EF45D278",
+        "primary_enumerator": {
+          "group_order": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "primary_factor": 0,
+          "primary_interval_candidate_count": 91959961
+        },
+        "replay": {
+          "all_stable_fields_match": true,
+          "group_order": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "mismatched_fields": [],
+          "primary_factor": 1,
+          "primary_interval_candidate_count": 34219307
+        },
+        "seed": 5501,
+        "seed_evidence_sha256": "0c98cf61adfff8680b2bf824333767f25a718c58c7ad63e41bcd7184ca37f300",
+        "smallest_component_size": 165775,
+        "successful_unions": 165774,
+        "union_attempts": 783813,
+        "union_forest_invariant_valid": true,
+        "witness_mask_hex": "7100800a43"
+      },
+      {
+        "certificate_kind": "CONNECTED_CERTIFICATE",
+        "component_assignment_sha256": "2d691018262d4b879c33fea6fdc537c441cfda9cf3c6bc525f6c056b7f77fcd7",
+        "component_count": 1,
+        "component_representatives": [
+          {
+            "mask_hex": "000006a783",
+            "representative_sha256": "2fee16f59ef1ddad4f9b449e8208ca0a98eaddda0985e5fb49ca3c91d40ad8e9",
+            "selected_indices": [
+              0,
+              1,
+              7,
+              8,
+              9,
+              10,
+              13,
+              15,
+              17,
+              18
+            ],
+            "size": 2559471
+          }
+        ],
+        "core_index_sha256": "3d222ec03e168c3505591e1308ea4f37cb61c360cde91b0c09f0ffc85ebd2056",
+        "coverage_complete": true,
+        "decision": "CONNECTED",
+        "distinct_nine_cores": 10913440,
+        "enumeration_sha256": "d247024cd4dbcb4c8990a179eef18363b103ff274275a2a8cd0c4fb6e2249f23",
+        "exact_state_graph_edge_count": 41412247,
+        "expected_nine_core_incidences": 25594710,
+        "feasible_vertex_count": 2559471,
+        "forest_sha256": "2b35a73829f31d9f75a28fc49651a8b69936e7574dac10cced66bb32a2b0abc1",
+        "graph_definition_sha256": "965a0e06fd64170c01466aefcbf488b1b0c3d0f84c94538deda1ce49c43bb614",
+        "group_candidate_count": 342922500,
+        "incidence_invariant_valid": true,
+        "instance_id": "QH-N040-BANDS-S6607",
+        "isolated_counterexamples": [],
+        "largest_component_size": 2559471,
+        "method": "EXHAUSTIVE_GROUP_MITM_PLUS_NINE_CORE_DSU_V1",
+        "observed_nine_core_incidences": 25594710,
+        "parent_certificate_sha": "6B5DEA8829D82BD7F6DE",
+        "primary_enumerator": {
+          "group_order": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "primary_factor": 0,
+          "primary_interval_candidate_count": 65881122
+        },
+        "replay": {
+          "all_stable_fields_match": true,
+          "group_order": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "mismatched_fields": [],
+          "primary_factor": 1,
+          "primary_interval_candidate_count": 59232593
+        },
+        "seed": 6607,
+        "seed_evidence_sha256": "7a65c3bb8db45dbcbac573c645a0085258a122cf9710a6f383ec1a5c33c76448",
+        "smallest_component_size": 2559471,
+        "successful_unions": 2559470,
+        "union_attempts": 14681270,
+        "union_forest_invariant_valid": true,
+        "witness_mask_hex": "1103301141"
+      },
+      {
+        "certificate_kind": "DISCONNECTED_COUNTEREXAMPLE",
+        "component_assignment_sha256": "3565dc5fbd4017e72fa68169de027b983fdc10d0bd3647c89f63a9b727b9045f",
+        "component_count": 3,
+        "component_representatives": [
+          {
+            "mask_hex": "00000067ea",
+            "representative_sha256": "30692d73b5ae2590857b17770e1995a15088a4ef4eb2b724d2604d7faef5214c",
+            "selected_indices": [
+              1,
+              3,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              13,
+              14
+            ],
+            "size": 3053394
+          },
+          {
+            "mask_hex": "a8180000ec",
+            "representative_sha256": "86526bbd179dbc583c7f180767752191cc25bff47212a624efa2e325d0b1d4e4",
+            "selected_indices": [
+              2,
+              3,
+              5,
+              6,
+              7,
+              27,
+              28,
+              35,
+              37,
+              39
+            ],
+            "size": 1
+          },
+          {
+            "mask_hex": "e2008a4082",
+            "representative_sha256": "5f4a5dadbe9bb289e4a6d26083e91b0fcfaaf52b302409f979359982bb2a4ad5",
+            "selected_indices": [
+              1,
+              7,
+              14,
+              17,
+              19,
+              23,
+              33,
+              37,
+              38,
+              39
+            ],
+            "size": 1
+          }
+        ],
+        "core_index_sha256": "39c91f89fa4c095bb37dcb4351c3b66a6b5f2f725346c5022fe5885ecfefa294",
+        "coverage_complete": true,
+        "decision": "DISCONNECTED",
+        "distinct_nine_cores": 12634661,
+        "enumeration_sha256": "f6dc34b4f5d3cdc1013fbedd2b80240f8dbebc5065b23b52148e39fa59980804",
+        "exact_state_graph_edge_count": 50780143,
+        "expected_nine_core_incidences": 30533960,
+        "feasible_vertex_count": 3053396,
+        "forest_sha256": "fb868eff9dfdd79aa69a6107a1db62a36e63bb21a58e32851278c99996f66b63",
+        "graph_definition_sha256": "965a0e06fd64170c01466aefcbf488b1b0c3d0f84c94538deda1ce49c43bb614",
+        "group_candidate_count": 342922500,
+        "incidence_invariant_valid": true,
+        "instance_id": "QH-N040-BANDS-S7703",
+        "isolated_counterexamples": [
+          {
+            "all_neighbors_rejected": true,
+            "audit_universe": 300,
+            "counterexample_sha256": "ad12133a43812f9f0467753b66f319e546173a3adab01f9e91bebefbe01fef82",
+            "exact_constraint_values": {
+              "FACTOR_1": 106803483539945827,
+              "FACTOR_2": 168451523978620514,
+              "FACTOR_3": 170799108844557633,
+              "GROUP_1": 2,
+              "GROUP_2": 3,
+              "GROUP_3": 3,
+              "GROUP_4": 2
+            },
+            "feasible_neighbor_count": 0,
+            "first_failure_counts": {
+              "FACTOR_1": 137,
+              "FACTOR_2": 69,
+              "FACTOR_3": 15,
+              "GROUP_1": 44,
+              "GROUP_2": 35,
+              "GROUP_3": 0,
+              "GROUP_4": 0
+            },
+            "mask_hex": "a8180000ec",
+            "neighbor_ledger_sha256": "36c438c153de4a900b98b2acf6f036bfc3b3332db57fae81ab2653407dc72c8d",
+            "neighbors_audited": 300,
+            "selected_indices": [
+              2,
+              3,
+              5,
+              6,
+              7,
+              27,
+              28,
+              35,
+              37,
+              39
+            ],
+            "vertex_exactly_feasible": true
+          },
+          {
+            "all_neighbors_rejected": true,
+            "audit_universe": 300,
+            "counterexample_sha256": "20ad5996f62e63406902a13ab5b2cee398083cbd245a1b48b8a5ae9f582a9499",
+            "exact_constraint_values": {
+              "FACTOR_1": 68944212616707328,
+              "FACTOR_2": 169310210011548720,
+              "FACTOR_3": 144875885154342221,
+              "GROUP_1": 2,
+              "GROUP_2": 1,
+              "GROUP_3": 4,
+              "GROUP_4": 3
+            },
+            "feasible_neighbor_count": 0,
+            "first_failure_counts": {
+              "FACTOR_1": 116,
+              "FACTOR_2": 61,
+              "FACTOR_3": 12,
+              "GROUP_1": 44,
+              "GROUP_2": 21,
+              "GROUP_3": 18,
+              "GROUP_4": 28
+            },
+            "mask_hex": "e2008a4082",
+            "neighbor_ledger_sha256": "7f6bb1c0153a7d1252ab1c5f49ee5f2b34afac32b4e9e12018a6818923b900d1",
+            "neighbors_audited": 300,
+            "selected_indices": [
+              1,
+              7,
+              14,
+              17,
+              19,
+              23,
+              33,
+              37,
+              38,
+              39
+            ],
+            "vertex_exactly_feasible": true
+          }
+        ],
+        "largest_component_size": 3053394,
+        "method": "EXHAUSTIVE_GROUP_MITM_PLUS_NINE_CORE_DSU_V1",
+        "observed_nine_core_incidences": 30533960,
+        "parent_certificate_sha": "641621EA406C21732624",
+        "primary_enumerator": {
+          "group_order": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "primary_factor": 0,
+          "primary_interval_candidate_count": 64233356
+        },
+        "replay": {
+          "all_stable_fields_match": true,
+          "group_order": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "mismatched_fields": [],
+          "primary_factor": 1,
+          "primary_interval_candidate_count": 56401099
+        },
+        "seed": 7703,
+        "seed_evidence_sha256": "7e812bb516c3065451031d3096f6f9952b62df38d88bb37d1735ce9bb77f7204",
+        "smallest_component_size": 1,
+        "successful_unions": 3053393,
+        "union_attempts": 17899299,
+        "union_forest_invariant_valid": true,
+        "witness_mask_hex": "01b10102c2"
+      },
+      {
+        "certificate_kind": "CONNECTED_CERTIFICATE",
+        "component_assignment_sha256": "342e786280fb85adb373c1cfaecbdcda01a1dfee9e437843cb91b0ac00607471",
+        "component_count": 1,
+        "component_representatives": [
+          {
+            "mask_hex": "00003023ce",
+            "representative_sha256": "ceb4120419780846723b9211c0c414fa04738c08ac6dc13f0ce892c9e724a9cd",
+            "selected_indices": [
+              1,
+              2,
+              3,
+              6,
+              7,
+              8,
+              9,
+              13,
+              20,
+              21
+            ],
+            "size": 1952458
+          }
+        ],
+        "core_index_sha256": "254b91e7d181961b390f3fb081c642750e13d4387e57cea22f0e56296ef07de9",
+        "coverage_complete": true,
+        "decision": "CONNECTED",
+        "distinct_nine_cores": 8582714,
+        "enumeration_sha256": "9dc357593263fddf25a3a44dc2914603237038ed73677eb9fd9ebf65da809129",
+        "exact_state_graph_edge_count": 29085135,
+        "expected_nine_core_incidences": 19524580,
+        "feasible_vertex_count": 1952458,
+        "forest_sha256": "e259e31768cd70e72e3636f7217e2a136a5307c10e69a313b34bbd0b4ceec11a",
+        "graph_definition_sha256": "965a0e06fd64170c01466aefcbf488b1b0c3d0f84c94538deda1ce49c43bb614",
+        "group_candidate_count": 95363100,
+        "incidence_invariant_valid": true,
+        "instance_id": "QH-N040-BANDS-S8807",
+        "isolated_counterexamples": [],
+        "largest_component_size": 1952458,
+        "method": "EXHAUSTIVE_GROUP_MITM_PLUS_NINE_CORE_DSU_V1",
+        "observed_nine_core_incidences": 19524580,
+        "parent_certificate_sha": "DAAB51C4A045EB784AA2",
+        "primary_enumerator": {
+          "group_order": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "primary_factor": 0,
+          "primary_interval_candidate_count": 25418090
+        },
+        "replay": {
+          "all_stable_fields_match": true,
+          "group_order": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "mismatched_fields": [],
+          "primary_factor": 1,
+          "primary_interval_candidate_count": 29562870
+        },
+        "seed": 8807,
+        "seed_evidence_sha256": "17c791d7ac91d9475c066a131d0edbe39f6ccbed381d57e1949989affcde2d63",
+        "smallest_component_size": 1952458,
+        "successful_unions": 1952457,
+        "union_attempts": 10941866,
+        "union_forest_invariant_valid": true,
+        "witness_mask_hex": "9556200004"
+      }
+    ]
+  },
+  "decisions": {
+    "backend_native": "NOT_RUN_PROVIDER_FREE_PHASE",
+    "global_connectivity_decision": "GLOBAL_FEASIBLE_GRAPH_DISCONNECTED_COUNTEREXAMPLE",
+    "next_falsifiable_gate": "AUGMENTED_1_2_EXCHANGE_GRAPH_CONNECTIVITY_OR_COUNTEREXAMPLE",
+    "overall": "V40_GLOBAL_CONNECTIVITY_COUNTEREXAMPLE_RESOURCE_REDESIGN_PREREGISTERED",
+    "production_admission": "REJECTED_CONNECTIVITY_AND_V39_RESOURCE_ARCHITECTURE",
+    "resource_architecture_decision": "RESOURCE_ARCHITECTURE_PREREGISTERED_NOT_EVALUATED"
+  },
+  "engine_source_raw_file_sha256": "16cdfffe8dde853f534349d0531f52c4026271f6f03de53ade77af4ec6726944",
+  "parent": {
+    "authentication": {
+      "errors": [],
+      "immutable_v39_files_checked": 127,
+      "raw_checks": {
+        "engine": {
+          "actual": "16cdfffe8dde853f534349d0531f52c4026271f6f03de53ade77af4ec6726944",
+          "expected": "16cdfffe8dde853f534349d0531f52c4026271f6f03de53ade77af4ec6726944",
+          "valid": true
+        },
+        "v31": {
+          "actual": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "expected": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "valid": true
+        },
+        "v39_artifact": {
+          "actual": "38d2d16856f1930f1f86848929a4341cab18e02edf387208debc6cd5213aed29",
+          "expected": "38d2d16856f1930f1f86848929a4341cab18e02edf387208debc6cd5213aed29",
+          "valid": true
+        },
+        "v39_freeze": {
+          "actual": "e44295aaab7689be7090ff6022a67e2e7d96cc40fcdaedf0328aa50294880c59",
+          "expected": "e44295aaab7689be7090ff6022a67e2e7d96cc40fcdaedf0328aa50294880c59",
+          "valid": true
+        },
+        "v39_source": {
+          "actual": "94dfd1691252bc4896e6f29bb0727ad75a2736a0de019d22bb0dea7643ceda94",
+          "expected": "94dfd1691252bc4896e6f29bb0727ad75a2736a0de019d22bb0dea7643ceda94",
+          "valid": true
+        },
+        "v39_spec": {
+          "actual": "b710e884216a765118c6309b59b0a30adf284ba89163ac34151e26d4629d1b7d",
+          "expected": "b710e884216a765118c6309b59b0a30adf284ba89163ac34151e26d4629d1b7d",
+          "valid": true
+        }
+      },
+      "semantic_checks": {
+        "v31_dyadic": true,
+        "v39_artifact": true,
+        "v39_decision": true,
+        "v39_freeze": true,
+        "v39_immutable_files": true,
+        "v39_spec": true
+      },
+      "valid": true
+    },
+    "v31_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+    "v31_raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "v39_artifact_raw_file_sha256": "38d2d16856f1930f1f86848929a4341cab18e02edf387208debc6cd5213aed29",
+    "v39_artifact_sha256": "26856f1e26bed5dc5b9a6d6af7bb25c53ef0b25188d8c787276afbeb08027775",
+    "v39_freeze_raw_file_sha256": "e44295aaab7689be7090ff6022a67e2e7d96cc40fcdaedf0328aa50294880c59",
+    "v39_freeze_sha256": "510790b4682e09376feb226b9d0b8b0046477ea456abf0a38e0cadb2410300ac"
+  },
+  "research_classification": "RESEARCH_ONLY",
+  "resource_redesign": {
+    "architecture_id": "EXACT_COMPRESSED_UNSIGNED_SLACK_LINEAR_ARITHMETIC_WITH_CERTIFIED_BRIDGES_V1",
+    "budget_cnot": 2500000,
+    "candidate_set": [
+      {
+        "candidate_id": "R1_LINEAR_SLACK_ALL_ONE_SWAP",
+        "move_family": "ALL FEASIBLE HAMMING_DISTANCE_TWO SWAPS",
+        "required_connectivity": "MUST_PASS_OR_CANDIDATE_REJECTED"
+      },
+      {
+        "bridge_rule": "Add lexicographically earliest exact-feasible Hamming-distance-four component bridges under deterministic Kruskal ordering until connected or exhaustively impossible",
+        "candidate_id": "R2_LINEAR_SLACK_ONE_SWAP_PLUS_TWO_SWAP_BRIDGES",
+        "move_family": "ONE-OUT ONE-IN SWAPS PLUS PREREGISTERED TWO-OUT TWO-IN BRIDGES",
+        "required_connectivity": "MUST_BE_RECERTIFIED_AFTER_BRIDGE_SELECTION"
+      }
+    ],
+    "correctness_gates": [
+      "Exact integer threshold-margin certificate before any coefficient shift",
+      "Original-versus-compressed predicate parity over the complete exact-K group-valid universe",
+      "Unsigned slack cache range proof on feasible support",
+      "Measurement-free ripple arithmetic forward/inverse equivalence",
+      "Clean scratch and coherent pair-action proof",
+      "Complete topology connectivity certificate or counterexample",
+      "Independent selected-model resource replay"
+    ],
+    "decomposition_policy": "MEASUREMENT_FREE_ELEMENTARY_MODEL_TO_BE_FIXED_IN_V4.1_BEFORE_FIRST_LEDGER",
+    "edge_universe_policy": "Retain separate labels for selected compiled moves, proven joint-empty moves and moves excluded by a registered sparse policy",
+    "future_release": "V4.1",
+    "multiple_candidate_policy": "PUBLISH_ALL_REGISTERED_RESULTS; NO SILENT WINNER SELECTION",
+    "post_observation_switching": "PROHIBITED",
+    "precision_policy": "Choose the maximum power-of-two coefficient shift whose strict exact threshold-margin inequality proves zero classification changes; no floating-point feasibility decision",
+    "primary_endpoint": "PASS IFF MAXIMUM SELECTED-MODEL CNOT ACROSS ALL EIGHT FROZEN SEEDS IS AT MOST 2500000 AFTER ALL CORRECTNESS AND CONNECTIVITY GATES PASS",
+    "resource_numerator": "One complete ordered mixer layer; coherent cache preparation remains outside the numerator and must be reported separately",
+    "result_fields": {
+      "budget_margin": "NOT_COMPUTED",
+      "cnot": "NOT_EVALUATED",
+      "projected_or_expected_cost": "PROHIBITED",
+      "status": "PREREGISTERED_NOT_EVALUATED"
+    },
+    "slack_encoding": "For each row use S=A-L on feasible support, prove 0<=S<=U-L, and update by the unchanged exact coefficient delta",
+    "status": "RESOURCE_ARCHITECTURE_PREREGISTERED_NOT_EVALUATED"
+  },
+  "source_sha256": "4ad9704cf4007a447195c6c9544ba38caa02316c32c1c0d7032b6a0cb6755afc",
+  "spec_raw_file_sha256": "c86e73ebc4e7852407972dfcab89000e68dbeac4e9d635093a31eadc835109e2",
+  "spec_sha256": "3ab75513efc7014157ef74633ef5c4d9bd4f23b22390f341dbfd033cb8a9694e",
+  "v39_resource_rejection": {
+    "budget_cnot": 2500000,
+    "budget_decision": "REJECTED_SELECTED_MODEL_CNOT_BUDGET",
+    "maximum_selected_model_cnot": 781332180,
+    "minimum_budget_margin_cnot": -778832180,
+    "preserved": true
+  },
+  "v40_version": "PHASE III · V4.0 GLOBAL FEASIBLE-GRAPH CONNECTIVITY · V1"
+}

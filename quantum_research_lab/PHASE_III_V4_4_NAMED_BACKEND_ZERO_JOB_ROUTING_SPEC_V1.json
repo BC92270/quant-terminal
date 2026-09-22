@@ -1,0 +1,153 @@
+{
+  "acceptance_contract": {
+    "accepted_only_if": [
+      "THE_EXACT_V4_3_PARENT_AND_ALL_191_SUCCESSOR_IMMUTABLE_PATHS_AUTHENTICATE",
+      "THE_PINNED_OFFLINE_FAKEMARRAKESH_TARGET_SNAPSHOT_AUTHENTICATES",
+      "THE_PINNED_QISKIT_CORE_TOOLCHAIN_AUTHENTICATES",
+      "EVERY_V4_3_LOGICAL_WIDTH_IS_AT_MOST_156_BEFORE_FULL_TRANSPILATION",
+      "EVERY_FULL_WORKLOAD_TRANSLATES_TO_THE_TARGET_ISA_AND_ROUTES_TO_ITS_COUPLING_GRAPH",
+      "TWO_CLEAN_PROCESS_REPLAYS_PRODUCE_IDENTICAL_CANONICAL_RESULTS",
+      "ALL_PROVIDER_CREDENTIAL_NETWORK_AND_JOB_COUNTERS_REMAIN_ZERO"
+    ],
+    "capacity_precheck_precedence": "IF_LOGICAL_QUBITS_EXCEED_TARGET_QUBITS_FULL_WORKLOAD_TRANSPILATION_AND_ROUTING_MUST_NOT_RUN",
+    "negative_result_is_a_valid_scientific_outcome": true,
+    "production_admission_on_capacity_rejection": "REJECTED_RESEARCH_ARCHITECTURE_REQUIRES_PROOF_CARRYING_WIDTH_REDUCTION",
+    "result_state_at_protocol_seal": "NOT_EVALUATED"
+  },
+  "canary_contract": {
+    "accepted_canaries": [
+      "ISA_TRANSLATION_3Q",
+      "REVERSIBLE_ARITHMETIC_MCX_5Q",
+      "REMOVE_COIN_RING_40Q",
+      "DUAL_COIN_RINGS_80Q",
+      "EXACT_CAPACITY_BOUNDARY_156Q"
+    ],
+    "canonical_result_contract": "ORDERED_TARGET_OPERATION_NAME_PHYSICAL_QUBITS_AND_17_DIGIT_PARAMETERS_PLUS_COUNTS_DEPTH_SIZE_LAYOUT_AND_ISA_AUDIT",
+    "mandatory_negative_canary": "CAPACITY_OVERFLOW_157Q_MUST_RAISE_TRANSPILER_ERROR",
+    "purpose": "VALIDATE_THE_PINNED_TRANSLATION_ROUTING_AND_CAPACITY_MECHANICS_ONLY",
+    "required_clean_process_replays": 2,
+    "scope_exclusion": "CANARY_SUCCESS_MUST_NOT_BE_EXTRAPOLATED_TO_ANY_REJECTED_FULL_V4_3_WORKLOAD"
+  },
+  "chronology": {
+    "confirmatory_inputs_frozen_before_result": true,
+    "parent_release": "V4.3",
+    "protocol_sealed_utc": "2026-09-14T13:30:00Z",
+    "result_state_at_seal": "NOT_EVALUATED",
+    "successor_is_append_only": true,
+    "v43_bytes_rewritten": false
+  },
+  "claim_boundary": {
+    "backend_name": "fake_marrakesh",
+    "backend_selection_kind": "PINNED_OFFLINE_FAKE_BACKEND_SNAPSHOT",
+    "calibration_aware_fidelity": "NOT_TESTED",
+    "credential_reads": 0,
+    "hardware_executable": false,
+    "network_calls": 0,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "provider_sdk_imported_by_confirmatory_runner": false,
+    "qpu_jobs_submitted": 0,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "snapshot_is_current_hardware_evidence": false
+  },
+  "full_workload_contract": {
+    "backend_capacity_qubits": 156,
+    "capacity_deficit_definition": "BACKEND_CAPACITY_MINUS_LOGICAL_QUBITS",
+    "frozen_seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ],
+    "parent_logical_widths": [
+      330,
+      331,
+      327,
+      328,
+      329,
+      331,
+      339,
+      334
+    ],
+    "persistent_register_floor": {
+      "ADD_COIN": 40,
+      "DATA": 40,
+      "REMOVE_COIN": 40,
+      "TARGET": 40,
+      "floor_qubits": 160
+    },
+    "rejected_metric_value": "NOT_RUN_CAPACITY_PRECHECK_REJECTED",
+    "seed_order_is_normative": true
+  },
+  "next_gate_contract": {
+    "next_falsifiable_gate": "PROOF_CARRYING_WIDTH_REDUCTION_TO_156_QUBITS_OR_LOWER_WITH_EXACT_PROMISE_PARITY",
+    "required_evidence": [
+      "AN_EXPLICIT_REGISTER_AND_LIVENESS_MAP_AT_OR_BELOW_156_QUBITS",
+      "EXACT_PARITY_WITH_THE_V4_3_PROMISE_SUBSPACE_OPERATION",
+      "THE_V4_3_OFF_PROMISE_NEGATIVE_WITNESS_RETAINED",
+      "NEW_PREDECLARED_RESOURCE_AND_ROUTING_BOUNDS",
+      "NO_PROVIDER_OR_HARDWARE_EXECUTION_WITHOUT_SEPARATE_AUTHORIZATION"
+    ]
+  },
+  "parent_contract": {
+    "artifact_raw_file_sha256": "626123fda2ee6561fe74cbb073a03f9987ccbd4e3d01c84b4f2815023e8271e3",
+    "artifact_sha256": "36a7a63410da87ce7f98bb10e6d3af3c3d784d9f8e520a6771e42cda9ee593ce",
+    "freeze_contract_raw_file_sha256": "950dc3eb7c9887bff7d7c6516942389fccb77f753291a158d18f407fea17efd7",
+    "freeze_contract_sha256": "d058a2545e8a9e4788360663d36ae7f451e1fe126c290d60d173910b83441a49",
+    "immutable_file_count": 191,
+    "maximum_logical_qubits": 339,
+    "parent_decision": "V43_BACKEND_AGNOSTIC_CIRCUIT_MATERIALIZED_PROMISE_SIMULATION_PASSED",
+    "total_elementary_instructions": 21925902
+  },
+  "research_sources": [
+    {
+      "role": "FAKE_BACKEND_TARGET_DEFINITION",
+      "title": "IBM Quantum Documentation · FakeMarrakesh",
+      "url": "https://quantum.cloud.ibm.com/docs/en/api/qiskit-ibm-runtime/dev/fake-provider-fake-marrakesh"
+    },
+    {
+      "role": "FAKE_BACKEND_EVIDENCE_BOUNDARY",
+      "title": "IBM Quantum Documentation · Fake provider",
+      "url": "https://quantum.cloud.ibm.com/docs/en/api/qiskit-ibm-runtime/fake-provider"
+    },
+    {
+      "role": "TRANSPILER_CONFIGURATION",
+      "title": "IBM Quantum Documentation · generate_preset_pass_manager",
+      "url": "https://quantum.cloud.ibm.com/docs/en/api/qiskit/qiskit.transpiler.generate_preset_pass_manager"
+    }
+  ],
+  "self_hash_contract": "SHA256_OVER_COMPACT_SORTED_UTF8_JSON_AFTER_REMOVING_V44_SPEC_SHA_AND_V44_SPEC_SHA256",
+  "spec_version": "QUANTUM LAB V4.4 NAMED OFFLINE BACKEND ZERO-JOB TRANSPILATION AND ROUTING · V1",
+  "target_contract": {
+    "basis_gates": [
+      "cz",
+      "id",
+      "rz",
+      "sx",
+      "x"
+    ],
+    "directed_coupling_edge_count": 352,
+    "fake_backend_class": "qiskit_ibm_runtime.fake_provider.FakeMarrakesh",
+    "named_target": "fake_marrakesh",
+    "num_qubits": 156,
+    "offline_only": true,
+    "qiskit_core_version": "2.5.2",
+    "qiskit_ibm_runtime_snapshot_source_version": "0.49.0",
+    "selection_interpretation": "ONE_EXPLICIT_PREREGISTERED_STRUCTURAL_COMPILATION_TARGET_NOT_A_BACKEND_COMPARISON_OR_PROVIDER_AVAILABILITY_CLAIM"
+  },
+  "transpilation_contract": {
+    "layout_method": "trivial",
+    "optimization_level": 0,
+    "routing_method": "basic",
+    "scheduling_method": "NOT_RUN",
+    "seed_transpiler": 4404,
+    "translation_method": "translator"
+  },
+  "v44_spec_sha": "3CD04DEE5A8CC5CE760C",
+  "v44_spec_sha256": "3cd04dee5a8cc5ce760c9fcf1fabd116841356641ffbab1a0727fcdfd26bae52"
+}

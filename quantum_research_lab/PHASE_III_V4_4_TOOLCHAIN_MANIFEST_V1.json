@@ -1,0 +1,55 @@
+{
+  "canary_transpilation_contract": {
+    "accepted_canaries": [
+      "ISA_TRANSLATION_3Q",
+      "REVERSIBLE_ARITHMETIC_MCX_5Q",
+      "REMOVE_COIN_RING_40Q",
+      "DUAL_COIN_RINGS_80Q",
+      "EXACT_CAPACITY_BOUNDARY_156Q"
+    ],
+    "layout_method": "trivial",
+    "optimization_level": 0,
+    "routing_method": "basic",
+    "scheduling_method": "NOT_RUN",
+    "seed_transpiler": 4404,
+    "translation_method": "translator",
+    "two_clean_process_replays_required": true,
+    "mandatory_negative_canary": "CAPACITY_OVERFLOW_157Q"
+  },
+  "environment": {
+    "dill": "0.4.1",
+    "numpy": "2.4.6",
+    "python": "3.11.9",
+    "qiskit": "2.5.2",
+    "rustworkx": "0.18.1",
+    "scipy": "1.17.1",
+    "stevedore": "5.9.1"
+  },
+  "manifest_sha256": "4077ec3268c80eace3cc7f96e7b1db4be052dce07d8ab659563cd566738e2860",
+  "manifest_version": "QUANTUM LAB V4.4 PINNED OFFLINE QISKIT TOOLCHAIN · V1",
+  "provider_boundary": {
+    "backend_refresh_called": false,
+    "backend_run_called": false,
+    "credential_lookup": "PROHIBITED",
+    "local_simulator_jobs_submitted": 0,
+    "network_calls": 0,
+    "provider_client_instantiated": false,
+    "provider_jobs_submitted": 0,
+    "qpu_jobs_submitted": 0,
+    "runtime_fake_provider_wheel_used_as_snapshot_source": true,
+    "runtime_service_imported_by_confirmatory_runner": false
+  },
+  "qiskit_distribution": {
+    "filename": "qiskit-2.5.2-cp310-abi3-macosx_10_12_x86_64.whl",
+    "sha256": "4aa7ddb0d9c1cd14298bf2fdd242646a5e0eaeebdebd2f31d5d2a018c75fa744",
+    "platform_scope": "REFERENCE_GENERATION_HOST_ONLY; LINUX_REPLAY_REQUIRES_THE_SAME_QISKIT_VERSION_WITH_ITS_PLATFORM_APPROPRIATE_DISTRIBUTION",
+    "version": "2.5.2"
+  },
+  "qiskit_ibm_runtime_snapshot_source_distribution": {
+    "filename": "qiskit_ibm_runtime-0.49.0-py3-none-any.whl",
+    "imported_by_confirmatory_runner": false,
+    "sha256": "b29b4a0a5e013b6e6fd6556158fd34a05e2930dea870c60edef738b834977f2b",
+    "version": "0.49.0"
+  },
+  "self_hash_contract": "SHA256_OVER_COMPACT_SORTED_UTF8_JSON_AFTER_REMOVING_MANIFEST_SHA256"
+}

@@ -1,0 +1,45 @@
+{
+  "candidate_family": {
+    "N": 40,
+    "seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ]
+  },
+  "eligible_regime": "BANDS",
+  "fidelity_contract": {
+    "classical_reference": "Phase-II BANDS real-valued constraints with feasibility tolerance 1e-8",
+    "false_negative": "real-valued Phase-II feasible AND quantized-oracle infeasible",
+    "false_positive": "quantized-oracle feasible AND real-valued Phase-II infeasible",
+    "promotion_rule": "Every seed must have zero false-positive and zero false-negative witnesses, witness consistency PASS, and all proof MILPs certified.",
+    "proof_method": "MILP extremum search over the full binary exact-K/group-band state space; no random sampling can promote fidelity.",
+    "proof_milp_time_limit_seconds_per_extremum": 30.0
+  },
+  "fixed_point_ladder_bits": [
+    8,
+    12,
+    16
+  ],
+  "oracle_spec_sha": "62854F1D7076BA742775",
+  "oracle_spec_version": "BANDS FIXED-POINT FIDELITY + REVERSIBLE ORACLE SPEC \u00b7 V1",
+  "oracle_version": "PHASE III \u00b7 EXACT REVERSIBLE BANDS ORACLE \u00b7 V1",
+  "phase2_execution_spec_sha": "40D3225B0AFC86BC01DD",
+  "phase2_protocol_sha": "8E5EF191FAE97A75",
+  "phase3_preparation_spec_sha": "CDC693C22A3838B0B3C1",
+  "quantization_rule": "Signed round-half-away-from-zero of coefficient*2^b and band-bound*2^b; integer comparisons are exact after quantization.",
+  "reversible_oracle_contract": {
+    "arbitrary_penalty_substitution": false,
+    "cardinality": "Preserved by the number-preserving XY mixer; no cardinality penalty is introduced.",
+    "clean_ancilla": true,
+    "factor_exposures": "Controlled reversible signed integer additions of sealed fixed-point coefficients, lower/upper integer comparisons, flag aggregation, then uncompute.",
+    "group_counts": "Controlled reversible integer additions into exact count registers, lower/upper comparisons, flag aggregation, then uncompute.",
+    "phase2_objective_unchanged": true
+  },
+  "selection_rule": "Use the lowest fixed-point precision in 8 -> 12 -> 16 that receives an exact family-wide MILP mismatch proof; if none passes, remain blocked."
+}

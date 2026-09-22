@@ -1,0 +1,93 @@
+{
+  "claim_boundary": {
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY"
+  },
+  "created_utc": "2026-09-04T18:04:20Z",
+  "deployment_contract": {
+    "codespace_root": "/workspaces/quant-terminal",
+    "route": "?workspace=quantum-research",
+    "surface": "PHASE III / QPU",
+    "ui_acceptance_method": "streamlit.testing.v1.AppTest"
+  },
+  "family": {
+    "K": 10,
+    "N": 40,
+    "regime": "BANDS",
+    "seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ]
+  },
+  "freeze_contract_sha256": "dae2813dabb760ef6c93da0d26be2d9ef40feef2aa1a467f36d237918bdd3f76",
+  "freeze_contract_version": "QUANTUM LAB V3.3 RELEASE FREEZE · V1",
+  "frozen_files": {
+    "FREEZE_CONTRACT_V3_1.json": "576f26453f495259ae50263bde577f5f2cf7a3a449d0a366691888f8f9179c40",
+    "FREEZE_CONTRACT_V3_2.json": "d34344a9388e8901b6da2c8d6a301164dba03b94345d7e921653cc8aa9a83fd8",
+    "SEALED_EXACT_DYADIC_BANDS_ORACLE.json": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "outputs/quantum_phase3/algorithmic_contract/SEALED_FEASIBLE_SUBSPACE_MIXER_ARTIFACT.json": "af04ddd8986d59cc18ba33f756b24ade93ef005ff0b0df14d88d4c52d537b565",
+    "outputs/quantum_phase3/gate_compiler/SEALED_GATE_COMPILER_ARTIFACT.json": "616cc12808465916dfcfcde6c8e2c9feed1be4b294ad034f29cb7cb36704031b",
+    "quantum_research_lab/PHASE_III_ALGORITHMIC_CONTRACT_SPEC_V1.json": "57b00bfcb39acd791a902fe459e564849fdf8a281a78e84b4b3d80afcd1b66b4",
+    "quantum_research_lab/QUANTUM_LAB_V3_3_ARCHITECTURE.md": "c3a001a01075f280957ff41fefe93f0b84d90a2ebe96f34991e470599e03da96",
+    "quantum_research_lab/README.md": "71fef3671ea39be013cba54ad263d7d58ff45485909357b3a463de16f67189ac",
+    "quantum_research_lab/phase3_algorithmic_contract.py": "309a262415ba5f9017c8185c1a3b98fabbbd57c6a2ec5559eec904df44d02ec8",
+    "quantum_research_lab/phase3_algorithmic_validation.py": "dba6549d4831f0b5cffeca9dbd4cc741751136df0535abb52ef1b5f7f6547393",
+    "quantum_research_lab/test_phase3_algorithmic_contract.py": "ceeab41d630117ae81d5507a2d2ca68b7c22b5d7361ea4bbae258a39003c175a",
+    "quantum_research_lab/ui.py": "e9862c581cb4c77824c67b2570bcc1a081f4da944a347f558e051f86227b26df",
+    "quantum_research_lab/verify_freeze_contract_v33.py": "ae6923edf851cc64a099501b315c78f8e02878ed7c63216a608ac413ebeb0d99",
+    "quantum_research_lab/verify_phase3_v33.py": "3f23095e4619127760fde37c7d811f841618e86a4ca27e993518bf31f58d46be",
+    "quantum_research_lab/verify_phase3_v33_ui.py": "0c5926502055a76dc7f79aa721774233638b4bf41cd2913d56325485639fbbde"
+  },
+  "lineage": {
+    "v31_raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "v32_artifact_sha256": "5e6cc7e53f15921f7cbd22ef66f04878b37d54372e04b5bf49f5bb4854050fcd",
+    "v32_raw_file_sha256": "616cc12808465916dfcfcde6c8e2c9feed1be4b294ad034f29cb7cb36704031b",
+    "v33_algorithm_spec_sha256": "5119490433952d6a4a6151a2890b647479460e3cda4283bf1bc541243d1a8e3e",
+    "v33_artifact_raw_file_sha256": "af04ddd8986d59cc18ba33f756b24ade93ef005ff0b0df14d88d4c52d537b565",
+    "v33_artifact_sha256": "5ecd1fd5e3f093934220691e20139eff5c12757c2cf70bbfe6f89c2bc26b958a",
+    "v33_resource_manifest_sha256": "437d9370d0a7b37aac30094b8ebf4c5db97d84abd7cfc633267a22b52eadf8a6",
+    "v33_validation_manifest_sha256": "7461299442dda626986ac448c1e7ed4cbb20bdd5a4d4c27fc60a7d96deb9285e"
+  },
+  "resource_reference": {
+    "canonical_profile": "DUAL_GUARD_CACHED",
+    "canonical_topology": "COMPLETE_SWAP_SCAN",
+    "controlled_xy_native_cost": "NOT_ESTIMATED",
+    "edges": 780,
+    "logical_qubits_sequential_reuse_max": 120,
+    "oracle_calls": 1562,
+    "oracle_path_t_count_upper_subtotal_max": 174490676360,
+    "provider_neutral_depth_max": 628708904,
+    "provider_neutral_gate_count_max": 668963206
+  },
+  "scientific_decisions": {
+    "backend_native_lowering": "NOT_RUN",
+    "complete_global_connectivity": "INDETERMINATE",
+    "complete_witness_local_reachability": "PASS · WITNESS LOCAL REACHABILITY ONLY",
+    "controlled_xy_native_synthesis": "NOT_RUN",
+    "feasibility_invariance": "PASS · RELATIVE TO FROZEN V3.2 PREDICATE",
+    "guard_ancilla_cleanup": "PASS",
+    "hardware_execution": "BLOCKED · ZERO JOBS",
+    "ring_topology": "REJECTED · AUTHENTICATED WITNESS ISOLATION"
+  },
+  "self_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing freeze_contract_sha256",
+  "validation_evidence": {
+    "live_codespace_release_checks": "13 / 13 PASS",
+    "live_codespace_unit_tests": "15 / 15 PASS",
+    "n40_nontrivial_swaps": 2400,
+    "scientific_validation_gates": "8 / 8 PASS",
+    "small_n_edge_actions": 1800,
+    "streamlit_acceptance_checks": "13 / 13 PASS",
+    "streamlit_exceptions": 0,
+    "streamlit_tabs_preserved": 12
+  }
+}

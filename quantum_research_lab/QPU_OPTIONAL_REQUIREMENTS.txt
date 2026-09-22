@@ -1,0 +1,10 @@
+# Optional dependencies for PHASE III / QPU readiness.
+# V2.9 imports these lazily; the rest of the Quantum Lab works without them.
+qiskit
+qiskit-ibm-runtime
+
+# Optional local simulator control (never counted as hardware evidence):
+# qiskit-aer
+
+# Amazon Braket is inventory-only in V2.9; no Braket task submission is implemented:
+# amazon-braket-sdk

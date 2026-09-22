@@ -1,0 +1,207 @@
+{
+  "claim_boundary": {
+    "hardware_executable": false,
+    "network_calls": 0,
+    "provider_calls": 0,
+    "qpu_jobs_submitted": 0,
+    "research_classification": "RESEARCH_ONLY",
+    "snapshot_is_current_hardware_evidence": false
+  },
+  "cohort": {
+    "admitted_snapshot_ids": [
+      "fake_marrakesh-2025-02-26-d49d7ae07deb"
+    ],
+    "alias_count": 0,
+    "decision": "MULTI_SNAPSHOT_ROBUSTNESS_NOT_EVALUABLE_INSUFFICIENT_DISTINCT_AUTHENTIC_SNAPSHOT_IDENTITIES",
+    "distinct_authentic_snapshot_count": 1,
+    "minimum_required": 3,
+    "multi_snapshot_eligible": false
+  },
+  "created_utc": "2026-09-21T16:20:13Z",
+  "materialization_contract": {
+    "all_976_native_tuples_must_be_loaded_from_the_authenticated_reference": true,
+    "missing_invalid_or_nonfinite_property": "REJECT_SNAPSHOT_FAIL_CLOSED",
+    "no_imputation": true,
+    "no_reverse_edge_fallback": true,
+    "normalized_summary_is_not_a_second_snapshot": true
+  },
+  "normalized_snapshots": [
+    {
+      "backend": {
+        "backend_name": "fake_marrakesh",
+        "basis_gates": [
+          "cz",
+          "id",
+          "rz",
+          "sx",
+          "x"
+        ],
+        "dt_nanoseconds": 4,
+        "dt_seconds": 4e-09,
+        "num_qubits": 156,
+        "source_backend_name": "ibm_marrakesh",
+        "source_backend_version": "1.0.7"
+      },
+      "coverage": {
+        "all_required_gate_tuples_complete": true,
+        "expected_gate_counts": {
+          "cz": 352,
+          "id": 156,
+          "rz": 156,
+          "sx": 156,
+          "x": 156
+        },
+        "native_gate_tuple_count": 976,
+        "required_property_value_count": 1952
+      },
+      "fault_screen": {
+        "excluded_directed_cz_edge_count": 26,
+        "excluded_undirected_cz_edge_count": 13,
+        "fault_excluded_component_sizes": [
+          153,
+          1,
+          1,
+          1
+        ],
+        "isolated_qubits": [
+          24,
+          102,
+          113
+        ],
+        "largest_component_size": 153,
+        "maximum_v46_logical_width": 145,
+        "width_margin": 8
+      },
+      "gate_statistics": {
+        "cz": {
+          "count": 352,
+          "duration_seconds": {
+            "maximum": 8e-08,
+            "median": 6.8e-08,
+            "minimum": 6.8e-08
+          },
+          "duration_ticks": {
+            "maximum": 20.0,
+            "median": 17.0,
+            "minimum": 17.0
+          },
+          "gate_error": {
+            "maximum": 1.0,
+            "median": 0.003294753646418097,
+            "minimum": 0.0010363120130211234
+          },
+          "unit_error_tuple_count": 26
+        },
+        "id": {
+          "count": 156,
+          "duration_seconds": {
+            "maximum": 3.6000000000000005e-08,
+            "median": 3.6000000000000005e-08,
+            "minimum": 3.6000000000000005e-08
+          },
+          "duration_ticks": {
+            "maximum": 9.0,
+            "median": 9.0,
+            "minimum": 9.0
+          },
+          "gate_error": {
+            "maximum": 0.04194630537805039,
+            "median": 0.00023048834902833964,
+            "minimum": 6.881925969823162e-05
+          },
+          "unit_error_tuple_count": 0
+        },
+        "rz": {
+          "count": 156,
+          "duration_seconds": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0
+          },
+          "duration_ticks": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0
+          },
+          "gate_error": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0
+          },
+          "unit_error_tuple_count": 0
+        },
+        "sx": {
+          "count": 156,
+          "duration_seconds": {
+            "maximum": 3.6000000000000005e-08,
+            "median": 3.6000000000000005e-08,
+            "minimum": 3.6000000000000005e-08
+          },
+          "duration_ticks": {
+            "maximum": 9.0,
+            "median": 9.0,
+            "minimum": 9.0
+          },
+          "gate_error": {
+            "maximum": 0.04194630537805039,
+            "median": 0.00023048834902833964,
+            "minimum": 6.881925969823162e-05
+          },
+          "unit_error_tuple_count": 0
+        },
+        "x": {
+          "count": 156,
+          "duration_seconds": {
+            "maximum": 3.6000000000000005e-08,
+            "median": 3.6000000000000005e-08,
+            "minimum": 3.6000000000000005e-08
+          },
+          "duration_ticks": {
+            "maximum": 9.0,
+            "median": 9.0,
+            "minimum": 9.0
+          },
+          "gate_error": {
+            "maximum": 0.04194630537805039,
+            "median": 0.00023048834902833964,
+            "minimum": 6.881925969823162e-05
+          },
+          "unit_error_tuple_count": 0
+        }
+      },
+      "normalized_properties_path": "quantum_research_lab/PHASE_III_V4_7_NORMALIZED_PROPERTIES_ORACLE_V1.json",
+      "normalized_properties_raw_file_sha256": "46203d513fc295639a314cdb4b95aa1eb407f6a303be28c5033086aa2a210a99",
+      "normalized_properties_sha256": "0e436981a23bd6e75679752f4c139658ef811acc94adc6758b0dc99075e75fe7",
+      "property_time_range": {
+        "global_date_is_not_asserted_as_strict_cutoff": true,
+        "global_last_update_date": "2025-02-26T14:52:45-05:00",
+        "global_last_update_utc": "2025-02-26T19:52:45Z",
+        "maximum_embedded_property_date": "2025-02-26T15:03:24.375784-05:00",
+        "minimum_embedded_property_date": "2024-10-28T02:34:30-04:00"
+      },
+      "qubit_statistics": {
+        "readout_error": {
+          "maximum": 0.473876953125,
+          "median": 0.009521484375,
+          "minimum": 0.002685546875
+        },
+        "t1_seconds": {
+          "maximum": 0.0004990503327365227,
+          "median": 0.00019735837603822843,
+          "minimum": 6.799428040967269e-06
+        },
+        "t2_seconds": {
+          "maximum": 0.0005347869789391219,
+          "median": 0.00011842625980898683,
+          "minimum": 1.7982914179291225e-07
+        }
+      },
+      "raw_properties_raw_file_sha256": "d49d7ae07deb95947ea10e5b9b9c5cbab6df21f98610543817f35ade2b1aece6",
+      "role": "DEVELOPMENT_ONLY_NOT_A_MULTI_SNAPSHOT_COHORT",
+      "snapshot_id": "fake_marrakesh-2025-02-26-d49d7ae07deb"
+    }
+  ],
+  "normalized_snapshots_oracle_sha256": "8364f86f0360fff5938eed57d926a8c5d6a960bc8639300a7f366f46bf940da5",
+  "oracle_version": "PHASE III · V4.8 NORMALIZED SNAPSHOT SET ORACLE · V1",
+  "snapshot_catalog_sha256": "9a585764e2de35edcd66695da7abfea9726785c06065133170917d8587341ef6"
+}

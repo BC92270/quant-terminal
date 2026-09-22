@@ -1,0 +1,1710 @@
+{
+  "artifact_sha256": "5773b8f38bd1400f4eb1edf5a016ab69c85fc794aefe31fd1a742d08174bee36",
+  "artifact_version": "PHASE III · V3.7 PROOF-CARRYING REVERSIBLE PROTOTYPE · V1",
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "global_impossibility": "NOT_CLAIMED",
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "production_n40_equivalence": "NOT_CLAIMED",
+    "prototype_scope": "REGISTERED_SYNTHETIC_N4_K2_FIXTURE_ONLY",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "selected_model_cnot": "NOT_ESTIMATED",
+    "v34_exact_successor_equivalence": "NOT_CLAIMED"
+  },
+  "coherent_transition_ledger": {
+    "coherent_transition_ledger_sha256": "996ac5b60194309e809443f9effaa0a2bc843205345ae280320821bf0a1de61e",
+    "ordering": "EDGE_LEXICOGRAPHIC_THEN_ASCENDING_BASIS_ENDPOINTS",
+    "rows": [
+      {
+        "cache_delta": [
+          1,
+          1
+        ],
+        "clean_scratch_state": "PASSED_ZERO_ANCILLA_ZERO_SCRATCH",
+        "edge": [
+          0,
+          1
+        ],
+        "endpoint_hamming_distance": 4,
+        "logical_gate_count": 7,
+        "off_target_identity_state": "PASSED",
+        "pair_ir_sha256": "c938ae206e8e325451d12f39f44ae56d3dc9a593c0b2c4bb3ba8930f2bfb9d1d",
+        "reference_action_state": "PASSED_ALL_REGISTERED_BETAS",
+        "roundtrip_state": "PASSED_ALL_1024_BASIS_COLUMNS_PER_BETA",
+        "source_basis": 37,
+        "source_caches": [
+          2,
+          0
+        ],
+        "source_portfolio": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "target_basis": 182,
+        "target_caches": [
+          3,
+          1
+        ],
+        "target_portfolio": [
+          0,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "cache_delta": [
+          1,
+          1
+        ],
+        "clean_scratch_state": "PASSED_ZERO_ANCILLA_ZERO_SCRATCH",
+        "edge": [
+          0,
+          1
+        ],
+        "endpoint_hamming_distance": 7,
+        "logical_gate_count": 13,
+        "off_target_identity_state": "PASSED",
+        "pair_ir_sha256": "3f9fd3d42799763733506fba72eed7ea25ca11722479326b2dafb0b9918e5e20",
+        "reference_action_state": "PASSED_ALL_REGISTERED_BETAS",
+        "roundtrip_state": "PASSED_ALL_1024_BASIS_COLUMNS_PER_BETA",
+        "source_basis": 185,
+        "source_caches": [
+          3,
+          1
+        ],
+        "source_portfolio": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "target_basis": 330,
+        "target_caches": [
+          4,
+          2
+        ],
+        "target_portfolio": [
+          0,
+          1,
+          0,
+          1
+        ]
+      },
+      {
+        "cache_delta": [
+          1,
+          1
+        ],
+        "clean_scratch_state": "PASSED_ZERO_ANCILLA_ZERO_SCRATCH",
+        "edge": [
+          2,
+          3
+        ],
+        "endpoint_hamming_distance": 4,
+        "logical_gate_count": 7,
+        "off_target_identity_state": "PASSED",
+        "pair_ir_sha256": "b677d690c3efcb9b4c6a8b2a8dfa1d42f6b7a9248109123a1640b25ee55ed6a1",
+        "reference_action_state": "PASSED_ALL_REGISTERED_BETAS",
+        "roundtrip_state": "PASSED_ALL_1024_BASIS_COLUMNS_PER_BETA",
+        "source_basis": 37,
+        "source_caches": [
+          2,
+          0
+        ],
+        "source_portfolio": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "target_basis": 185,
+        "target_caches": [
+          3,
+          1
+        ],
+        "target_portfolio": [
+          1,
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "cache_delta": [
+          1,
+          1
+        ],
+        "clean_scratch_state": "PASSED_ZERO_ANCILLA_ZERO_SCRATCH",
+        "edge": [
+          2,
+          3
+        ],
+        "endpoint_hamming_distance": 7,
+        "logical_gate_count": 13,
+        "off_target_identity_state": "PASSED",
+        "pair_ir_sha256": "afbde867a11a81505d4dfe3d968c9640f2466351663e0fd8e9ec3325a5171086",
+        "reference_action_state": "PASSED_ALL_REGISTERED_BETAS",
+        "roundtrip_state": "PASSED_ALL_1024_BASIS_COLUMNS_PER_BETA",
+        "source_basis": 182,
+        "source_caches": [
+          3,
+          1
+        ],
+        "source_portfolio": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "target_basis": 330,
+        "target_caches": [
+          4,
+          2
+        ],
+        "target_portfolio": [
+          0,
+          1,
+          0,
+          1
+        ]
+      }
+    ],
+    "transition_count": 4
+  },
+  "compiler_evidence": {
+    "basis_columns_checked": 18432,
+    "checks": {
+      "all_non_target_basis_states_are_identity": true,
+      "all_nonzero_target_support_has_consistent_cache": true,
+      "compiled_action_matches_ideal_on_every_basis_column": true,
+      "compiled_adjoint_restores_every_basis_column": true,
+      "complete_ordered_layer_adjoint_restores_every_basis_column": true,
+      "complete_ordered_layer_gram_is_identity": true,
+      "complete_ordered_layer_matches_independent_reference_multi_beta": true,
+      "complete_ordered_layer_preserves_feasible_consistent_support": true,
+      "complete_ordered_layer_preserves_norm": true,
+      "every_basis_column_preserves_norm": true,
+      "feasible_fixture_graph_is_connected": true,
+      "logical_ir_replay_is_deterministic": true,
+      "zero_ancilla_and_zero_scratch_allocated": true
+    },
+    "compiler_validation_sha256": "3b8bd3776a6ccfc42a844bdf439ba858964a3e2b0f7ef128ed3323b2aaddc276",
+    "complete_layer_basis_columns_checked": 3072,
+    "complete_layer_gram_entries_checked": 3145728,
+    "complete_layer_maximum_action_error": 0.0,
+    "complete_layer_maximum_gram_error": 6.938893903907228e-18,
+    "complete_layer_maximum_norm_error": 0.0,
+    "complete_layer_maximum_roundtrip_error": 0.0,
+    "edge_reports": [
+      {
+        "basis_columns_checked": 3072,
+        "edge": [
+          0,
+          1
+        ],
+        "edge_ir_sha256": "374f0bf27df138ead30a9feafd4a05109149d5abfdf89cbe62a8aad487ff8363",
+        "maximum_action_error": 0.0,
+        "maximum_norm_error": 0.0,
+        "maximum_roundtrip_error": 0.0,
+        "off_target_identity_exact_within_tolerance": true,
+        "pair_count": 2
+      },
+      {
+        "basis_columns_checked": 3072,
+        "edge": [
+          0,
+          2
+        ],
+        "edge_ir_sha256": "1af35e79026f24d67fb801c41842591bbf50791d73b532c047bc62ca45a4c96e",
+        "maximum_action_error": 0.0,
+        "maximum_norm_error": 0.0,
+        "maximum_roundtrip_error": 0.0,
+        "off_target_identity_exact_within_tolerance": true,
+        "pair_count": 0
+      },
+      {
+        "basis_columns_checked": 3072,
+        "edge": [
+          0,
+          3
+        ],
+        "edge_ir_sha256": "331fbf8714738c937c6f1cdfe66985309c70c3f2102985b7a720de5320fe588b",
+        "maximum_action_error": 0.0,
+        "maximum_norm_error": 0.0,
+        "maximum_roundtrip_error": 0.0,
+        "off_target_identity_exact_within_tolerance": true,
+        "pair_count": 0
+      },
+      {
+        "basis_columns_checked": 3072,
+        "edge": [
+          1,
+          2
+        ],
+        "edge_ir_sha256": "aba4b19a3d68d9229daece34228011314d02774802161582f35b8089cdd257d1",
+        "maximum_action_error": 0.0,
+        "maximum_norm_error": 0.0,
+        "maximum_roundtrip_error": 0.0,
+        "off_target_identity_exact_within_tolerance": true,
+        "pair_count": 0
+      },
+      {
+        "basis_columns_checked": 3072,
+        "edge": [
+          1,
+          3
+        ],
+        "edge_ir_sha256": "1bbbe898d7b9f44ae060106b875be3657a709e35e26f674eeab1bebe96fc9f63",
+        "maximum_action_error": 0.0,
+        "maximum_norm_error": 0.0,
+        "maximum_roundtrip_error": 0.0,
+        "off_target_identity_exact_within_tolerance": true,
+        "pair_count": 0
+      },
+      {
+        "basis_columns_checked": 3072,
+        "edge": [
+          2,
+          3
+        ],
+        "edge_ir_sha256": "df949ca01e3432ecad12bbabfbddc39481ed50ae9cc5dd6456b205d891ef99dc",
+        "maximum_action_error": 0.0,
+        "maximum_norm_error": 0.0,
+        "maximum_roundtrip_error": 0.0,
+        "off_target_identity_exact_within_tolerance": true,
+        "pair_count": 2
+      }
+    ],
+    "feasible_connectivity": {
+      "connected": true,
+      "feasible_node_count": 4,
+      "feasible_portfolios": [
+        [
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ]
+      ],
+      "undirected_transition_count": 4
+    },
+    "full_domain_basis_states": 1024,
+    "logical_ir_replay_sha256": "6368affadfb65ff3c7ffd961d69f65effa68c51445690b4ff9ad894546eff7b4",
+    "maximum_action_error": 0.0,
+    "maximum_norm_error": 0.0,
+    "maximum_roundtrip_error": 0.0,
+    "numeric_tolerance": 1e-12,
+    "passed": true,
+    "register_width": 10,
+    "scratch_cleanup_proof": {
+      "allocated_ancilla_qubits": 0,
+      "allocated_scratch_qubits": 0,
+      "evidence": "Every complete compiled block was compared with the ideal two-level operator on every computational-basis column; all off-target columns return exactly within the registered numeric tolerance.",
+      "method": "GRAY_PATH_COMPUTE · MCRX(2β) · REVERSE_GRAY_PATH"
+    },
+    "two_level_pair_beta_checks": 12,
+    "validation_betas": [
+      0.0,
+      0.2718281828459045,
+      0.7853981633974483
+    ]
+  },
+  "decisions": {
+    "backend_native": "NOT_RUN_PROVIDER_FREE_PHASE",
+    "coherent_cache_update": "PASSED_EXHAUSTIVE_SMALL_INSTANCE",
+    "elementary_basis_decomposition": "BLOCKED_NOT_BUILT",
+    "incremental_exposure_prototype": "PASSED_ON_REGISTERED_N4_K2_FIXTURE",
+    "n40_rewrite_admission": "N40_REWRITE_ADMISSION_BLOCKED",
+    "next_falsifiable_gate": "ELEMENTARY_BASIS_DECOMPOSITION_AND_N40_RESOURCE_LEDGER",
+    "overall": "SMALL_INSTANCE_REVERSIBLE_PROTOTYPE_PASSED",
+    "production_n40_compiler": "N40_REWRITE_ADMISSION_BLOCKED",
+    "scratch_cleanup": "PASSED_ZERO_ANCILLA_GRAY_UNCOMPUTE",
+    "selected_model_budget": "NOT_EVALUATED"
+  },
+  "differential_evidence": {
+    "arithmetic_identity": "A_r(S_ij x) = A_r(x) + (x_j - x_i)(c_ri - c_rj)",
+    "checks": {
+      "all_36_exact_k_portfolio_edge_cases_present": true,
+      "all_72_constraint_row_cases_present": true,
+      "all_feasibility_predicates_equal_full_recompute": true,
+      "all_integer_deltas_equal_full_recompute": true,
+      "compiled_guard_equals_registered_support_rule": true,
+      "every_swap_preserves_exact_k": true
+    },
+    "constraint_row_cases": 72,
+    "differential_manifest_sha256": "67d6caa065a9f99103061e1f9a554341d1608e25ef8cf5f5e2efd388b4d2b480",
+    "passed": true,
+    "portfolio_edge_cases": 36,
+    "rows": [
+      {
+        "cached": [
+          1,
+          -1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          1
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          1,
+          -1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          1,
+          -1
+        ]
+      },
+      {
+        "cached": [
+          1,
+          -1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          1,
+          -1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          4,
+          2
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          4,
+          2
+        ]
+      },
+      {
+        "cached": [
+          1,
+          -1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          2,
+          0
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          2,
+          0
+        ]
+      },
+      {
+        "cached": [
+          1,
+          -1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          1,
+          -1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          2,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          1,
+          -1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          1,
+          -1
+        ]
+      },
+      {
+        "cached": [
+          2,
+          0
+        ],
+        "compiled_active": true,
+        "delta_exact": true,
+        "edge": [
+          0,
+          1
+        ],
+        "exact_k_preserved": true,
+        "expected_active": true,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          2,
+          0
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          2,
+          0
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          2,
+          0
+        ]
+      },
+      {
+        "cached": [
+          2,
+          0
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          5,
+          3
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          5,
+          3
+        ]
+      },
+      {
+        "cached": [
+          2,
+          0
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          1,
+          -1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          1,
+          -1
+        ]
+      },
+      {
+        "cached": [
+          2,
+          0
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          2,
+          0
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          2,
+          0
+        ]
+      },
+      {
+        "cached": [
+          2,
+          0
+        ],
+        "compiled_active": true,
+        "delta_exact": true,
+        "edge": [
+          2,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": true,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": true,
+        "delta_exact": true,
+        "edge": [
+          0,
+          1
+        ],
+        "exact_k_preserved": true,
+        "expected_active": true,
+        "full_recompute": [
+          4,
+          2
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          4,
+          2
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          5,
+          3
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          5,
+          3
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          1,
+          -1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          1,
+          -1
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": true,
+        "delta_exact": true,
+        "edge": [
+          2,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": true,
+        "full_recompute": [
+          2,
+          0
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          2,
+          0
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": true,
+        "delta_exact": true,
+        "edge": [
+          0,
+          1
+        ],
+        "exact_k_preserved": true,
+        "expected_active": true,
+        "full_recompute": [
+          2,
+          0
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          2,
+          0
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          1,
+          -1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          1,
+          -1
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          5,
+          3
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          5,
+          3
+        ]
+      },
+      {
+        "cached": [
+          3,
+          1
+        ],
+        "compiled_active": true,
+        "delta_exact": true,
+        "edge": [
+          2,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": true,
+        "full_recompute": [
+          4,
+          2
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          4,
+          2
+        ]
+      },
+      {
+        "cached": [
+          4,
+          2
+        ],
+        "compiled_active": true,
+        "delta_exact": true,
+        "edge": [
+          0,
+          1
+        ],
+        "exact_k_preserved": true,
+        "expected_active": true,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          4,
+          2
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          4,
+          2
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          4,
+          2
+        ]
+      },
+      {
+        "cached": [
+          4,
+          2
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          1,
+          -1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          1,
+          -1
+        ]
+      },
+      {
+        "cached": [
+          4,
+          2
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          5,
+          3
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          5,
+          3
+        ]
+      },
+      {
+        "cached": [
+          4,
+          2
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          4,
+          2
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          4,
+          2
+        ]
+      },
+      {
+        "cached": [
+          4,
+          2
+        ],
+        "compiled_active": true,
+        "delta_exact": true,
+        "edge": [
+          2,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": true,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          5,
+          3
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          1
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          5,
+          3
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          5,
+          3
+        ]
+      },
+      {
+        "cached": [
+          5,
+          3
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          5,
+          3
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          0,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          2,
+          0
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          2,
+          0
+        ]
+      },
+      {
+        "cached": [
+          5,
+          3
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          2
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          4,
+          2
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          4,
+          2
+        ]
+      },
+      {
+        "cached": [
+          5,
+          3
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          1,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          3,
+          1
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          3,
+          1
+        ]
+      },
+      {
+        "cached": [
+          5,
+          3
+        ],
+        "compiled_active": false,
+        "delta_exact": true,
+        "edge": [
+          2,
+          3
+        ],
+        "exact_k_preserved": true,
+        "expected_active": false,
+        "full_recompute": [
+          5,
+          3
+        ],
+        "guard_exact": true,
+        "portfolio": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "predicate_exact": true,
+        "prospective": [
+          5,
+          3
+        ]
+      }
+    ]
+  },
+  "fixture": {
+    "classification": "SYNTHETIC_COMPILER_FIXTURE · PROTOTYPE_ONLY",
+    "constraint_rows": [
+      {
+        "coefficients": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "encoding": "UNSIGNED_BINARY",
+        "lower": 1,
+        "name": "EXPOSURE_U",
+        "upper": 4,
+        "width": 3
+      },
+      {
+        "coefficients": [
+          -1,
+          0,
+          1,
+          2
+        ],
+        "encoding": "TWOS_COMPLEMENT",
+        "lower": 0,
+        "name": "EXPOSURE_S",
+        "upper": 2,
+        "width": 3
+      }
+    ],
+    "edges": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "fixture_id": "V37_SYNTHETIC_EXACT_K_N4_K2_V1",
+    "fixture_sha256": "4cc8e1fa7f6e9b6a8753a3df835fc78118a5acdcd23819fdeff340cf4bbf9431",
+    "initial_state_contract": "Support is restricted to exact-K feasible portfolios embedded with caches equal to full integer exposure recomputation.",
+    "k": 2,
+    "n": 4,
+    "portfolio_register_order": [
+      "x0",
+      "x1",
+      "x2",
+      "x3"
+    ]
+  },
+  "parent": {
+    "authentication": {
+      "comparisons": {
+        "predecessor_compiler_state": {
+          "actual": "BLOCKED_PENDING_REVERSIBLE_COMPILER",
+          "expected": "BLOCKED_PENDING_REVERSIBLE_COMPILER",
+          "valid": true
+        },
+        "predecessor_decision": {
+          "actual": "CLEAN_REVERSIBLE_INCREMENTAL_EXPOSURE_COMPILER",
+          "expected": "CLEAN_REVERSIBLE_INCREMENTAL_EXPOSURE_COMPILER",
+          "valid": true
+        },
+        "raw_file_sha256": {
+          "actual": "147e81ebb891f61ec47dd9b46ab0adfc6a7a73e2e21f5b91e42d99b25de7c26c",
+          "expected": "147e81ebb891f61ec47dd9b46ab0adfc6a7a73e2e21f5b91e42d99b25de7c26c",
+          "valid": true
+        },
+        "semantic_artifact_sha256": {
+          "actual": "52b9b98a36bf8f6d661b42cdc63f3cc0f6476c207f273a171dcc0516c4c0a54d",
+          "expected": "52b9b98a36bf8f6d661b42cdc63f3cc0f6476c207f273a171dcc0516c4c0a54d",
+          "valid": true
+        }
+      },
+      "errors": [],
+      "v36_integrity": {
+        "artifact_sha256_computed": "52b9b98a36bf8f6d661b42cdc63f3cc0f6476c207f273a171dcc0516c4c0a54d",
+        "artifact_sha256_stored": "52b9b98a36bf8f6d661b42cdc63f3cc0f6476c207f273a171dcc0516c4c0a54d",
+        "errors": [],
+        "valid": true
+      },
+      "valid": true
+    },
+    "v36_artifact_raw_file_sha256": "147e81ebb891f61ec47dd9b46ab0adfc6a7a73e2e21f5b91e42d99b25de7c26c",
+    "v36_artifact_sha256": "52b9b98a36bf8f6d661b42cdc63f3cc0f6476c207f273a171dcc0516c4c0a54d"
+  },
+  "prototype_classification": "PROTOTYPE_ONLY",
+  "register_contract": {
+    "ancilla_qubits": 0,
+    "bit_order": "LITTLE_ENDIAN_INTEGER_INDEX",
+    "data_qubits": 10,
+    "full_domain_basis_states": 1024,
+    "inconsistent_cache_policy": "IDENTITY_OUTSIDE_COMPILED_ENDPOINTS",
+    "register_contract_sha256": "4f9ad064c27dc3ff051992fa6399e0b2c9b8cde1649c162ed6cf1829620cce58",
+    "registers": [
+      {
+        "encoding": "BINARY_BITS_LSB_POSITION_ORDER",
+        "name": "portfolio",
+        "offset": 0,
+        "width": 4
+      },
+      {
+        "encoding": "UNSIGNED_BINARY",
+        "name": "EXPOSURE_U",
+        "offset": 4,
+        "width": 3
+      },
+      {
+        "encoding": "TWOS_COMPLEMENT",
+        "name": "EXPOSURE_S",
+        "offset": 7,
+        "width": 3
+      }
+    ],
+    "scratch_qubits": 0
+  },
+  "research_classification": "RESEARCH_ONLY",
+  "resource_ledger": {
+    "complete_edge_scan": {
+      "ancilla_qubits": 0,
+      "conservative_serial_logical_depth": 40,
+      "data_qubits": 10,
+      "edge_count": 6,
+      "logical_gate_count": 40,
+      "maximum_control_count": 9,
+      "maximum_endpoint_hamming_distance": 7,
+      "negative_control_literals": 234,
+      "pattern_mcrx_count": 4,
+      "pattern_mcx_count": 36,
+      "scratch_qubits": 0,
+      "two_level_pair_count": 4
+    },
+    "control_semantics": "SIGNED_0_OR_1_CONTROL_ON_EVERY_NON_TARGET_QUBIT",
+    "elementary_basis_decomposition": "NOT_IMPLEMENTED",
+    "hardware_executable": false,
+    "ir_basis": [
+      "PATTERN_MCX",
+      "PATTERN_MCRX"
+    ],
+    "ledger_boundary": "Counts are exact only in the declared full-width logical IR. Pattern-controlled gates are not hardware-native and are not assigned a CNOT equivalent. No V3.4 resource reduction is booked from this prototype.",
+    "n40_projection": "NOT_RUN",
+    "one_qubit_gate_count": "NOT_ESTIMATED",
+    "resource_ledger_sha256": "4326b2c6d1553584089eba2694adbc80860cd3fb07562a67bb60c6fbe93a0e78",
+    "rotation_convention": "MCRX(2β) REALIZES exp(-i β X) ON THE ADDRESSED PAIR",
+    "rows": [
+      {
+        "conservative_serial_logical_depth": 20,
+        "edge": [
+          0,
+          1
+        ],
+        "edge_ir_sha256": "374f0bf27df138ead30a9feafd4a05109149d5abfdf89cbe62a8aad487ff8363",
+        "endpoint_hamming_distances": [
+          4,
+          7
+        ],
+        "logical_gate_count": 20,
+        "negative_control_literals": 117,
+        "pattern_mcrx_count": 2,
+        "pattern_mcx_count": 18,
+        "two_level_pair_count": 2
+      },
+      {
+        "conservative_serial_logical_depth": 0,
+        "edge": [
+          0,
+          2
+        ],
+        "edge_ir_sha256": "1af35e79026f24d67fb801c41842591bbf50791d73b532c047bc62ca45a4c96e",
+        "endpoint_hamming_distances": [],
+        "logical_gate_count": 0,
+        "negative_control_literals": 0,
+        "pattern_mcrx_count": 0,
+        "pattern_mcx_count": 0,
+        "two_level_pair_count": 0
+      },
+      {
+        "conservative_serial_logical_depth": 0,
+        "edge": [
+          0,
+          3
+        ],
+        "edge_ir_sha256": "331fbf8714738c937c6f1cdfe66985309c70c3f2102985b7a720de5320fe588b",
+        "endpoint_hamming_distances": [],
+        "logical_gate_count": 0,
+        "negative_control_literals": 0,
+        "pattern_mcrx_count": 0,
+        "pattern_mcx_count": 0,
+        "two_level_pair_count": 0
+      },
+      {
+        "conservative_serial_logical_depth": 0,
+        "edge": [
+          1,
+          2
+        ],
+        "edge_ir_sha256": "aba4b19a3d68d9229daece34228011314d02774802161582f35b8089cdd257d1",
+        "endpoint_hamming_distances": [],
+        "logical_gate_count": 0,
+        "negative_control_literals": 0,
+        "pattern_mcrx_count": 0,
+        "pattern_mcx_count": 0,
+        "two_level_pair_count": 0
+      },
+      {
+        "conservative_serial_logical_depth": 0,
+        "edge": [
+          1,
+          3
+        ],
+        "edge_ir_sha256": "1bbbe898d7b9f44ae060106b875be3657a709e35e26f674eeab1bebe96fc9f63",
+        "endpoint_hamming_distances": [],
+        "logical_gate_count": 0,
+        "negative_control_literals": 0,
+        "pattern_mcrx_count": 0,
+        "pattern_mcx_count": 0,
+        "two_level_pair_count": 0
+      },
+      {
+        "conservative_serial_logical_depth": 20,
+        "edge": [
+          2,
+          3
+        ],
+        "edge_ir_sha256": "df949ca01e3432ecad12bbabfbddc39481ed50ae9cc5dd6456b205d891ef99dc",
+        "endpoint_hamming_distances": [
+          4,
+          7
+        ],
+        "logical_gate_count": 20,
+        "negative_control_literals": 117,
+        "pattern_mcrx_count": 2,
+        "pattern_mcx_count": 18,
+        "two_level_pair_count": 2
+      }
+    ],
+    "selected_model_budget_gate": "NOT_EVALUATED",
+    "selected_model_cnot": "NOT_ESTIMATED",
+    "two_qubit_gate_count": "NOT_ESTIMATED"
+  },
+  "source_sha256": "320725f516ae6b9aa7388340a15cc3f4888eebcd1d111dc91fa6bfe751af0ff5",
+  "spec_raw_file_sha256": "dd90f5177a2183da202df5c1d9e6b8e3b6d26a3cf63afadfa02530d5bceb6e68",
+  "spec_sha256": "69fd43383554108709960b145436304cc8b687104fd68dc3ffd713e1bcd1cf2c",
+  "v37_version": "PHASE III · V3.7 REVERSIBLE INCREMENTAL EXPOSURE · V1"
+}

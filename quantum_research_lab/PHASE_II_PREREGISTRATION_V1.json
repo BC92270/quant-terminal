@@ -1,0 +1,184 @@
+{
+  "global_rules": {
+    "exploratory_interims_cannot_promote_confirmatory_evidence": true,
+    "hardware_advantage_requires_measured_qpu_end_to_end_win": true,
+    "no_retuning_of_frozen_engines": true,
+    "promotion_requires_predeclared_gate": true,
+    "unfavorable_results_are_recorded": true
+  },
+  "manifest_sha": "AA06BE666EBFE379C82B",
+  "phase_ii_version": "PHASE II · PREREGISTERED OOS PROGRAM · V1",
+  "preregistration_date": "2026-08-24",
+  "protocols": [
+    {
+      "engine": "REGIME / DENSITY",
+      "evidence_target": "L3 · DEPENDENCY-ROBUST OOS EDGE",
+      "execution_notes": [
+        "Scheduled refits defined by the frozen walk-forward specification are allowed; hyperparameter retuning is not.",
+        "An interim descriptive checkpoint may be viewed after 63 new observations, but it cannot promote evidence."
+      ],
+      "failure_rule": "No L3 promotion if ΔLL ≤ 0, any preregistered block CI includes 0, conservative p ≥ 0.05, or N_eff < 50. Result is recorded even if unfavorable.",
+      "forbidden_changes": [
+        "No change to frozen Config SHA or Code SHA before confirmatory evaluation",
+        "No target relabeling, horizon selection, feature additions, scaler changes or penalty retuning after seeing new outcomes",
+        "No replacement of the matched Classical Centroid control"
+      ],
+      "inference_rule": "Circular block bootstrap at 5/10/20/40 trading-day blocks; conservative p = max(p_b), conservative CI low = min(CI_low,b); report effective sample size.",
+      "key": "REGIME_OOS_EXTENSION",
+      "phase_ii_version": "PHASE II · PREREGISTERED OOS PROGRAM · V1",
+      "preregistration_date": "2026-08-24",
+      "primary_control": "Matched Classical Centroid with the identical frozen feature encoder and frozen walk-forward specification.",
+      "primary_endpoint": "Paired new-sample Log-Loss edge ΔLL = LL(Classical Centroid) − LL(Quantum Density), using only post-cutoff predictions.",
+      "protocol_sha": "E53918E5FE6D2E2A",
+      "scientific_question": "Does the frozen Quantum Density layer continue to improve probabilistic regime forecasts versus the matched Classical Centroid on observations unavailable at the V2.2.1 evidence cutoff?",
+      "secondary_endpoints": [
+        "Brier-score edge versus Classical Centroid",
+        "Balanced accuracy / Macro-F1 / Risk-Off recall",
+        "Economic CEQ / turnover after the already-frozen allocation policy and costs"
+      ],
+      "source_evidence_id": "QREG-20260821-8B14479CA5",
+      "success_rule": "Promote to L3 only if ΔLL > 0, every preregistered block-bootstrap CI excludes 0 on the positive side, conservative p < 0.05, and N_eff ≥ 50.",
+      "title": "Frozen-Spec Regime OOS Extension",
+      "unlock_condition": "Confirmatory evaluation unlocks after at least 126 new PRIMARY trading observations strictly after the frozen data cutoff."
+    },
+    {
+      "engine": "QUANTUM INFORMATION / TT",
+      "evidence_target": "L5 · OUT-OF-SAMPLE STRUCTURAL VALUE",
+      "execution_notes": [
+        "The task is structural generalization, not return prediction.",
+        "The 126-observation interim is descriptive only; the 252-observation checkpoint is confirmatory."
+      ],
+      "failure_rule": "No L5 promotion if either classical tensor/matrix control is superior on average, CI includes 0, win-rate <60%, or confirmatory sample is incomplete.",
+      "forbidden_changes": [
+        "No rank/block-size search on the confirmatory post-cutoff sample",
+        "No new channels or assets added after viewing confirmatory outcomes",
+        "No replacement of SVD/Tucker controls"
+      ],
+      "inference_rule": "Paired block bootstrap over post-cutoff 20-day blocks; report mean edge, 95% CI, win-rate by block and a predeclared temporal-null diagnostic.",
+      "key": "TT_OOS_STRUCTURAL_TRANSFER",
+      "phase_ii_version": "PHASE II · PREREGISTERED OOS PROGRAM · V1",
+      "preregistration_date": "2026-08-24",
+      "primary_control": "Parameter-budgeted Matrix SVD and Tucker/HOSVD fitted under the same chronology and data tensor contract.",
+      "primary_endpoint": "Mean one-block-ahead structural transfer edge on the frozen 20-day / max-rank-8 representation: min(Error_SVD, Error_Tucker) − Error_TT across post-cutoff blocks.",
+      "protocol_sha": "952B18687DC3A67D",
+      "scientific_question": "Does the frozen TT/MPS representation transfer to genuinely new cross-asset blocks better than parameter-matched SVD and Tucker controls?",
+      "secondary_endpoints": [
+        "Bond-spectrum drift stability",
+        "Previous-template transfer error",
+        "Channel-level transfer error for return / |z| / z²",
+        "Asset-level transfer error map"
+      ],
+      "source_evidence_id": "QTT-20260821-40FE377848",
+      "success_rule": "L5 promotion requires positive mean TT edge, 95% paired-block CI entirely above 0, TT beating both controls on ≥60% of confirmatory blocks, and no violation of the frozen 20-day/rank-8/configuration contract.",
+      "title": "Tensor-Network OOS Structural Transfer",
+      "unlock_condition": "Descriptive interim unlocks after 126 new aligned 6-asset observations; confirmatory evaluation unlocks after 252 new aligned observations after the frozen cutoff."
+    },
+    {
+      "engine": "QUBO / ISING",
+      "evidence_target": "HARDNESS ELIGIBILITY FOR EQUAL-OBJECTIVE QPU TESTING",
+      "execution_notes": [
+        "Preregistered sizes N = 24, 32, 40, 48, 64.",
+        "Constraint regimes = BASE, PAIRWISE, BANDS; deterministic seeds = 1103, 2207, 3301, 4409, 5501, 6607, 7703, 8807.",
+        "The suite is a compute-hardness experiment, not an investment backtest."
+      ],
+      "failure_rule": "Remain NOT ELIGIBLE if classical controls stay fast/effectively exact. A large combinatorial state count alone never satisfies the gate.",
+      "forbidden_changes": [
+        "No deletion or replacement of preregistered seeds after runtimes are observed",
+        "No post-hoc threshold changes to manufacture classical hardness",
+        "No QAOA/QPU advantage claim before the classical-hardness gate opens"
+      ],
+      "inference_rule": "Evaluate the full deterministic seed grid without dropping hard instances. Summaries are reported by size and constraint regime; no seed replacement is permitted.",
+      "key": "QUBO_HARD_INSTANCE_SUITE",
+      "phase_ii_version": "PHASE II · PREREGISTERED OOS PROGRAM · V1",
+      "preregistration_date": "2026-08-24",
+      "primary_control": "MILP is authoritative when optimality is certified; SA and local search use fixed predeclared compute budgets.",
+      "primary_endpoint": "Classical hardness under fixed budgets: MILP median/p95 wall-clock plus feasibility/objective gaps for fixed-budget SA and local-search controls.",
+      "protocol_sha": "8E5EF191FAE97A75",
+      "scientific_question": "Can a deterministic family of constrained portfolio-selection instances become materially hard for strong classical controls before any QPU comparison is attempted?",
+      "sealed_suite": {
+        "cardinality_fraction": 0.25,
+        "constraint_regimes": [
+          "BASE",
+          "PAIRWISE",
+          "BANDS"
+        ],
+        "heuristic_gap_gate": 0.005,
+        "heuristic_hard_fraction_gate": 0.25,
+        "milp_median_gate_seconds": 10.0,
+        "milp_p95_gate_seconds": 60.0,
+        "seeds": [
+          1103,
+          2207,
+          3301,
+          4409,
+          5501,
+          6607,
+          7703,
+          8807
+        ],
+        "sizes": [
+          24,
+          32,
+          40,
+          48,
+          64
+        ]
+      },
+      "secondary_endpoints": [
+        "MILP node count / final MIP gap when available",
+        "Constraint density and Ising coupling density",
+        "QUBO coefficient dynamic range",
+        "Heuristic success-rate dispersion across seeds"
+      ],
+      "source_evidence_id": "QQUBO-20260821-861D4D08E8",
+      "success_rule": "Hardware-eligibility gate opens only if MILP median runtime ≥10 s OR p95 ≥60 s in at least one preregistered family, and ≥25% of that family has fixed-budget heuristic gap >0.5%.",
+      "title": "Pre-Registered Classical-Hardness Instance Suite",
+      "unlock_condition": "Immediately executable: synthetic family, seeds, size grid and hardness thresholds are sealed in this preregistration."
+    },
+    {
+      "canonical_scenario": {
+        "absolute_price_error_target": 0.5,
+        "confidence_requirement": 0.95,
+        "dividend_yield": 0.0,
+        "maturity_years": 1.0,
+        "minimum_hardware_repeats": 30,
+        "model": "GBM / Black-Scholes",
+        "product": "European call",
+        "risk_free_rate": 0.03,
+        "spot": 100.0,
+        "strike": 100.0,
+        "volatility": 0.2
+      },
+      "engine": "QMC / RISK",
+      "evidence_target": "MEASURED HARDWARE COMPUTE EVIDENCE",
+      "execution_notes": [
+        "Canonical scenario and target-error contract are sealed before connecting a backend.",
+        "Provider queue latency is reported but not mixed with device-compute time in the primary endpoint."
+      ],
+      "failure_rule": "No advantage claim if target error is infeasible, hardware error budget is violated, fewer than 30 valid repeats complete, or matched classical time is not beaten.",
+      "forbidden_changes": [
+        "No change of classical comparator after hardware results are observed",
+        "No reporting query-complexity ratio as wall-clock speedup",
+        "No exclusion of failed hardware runs except predeclared provider/system failures"
+      ],
+      "inference_rule": "At least 30 repeated hardware runs; report compilation time, execution time, queue time separately, physical resources, achieved pricing error and 95% uncertainty.",
+      "key": "QMC_QPU_READINESS",
+      "phase_ii_version": "PHASE II · PREREGISTERED OOS PROGRAM · V1",
+      "preregistration_date": "2026-08-24",
+      "primary_control": "Best validated classical method at the same absolute price-error target and confidence requirement.",
+      "primary_endpoint": "Matched-error time-to-solution for a fixed canonical European-call benchmark, comparing compiled QPU execution with optimized classical RQMC/control-variate pricing.",
+      "protocol_sha": "30AEA56A289D8B6E",
+      "scientific_question": "Can a compiled, repeatable QAE workflow reach a matched financial pricing error faster end-to-end than the strongest optimized classical control?",
+      "secondary_endpoints": [
+        "Logical / physical qubits and two-qubit gate count",
+        "Circuit depth after transpilation",
+        "State-preparation share of execution cost",
+        "Mitigation overhead and run-to-run variance"
+      ],
+      "source_evidence_id": "QQMC-SCENARIO-41595DB605",
+      "success_rule": "Hardware evidence advances only if achieved total pricing error meets the preregistered target on ≥95% of runs and median end-to-end compute time excluding provider queue is below the matched classical control; queue-inclusive time is reported separately.",
+      "title": "Compiled QPU Time-to-Solution Benchmark",
+      "unlock_condition": "Requires a supported quantum SDK, authenticated hardware backend, recorded calibration snapshot and executable compiled circuit."
+    }
+  ]
+}

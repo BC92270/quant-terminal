@@ -1,0 +1,3062 @@
+{
+  "artifact_sha256": "5e6cc7e53f15921f7cbd22ef66f04878b37d54372e04b5bf49f5bb4854050fcd",
+  "artifact_version": "PHASE III · SEALED PROOF-CARRYING GATE COMPILER · V1",
+  "claim_boundary": {
+    "allowed": "A provider-neutral reversible gate IR implements the sealed exact dyadic BANDS feasibility predicate and passes the declared semantic and clean-ancilla controls.",
+    "forbidden": [
+      "hardware executable",
+      "QPU ready",
+      "quantum speedup",
+      "quantum advantage",
+      "constraint-preserving optimizer"
+    ],
+    "hardware_executable": false,
+    "qpu_submission_enabled": false
+  },
+  "compiler": {
+    "compiler_source_sha256": "b76001c8502eec962dc998d1c8ffa37b2886432149fb193f26e52d82cd348c78",
+    "compiler_spec_sha": "EDAD55227D611B528845",
+    "compiler_spec_sha256": "edad55227d611b52884529fe2da4f8f458e80c36367589a3499bdf075060f3aa",
+    "compiler_version": "PHASE III · PROOF-CARRYING REVERSIBLE GATE COMPILER · V1",
+    "gate_set": [
+      "X",
+      "CX",
+      "CCX",
+      "MCX"
+    ],
+    "status": "SEALED PROVIDER-NEUTRAL REVERSIBLE GATE IR"
+  },
+  "created_utc": "2026-09-04T11:16:51.325306+00:00",
+  "family": {
+    "N": 40,
+    "Regime": "BANDS",
+    "seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ]
+  },
+  "limitations": [
+    "No backend-native transpilation has been run.",
+    "No QPU execution is authorised by this artifact.",
+    "No quantum speedup or advantage is claimed.",
+    "The XY mixer preserves cardinality only; it does not prove preservation of the seven BANDS constraints.",
+    "The exact dyadic predicate represents strict hard-band semantics; the Phase-II 1e-8 post-processing tolerance remains a separate convention."
+  ],
+  "oracle_variants": {
+    "EXACT_K_SUBSPACE": {
+      "cardinality_compiled": false,
+      "constraint_count": 7,
+      "contract_domain": "popcount(x)=K"
+    },
+    "FULL_BINARY": {
+      "cardinality_compiled": true,
+      "constraint_count": 8,
+      "contract_domain": "all x in {0,1}^N"
+    }
+  },
+  "parent": {
+    "dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+    "dyadic_spec_sha": "9A6F664368F4AC592281",
+    "raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e"
+  },
+  "resource_summary": {
+    "EXACT_K_SUBSPACE": {
+      "abstract_depth_max": 402502,
+      "abstract_gate_count_max": 428273,
+      "fault_tolerant_t_count_max": 111709780,
+      "logical_qubits_max": 119,
+      "max_factor_width": 68
+    },
+    "FULL_BINARY": {
+      "abstract_depth_max": 413016,
+      "abstract_gate_count_max": 438939,
+      "fault_tolerant_t_count_max": 115676610,
+      "logical_qubits_max": 121,
+      "max_factor_width": 69,
+      "seeds_requiring_69_factor_bits": [
+        6607
+      ]
+    },
+    "claim": "RESOURCE ESTIMATE · PROVIDER-NEUTRAL ABSTRACT GATES"
+  },
+  "validation": {
+    "arithmetic": {
+      "addition_cases": 5580,
+      "comparator_cases": 5936,
+      "failure_count": 0,
+      "failures": [],
+      "increment_cases": 124,
+      "passed": true,
+      "widths": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "canonical_controls": [
+      {
+        "adversarial_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "0ad4dc134dcf9f4a9590b5ea63c1aa3aeeb5cc24962ae34da38b8b3221249b5e",
+          "passed": true,
+          "selected_indices": [
+            0,
+            15,
+            18,
+            21,
+            24,
+            29,
+            33,
+            37,
+            38,
+            39
+          ],
+          "target_after": 0
+        },
+        "all_witness_constraint_flags_true": true,
+        "authoritative_witness_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "36759a2effad8a81bd31a5955c3e639f9fede5561495c6b3931d1bde0692b4f0",
+          "passed": true,
+          "selected_indices": [
+            11,
+            15,
+            18,
+            21,
+            24,
+            29,
+            33,
+            37,
+            38,
+            39
+          ],
+          "target_after": 1
+        },
+        "authoritative_witness_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "36759a2effad8a81bd31a5955c3e639f9fede5561495c6b3931d1bde0692b4f0",
+          "passed": true,
+          "selected_indices": [
+            11,
+            15,
+            18,
+            21,
+            24,
+            29,
+            33,
+            37,
+            38,
+            39
+          ],
+          "target_after": 1
+        },
+        "instance_id": "QH-N040-BANDS-S1103",
+        "off_cardinality_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "472f96591b5891d8df361731bcdde331a9ca789017d4dd26f971610f25fdd5f8",
+          "passed": true,
+          "selected_indices": [
+            15,
+            18,
+            21,
+            24,
+            29,
+            33,
+            37,
+            38,
+            39
+          ],
+          "target_after": 0
+        },
+        "seed": 1103,
+        "witness_constraint_truth": {
+          "FACTOR_1": true,
+          "FACTOR_2": true,
+          "FACTOR_3": true,
+          "GROUP_1": true,
+          "GROUP_2": true,
+          "GROUP_3": true,
+          "GROUP_4": true
+        }
+      },
+      {
+        "adversarial_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "fe19ff7ed1f9f9445f1b861227664461a0401e3fff1f150a131a48b394c0fd05",
+          "passed": true,
+          "selected_indices": [
+            0,
+            5,
+            7,
+            8,
+            13,
+            24,
+            25,
+            26,
+            31,
+            38
+          ],
+          "target_after": 0
+        },
+        "all_witness_constraint_flags_true": true,
+        "authoritative_witness_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "4d0effcf469214dcf21cd948a4a59231d38e0a7728d82ca7786e11f5a47237c3",
+          "passed": true,
+          "selected_indices": [
+            2,
+            5,
+            7,
+            8,
+            13,
+            24,
+            25,
+            26,
+            31,
+            38
+          ],
+          "target_after": 1
+        },
+        "authoritative_witness_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "4d0effcf469214dcf21cd948a4a59231d38e0a7728d82ca7786e11f5a47237c3",
+          "passed": true,
+          "selected_indices": [
+            2,
+            5,
+            7,
+            8,
+            13,
+            24,
+            25,
+            26,
+            31,
+            38
+          ],
+          "target_after": 1
+        },
+        "instance_id": "QH-N040-BANDS-S2207",
+        "off_cardinality_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "906120075d7ccf92b54ecce81543053be930a03d7bb0c741aad37ef9b261c17b",
+          "passed": true,
+          "selected_indices": [
+            5,
+            7,
+            8,
+            13,
+            24,
+            25,
+            26,
+            31,
+            38
+          ],
+          "target_after": 0
+        },
+        "seed": 2207,
+        "witness_constraint_truth": {
+          "FACTOR_1": true,
+          "FACTOR_2": true,
+          "FACTOR_3": true,
+          "GROUP_1": true,
+          "GROUP_2": true,
+          "GROUP_3": true,
+          "GROUP_4": true
+        }
+      },
+      {
+        "adversarial_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "ad22f45673421c1eeb5e3c8a2608351ba819abe9a6e7bf417c4ea943a6575441",
+          "passed": true,
+          "selected_indices": [
+            1,
+            3,
+            5,
+            7,
+            8,
+            10,
+            23,
+            29,
+            37,
+            39
+          ],
+          "target_after": 0
+        },
+        "all_witness_constraint_flags_true": true,
+        "authoritative_witness_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "d6f2684efa3404161bf52a71430099bc97255eb218182a087f0d5d706a4b3860",
+          "passed": true,
+          "selected_indices": [
+            0,
+            3,
+            5,
+            7,
+            8,
+            10,
+            23,
+            29,
+            37,
+            39
+          ],
+          "target_after": 1
+        },
+        "authoritative_witness_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "d6f2684efa3404161bf52a71430099bc97255eb218182a087f0d5d706a4b3860",
+          "passed": true,
+          "selected_indices": [
+            0,
+            3,
+            5,
+            7,
+            8,
+            10,
+            23,
+            29,
+            37,
+            39
+          ],
+          "target_after": 1
+        },
+        "instance_id": "QH-N040-BANDS-S3301",
+        "off_cardinality_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "f65c5e04cc9cb04ed405566b39c94b52c40f687b22ac28dafaa06993b4bff9ab",
+          "passed": true,
+          "selected_indices": [
+            3,
+            5,
+            7,
+            8,
+            10,
+            23,
+            29,
+            37,
+            39
+          ],
+          "target_after": 0
+        },
+        "seed": 3301,
+        "witness_constraint_truth": {
+          "FACTOR_1": true,
+          "FACTOR_2": true,
+          "FACTOR_3": true,
+          "GROUP_1": true,
+          "GROUP_2": true,
+          "GROUP_3": true,
+          "GROUP_4": true
+        }
+      },
+      {
+        "adversarial_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "d4000c7ac30c64965a31bf26e9dfa67f58e30df06a0b54763d0e7d97bd8ed78c",
+          "passed": true,
+          "selected_indices": [
+            0,
+            7,
+            9,
+            11,
+            13,
+            14,
+            17,
+            20,
+            25,
+            37
+          ],
+          "target_after": 0
+        },
+        "all_witness_constraint_flags_true": true,
+        "authoritative_witness_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "f21b108fddf2adc6749d49c8088917f99c9e0b7ae21b985258b7764f3a2b3e26",
+          "passed": true,
+          "selected_indices": [
+            1,
+            7,
+            9,
+            11,
+            13,
+            14,
+            17,
+            20,
+            25,
+            37
+          ],
+          "target_after": 1
+        },
+        "authoritative_witness_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "f21b108fddf2adc6749d49c8088917f99c9e0b7ae21b985258b7764f3a2b3e26",
+          "passed": true,
+          "selected_indices": [
+            1,
+            7,
+            9,
+            11,
+            13,
+            14,
+            17,
+            20,
+            25,
+            37
+          ],
+          "target_after": 1
+        },
+        "instance_id": "QH-N040-BANDS-S4409",
+        "off_cardinality_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "a292692967ea1c522f77fac10351480e4423d91b5564ae4b07021d9d22e8758c",
+          "passed": true,
+          "selected_indices": [
+            7,
+            9,
+            11,
+            13,
+            14,
+            17,
+            20,
+            25,
+            37
+          ],
+          "target_after": 0
+        },
+        "seed": 4409,
+        "witness_constraint_truth": {
+          "FACTOR_1": true,
+          "FACTOR_2": true,
+          "FACTOR_3": true,
+          "GROUP_1": true,
+          "GROUP_2": true,
+          "GROUP_3": true,
+          "GROUP_4": true
+        }
+      },
+      {
+        "adversarial_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "29de950f66e68c8d9e62439e74566f01207bf5feb913fe27323d7918a8ba6892",
+          "passed": true,
+          "selected_indices": [
+            1,
+            2,
+            6,
+            9,
+            11,
+            23,
+            32,
+            36,
+            37,
+            38
+          ],
+          "target_after": 0
+        },
+        "all_witness_constraint_flags_true": true,
+        "authoritative_witness_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "f555289da335e38bcbfe21f1d28afe0b416f370fd4308ac5500adab16606be74",
+          "passed": true,
+          "selected_indices": [
+            0,
+            1,
+            6,
+            9,
+            11,
+            23,
+            32,
+            36,
+            37,
+            38
+          ],
+          "target_after": 1
+        },
+        "authoritative_witness_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "f555289da335e38bcbfe21f1d28afe0b416f370fd4308ac5500adab16606be74",
+          "passed": true,
+          "selected_indices": [
+            0,
+            1,
+            6,
+            9,
+            11,
+            23,
+            32,
+            36,
+            37,
+            38
+          ],
+          "target_after": 1
+        },
+        "instance_id": "QH-N040-BANDS-S5501",
+        "off_cardinality_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "c49534be4958214c434aa4b1b6c3300fd68fad17b9e22840da5e6d59a5de62f7",
+          "passed": true,
+          "selected_indices": [
+            1,
+            6,
+            9,
+            11,
+            23,
+            32,
+            36,
+            37,
+            38
+          ],
+          "target_after": 0
+        },
+        "seed": 5501,
+        "witness_constraint_truth": {
+          "FACTOR_1": true,
+          "FACTOR_2": true,
+          "FACTOR_3": true,
+          "GROUP_1": true,
+          "GROUP_2": true,
+          "GROUP_3": true,
+          "GROUP_4": true
+        }
+      },
+      {
+        "adversarial_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "92a01e0750393083a744ef56376b6ed24fffcdffbb9e26700ff335edaca981a6",
+          "passed": true,
+          "selected_indices": [
+            1,
+            6,
+            8,
+            12,
+            20,
+            21,
+            24,
+            25,
+            32,
+            36
+          ],
+          "target_after": 0
+        },
+        "all_witness_constraint_flags_true": true,
+        "authoritative_witness_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "ceb84adb5d7a0827b8bfc42ec2487bdeb7caee119bfff585f5a83f3f6178d230",
+          "passed": true,
+          "selected_indices": [
+            0,
+            6,
+            8,
+            12,
+            20,
+            21,
+            24,
+            25,
+            32,
+            36
+          ],
+          "target_after": 1
+        },
+        "authoritative_witness_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "ceb84adb5d7a0827b8bfc42ec2487bdeb7caee119bfff585f5a83f3f6178d230",
+          "passed": true,
+          "selected_indices": [
+            0,
+            6,
+            8,
+            12,
+            20,
+            21,
+            24,
+            25,
+            32,
+            36
+          ],
+          "target_after": 1
+        },
+        "instance_id": "QH-N040-BANDS-S6607",
+        "off_cardinality_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "5f20e9f103925eb801199dbb84aacf3b03f03e132c21dca9fecb01f716b8aa2b",
+          "passed": true,
+          "selected_indices": [
+            6,
+            8,
+            12,
+            20,
+            21,
+            24,
+            25,
+            32,
+            36
+          ],
+          "target_after": 0
+        },
+        "seed": 6607,
+        "witness_constraint_truth": {
+          "FACTOR_1": true,
+          "FACTOR_2": true,
+          "FACTOR_3": true,
+          "GROUP_1": true,
+          "GROUP_2": true,
+          "GROUP_3": true,
+          "GROUP_4": true
+        }
+      },
+      {
+        "adversarial_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "c4b4ed8ebda05be902f0ab756aa88ff7ac951d4b5966176b6c0d4402c5847cd6",
+          "passed": true,
+          "selected_indices": [
+            0,
+            6,
+            7,
+            9,
+            16,
+            24,
+            28,
+            29,
+            31,
+            32
+          ],
+          "target_after": 0
+        },
+        "all_witness_constraint_flags_true": true,
+        "authoritative_witness_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "becbefcfae781f44eebc7cc3664b9910d060584b7b52df1c2f36b502ad54e952",
+          "passed": true,
+          "selected_indices": [
+            1,
+            6,
+            7,
+            9,
+            16,
+            24,
+            28,
+            29,
+            31,
+            32
+          ],
+          "target_after": 1
+        },
+        "authoritative_witness_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "becbefcfae781f44eebc7cc3664b9910d060584b7b52df1c2f36b502ad54e952",
+          "passed": true,
+          "selected_indices": [
+            1,
+            6,
+            7,
+            9,
+            16,
+            24,
+            28,
+            29,
+            31,
+            32
+          ],
+          "target_after": 1
+        },
+        "instance_id": "QH-N040-BANDS-S7703",
+        "off_cardinality_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "e11a33b38bdf9397d84d7e3ac3d8aad78b590458e691903232bcaac1c9bcc60c",
+          "passed": true,
+          "selected_indices": [
+            6,
+            7,
+            9,
+            16,
+            24,
+            28,
+            29,
+            31,
+            32
+          ],
+          "target_after": 0
+        },
+        "seed": 7703,
+        "witness_constraint_truth": {
+          "FACTOR_1": true,
+          "FACTOR_2": true,
+          "FACTOR_3": true,
+          "GROUP_1": true,
+          "GROUP_2": true,
+          "GROUP_3": true,
+          "GROUP_4": true
+        }
+      },
+      {
+        "adversarial_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "44e66ac5972f711f0d3987279ab8c4d7dcfef0612413576bb82ff2d83900b838",
+          "passed": true,
+          "selected_indices": [
+            0,
+            21,
+            25,
+            26,
+            28,
+            30,
+            32,
+            34,
+            36,
+            39
+          ],
+          "target_after": 0
+        },
+        "all_witness_constraint_flags_true": true,
+        "authoritative_witness_exact_k": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "e08a9e583c2d45a2644f2b32edac8df0ba823d072ec6d5922b09dab33c038104",
+          "passed": true,
+          "selected_indices": [
+            2,
+            21,
+            25,
+            26,
+            28,
+            30,
+            32,
+            34,
+            36,
+            39
+          ],
+          "target_after": 1
+        },
+        "authoritative_witness_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": true,
+          "input_sha256": "e08a9e583c2d45a2644f2b32edac8df0ba823d072ec6d5922b09dab33c038104",
+          "passed": true,
+          "selected_indices": [
+            2,
+            21,
+            25,
+            26,
+            28,
+            30,
+            32,
+            34,
+            36,
+            39
+          ],
+          "target_after": 1
+        },
+        "instance_id": "QH-N040-BANDS-S8807",
+        "off_cardinality_full_binary": {
+          "ancilla_clean": true,
+          "data_preserved": true,
+          "expected_predicate": false,
+          "input_sha256": "b0e3b7cdc0da7890f1079338b82f36e9c6a8ef81c81a68954d239ba7b764c4b9",
+          "passed": true,
+          "selected_indices": [
+            21,
+            25,
+            26,
+            28,
+            30,
+            32,
+            34,
+            36,
+            39
+          ],
+          "target_after": 0
+        },
+        "seed": 8807,
+        "witness_constraint_truth": {
+          "FACTOR_1": true,
+          "FACTOR_2": true,
+          "FACTOR_3": true,
+          "GROUP_1": true,
+          "GROUP_2": true,
+          "GROUP_3": true,
+          "GROUP_4": true
+        }
+      }
+    ],
+    "checks": {
+      "A_ARITHMETIC": true,
+      "B_SEED": true,
+      "COMPILER_SPEC_SELF_HASH": true,
+      "C_SMALL_N_EXHAUSTIVE": true,
+      "D_N40_CONTROLS": true,
+      "E_REPRODUCIBILITY": true,
+      "FROZEN_PARENT_GUARD": true,
+      "PHASE2_GENERATOR_SOURCE_FROZEN": true,
+      "RESOURCE_RANGES_CERTIFIED": true
+    },
+    "compilation_entries": [
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "7c94ee8b082c09d5558c5ac23d7d09e77328c97c6d007fd2c69dd51240b9f925",
+            "width": 61
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "e1ed7dae86bd4d727312059b182547186add33348e2d32b76c3ec0b29f1a973f",
+            "width": 64
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "43363359a50c37625d4d1a22e4693c25770ee339b48a6498085a3e715a2472d5",
+            "width": 63
+          }
+        ],
+        "domain_mode": "EXACT_K_SUBSPACE",
+        "gate_ir_sha256": "27681172f14e58731fe2d6fb20412f85b9a3f352c25b31772402ff6237603a26",
+        "instance_id": "QH-N040-BANDS-S1103",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "EXACT_K_SUBSPACE",
+          "gate_ir_sha256": "27681172f14e58731fe2d6fb20412f85b9a3f352c25b31772402ff6237603a26",
+          "instance_id": "QH-N040-BANDS-S1103",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 62,
+              "decomposed_ccx": 15374872,
+              "decomposed_cnot": 92263137,
+              "decomposed_x": 27188,
+              "logical_qubits_with_decomposition_ancillas": 177,
+              "t_count": 107624104,
+              "t_depth_upper_bound": 46124616
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 13642,
+              "CX": 13905,
+              "MCX": 382298,
+              "X": 4,
+              "abstract_depth": 383998,
+              "critical_path_depth": 383998,
+              "gate_count": 409849,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 56,
+              "constraint_flag_qubits": 7,
+              "controlled_add_count": 640,
+              "controlled_add_count_forward_predicate": 160,
+              "data_qubits": 40,
+              "logical_qubits_total": 115,
+              "max_simultaneously_live_ancillas": 74,
+              "range_certified_widths": {
+                "FACTOR_1": 61,
+                "FACTOR_2": 64,
+                "FACTOR_3": 63,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 204924,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 64
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 1103
+        },
+        "seed": 1103
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "CARDINALITY",
+            "name": "CARDINALITY_K",
+            "range_certificate_sha256": "ac87d6565daa21d9c74ff9f0668013214f568905eb2dde62da0863880aaeb165",
+            "width": 6
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "877d9451467fb20009dac2b60da58c90a4240d91d77256ef23c6f8ee5cdfd01b",
+            "width": 62
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "36e39d7608d902458866767945ee7b1f7e1bdb5f404a5bf771c4cd6ec463b685",
+            "width": 64
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "124c3aa7c3d6bb4193164f2992e02ee38269abc31c4feb47b9c556989d8540fd",
+            "width": 64
+          }
+        ],
+        "domain_mode": "FULL_BINARY",
+        "gate_ir_sha256": "dfe13d3bb1368e64f747ccbaa4fdb6a600d040781b2d8bff2acdab69d1a8174a",
+        "instance_id": "QH-N040-BANDS-S1103",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "FULL_BINARY",
+          "gate_ir_sha256": "dfe13d3bb1368e64f747ccbaa4fdb6a600d040781b2d8bff2acdab69d1a8174a",
+          "instance_id": "QH-N040-BANDS-S1103",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 62,
+              "decomposed_ccx": 15917882,
+              "decomposed_cnot": 95521549,
+              "decomposed_x": 27604,
+              "logical_qubits_with_decomposition_ancillas": 178,
+              "t_count": 111425174,
+              "t_depth_upper_bound": 47753646
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 13996,
+              "CX": 14257,
+              "MCX": 391974,
+              "X": 4,
+              "abstract_depth": 394180,
+              "critical_path_depth": 394180,
+              "gate_count": 420231,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 64,
+              "constraint_flag_qubits": 8,
+              "controlled_add_count": 800,
+              "controlled_add_count_forward_predicate": 200,
+              "data_qubits": 40,
+              "logical_qubits_total": 116,
+              "max_simultaneously_live_ancillas": 75,
+              "range_certified_widths": {
+                "CARDINALITY_K": 6,
+                "FACTOR_1": 62,
+                "FACTOR_2": 64,
+                "FACTOR_3": 64,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 210115,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 64
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 1103
+        },
+        "seed": 1103
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "d62db05e4f50c1397e6593397210d1bd822e90650c9c122206014459233e6ea4",
+            "width": 60
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "a966ac75536ae2ead251b05f97181ab3127d557bc219d01b42aaaec16d290035",
+            "width": 62
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "b299c1e8a3ca80489b5a0cf6204f4cd9f151c2f203d938eaa41ac3b00b02dd8f",
+            "width": 63
+          }
+        ],
+        "domain_mode": "EXACT_K_SUBSPACE",
+        "gate_ir_sha256": "1c5fe59f05757a24a936d887b571277870776990ce7aee36cec4946521f23914",
+        "instance_id": "QH-N040-BANDS-S2207",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "EXACT_K_SUBSPACE",
+          "gate_ir_sha256": "1c5fe59f05757a24a936d887b571277870776990ce7aee36cec4946521f23914",
+          "instance_id": "QH-N040-BANDS-S2207",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 61,
+              "decomposed_ccx": 15703936,
+              "decomposed_cnot": 94237817,
+              "decomposed_x": 25164,
+              "logical_qubits_with_decomposition_ancillas": 175,
+              "t_count": 109927552,
+              "t_depth_upper_bound": 47111808
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 13950,
+              "CX": 14201,
+              "MCX": 389878,
+              "X": 4,
+              "abstract_depth": 392418,
+              "critical_path_depth": 392418,
+              "gate_count": 418033,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 56,
+              "constraint_flag_qubits": 7,
+              "controlled_add_count": 640,
+              "controlled_add_count_forward_predicate": 160,
+              "data_qubits": 40,
+              "logical_qubits_total": 114,
+              "max_simultaneously_live_ancillas": 73,
+              "range_certified_widths": {
+                "FACTOR_1": 60,
+                "FACTOR_2": 62,
+                "FACTOR_3": 63,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 209016,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 63
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 2207
+        },
+        "seed": 2207
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "CARDINALITY",
+            "name": "CARDINALITY_K",
+            "range_certificate_sha256": "ac87d6565daa21d9c74ff9f0668013214f568905eb2dde62da0863880aaeb165",
+            "width": 6
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "3f5f97d9c102e8062cf37767c6b320eb9616cfa1b153a428b235562e2d4244be",
+            "width": 61
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "7f97f337f43fa0ae569731b30dfa0bf391de1e37e28095a1529b577e0c2cffda",
+            "width": 62
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "c256f5809f2bfbac3a50236b6d6ddb87eaa4d4209aa63fb3d8b047ed527b482f",
+            "width": 63
+          }
+        ],
+        "domain_mode": "FULL_BINARY",
+        "gate_ir_sha256": "23657b9126a1f47e417b2e7c369082456008a2ae5a0f2e290e86ea7632b5bbe9",
+        "instance_id": "QH-N040-BANDS-S2207",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "FULL_BINARY",
+          "gate_ir_sha256": "23657b9126a1f47e417b2e7c369082456008a2ae5a0f2e290e86ea7632b5bbe9",
+          "instance_id": "QH-N040-BANDS-S2207",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 61,
+              "decomposed_ccx": 15978342,
+              "decomposed_cnot": 95884493,
+              "decomposed_x": 25540,
+              "logical_qubits_with_decomposition_ancillas": 176,
+              "t_count": 111848394,
+              "t_depth_upper_bound": 47935026
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 14192,
+              "CX": 14441,
+              "MCX": 395078,
+              "X": 4,
+              "abstract_depth": 398016,
+              "critical_path_depth": 398016,
+              "gate_count": 423715,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 64,
+              "constraint_flag_qubits": 8,
+              "controlled_add_count": 800,
+              "controlled_add_count_forward_predicate": 200,
+              "data_qubits": 40,
+              "logical_qubits_total": 115,
+              "max_simultaneously_live_ancillas": 74,
+              "range_certified_widths": {
+                "CARDINALITY_K": 6,
+                "FACTOR_1": 61,
+                "FACTOR_2": 62,
+                "FACTOR_3": 63,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 211857,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 63
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 2207
+        },
+        "seed": 2207
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "49a1f86b9eba96b83310bc1ca38f8e03f1ce3078a17a1209d1adf1a31dbc1e1e",
+            "width": 63
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "a057d3bb625317ae3053e84a35cd1d7f3bae3d07e0e1e5b9a2e33b4af720f151",
+            "width": 61
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "1bbb6277bf3a7381697b0557e9b21640a776c47d12eb210136169b323d516554",
+            "width": 61
+          }
+        ],
+        "domain_mode": "EXACT_K_SUBSPACE",
+        "gate_ir_sha256": "e152596adf24031a0af0b01a57bcdd65d16f9e61d1817e2d9022c6524d4ebbc7",
+        "instance_id": "QH-N040-BANDS-S3301",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "EXACT_K_SUBSPACE",
+          "gate_ir_sha256": "e152596adf24031a0af0b01a57bcdd65d16f9e61d1817e2d9022c6524d4ebbc7",
+          "instance_id": "QH-N040-BANDS-S3301",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 61,
+              "decomposed_ccx": 15819548,
+              "decomposed_cnot": 94931305,
+              "decomposed_x": 22432,
+              "logical_qubits_with_decomposition_ancillas": 175,
+              "t_count": 110736836,
+              "t_depth_upper_bound": 47458644
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 13806,
+              "CX": 14017,
+              "MCX": 391690,
+              "X": 0,
+              "abstract_depth": 393580,
+              "critical_path_depth": 393580,
+              "gate_count": 419513,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 56,
+              "constraint_flag_qubits": 7,
+              "controlled_add_count": 640,
+              "controlled_add_count_forward_predicate": 160,
+              "data_qubits": 40,
+              "logical_qubits_total": 114,
+              "max_simultaneously_live_ancillas": 73,
+              "range_certified_widths": {
+                "FACTOR_1": 63,
+                "FACTOR_2": 61,
+                "FACTOR_3": 61,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 209756,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 63
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 3301
+        },
+        "seed": 3301
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "CARDINALITY",
+            "name": "CARDINALITY_K",
+            "range_certificate_sha256": "ac87d6565daa21d9c74ff9f0668013214f568905eb2dde62da0863880aaeb165",
+            "width": 6
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "c300134d2e2f3e626814cda7bc3575d01ef8cf9c41418c475032822b6fb6c42e",
+            "width": 63
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "7f1831cad6de20322cb6d4fd71313d8435d1cce629d9b0278ab2f1570d774c4f",
+            "width": 62
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "57d40f61b1280a6b16c682687e814e6bfaa3fb83b646d6b3cde4e6c90509b961",
+            "width": 61
+          }
+        ],
+        "domain_mode": "FULL_BINARY",
+        "gate_ir_sha256": "703a3ddff769aba8d87a6a91123d3b924e4e2443e8289c29a8725077950627e9",
+        "instance_id": "QH-N040-BANDS-S3301",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "FULL_BINARY",
+          "gate_ir_sha256": "703a3ddff769aba8d87a6a91123d3b924e4e2443e8289c29a8725077950627e9",
+          "instance_id": "QH-N040-BANDS-S3301",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 61,
+              "decomposed_ccx": 16095274,
+              "decomposed_cnot": 96585881,
+              "decomposed_x": 22608,
+              "logical_qubits_with_decomposition_ancillas": 176,
+              "t_count": 112666918,
+              "t_depth_upper_bound": 48285822
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 14028,
+              "CX": 14237,
+              "MCX": 396838,
+              "X": 0,
+              "abstract_depth": 399102,
+              "critical_path_depth": 399102,
+              "gate_count": 425103,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 64,
+              "constraint_flag_qubits": 8,
+              "controlled_add_count": 800,
+              "controlled_add_count_forward_predicate": 200,
+              "data_qubits": 40,
+              "logical_qubits_total": 115,
+              "max_simultaneously_live_ancillas": 74,
+              "range_certified_widths": {
+                "CARDINALITY_K": 6,
+                "FACTOR_1": 63,
+                "FACTOR_2": 62,
+                "FACTOR_3": 61,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 212551,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 63
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 3301
+        },
+        "seed": 3301
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "3492e1aab6752c94de8f45129fb8ee614a59998a373ad8a0ae872784eabf1146",
+            "width": 63
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "314eae50e0fd32189fdc64ffe81ffe46b075e1b00ab8b4a6e044f854c547ea15",
+            "width": 64
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "e5aaf0112af620ec1065edf922eadcdf4ac5598f2686fc961b03f1f7686d3ffa",
+            "width": 62
+          }
+        ],
+        "domain_mode": "EXACT_K_SUBSPACE",
+        "gate_ir_sha256": "f1336320609fd7619e735102cb8ed24d9261e549ae91fb091188df65f8d88925",
+        "instance_id": "QH-N040-BANDS-S4409",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "EXACT_K_SUBSPACE",
+          "gate_ir_sha256": "f1336320609fd7619e735102cb8ed24d9261e549ae91fb091188df65f8d88925",
+          "instance_id": "QH-N040-BANDS-S4409",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 62,
+              "decomposed_ccx": 15464008,
+              "decomposed_cnot": 92798033,
+              "decomposed_x": 25880,
+              "logical_qubits_with_decomposition_ancillas": 177,
+              "t_count": 108248056,
+              "t_depth_upper_bound": 46392024
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 13774,
+              "CX": 13985,
+              "MCX": 386014,
+              "X": 0,
+              "abstract_depth": 388374,
+              "critical_path_depth": 388374,
+              "gate_count": 413773,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 56,
+              "constraint_flag_qubits": 7,
+              "controlled_add_count": 640,
+              "controlled_add_count_forward_predicate": 160,
+              "data_qubits": 40,
+              "logical_qubits_total": 115,
+              "max_simultaneously_live_ancillas": 74,
+              "range_certified_widths": {
+                "FACTOR_1": 63,
+                "FACTOR_2": 64,
+                "FACTOR_3": 62,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 206886,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 64
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 4409
+        },
+        "seed": 4409
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "CARDINALITY",
+            "name": "CARDINALITY_K",
+            "range_certificate_sha256": "ac87d6565daa21d9c74ff9f0668013214f568905eb2dde62da0863880aaeb165",
+            "width": 6
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "480a67e1d5cc673f96051994797434ac8d5175bdd8c22079328104b8570f3b37",
+            "width": 64
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "a15a5884bfc1de6657094172b18b298f5f7e5330cb22b0ac1ed606d82683ad85",
+            "width": 64
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "909c6557ace4616171f0f911175bea4c48d7923573bac0d7f04b44e1d0ca0476",
+            "width": 63
+          }
+        ],
+        "domain_mode": "FULL_BINARY",
+        "gate_ir_sha256": "6e745a5761643926a4226fcc5d5d2ed41b074bf406e007fd1070a2701243e506",
+        "instance_id": "QH-N040-BANDS-S4409",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "FULL_BINARY",
+          "gate_ir_sha256": "6e745a5761643926a4226fcc5d5d2ed41b074bf406e007fd1070a2701243e506",
+          "instance_id": "QH-N040-BANDS-S4409",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 62,
+              "decomposed_ccx": 16007770,
+              "decomposed_cnot": 96060929,
+              "decomposed_x": 26480,
+              "logical_qubits_with_decomposition_ancillas": 178,
+              "t_count": 112054390,
+              "t_depth_upper_bound": 48023310
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 14100,
+              "CX": 14309,
+              "MCX": 395854,
+              "X": 0,
+              "abstract_depth": 398680,
+              "critical_path_depth": 398680,
+              "gate_count": 424263,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 64,
+              "constraint_flag_qubits": 8,
+              "controlled_add_count": 800,
+              "controlled_add_count_forward_predicate": 200,
+              "data_qubits": 40,
+              "logical_qubits_total": 116,
+              "max_simultaneously_live_ancillas": 75,
+              "range_certified_widths": {
+                "CARDINALITY_K": 6,
+                "FACTOR_1": 64,
+                "FACTOR_2": 64,
+                "FACTOR_3": 63,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 212131,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 64
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 4409
+        },
+        "seed": 4409
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "acaace265d0a48d733e4eda57a428d11477d5cde21ff49f78075866f7b97e301",
+            "width": 65
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "08e44a8c9e3e81692ae1bdda5d9223d9dbe2442491d6bafaab1c6047f2e0db30",
+            "width": 64
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "5092e36840e92f2ede4ea0630fe953ab072be4adcd882c9e57f9c7df240dd2fb",
+            "width": 62
+          }
+        ],
+        "domain_mode": "EXACT_K_SUBSPACE",
+        "gate_ir_sha256": "c8b6dae38c55936d6ceb73f22f4a02250eb12a9dd71239c78bf2828cc4a193a3",
+        "instance_id": "QH-N040-BANDS-S5501",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "EXACT_K_SUBSPACE",
+          "gate_ir_sha256": "c8b6dae38c55936d6ceb73f22f4a02250eb12a9dd71239c78bf2828cc4a193a3",
+          "instance_id": "QH-N040-BANDS-S5501",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 63,
+              "decomposed_ccx": 15958352,
+              "decomposed_cnot": 95764461,
+              "decomposed_x": 25512,
+              "logical_qubits_with_decomposition_ancillas": 179,
+              "t_count": 111708464,
+              "t_depth_upper_bound": 47875056
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 14122,
+              "CX": 14349,
+              "MCX": 395362,
+              "X": 0,
+              "abstract_depth": 397750,
+              "critical_path_depth": 397750,
+              "gate_count": 423833,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 56,
+              "constraint_flag_qubits": 7,
+              "controlled_add_count": 640,
+              "controlled_add_count_forward_predicate": 160,
+              "data_qubits": 40,
+              "logical_qubits_total": 116,
+              "max_simultaneously_live_ancillas": 75,
+              "range_certified_widths": {
+                "FACTOR_1": 65,
+                "FACTOR_2": 64,
+                "FACTOR_3": 62,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 211916,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 65
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 5501
+        },
+        "seed": 5501
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "CARDINALITY",
+            "name": "CARDINALITY_K",
+            "range_certificate_sha256": "ac87d6565daa21d9c74ff9f0668013214f568905eb2dde62da0863880aaeb165",
+            "width": 6
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "6032063d5146d0c738535dc47672248937c90711bcf8f1113f3f229a7d790027",
+            "width": 65
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "becda9a6e7ec50cb87a5cc5e3b4f5657923f392830e6eb6f2853110b3e8b9d2b",
+            "width": 65
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "d19839cf889162685b577405078835cb91709ec96f9b3a9dc910cfdb518f2cca",
+            "width": 62
+          }
+        ],
+        "domain_mode": "FULL_BINARY",
+        "gate_ir_sha256": "a79452e63bdfb2d7632e01a96997174f8edfe2a2dd42ab4c4be693d478030d30",
+        "instance_id": "QH-N040-BANDS-S5501",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "FULL_BINARY",
+          "gate_ir_sha256": "a79452e63bdfb2d7632e01a96997174f8edfe2a2dd42ab4c4be693d478030d30",
+          "instance_id": "QH-N040-BANDS-S5501",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 63,
+              "decomposed_ccx": 16240442,
+              "decomposed_cnot": 97457241,
+              "decomposed_x": 26192,
+              "logical_qubits_with_decomposition_ancillas": 180,
+              "t_count": 113683094,
+              "t_depth_upper_bound": 48721326
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 14364,
+              "CX": 14589,
+              "MCX": 400670,
+              "X": 0,
+              "abstract_depth": 403448,
+              "critical_path_depth": 403448,
+              "gate_count": 429623,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 64,
+              "constraint_flag_qubits": 8,
+              "controlled_add_count": 800,
+              "controlled_add_count_forward_predicate": 200,
+              "data_qubits": 40,
+              "logical_qubits_total": 117,
+              "max_simultaneously_live_ancillas": 76,
+              "range_certified_widths": {
+                "CARDINALITY_K": 6,
+                "FACTOR_1": 65,
+                "FACTOR_2": 65,
+                "FACTOR_3": 62,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 214811,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 65
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 5501
+        },
+        "seed": 5501
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "adb5dee11a9fd508784fd2338e336db2309dd2a506efc9d65b6f23c89d93ccb4",
+            "width": 64
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "1b46ecd88dd77e8d3a314faa5e92929bd6d3e1971d640d6458d7ad61fc881fcd",
+            "width": 68
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "ad713f044a12636046631e9afac3a904c5c622c307b48741b9f522e3a7cf9e8f",
+            "width": 64
+          }
+        ],
+        "domain_mode": "EXACT_K_SUBSPACE",
+        "gate_ir_sha256": "1a07cea7b6a1d938a470afc6e8b9f59dda7932eebb94b4ce592f815360e14d19",
+        "instance_id": "QH-N040-BANDS-S6607",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "EXACT_K_SUBSPACE",
+          "gate_ir_sha256": "1a07cea7b6a1d938a470afc6e8b9f59dda7932eebb94b4ce592f815360e14d19",
+          "instance_id": "QH-N040-BANDS-S6607",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 66,
+              "decomposed_ccx": 15366200,
+              "decomposed_cnot": 92210981,
+              "decomposed_x": 30256,
+              "logical_qubits_with_decomposition_ancillas": 185,
+              "t_count": 107563400,
+              "t_depth_upper_bound": 46098600
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 13562,
+              "CX": 13781,
+              "MCX": 381154,
+              "X": 0,
+              "abstract_depth": 382872,
+              "critical_path_depth": 382872,
+              "gate_count": 408497,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 56,
+              "constraint_flag_qubits": 7,
+              "controlled_add_count": 640,
+              "controlled_add_count_forward_predicate": 160,
+              "data_qubits": 40,
+              "logical_qubits_total": 119,
+              "max_simultaneously_live_ancillas": 78,
+              "range_certified_widths": {
+                "FACTOR_1": 64,
+                "FACTOR_2": 68,
+                "FACTOR_3": 64,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 204248,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 68
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 6607
+        },
+        "seed": 6607
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "CARDINALITY",
+            "name": "CARDINALITY_K",
+            "range_certificate_sha256": "ac87d6565daa21d9c74ff9f0668013214f568905eb2dde62da0863880aaeb165",
+            "width": 6
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "2a324ab7f174fbecf544d817c096390b97c35411b12f491d87c99c968640e9df",
+            "width": 64
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "7a3a90858ad3c3420cc96691b0dd3557c703cf887928b4c71637beb4df578578",
+            "width": 69
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "962993f458081d64d529a334af7dc54467d221417791c2509541c964ca2f308a",
+            "width": 65
+          }
+        ],
+        "domain_mode": "FULL_BINARY",
+        "gate_ir_sha256": "0bf0cc9a2cdf1dfa4d349bfc1d73755886df2301a4363d570c592deada450052",
+        "instance_id": "QH-N040-BANDS-S6607",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "FULL_BINARY",
+          "gate_ir_sha256": "0bf0cc9a2cdf1dfa4d349bfc1d73755886df2301a4363d570c592deada450052",
+          "instance_id": "QH-N040-BANDS-S6607",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 67,
+              "decomposed_ccx": 15903946,
+              "decomposed_cnot": 95437789,
+              "decomposed_x": 31472,
+              "logical_qubits_with_decomposition_ancillas": 188,
+              "t_count": 111327622,
+              "t_depth_upper_bound": 47711838
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 13896,
+              "CX": 14113,
+              "MCX": 390738,
+              "X": 0,
+              "abstract_depth": 392934,
+              "critical_path_depth": 392934,
+              "gate_count": 418747,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 64,
+              "constraint_flag_qubits": 8,
+              "controlled_add_count": 800,
+              "controlled_add_count_forward_predicate": 200,
+              "data_qubits": 40,
+              "logical_qubits_total": 121,
+              "max_simultaneously_live_ancillas": 80,
+              "range_certified_widths": {
+                "CARDINALITY_K": 6,
+                "FACTOR_1": 64,
+                "FACTOR_2": 69,
+                "FACTOR_3": 65,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 209373,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 69
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 6607
+        },
+        "seed": 6607
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "4446a51a04fb4ce437b01bcfe3b588d2b1b8c9bbb8a84f64cee487c74fd57dd7",
+            "width": 63
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "b3515f21d97d4bce90365f6096273bd0e9b5c8ce7626161802aadca344d7b149",
+            "width": 61
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "3917dca12175786dafa89daf50d996aa964e914ee92b9cd18ae4eacaeeace668",
+            "width": 61
+          }
+        ],
+        "domain_mode": "EXACT_K_SUBSPACE",
+        "gate_ir_sha256": "4e45ff317b0b2b9ee73496c4b24ac93326372abe735d9f14e07708a52e60cc59",
+        "instance_id": "QH-N040-BANDS-S7703",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "EXACT_K_SUBSPACE",
+          "gate_ir_sha256": "4e45ff317b0b2b9ee73496c4b24ac93326372abe735d9f14e07708a52e60cc59",
+          "instance_id": "QH-N040-BANDS-S7703",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 61,
+              "decomposed_ccx": 15958540,
+              "decomposed_cnot": 95765601,
+              "decomposed_x": 29304,
+              "logical_qubits_with_decomposition_ancillas": 175,
+              "t_count": 111709780,
+              "t_depth_upper_bound": 47875620
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 14170,
+              "CX": 14361,
+              "MCX": 399742,
+              "X": 0,
+              "abstract_depth": 402502,
+              "critical_path_depth": 402502,
+              "gate_count": 428273,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 56,
+              "constraint_flag_qubits": 7,
+              "controlled_add_count": 640,
+              "controlled_add_count_forward_predicate": 160,
+              "data_qubits": 40,
+              "logical_qubits_total": 114,
+              "max_simultaneously_live_ancillas": 73,
+              "range_certified_widths": {
+                "FACTOR_1": 63,
+                "FACTOR_2": 61,
+                "FACTOR_3": 61,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 214136,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 63
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 7703
+        },
+        "seed": 7703
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "CARDINALITY",
+            "name": "CARDINALITY_K",
+            "range_certificate_sha256": "ac87d6565daa21d9c74ff9f0668013214f568905eb2dde62da0863880aaeb165",
+            "width": 6
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "59fbc50a71d090c0550591f7a7969005d7ce4908ab7ca780fbf23c5521debf1f",
+            "width": 64
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "2e537eaa403834ef06d858a38d67101b3e483144009f83ab405da409271976dc",
+            "width": 61
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "8485f3d6bf9ebe6d1bce511910e1e5aaf7e01de73ecd33eca9ebbf86c832edf9",
+            "width": 62
+          }
+        ],
+        "domain_mode": "FULL_BINARY",
+        "gate_ir_sha256": "5c457863e8364df4435926d4ca781f6057dc077991cf7643fe08565a6611790b",
+        "instance_id": "QH-N040-BANDS-S7703",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "FULL_BINARY",
+          "gate_ir_sha256": "5c457863e8364df4435926d4ca781f6057dc077991cf7643fe08565a6611790b",
+          "instance_id": "QH-N040-BANDS-S7703",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 62,
+              "decomposed_ccx": 16525230,
+              "decomposed_cnot": 99166041,
+              "decomposed_x": 30224,
+              "logical_qubits_with_decomposition_ancillas": 178,
+              "t_count": 115676610,
+              "t_depth_upper_bound": 49575690
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 14472,
+              "CX": 14661,
+              "MCX": 409806,
+              "X": 0,
+              "abstract_depth": 413016,
+              "critical_path_depth": 413016,
+              "gate_count": 438939,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 64,
+              "constraint_flag_qubits": 8,
+              "controlled_add_count": 800,
+              "controlled_add_count_forward_predicate": 200,
+              "data_qubits": 40,
+              "logical_qubits_total": 116,
+              "max_simultaneously_live_ancillas": 75,
+              "range_certified_widths": {
+                "CARDINALITY_K": 6,
+                "FACTOR_1": 64,
+                "FACTOR_2": 61,
+                "FACTOR_3": 62,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 219469,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 64
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 7703
+        },
+        "seed": 7703
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "3ce7a59c74b1d2358ffa74839f57a0f12f68d4b65b905549cce481d39bdbdcaa",
+            "width": 62
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "9de25fc4e8cc92bbb6394544e43caf2e329357244a23e454de2eeda757406b39",
+            "width": 62
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "c431b45a07c4373e667c9aa9f7c7276c2986f2fae833efae274e1595e74c9c26",
+            "width": 64
+          }
+        ],
+        "domain_mode": "EXACT_K_SUBSPACE",
+        "gate_ir_sha256": "69f70f040f83632d2576151b0a274cd082e38837a32be00635ccf438dacf1e5b",
+        "instance_id": "QH-N040-BANDS-S8807",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "EXACT_K_SUBSPACE",
+          "gate_ir_sha256": "69f70f040f83632d2576151b0a274cd082e38837a32be00635ccf438dacf1e5b",
+          "instance_id": "QH-N040-BANDS-S8807",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 62,
+              "decomposed_ccx": 15512840,
+              "decomposed_cnot": 93091329,
+              "decomposed_x": 25660,
+              "logical_qubits_with_decomposition_ancillas": 177,
+              "t_count": 108589880,
+              "t_depth_upper_bound": 46538520
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 14054,
+              "CX": 14289,
+              "MCX": 388934,
+              "X": 4,
+              "abstract_depth": 391274,
+              "critical_path_depth": 391274,
+              "gate_count": 417281,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 56,
+              "constraint_flag_qubits": 7,
+              "controlled_add_count": 640,
+              "controlled_add_count_forward_predicate": 160,
+              "data_qubits": 40,
+              "logical_qubits_total": 115,
+              "max_simultaneously_live_ancillas": 74,
+              "range_certified_widths": {
+                "FACTOR_1": 62,
+                "FACTOR_2": 62,
+                "FACTOR_3": 64,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 208640,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 64
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 8807
+        },
+        "seed": 8807
+      },
+      {
+        "constraints": [
+          {
+            "certified": true,
+            "kind": "CARDINALITY",
+            "name": "CARDINALITY_K",
+            "range_certificate_sha256": "ac87d6565daa21d9c74ff9f0668013214f568905eb2dde62da0863880aaeb165",
+            "width": 6
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_1",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_2",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_3",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "GROUP",
+            "name": "GROUP_4",
+            "range_certificate_sha256": "a1a0778672b11df478fe568fd56733398d617c1a7d8e131750fd6c7fcda11192",
+            "width": 4
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_1",
+            "range_certificate_sha256": "4b5875451144aa5d2c3585a0083f3f152596a0e2aba4b3b4cc0941b98cdcb614",
+            "width": 63
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_2",
+            "range_certificate_sha256": "8614f51473165e15e732a8767d168980832c359399ed4f0da1e286917a0e2f26",
+            "width": 63
+          },
+          {
+            "certified": true,
+            "kind": "FACTOR",
+            "name": "FACTOR_3",
+            "range_certificate_sha256": "95456e895efd3b229229fb02a1ec3da6dd4306253bca40a261c4e99a0f6dda73",
+            "width": 64
+          }
+        ],
+        "domain_mode": "FULL_BINARY",
+        "gate_ir_sha256": "d6f0d49945d34c5968d66463750deaee3953ef2d07bed32aedf2a903e2d66767",
+        "instance_id": "QH-N040-BANDS-S8807",
+        "resource_ledger": {
+          "claim_boundary": {
+            "hardware_executable": false,
+            "qpu_submission_enabled": false,
+            "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+          },
+          "domain_mode": "FULL_BINARY",
+          "gate_ir_sha256": "d6f0d49945d34c5968d66463750deaee3953ef2d07bed32aedf2a903e2d66767",
+          "instance_id": "QH-N040-BANDS-S8807",
+          "levels": {
+            "FAULT_TOLERANT_ESTIMATE": {
+              "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+              "clean_mcx_decomposition_ancillas": 62,
+              "decomposed_ccx": 16054522,
+              "decomposed_cnot": 96341757,
+              "decomposed_x": 26092,
+              "logical_qubits_with_decomposition_ancillas": 178,
+              "t_count": 112381654,
+              "t_depth_upper_bound": 48163566
+            },
+            "GATE_LEVEL_ABSTRACT": {
+              "CCX": 14392,
+              "CX": 14625,
+              "MCX": 398810,
+              "X": 4,
+              "abstract_depth": 401640,
+              "critical_path_depth": 401640,
+              "gate_count": 427831,
+              "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+            },
+            "LOGICAL_IR": {
+              "aggregate_qubits": 1,
+              "caller_target_qubits": 1,
+              "comparator_count": 64,
+              "constraint_flag_qubits": 8,
+              "controlled_add_count": 800,
+              "controlled_add_count_forward_predicate": 200,
+              "data_qubits": 40,
+              "logical_qubits_total": 116,
+              "max_simultaneously_live_ancillas": 75,
+              "range_certified_widths": {
+                "CARDINALITY_K": 6,
+                "FACTOR_1": 63,
+                "FACTOR_2": 63,
+                "FACTOR_3": 64,
+                "GROUP_1": 4,
+                "GROUP_2": 4,
+                "GROUP_3": 4,
+                "GROUP_4": 4
+              },
+              "uncomputation_gate_count": 213915,
+              "uncomputation_overhead": 1.0,
+              "work_qubits": 64
+            },
+            "TRANSPILED_BACKEND_SPECIFIC": {
+              "backend": null,
+              "status": "NOT_RUN"
+            }
+          },
+          "parent_artifact_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+          "parent_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+          "seed": 8807
+        },
+        "seed": 8807
+      }
+    ],
+    "compiler_source_sha256": "b76001c8502eec962dc998d1c8ffa37b2886432149fb193f26e52d82cd348c78",
+    "compiler_spec_sha256": "edad55227d611b52884529fe2da4f8f458e80c36367589a3499bdf075060f3aa",
+    "family_compilation_sha256": "009bd6530cd20d50bf38fe5b21a94c933e997d99d8eeb00a38e52d7e5453bc2e",
+    "overall_pass": true,
+    "parent_guard": {
+      "canonical_json_sha256": "439b0b02ea9085b4dfe929a335b3636197ad37ae104054dd4b83ee46e4d2b8c3",
+      "checks": {
+        "canonical_json_serializable": true,
+        "certificate_count_exact": true,
+        "certificate_fidelity_exact": true,
+        "certificate_hashes_recomputed": true,
+        "certificate_hashes_unique": true,
+        "certificate_identity_126_of_126": true,
+        "certificate_instance_ids_unique": true,
+        "certificate_seed_order_exact": true,
+        "certificate_seeds_unique": true,
+        "compiler_boundary_preserved": true,
+        "dyadic_oracle_sha_frozen_parent": true,
+        "dyadic_oracle_sha_recomputed": true,
+        "expected_raw_sha256_well_formed": true,
+        "family_exact": true,
+        "family_seed_order_exact": true,
+        "family_seeds_unique": true,
+        "fidelity_status_exact": true,
+        "file_readable": true,
+        "fixed_point_falsification_preserved": true,
+        "hardware_executable_is_false": true,
+        "json_decodable_with_unique_keys": true,
+        "parent_dyadic_oracle_version": true,
+        "parent_dyadic_spec_sha": true,
+        "parent_phase2_execution_spec_sha": true,
+        "parent_phase2_protocol_sha": true,
+        "parent_phase3_preparation_spec_sha": true,
+        "parent_source_fixed_point_oracle_spec_sha": true,
+        "payload_is_json_object": true,
+        "raw_file_sha256_computed": true,
+        "raw_file_sha256_matches_expected": true,
+        "resource_blueprint_count_exact": true,
+        "resource_blueprints_match_certificates": true,
+        "resource_seed_order_exact": true,
+        "resource_seeds_unique": true,
+        "resource_summary_exact": true,
+        "resource_summary_recomputed": true,
+        "top_level_created_utc_present": true,
+        "top_level_schema_exact": true
+      },
+      "legacy_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+      "raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+      "valid": true
+    },
+    "phase2_generator_source_sha256": "30c2cb35444afeeff669b9772d5577e89f32dbead762a09fb90fde70c9b653ce",
+    "reproducibility": {
+      "family_first_sha256": "009bd6530cd20d50bf38fe5b21a94c933e997d99d8eeb00a38e52d7e5453bc2e",
+      "family_second_sha256": "009bd6530cd20d50bf38fe5b21a94c933e997d99d8eeb00a38e52d7e5453bc2e",
+      "full_family_second_pass": true,
+      "passed": true,
+      "small_suite_first_sha256": "8aa2454de7d41ee32d599c9e10baafc8db1d193e44f99bf33103e20bc6d336f2",
+      "small_suite_second_sha256": "8aa2454de7d41ee32d599c9e10baafc8db1d193e44f99bf33103e20bc6d336f2"
+    },
+    "resource_summary": {
+      "EXACT_K_SUBSPACE": {
+        "abstract_depth_max": 402502,
+        "abstract_gate_count_max": 428273,
+        "fault_tolerant_t_count_max": 111709780,
+        "logical_qubits_max": 119,
+        "max_factor_width": 68
+      },
+      "FULL_BINARY": {
+        "abstract_depth_max": 413016,
+        "abstract_gate_count_max": 438939,
+        "fault_tolerant_t_count_max": 115676610,
+        "logical_qubits_max": 121,
+        "max_factor_width": 69,
+        "seeds_requiring_69_factor_bits": [
+          6607
+        ]
+      },
+      "claim": "RESOURCE ESTIMATE · PROVIDER-NEUTRAL ABSTRACT GATES"
+    },
+    "small_n_exhaustive": {
+      "failure_count": 0,
+      "failures": [],
+      "modes": [
+        {
+          "domain_input_count": 6,
+          "feasible_input_count": 2,
+          "gate_ir_sha256": "8a4f6e85e55de33d13be937d1c93dc116e8fd1bb784a763ea33156b26b4a520e",
+          "inclusive_boundary_hits": 30,
+          "mode": "EXACT_K_SUBSPACE",
+          "resource_ledger": {
+            "claim_boundary": {
+              "hardware_executable": false,
+              "qpu_submission_enabled": false,
+              "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+            },
+            "domain_mode": "EXACT_K_SUBSPACE",
+            "gate_ir_sha256": "8a4f6e85e55de33d13be937d1c93dc116e8fd1bb784a763ea33156b26b4a520e",
+            "instance_id": "SYNTHETIC-N004-BANDS-S032",
+            "levels": {
+              "FAULT_TOLERANT_ESTIMATE": {
+                "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+                "clean_mcx_decomposition_ancillas": 5,
+                "decomposed_ccx": 572,
+                "decomposed_cnot": 3569,
+                "decomposed_x": 232,
+                "logical_qubits_with_decomposition_ancillas": 24,
+                "t_count": 4004,
+                "t_depth_upper_bound": 1716
+              },
+              "GATE_LEVEL_ABSTRACT": {
+                "CCX": 90,
+                "CX": 137,
+                "MCX": 126,
+                "X": 32,
+                "abstract_depth": 278,
+                "critical_path_depth": 278,
+                "gate_count": 385,
+                "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+              },
+              "LOGICAL_IR": {
+                "aggregate_qubits": 1,
+                "caller_target_qubits": 1,
+                "comparator_count": 56,
+                "constraint_flag_qubits": 7,
+                "controlled_add_count": 64,
+                "controlled_add_count_forward_predicate": 16,
+                "data_qubits": 4,
+                "logical_qubits_total": 19,
+                "max_simultaneously_live_ancillas": 14,
+                "range_certified_widths": {
+                  "FACTOR_1": 4,
+                  "FACTOR_2": 4,
+                  "FACTOR_3": 3,
+                  "GROUP_1": 1,
+                  "GROUP_2": 1,
+                  "GROUP_3": 1,
+                  "GROUP_4": 1
+                },
+                "uncomputation_gate_count": 192,
+                "uncomputation_overhead": 1.0,
+                "work_qubits": 4
+              },
+              "TRANSPILED_BACKEND_SPECIFIC": {
+                "backend": null,
+                "status": "NOT_RUN"
+              }
+            },
+            "parent_artifact_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "parent_dyadic_oracle_sha": "SYNTHETIC_PARENT",
+            "seed": 32
+          }
+        },
+        {
+          "domain_input_count": 16,
+          "feasible_input_count": 2,
+          "gate_ir_sha256": "785ab43292a5fdfe7461c728e7986dbb7be2779437aa9dd2d3d2ff0b80d9cc12",
+          "inclusive_boundary_hits": 83,
+          "mode": "FULL_BINARY",
+          "resource_ledger": {
+            "claim_boundary": {
+              "hardware_executable": false,
+              "qpu_submission_enabled": false,
+              "status": "PROVIDER_NEUTRAL_GATE_IR · NOT BACKEND TRANSPILED"
+            },
+            "domain_mode": "FULL_BINARY",
+            "gate_ir_sha256": "785ab43292a5fdfe7461c728e7986dbb7be2779437aa9dd2d3d2ff0b80d9cc12",
+            "instance_id": "SYNTHETIC-N004-BANDS-S032",
+            "levels": {
+              "FAULT_TOLERANT_ESTIMATE": {
+                "basis": "CLEAN_ANCILLA_MCX_V_CHAIN_AND_7T_CCX_UPPER_BOUND",
+                "clean_mcx_decomposition_ancillas": 6,
+                "decomposed_ccx": 682,
+                "decomposed_cnot": 4249,
+                "decomposed_x": 288,
+                "logical_qubits_with_decomposition_ancillas": 26,
+                "t_count": 4774,
+                "t_depth_upper_bound": 2046
+              },
+              "GATE_LEVEL_ABSTRACT": {
+                "CCX": 112,
+                "CX": 157,
+                "MCX": 154,
+                "X": 32,
+                "abstract_depth": 344,
+                "critical_path_depth": 344,
+                "gate_count": 455,
+                "negative_control_lowering": "PAIRED_X_AROUND_POSITIVE_CONTROL_NETWORK"
+              },
+              "LOGICAL_IR": {
+                "aggregate_qubits": 1,
+                "caller_target_qubits": 1,
+                "comparator_count": 64,
+                "constraint_flag_qubits": 8,
+                "controlled_add_count": 80,
+                "controlled_add_count_forward_predicate": 20,
+                "data_qubits": 4,
+                "logical_qubits_total": 20,
+                "max_simultaneously_live_ancillas": 15,
+                "range_certified_widths": {
+                  "CARDINALITY_K": 3,
+                  "FACTOR_1": 4,
+                  "FACTOR_2": 4,
+                  "FACTOR_3": 3,
+                  "GROUP_1": 1,
+                  "GROUP_2": 1,
+                  "GROUP_3": 1,
+                  "GROUP_4": 1
+                },
+                "uncomputation_gate_count": 227,
+                "uncomputation_overhead": 1.0,
+                "work_qubits": 4
+              },
+              "TRANSPILED_BACKEND_SPECIFIC": {
+                "backend": null,
+                "status": "NOT_RUN"
+              }
+            },
+            "parent_artifact_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "parent_dyadic_oracle_sha": "SYNTHETIC_PARENT",
+            "seed": 32
+          }
+        }
+      ],
+      "negative_coefficients_present": true,
+      "passed": true,
+      "target_zero_and_one_checked": true,
+      "total_basis_state_cases": 44
+    },
+    "validation_manifest_sha256": "bde0dc2e90a355821c8678d2df8ac743820c0a4d2e83701aeeeaab3e1d8e9b91",
+    "validation_version": "PHASE III · GATE COMPILER VALIDATION LADDER · V1"
+  }
+}

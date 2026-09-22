@@ -1,0 +1,2353 @@
+{
+  "artifact_sha256": "f2f294f8f0a21804d7dd6a23d7695b161723fcc1efea48b2f9d1ce7bcbb3f5be",
+  "artifact_version": "PHASE III · V4.2 CONNECTED COINED-WALK RESOURCE ARTIFACT · V1",
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "circuit_materialization": "NOT_RUN_NEXT_GATE",
+    "clean_workspace_scope": "CERTIFIED_ONLY_ON_EXACT_FEASIBLE_DATA_AND_ONE_HOT_COIN_PROMISE_SUBSPACE",
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "scope": "EXACT_PROMISE_SUBSPACE_GENERATOR_SUPPORT_AND_PROVIDER_NEUTRAL_SELECTED_MODEL_RESOURCE_LEDGER"
+  },
+  "decisions": {
+    "generator_support_decision": "CONNECTED_ALL_SEEDS_EXACT_V41_SUPPORT_PRESERVED",
+    "next_falsifiable_gate": "INDEPENDENT_REVERSIBLE_SIMULATION_AND_BACKEND_AGNOSTIC_CIRCUIT_MATERIALIZATION",
+    "overall": "V42_INDEXED_COINED_WALK_CONNECTED_RESOURCE_SCREEN_PASSED",
+    "production_admission": "PROVIDER_NEUTRAL_RESEARCH_GENERATOR_ADMITTED_HARDWARE_NOT_AUTHORIZED",
+    "resource_architecture_decision": "PASSED_SELECTED_MODEL_CNOT_BUDGET"
+  },
+  "engine_source_raw_file_sha256": "3d73cddfc7c06cf6e0e5bc22a3ad29c3ea79ac22d7c1e5a8b1ca1044789c65ab",
+  "parent": {
+    "artifact_raw_file_sha256": "42a5d7caf4e9fab18e771b2bd55fc38c9a77f7fac42f2599feb4fe789cf88c07",
+    "artifact_sha256": "7260336e3a3c6bd2adbd6397d9bed569b91c2da2a7942a17b8090fdcac739e4e",
+    "freeze_raw_file_sha256": "43d3bd4e9cdcb54e9a7c1649430f6bd10cae9ef51ac5d77319a7630639b0c34f",
+    "freeze_sha256": "b9ec84e2110e40cf1c77fb90b18794ff80e26ddf12233d5193eb18ca5aa6c201",
+    "immutable_file_count": 159,
+    "immutable_files_exact": true,
+    "overall_decision": "V41_AUGMENTED_CONNECTIVITY_CERTIFIED_RESOURCE_SCREEN_REJECTED",
+    "spec_raw_file_sha256": "0bbe903e7520213f8effcd592051420ac54502934a1840b6052e3b4865950c35",
+    "spec_sha256": "a5977ce4dda24d2fe6e8308e299b8a6b9097cf4fdf7e2835ca8e2fdc6aa99c89"
+  },
+  "research_classification": "RESEARCH_ONLY",
+  "resource_evidence": {
+    "aggregate": {
+      "aggregate_resource_sha256": "c5629206542d64cbceb5558198e84a3f9d5b1eb188673a2eabf83a2ad4db7ca6",
+      "all_eight_seeds_pass": true,
+      "budget_cnot": 2500000,
+      "maximum_logical_qubits_with_recycled_workspace": 331,
+      "maximum_selected_model_cnot": 1135430,
+      "minimum_budget_margin_cnot": 1364570,
+      "parent_v41_r2_maximum_selected_model_cnot": 15663936,
+      "selected_model": "CONTROLLED_CUCCARO_RIPPLE_CLEAN_LADDER_6CX_CCX_CRX2CX_V1",
+      "v41_to_v42_maximum_reduction_basis_points": 9275
+    },
+    "architecture_id": "EXACT_ONE_HOT_COINED_TARGET_RECOMPUTE_ARITHMETIC_WITH_DATA_ONLY_BRIDGES_V1",
+    "resource_evidence_sha256": "be5b39ed86b296f6a14b47e3f419bb002ca8480151f7c43341653d3e233cbada",
+    "seed_rows": [
+      {
+        "addressed_pair_positions_preserved": 780,
+        "bridge_ir": [],
+        "bridge_selected_model_cnot": 0,
+        "budget_cnot": 2500000,
+        "budget_margin_cnot": 1415802,
+        "coin_basis_states": 1600,
+        "coin_qubits": 80,
+        "compression_sha256": "06e3b092786adf1c98affdefbc9310d7223ab3beae4de2ae69d643c5de64f514",
+        "constraint_register_widths": [
+          3,
+          3,
+          3,
+          3,
+          34,
+          34,
+          33
+        ],
+        "data_qubits": 40,
+        "decision": "PASSED",
+        "feasibility_oracle": {
+          "cache_offset_initialization_x": 124,
+          "constraint_row_count": 7,
+          "feasibility_oracle_sha256": "a91653d3dea89813d9ce213c564d813532cb0aff0dc4b0e0b19dfe3ff9316b87",
+          "independent_cnot_formula_replay": 540250,
+          "macro_terms": {
+            "comparator_by_width": {
+              "3": 16,
+              "33": 4,
+              "34": 8
+            },
+            "controlled_add_by_width": {
+              "3": 80,
+              "33": 80,
+              "34": 160
+            },
+            "direct_cnot": 0,
+            "mcx_by_controls": {
+              "2": 14,
+              "7": 1
+            }
+          },
+          "resources": {
+            "abstract_ccx": 40250,
+            "abstract_cx": 16444,
+            "abstract_gate_count": 80949,
+            "abstract_mcx": 15681,
+            "abstract_x": 8574,
+            "clean_decomposition_ancillas": 5,
+            "selected_model_cnot": 540250,
+            "selected_model_one_qubit_gates": 794283
+          },
+          "row_ledger": [
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_1",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "371bec6d013dca649a12c38ab3a49d7a9f3b17b5b39eb51700452f470f5ed542",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_2",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "a8c9f354d3f9fd3858c3f255b053469cc39fb59668fcc0fcb9f1efa4ae6354fc",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_3",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "2d5e6fc97294f62565d15528c70ebe887f85f6f30f337a5ba3e4afa5b3a3be95",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_4",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "9228ab1dba1e6d5c3d1964a95f2b1e4deea8ace4d856120a591f7885134db020",
+              "width": 3
+            },
+            {
+              "guarded_lower": 4183862967,
+              "guarded_upper": 6247205370,
+              "kind": "FACTOR",
+              "name": "FACTOR_1",
+              "resources": {
+                "abstract_ccx": 270,
+                "abstract_cx": 532,
+                "abstract_gate_count": 960,
+                "abstract_mcx": 0,
+                "abstract_x": 158,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2152,
+                "selected_model_one_qubit_gates": 2588
+              },
+              "row_oracle_sha256": "62203a64238f3075cdcf4f0523a373b9bc638f7c12d0e1632e4b908caab8bee4",
+              "width": 34
+            },
+            {
+              "guarded_lower": 6275112445,
+              "guarded_upper": 10154506151,
+              "kind": "FACTOR",
+              "name": "FACTOR_2",
+              "resources": {
+                "abstract_ccx": 270,
+                "abstract_cx": 532,
+                "abstract_gate_count": 952,
+                "abstract_mcx": 0,
+                "abstract_x": 150,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2152,
+                "selected_model_one_qubit_gates": 2580
+              },
+              "row_oracle_sha256": "137690eeaef83700f5a480a9fb749ba8454c6399b998ec3cca0beca4b9170b96",
+              "width": 34
+            },
+            {
+              "guarded_lower": 3234271984,
+              "guarded_upper": 4504096178,
+              "kind": "FACTOR",
+              "name": "FACTOR_3",
+              "resources": {
+                "abstract_ccx": 262,
+                "abstract_cx": 516,
+                "abstract_gate_count": 900,
+                "abstract_mcx": 0,
+                "abstract_x": 122,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2088,
+                "selected_model_one_qubit_gates": 2480
+              },
+              "row_oracle_sha256": "433584d232bc7b615b33a2314060640b7358c982ddad207a67beff228969e6b5",
+              "width": 33
+            }
+          ],
+          "sum_build_invocations": 2,
+          "sum_build_macros_per_invocation": {
+            "constant_initialization_x": 62,
+            "controlled_add_by_width": {
+              "3": 40,
+              "33": 40,
+              "34": 80
+            },
+            "controlled_add_macros": 160,
+            "scope": "COHERENT_CACHE_PREPARATION_REPORTED_OUTSIDE_MIXER_NUMERATOR"
+          }
+        },
+        "feasibility_oracle_invocations": 2,
+        "independent_cnot_formula_replay": {
+          "bridge_cnot": 0,
+          "match": true,
+          "replay_selected_model_cnot": 1084198,
+          "terms": {
+            "comparator_by_width": {
+              "3": 32,
+              "33": 8,
+              "34": 16
+            },
+            "controlled_add_by_width": {
+              "3": 160,
+              "33": 160,
+              "34": 320
+            },
+            "direct_cnot": 326,
+            "mcx_by_controls": {
+              "2": 590,
+              "7": 2
+            }
+          }
+        },
+        "instance_id": "QH-N040-BANDS-S1103",
+        "logical_qubits_with_recycled_workspace": 322,
+        "parent_connectivity_sha256": "0446ac6f8b490099e40aa03421f06dc26ca3ed19c84326dd94e0a9b36e4229cd",
+        "promise_scope": "EXACT_FEASIBLE_DATA_X_TWO_ONE_HOT_COIN_REGISTERS",
+        "seed": 1103,
+        "seed_walk_sha256": "8d1b6528a19d7def30ba769788e5e3c6cc525dc6c525c19ac790863328f3f8c6",
+        "select_scaffold": {
+          "ccx_count": 562,
+          "coin_ring_cnot": 160,
+          "direct_cnot_count_including_coin_rings": 326,
+          "resources": {
+            "abstract_ccx": 562,
+            "abstract_cx": 326,
+            "abstract_gate_count": 968,
+            "abstract_mcx": 0,
+            "abstract_x": 0,
+            "clean_decomposition_ancillas": 0,
+            "selected_model_cnot": 3698,
+            "selected_model_one_qubit_gates": 5378
+          }
+        },
+        "selected_model": "CONTROLLED_CUCCARO_RIPPLE_CLEAN_LADDER_6CX_CCX_CRX2CX_V1",
+        "selected_model_step_resources": {
+          "abstract_ccx": 81062,
+          "abstract_cx": 33214,
+          "abstract_gate_count": 162866,
+          "abstract_mcx": 31362,
+          "abstract_x": 17148,
+          "clean_decomposition_ancillas": 5,
+          "selected_model_cnot": 1084198,
+          "selected_model_one_qubit_gates": 1593944
+        },
+        "target_scratch_qubits": 40
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "bridge_ir": [
+          {
+            "bridge_ir_sha256": "7c4aff1c8015d49b2432d15d81f759ec481ac843898e435dc29e3ed0ea64f846",
+            "bridge_sha256": "77b1ee11e599888e593eb8bc950bffecb0905fbb7db80004606481eadc8c168e",
+            "data_hamming_distance": 4,
+            "differing_data_indices": [
+              5,
+              8,
+              31,
+              35
+            ],
+            "gray_path_sha256": "f796466716ec75bb19cf45fe1ebbabd0966795d13c4fb0324cbe51ee05290d95",
+            "negative_control_wrapper_count": 456,
+            "resources": {
+              "abstract_ccx": 0,
+              "abstract_cx": 0,
+              "abstract_gate_count": 466,
+              "abstract_mcx": 8,
+              "abstract_x": 456,
+              "clean_decomposition_ancillas": 37,
+              "selected_model_cnot": 3600,
+              "selected_model_one_qubit_gates": 5858
+            },
+            "selected_model_mcx_occurrences": 8,
+            "source_mask_hex": "08b4208484",
+            "target_mask_hex": "00342085a4"
+          }
+        ],
+        "bridge_selected_model_cnot": 3600,
+        "budget_cnot": 2500000,
+        "budget_margin_cnot": 1412202,
+        "coin_basis_states": 1600,
+        "coin_qubits": 80,
+        "compression_sha256": "394bc243f34c6d8eee2e13e2ec849b562dca2cc0d4dcfb1aa9d0f90bb98a89aa",
+        "constraint_register_widths": [
+          3,
+          3,
+          3,
+          3,
+          35,
+          33,
+          33
+        ],
+        "data_qubits": 40,
+        "decision": "PASSED",
+        "feasibility_oracle": {
+          "cache_offset_initialization_x": 114,
+          "constraint_row_count": 7,
+          "feasibility_oracle_sha256": "0734342891d44076ed35b10a1ed795245819abc38abefb5b8ed7c1a7253971e4",
+          "independent_cnot_formula_replay": 540250,
+          "macro_terms": {
+            "comparator_by_width": {
+              "3": 16,
+              "33": 8,
+              "35": 4
+            },
+            "controlled_add_by_width": {
+              "3": 80,
+              "33": 160,
+              "35": 80
+            },
+            "direct_cnot": 0,
+            "mcx_by_controls": {
+              "2": 14,
+              "7": 1
+            }
+          },
+          "resources": {
+            "abstract_ccx": 40250,
+            "abstract_cx": 16444,
+            "abstract_gate_count": 81127,
+            "abstract_mcx": 15681,
+            "abstract_x": 8752,
+            "clean_decomposition_ancillas": 5,
+            "selected_model_cnot": 540250,
+            "selected_model_one_qubit_gates": 794461
+          },
+          "row_ledger": [
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_1",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "371bec6d013dca649a12c38ab3a49d7a9f3b17b5b39eb51700452f470f5ed542",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_2",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "a8c9f354d3f9fd3858c3f255b053469cc39fb59668fcc0fcb9f1efa4ae6354fc",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_3",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "2d5e6fc97294f62565d15528c70ebe887f85f6f30f337a5ba3e4afa5b3a3be95",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_4",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "9228ab1dba1e6d5c3d1964a95f2b1e4deea8ace4d856120a591f7885134db020",
+              "width": 3
+            },
+            {
+              "guarded_lower": 10685351429,
+              "guarded_upper": 15553580987,
+              "kind": "FACTOR",
+              "name": "FACTOR_1",
+              "resources": {
+                "abstract_ccx": 278,
+                "abstract_cx": 548,
+                "abstract_gate_count": 972,
+                "abstract_mcx": 0,
+                "abstract_x": 146,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2216,
+                "selected_model_one_qubit_gates": 2648
+              },
+              "row_oracle_sha256": "0024a7035c30f6ebb6bce0825175817a8f15eb3c063471571236fd53a5bbe9dc",
+              "width": 35
+            },
+            {
+              "guarded_lower": 3339456067,
+              "guarded_upper": 5086772357,
+              "kind": "FACTOR",
+              "name": "FACTOR_2",
+              "resources": {
+                "abstract_ccx": 262,
+                "abstract_cx": 516,
+                "abstract_gate_count": 904,
+                "abstract_mcx": 0,
+                "abstract_x": 126,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2088,
+                "selected_model_one_qubit_gates": 2484
+              },
+              "row_oracle_sha256": "391581b0cebede65d0d96220bb8778e3c1f29b3d41e5a7531e33341a6e6ab4c6",
+              "width": 33
+            },
+            {
+              "guarded_lower": 2237688137,
+              "guarded_upper": 3160528421,
+              "kind": "FACTOR",
+              "name": "FACTOR_3",
+              "resources": {
+                "abstract_ccx": 262,
+                "abstract_cx": 516,
+                "abstract_gate_count": 892,
+                "abstract_mcx": 0,
+                "abstract_x": 114,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2088,
+                "selected_model_one_qubit_gates": 2472
+              },
+              "row_oracle_sha256": "5f52ecebbada6b10af95946a5a10b8f6e73ba255856cb825d4581806f53ea03f",
+              "width": 33
+            }
+          ],
+          "sum_build_invocations": 2,
+          "sum_build_macros_per_invocation": {
+            "constant_initialization_x": 57,
+            "controlled_add_by_width": {
+              "3": 40,
+              "33": 80,
+              "35": 40
+            },
+            "controlled_add_macros": 160,
+            "scope": "COHERENT_CACHE_PREPARATION_REPORTED_OUTSIDE_MIXER_NUMERATOR"
+          }
+        },
+        "feasibility_oracle_invocations": 2,
+        "independent_cnot_formula_replay": {
+          "bridge_cnot": 3600,
+          "match": true,
+          "replay_selected_model_cnot": 1087798,
+          "terms": {
+            "comparator_by_width": {
+              "3": 32,
+              "33": 16,
+              "35": 8
+            },
+            "controlled_add_by_width": {
+              "3": 160,
+              "33": 320,
+              "35": 160
+            },
+            "direct_cnot": 326,
+            "mcx_by_controls": {
+              "2": 590,
+              "7": 2
+            }
+          }
+        },
+        "instance_id": "QH-N040-BANDS-S2207",
+        "logical_qubits_with_recycled_workspace": 323,
+        "parent_connectivity_sha256": "ca7b9663852fa33e21b88c0eca50bcfc5fec21baaf7ca238315245960a7b8904",
+        "promise_scope": "EXACT_FEASIBLE_DATA_X_TWO_ONE_HOT_COIN_REGISTERS",
+        "seed": 2207,
+        "seed_walk_sha256": "27b9deabb766d4a26b8864dcb9770fc11fdc89ae514f1aa11c3cc22d84647fa2",
+        "select_scaffold": {
+          "ccx_count": 562,
+          "coin_ring_cnot": 160,
+          "direct_cnot_count_including_coin_rings": 326,
+          "resources": {
+            "abstract_ccx": 562,
+            "abstract_cx": 326,
+            "abstract_gate_count": 968,
+            "abstract_mcx": 0,
+            "abstract_x": 0,
+            "clean_decomposition_ancillas": 0,
+            "selected_model_cnot": 3698,
+            "selected_model_one_qubit_gates": 5378
+          }
+        },
+        "selected_model": "CONTROLLED_CUCCARO_RIPPLE_CLEAN_LADDER_6CX_CCX_CRX2CX_V1",
+        "selected_model_step_resources": {
+          "abstract_ccx": 81062,
+          "abstract_cx": 33214,
+          "abstract_gate_count": 163688,
+          "abstract_mcx": 31370,
+          "abstract_x": 17960,
+          "clean_decomposition_ancillas": 37,
+          "selected_model_cnot": 1087798,
+          "selected_model_one_qubit_gates": 1600158
+        },
+        "target_scratch_qubits": 40
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "bridge_ir": [],
+        "bridge_selected_model_cnot": 0,
+        "budget_cnot": 2500000,
+        "budget_margin_cnot": 1437818,
+        "coin_basis_states": 1600,
+        "coin_qubits": 80,
+        "compression_sha256": "41ef66ec9d72930e916036d4942f2ed0b441115fff2d42afb707b8f6c3b2792c",
+        "constraint_register_widths": [
+          3,
+          3,
+          3,
+          3,
+          33,
+          33,
+          33
+        ],
+        "data_qubits": 40,
+        "decision": "PASSED",
+        "feasibility_oracle": {
+          "cache_offset_initialization_x": 100,
+          "constraint_row_count": 7,
+          "feasibility_oracle_sha256": "f41b83870832f344baae50c92cfae3ea7dff60e0bffd9f5ea7a2fe8a7bbc129a",
+          "independent_cnot_formula_replay": 529242,
+          "macro_terms": {
+            "comparator_by_width": {
+              "3": 16,
+              "33": 12
+            },
+            "controlled_add_by_width": {
+              "3": 80,
+              "33": 240
+            },
+            "direct_cnot": 0,
+            "mcx_by_controls": {
+              "2": 14,
+              "7": 1
+            }
+          },
+          "resources": {
+            "abstract_ccx": 39434,
+            "abstract_cx": 16092,
+            "abstract_gate_count": 79205,
+            "abstract_mcx": 15361,
+            "abstract_x": 8318,
+            "clean_decomposition_ancillas": 5,
+            "selected_model_cnot": 529242,
+            "selected_model_one_qubit_gates": 778043
+          },
+          "row_ledger": [
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_1",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "371bec6d013dca649a12c38ab3a49d7a9f3b17b5b39eb51700452f470f5ed542",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_2",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "a8c9f354d3f9fd3858c3f255b053469cc39fb59668fcc0fcb9f1efa4ae6354fc",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_3",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "2d5e6fc97294f62565d15528c70ebe887f85f6f30f337a5ba3e4afa5b3a3be95",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_4",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "9228ab1dba1e6d5c3d1964a95f2b1e4deea8ace4d856120a591f7885134db020",
+              "width": 3
+            },
+            {
+              "guarded_lower": 3045025418,
+              "guarded_upper": 4285548372,
+              "kind": "FACTOR",
+              "name": "FACTOR_1",
+              "resources": {
+                "abstract_ccx": 262,
+                "abstract_cx": 516,
+                "abstract_gate_count": 932,
+                "abstract_mcx": 0,
+                "abstract_x": 154,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2088,
+                "selected_model_one_qubit_gates": 2512
+              },
+              "row_oracle_sha256": "1db45038c7ec83ae205b32d539600a6f69fb4ee3238c009508cb9443a9cda1e7",
+              "width": 33
+            },
+            {
+              "guarded_lower": 2474787409,
+              "guarded_upper": 3655836137,
+              "kind": "FACTOR",
+              "name": "FACTOR_2",
+              "resources": {
+                "abstract_ccx": 262,
+                "abstract_cx": 516,
+                "abstract_gate_count": 900,
+                "abstract_mcx": 0,
+                "abstract_x": 122,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2088,
+                "selected_model_one_qubit_gates": 2480
+              },
+              "row_oracle_sha256": "c138fadcf44d60c5fd1e13026525aa88fb9b06dd0b71906a734013321b663698",
+              "width": 33
+            },
+            {
+              "guarded_lower": 2911967164,
+              "guarded_upper": 4154042682,
+              "kind": "FACTOR",
+              "name": "FACTOR_3",
+              "resources": {
+                "abstract_ccx": 262,
+                "abstract_cx": 516,
+                "abstract_gate_count": 928,
+                "abstract_mcx": 0,
+                "abstract_x": 150,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2088,
+                "selected_model_one_qubit_gates": 2508
+              },
+              "row_oracle_sha256": "ff7984855ebc811bc75b63d7e5b2d9c3f88233630525df870e0a95a13df8d49d",
+              "width": 33
+            }
+          ],
+          "sum_build_invocations": 2,
+          "sum_build_macros_per_invocation": {
+            "constant_initialization_x": 50,
+            "controlled_add_by_width": {
+              "3": 40,
+              "33": 120
+            },
+            "controlled_add_macros": 160,
+            "scope": "COHERENT_CACHE_PREPARATION_REPORTED_OUTSIDE_MIXER_NUMERATOR"
+          }
+        },
+        "feasibility_oracle_invocations": 2,
+        "independent_cnot_formula_replay": {
+          "bridge_cnot": 0,
+          "match": true,
+          "replay_selected_model_cnot": 1062182,
+          "terms": {
+            "comparator_by_width": {
+              "3": 32,
+              "33": 24
+            },
+            "controlled_add_by_width": {
+              "3": 160,
+              "33": 480
+            },
+            "direct_cnot": 326,
+            "mcx_by_controls": {
+              "2": 590,
+              "7": 2
+            }
+          }
+        },
+        "instance_id": "QH-N040-BANDS-S3301",
+        "logical_qubits_with_recycled_workspace": 319,
+        "parent_connectivity_sha256": "b9339656f43d2643f4502725558f424b84571dcd86a01903cda6d7ca12e9b38c",
+        "promise_scope": "EXACT_FEASIBLE_DATA_X_TWO_ONE_HOT_COIN_REGISTERS",
+        "seed": 3301,
+        "seed_walk_sha256": "d8c9ad0b841908d567e6141aa339fcfedd06ced35dd398a9684e730925b98886",
+        "select_scaffold": {
+          "ccx_count": 562,
+          "coin_ring_cnot": 160,
+          "direct_cnot_count_including_coin_rings": 326,
+          "resources": {
+            "abstract_ccx": 562,
+            "abstract_cx": 326,
+            "abstract_gate_count": 968,
+            "abstract_mcx": 0,
+            "abstract_x": 0,
+            "clean_decomposition_ancillas": 0,
+            "selected_model_cnot": 3698,
+            "selected_model_one_qubit_gates": 5378
+          }
+        },
+        "selected_model": "CONTROLLED_CUCCARO_RIPPLE_CLEAN_LADDER_6CX_CCX_CRX2CX_V1",
+        "selected_model_step_resources": {
+          "abstract_ccx": 79430,
+          "abstract_cx": 32510,
+          "abstract_gate_count": 159378,
+          "abstract_mcx": 30722,
+          "abstract_x": 16636,
+          "clean_decomposition_ancillas": 5,
+          "selected_model_cnot": 1062182,
+          "selected_model_one_qubit_gates": 1561464
+        },
+        "target_scratch_qubits": 40
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "bridge_ir": [],
+        "bridge_selected_model_cnot": 0,
+        "budget_cnot": 2500000,
+        "budget_margin_cnot": 1437818,
+        "coin_basis_states": 1600,
+        "coin_qubits": 80,
+        "compression_sha256": "f9957eb5b3e4898fb020f0adbe449bec911d86341291a067432a653a21d344c9",
+        "constraint_register_widths": [
+          3,
+          3,
+          3,
+          3,
+          34,
+          34,
+          31
+        ],
+        "data_qubits": 40,
+        "decision": "PASSED",
+        "feasibility_oracle": {
+          "cache_offset_initialization_x": 108,
+          "constraint_row_count": 7,
+          "feasibility_oracle_sha256": "3d18733f8f8c6c4b61c9002e00c3cbdea7dcf78fe370987c102df07a39b98e39",
+          "independent_cnot_formula_replay": 529242,
+          "macro_terms": {
+            "comparator_by_width": {
+              "3": 16,
+              "31": 4,
+              "34": 8
+            },
+            "controlled_add_by_width": {
+              "3": 80,
+              "31": 80,
+              "34": 160
+            },
+            "direct_cnot": 0,
+            "mcx_by_controls": {
+              "2": 14,
+              "7": 1
+            }
+          },
+          "resources": {
+            "abstract_ccx": 39434,
+            "abstract_cx": 16092,
+            "abstract_gate_count": 79413,
+            "abstract_mcx": 15361,
+            "abstract_x": 8526,
+            "clean_decomposition_ancillas": 5,
+            "selected_model_cnot": 529242,
+            "selected_model_one_qubit_gates": 778251
+          },
+          "row_ledger": [
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_1",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "371bec6d013dca649a12c38ab3a49d7a9f3b17b5b39eb51700452f470f5ed542",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_2",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "a8c9f354d3f9fd3858c3f255b053469cc39fb59668fcc0fcb9f1efa4ae6354fc",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_3",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "2d5e6fc97294f62565d15528c70ebe887f85f6f30f337a5ba3e4afa5b3a3be95",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_4",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "9228ab1dba1e6d5c3d1964a95f2b1e4deea8ace4d856120a591f7885134db020",
+              "width": 3
+            },
+            {
+              "guarded_lower": 5206253518,
+              "guarded_upper": 7547042258,
+              "kind": "FACTOR",
+              "name": "FACTOR_1",
+              "resources": {
+                "abstract_ccx": 270,
+                "abstract_cx": 532,
+                "abstract_gate_count": 952,
+                "abstract_mcx": 0,
+                "abstract_x": 150,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2152,
+                "selected_model_one_qubit_gates": 2580
+              },
+              "row_oracle_sha256": "51b4c21c7b09e23b1f8c980e811f23f50020a9adeeccbdd5a252fc8ba627a234",
+              "width": 34
+            },
+            {
+              "guarded_lower": 4851766731,
+              "guarded_upper": 7826197669,
+              "kind": "FACTOR",
+              "name": "FACTOR_2",
+              "resources": {
+                "abstract_ccx": 270,
+                "abstract_cx": 532,
+                "abstract_gate_count": 924,
+                "abstract_mcx": 0,
+                "abstract_x": 122,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2152,
+                "selected_model_one_qubit_gates": 2552
+              },
+              "row_oracle_sha256": "1c7db02edab234365ce458b7a2cf3d30713f81ad03bffeb72acc283fce91181d",
+              "width": 34
+            },
+            {
+              "guarded_lower": 492571279,
+              "guarded_upper": 786695103,
+              "kind": "FACTOR",
+              "name": "FACTOR_3",
+              "resources": {
+                "abstract_ccx": 246,
+                "abstract_cx": 484,
+                "abstract_gate_count": 840,
+                "abstract_mcx": 0,
+                "abstract_x": 110,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 1960,
+                "selected_model_one_qubit_gates": 2324
+              },
+              "row_oracle_sha256": "1754b56ddf5459a4c1ae739759a2178c6000712c846fc8be65cd45e00176170b",
+              "width": 31
+            }
+          ],
+          "sum_build_invocations": 2,
+          "sum_build_macros_per_invocation": {
+            "constant_initialization_x": 54,
+            "controlled_add_by_width": {
+              "3": 40,
+              "31": 40,
+              "34": 80
+            },
+            "controlled_add_macros": 160,
+            "scope": "COHERENT_CACHE_PREPARATION_REPORTED_OUTSIDE_MIXER_NUMERATOR"
+          }
+        },
+        "feasibility_oracle_invocations": 2,
+        "independent_cnot_formula_replay": {
+          "bridge_cnot": 0,
+          "match": true,
+          "replay_selected_model_cnot": 1062182,
+          "terms": {
+            "comparator_by_width": {
+              "3": 32,
+              "31": 8,
+              "34": 16
+            },
+            "controlled_add_by_width": {
+              "3": 160,
+              "31": 160,
+              "34": 320
+            },
+            "direct_cnot": 326,
+            "mcx_by_controls": {
+              "2": 590,
+              "7": 2
+            }
+          }
+        },
+        "instance_id": "QH-N040-BANDS-S4409",
+        "logical_qubits_with_recycled_workspace": 320,
+        "parent_connectivity_sha256": "2d77cbd3952f9d42d5234d299dd481820f6d7c252b80c4edb8d7c2f61198cad5",
+        "promise_scope": "EXACT_FEASIBLE_DATA_X_TWO_ONE_HOT_COIN_REGISTERS",
+        "seed": 4409,
+        "seed_walk_sha256": "82ed2d90c50e15b829d5ee65d1a40418651b574eb81330e8a8a40c0cf05272cc",
+        "select_scaffold": {
+          "ccx_count": 562,
+          "coin_ring_cnot": 160,
+          "direct_cnot_count_including_coin_rings": 326,
+          "resources": {
+            "abstract_ccx": 562,
+            "abstract_cx": 326,
+            "abstract_gate_count": 968,
+            "abstract_mcx": 0,
+            "abstract_x": 0,
+            "clean_decomposition_ancillas": 0,
+            "selected_model_cnot": 3698,
+            "selected_model_one_qubit_gates": 5378
+          }
+        },
+        "selected_model": "CONTROLLED_CUCCARO_RIPPLE_CLEAN_LADDER_6CX_CCX_CRX2CX_V1",
+        "selected_model_step_resources": {
+          "abstract_ccx": 79430,
+          "abstract_cx": 32510,
+          "abstract_gate_count": 159794,
+          "abstract_mcx": 30722,
+          "abstract_x": 17052,
+          "clean_decomposition_ancillas": 5,
+          "selected_model_cnot": 1062182,
+          "selected_model_one_qubit_gates": 1561880
+        },
+        "target_scratch_qubits": 40
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "bridge_ir": [],
+        "bridge_selected_model_cnot": 0,
+        "budget_cnot": 2500000,
+        "budget_margin_cnot": 1437818,
+        "coin_basis_states": 1600,
+        "coin_qubits": 80,
+        "compression_sha256": "18db9359c1654a1e9081de50abd998d2b6a8ebdc1635361e5068048803722966",
+        "constraint_register_widths": [
+          3,
+          3,
+          3,
+          3,
+          35,
+          32,
+          32
+        ],
+        "data_qubits": 40,
+        "decision": "PASSED",
+        "feasibility_oracle": {
+          "cache_offset_initialization_x": 120,
+          "constraint_row_count": 7,
+          "feasibility_oracle_sha256": "545cb90e5bf57534fff22d7474f526d8e052d4e16d88b2aa0a8179a6661f049b",
+          "independent_cnot_formula_replay": 529242,
+          "macro_terms": {
+            "comparator_by_width": {
+              "3": 16,
+              "32": 8,
+              "35": 4
+            },
+            "controlled_add_by_width": {
+              "3": 80,
+              "32": 160,
+              "35": 80
+            },
+            "direct_cnot": 0,
+            "mcx_by_controls": {
+              "2": 14,
+              "7": 1
+            }
+          },
+          "resources": {
+            "abstract_ccx": 39434,
+            "abstract_cx": 16092,
+            "abstract_gate_count": 79561,
+            "abstract_mcx": 15361,
+            "abstract_x": 8674,
+            "clean_decomposition_ancillas": 5,
+            "selected_model_cnot": 529242,
+            "selected_model_one_qubit_gates": 778399
+          },
+          "row_ledger": [
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_1",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "371bec6d013dca649a12c38ab3a49d7a9f3b17b5b39eb51700452f470f5ed542",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_2",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "a8c9f354d3f9fd3858c3f255b053469cc39fb59668fcc0fcb9f1efa4ae6354fc",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_3",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "2d5e6fc97294f62565d15528c70ebe887f85f6f30f337a5ba3e4afa5b3a3be95",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_4",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "9228ab1dba1e6d5c3d1964a95f2b1e4deea8ace4d856120a591f7885134db020",
+              "width": 3
+            },
+            {
+              "guarded_lower": 8979458833,
+              "guarded_upper": 13934743747,
+              "kind": "FACTOR",
+              "name": "FACTOR_1",
+              "resources": {
+                "abstract_ccx": 278,
+                "abstract_cx": 548,
+                "abstract_gate_count": 960,
+                "abstract_mcx": 0,
+                "abstract_x": 134,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2216,
+                "selected_model_one_qubit_gates": 2636
+              },
+              "row_oracle_sha256": "a088dfeff27368094b7c70f004e8ab4caf8c2f740ab88f523f4d20c3f2125307",
+              "width": 35
+            },
+            {
+              "guarded_lower": 1073846116,
+              "guarded_upper": 1668128117,
+              "kind": "FACTOR",
+              "name": "FACTOR_2",
+              "resources": {
+                "abstract_ccx": 254,
+                "abstract_cx": 500,
+                "abstract_gate_count": 872,
+                "abstract_mcx": 0,
+                "abstract_x": 118,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2024,
+                "selected_model_one_qubit_gates": 2404
+              },
+              "row_oracle_sha256": "63f093c4adf105c18e7e09a256cb6c7d7a653dc0b505415cccd571b9d858fabe",
+              "width": 32
+            },
+            {
+              "guarded_lower": 1022566365,
+              "guarded_upper": 1481032565,
+              "kind": "FACTOR",
+              "name": "FACTOR_3",
+              "resources": {
+                "abstract_ccx": 254,
+                "abstract_cx": 500,
+                "abstract_gate_count": 900,
+                "abstract_mcx": 0,
+                "abstract_x": 146,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2024,
+                "selected_model_one_qubit_gates": 2432
+              },
+              "row_oracle_sha256": "6b10b43e779ef87a6e701e85501b77f6b6959048002de87242a87b7db41dac11",
+              "width": 32
+            }
+          ],
+          "sum_build_invocations": 2,
+          "sum_build_macros_per_invocation": {
+            "constant_initialization_x": 60,
+            "controlled_add_by_width": {
+              "3": 40,
+              "32": 80,
+              "35": 40
+            },
+            "controlled_add_macros": 160,
+            "scope": "COHERENT_CACHE_PREPARATION_REPORTED_OUTSIDE_MIXER_NUMERATOR"
+          }
+        },
+        "feasibility_oracle_invocations": 2,
+        "independent_cnot_formula_replay": {
+          "bridge_cnot": 0,
+          "match": true,
+          "replay_selected_model_cnot": 1062182,
+          "terms": {
+            "comparator_by_width": {
+              "3": 32,
+              "32": 16,
+              "35": 8
+            },
+            "controlled_add_by_width": {
+              "3": 160,
+              "32": 320,
+              "35": 160
+            },
+            "direct_cnot": 326,
+            "mcx_by_controls": {
+              "2": 590,
+              "7": 2
+            }
+          }
+        },
+        "instance_id": "QH-N040-BANDS-S5501",
+        "logical_qubits_with_recycled_workspace": 321,
+        "parent_connectivity_sha256": "252caa13556c5736bb2a6a3628455eddbbd20f04a7cbb1a5c7663ae9fc7df03f",
+        "promise_scope": "EXACT_FEASIBLE_DATA_X_TWO_ONE_HOT_COIN_REGISTERS",
+        "seed": 5501,
+        "seed_walk_sha256": "ba675702ba91390da376404cee0d778499eec5c296e8692424feb8c251552003",
+        "select_scaffold": {
+          "ccx_count": 562,
+          "coin_ring_cnot": 160,
+          "direct_cnot_count_including_coin_rings": 326,
+          "resources": {
+            "abstract_ccx": 562,
+            "abstract_cx": 326,
+            "abstract_gate_count": 968,
+            "abstract_mcx": 0,
+            "abstract_x": 0,
+            "clean_decomposition_ancillas": 0,
+            "selected_model_cnot": 3698,
+            "selected_model_one_qubit_gates": 5378
+          }
+        },
+        "selected_model": "CONTROLLED_CUCCARO_RIPPLE_CLEAN_LADDER_6CX_CCX_CRX2CX_V1",
+        "selected_model_step_resources": {
+          "abstract_ccx": 79430,
+          "abstract_cx": 32510,
+          "abstract_gate_count": 160090,
+          "abstract_mcx": 30722,
+          "abstract_x": 17348,
+          "clean_decomposition_ancillas": 5,
+          "selected_model_cnot": 1062182,
+          "selected_model_one_qubit_gates": 1562176
+        },
+        "target_scratch_qubits": 40
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "bridge_ir": [],
+        "bridge_selected_model_cnot": 0,
+        "budget_cnot": 2500000,
+        "budget_margin_cnot": 1415802,
+        "coin_basis_states": 1600,
+        "coin_qubits": 80,
+        "compression_sha256": "c4bb0ca70f4868b628e710583dc109e5f7b909858b31a90d923328f601d946cf",
+        "constraint_register_widths": [
+          3,
+          3,
+          3,
+          3,
+          33,
+          35,
+          33
+        ],
+        "data_qubits": 40,
+        "decision": "PASSED",
+        "feasibility_oracle": {
+          "cache_offset_initialization_x": 116,
+          "constraint_row_count": 7,
+          "feasibility_oracle_sha256": "ac67d61c42590f2e7c562da248a90e3283dda52a19135b82f944cd9e7406e5a8",
+          "independent_cnot_formula_replay": 540250,
+          "macro_terms": {
+            "comparator_by_width": {
+              "3": 16,
+              "33": 8,
+              "35": 4
+            },
+            "controlled_add_by_width": {
+              "3": 80,
+              "33": 160,
+              "35": 80
+            },
+            "direct_cnot": 0,
+            "mcx_by_controls": {
+              "2": 14,
+              "7": 1
+            }
+          },
+          "resources": {
+            "abstract_ccx": 40250,
+            "abstract_cx": 16444,
+            "abstract_gate_count": 80817,
+            "abstract_mcx": 15681,
+            "abstract_x": 8442,
+            "clean_decomposition_ancillas": 5,
+            "selected_model_cnot": 540250,
+            "selected_model_one_qubit_gates": 794151
+          },
+          "row_ledger": [
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_1",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "371bec6d013dca649a12c38ab3a49d7a9f3b17b5b39eb51700452f470f5ed542",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_2",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "a8c9f354d3f9fd3858c3f255b053469cc39fb59668fcc0fcb9f1efa4ae6354fc",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_3",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "2d5e6fc97294f62565d15528c70ebe887f85f6f30f337a5ba3e4afa5b3a3be95",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_4",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "9228ab1dba1e6d5c3d1964a95f2b1e4deea8ace4d856120a591f7885134db020",
+              "width": 3
+            },
+            {
+              "guarded_lower": 2565990670,
+              "guarded_upper": 3708154415,
+              "kind": "FACTOR",
+              "name": "FACTOR_1",
+              "resources": {
+                "abstract_ccx": 262,
+                "abstract_cx": 516,
+                "abstract_gate_count": 904,
+                "abstract_mcx": 0,
+                "abstract_x": 126,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2088,
+                "selected_model_one_qubit_gates": 2484
+              },
+              "row_oracle_sha256": "b4ea9b7272647370f5df9081624f1be0e608dcaf40fdb352219043916f8c5603",
+              "width": 33
+            },
+            {
+              "guarded_lower": 7837739078,
+              "guarded_upper": 12091453654,
+              "kind": "FACTOR",
+              "name": "FACTOR_2",
+              "resources": {
+                "abstract_ccx": 278,
+                "abstract_cx": 548,
+                "abstract_gate_count": 960,
+                "abstract_mcx": 0,
+                "abstract_x": 134,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2216,
+                "selected_model_one_qubit_gates": 2636
+              },
+              "row_oracle_sha256": "b2b89b81abaecf6d163f978690995bc0e0e75c004d0483d5d3299d49dcd08e51",
+              "width": 35
+            },
+            {
+              "guarded_lower": 2206441440,
+              "guarded_upper": 3401212322,
+              "kind": "FACTOR",
+              "name": "FACTOR_3",
+              "resources": {
+                "abstract_ccx": 262,
+                "abstract_cx": 516,
+                "abstract_gate_count": 904,
+                "abstract_mcx": 0,
+                "abstract_x": 126,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2088,
+                "selected_model_one_qubit_gates": 2484
+              },
+              "row_oracle_sha256": "25092390efa2c9fc8bbf3c7e7a3f780d9f455fbe9781c471bcca6e55b55fb0df",
+              "width": 33
+            }
+          ],
+          "sum_build_invocations": 2,
+          "sum_build_macros_per_invocation": {
+            "constant_initialization_x": 58,
+            "controlled_add_by_width": {
+              "3": 40,
+              "33": 80,
+              "35": 40
+            },
+            "controlled_add_macros": 160,
+            "scope": "COHERENT_CACHE_PREPARATION_REPORTED_OUTSIDE_MIXER_NUMERATOR"
+          }
+        },
+        "feasibility_oracle_invocations": 2,
+        "independent_cnot_formula_replay": {
+          "bridge_cnot": 0,
+          "match": true,
+          "replay_selected_model_cnot": 1084198,
+          "terms": {
+            "comparator_by_width": {
+              "3": 32,
+              "33": 16,
+              "35": 8
+            },
+            "controlled_add_by_width": {
+              "3": 160,
+              "33": 320,
+              "35": 160
+            },
+            "direct_cnot": 326,
+            "mcx_by_controls": {
+              "2": 590,
+              "7": 2
+            }
+          }
+        },
+        "instance_id": "QH-N040-BANDS-S6607",
+        "logical_qubits_with_recycled_workspace": 323,
+        "parent_connectivity_sha256": "54b3a334a45de44c8ba6c558d29fa249d9d12afc690703d71a325a1914318acc",
+        "promise_scope": "EXACT_FEASIBLE_DATA_X_TWO_ONE_HOT_COIN_REGISTERS",
+        "seed": 6607,
+        "seed_walk_sha256": "aabe2c6af19b87ab6d7ff55330e9a254561c33ba97fa4ba983417a30899aa943",
+        "select_scaffold": {
+          "ccx_count": 562,
+          "coin_ring_cnot": 160,
+          "direct_cnot_count_including_coin_rings": 326,
+          "resources": {
+            "abstract_ccx": 562,
+            "abstract_cx": 326,
+            "abstract_gate_count": 968,
+            "abstract_mcx": 0,
+            "abstract_x": 0,
+            "clean_decomposition_ancillas": 0,
+            "selected_model_cnot": 3698,
+            "selected_model_one_qubit_gates": 5378
+          }
+        },
+        "selected_model": "CONTROLLED_CUCCARO_RIPPLE_CLEAN_LADDER_6CX_CCX_CRX2CX_V1",
+        "selected_model_step_resources": {
+          "abstract_ccx": 81062,
+          "abstract_cx": 33214,
+          "abstract_gate_count": 162602,
+          "abstract_mcx": 31362,
+          "abstract_x": 16884,
+          "clean_decomposition_ancillas": 5,
+          "selected_model_cnot": 1084198,
+          "selected_model_one_qubit_gates": 1593680
+        },
+        "target_scratch_qubits": 40
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "bridge_ir": [
+          {
+            "bridge_ir_sha256": "64ea16579377eecdbb3ade60753f892f36662764763c594cc3910891f3840009",
+            "bridge_sha256": "56ee351aa23c18c2894515626a231b7fceb3e39567379e8a0bbe683ca4c15e28",
+            "data_hamming_distance": 4,
+            "differing_data_indices": [
+              9,
+              26,
+              37,
+              39
+            ],
+            "gray_path_sha256": "bfaecc32648028d0ecb77347fab8245b7c69915e1277ff4bfbb1343b377e4b0f",
+            "negative_control_wrapper_count": 456,
+            "resources": {
+              "abstract_ccx": 0,
+              "abstract_cx": 0,
+              "abstract_gate_count": 466,
+              "abstract_mcx": 8,
+              "abstract_x": 456,
+              "clean_decomposition_ancillas": 37,
+              "selected_model_cnot": 3600,
+              "selected_model_one_qubit_gates": 5858
+            },
+            "selected_model_mcx_occurrences": 8,
+            "source_mask_hex": "a8180000ec",
+            "target_mask_hex": "081c0002ec"
+          },
+          {
+            "bridge_ir_sha256": "3f5f596c69657af64ce883790eb107d8a11e3e2f22f87147d1e0a6bd2894452e",
+            "bridge_sha256": "cd33eff7d503a5d54b6910a52d119c201a18ecc9ca31910685b5a53889e24eb3",
+            "data_hamming_distance": 4,
+            "differing_data_indices": [
+              13,
+              28,
+              38,
+              39
+            ],
+            "gray_path_sha256": "3e9a03c86f3651ac3bd9b7dfd0780354b0025f45dd7be944e7e8840097a30364",
+            "negative_control_wrapper_count": 456,
+            "resources": {
+              "abstract_ccx": 0,
+              "abstract_cx": 0,
+              "abstract_gate_count": 466,
+              "abstract_mcx": 8,
+              "abstract_x": 456,
+              "clean_decomposition_ancillas": 37,
+              "selected_model_cnot": 3600,
+              "selected_model_one_qubit_gates": 5858
+            },
+            "selected_model_mcx_occurrences": 8,
+            "source_mask_hex": "e2008a4082",
+            "target_mask_hex": "22108a6082"
+          }
+        ],
+        "bridge_selected_model_cnot": 7200,
+        "budget_cnot": 2500000,
+        "budget_margin_cnot": 1364570,
+        "coin_basis_states": 1600,
+        "coin_qubits": 80,
+        "compression_sha256": "faf129e3cc8ec947fcd7d92385956c2439ea90af1c484ef72038d1edd1f45a2f",
+        "constraint_register_widths": [
+          3,
+          3,
+          3,
+          3,
+          33,
+          39,
+          33
+        ],
+        "data_qubits": 40,
+        "decision": "PASSED",
+        "feasibility_oracle": {
+          "cache_offset_initialization_x": 116,
+          "constraint_row_count": 7,
+          "feasibility_oracle_sha256": "c745e99f9fefe6f5d9b9c87958ecd9e10510d8b4ba90cc8501c96f0e340b4498",
+          "independent_cnot_formula_replay": 562266,
+          "macro_terms": {
+            "comparator_by_width": {
+              "3": 16,
+              "33": 8,
+              "39": 4
+            },
+            "controlled_add_by_width": {
+              "3": 80,
+              "33": 160,
+              "39": 80
+            },
+            "direct_cnot": 0,
+            "mcx_by_controls": {
+              "2": 14,
+              "7": 1
+            }
+          },
+          "resources": {
+            "abstract_ccx": 41882,
+            "abstract_cx": 17148,
+            "abstract_gate_count": 84461,
+            "abstract_mcx": 16321,
+            "abstract_x": 9110,
+            "clean_decomposition_ancillas": 5,
+            "selected_model_cnot": 562266,
+            "selected_model_one_qubit_gates": 826787
+          },
+          "row_ledger": [
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_1",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "371bec6d013dca649a12c38ab3a49d7a9f3b17b5b39eb51700452f470f5ed542",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_2",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "a8c9f354d3f9fd3858c3f255b053469cc39fb59668fcc0fcb9f1efa4ae6354fc",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_3",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "2d5e6fc97294f62565d15528c70ebe887f85f6f30f337a5ba3e4afa5b3a3be95",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_4",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "9228ab1dba1e6d5c3d1964a95f2b1e4deea8ace4d856120a591f7885134db020",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1827315190,
+              "guarded_upper": 2800946296,
+              "kind": "FACTOR",
+              "name": "FACTOR_1",
+              "resources": {
+                "abstract_ccx": 262,
+                "abstract_cx": 516,
+                "abstract_gate_count": 928,
+                "abstract_mcx": 0,
+                "abstract_x": 150,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2088,
+                "selected_model_one_qubit_gates": 2508
+              },
+              "row_oracle_sha256": "d28f432ed1c78f2de7b1d7d893ded8b510106c49d4f062372450d4eb3e43f9fd",
+              "width": 33
+            },
+            {
+              "guarded_lower": 125200488480,
+              "guarded_upper": 189349636221,
+              "kind": "FACTOR",
+              "name": "FACTOR_2",
+              "resources": {
+                "abstract_ccx": 310,
+                "abstract_cx": 612,
+                "abstract_gate_count": 1060,
+                "abstract_mcx": 0,
+                "abstract_x": 138,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2472,
+                "selected_model_one_qubit_gates": 2928
+              },
+              "row_oracle_sha256": "03bf24f462db2dd2e3bc88bea2a89ca4b421d0b17e9d072f31a12d5fd587f8fc",
+              "width": 39
+            },
+            {
+              "guarded_lower": 2718509083,
+              "guarded_upper": 3968351831,
+              "kind": "FACTOR",
+              "name": "FACTOR_3",
+              "resources": {
+                "abstract_ccx": 262,
+                "abstract_cx": 516,
+                "abstract_gate_count": 884,
+                "abstract_mcx": 0,
+                "abstract_x": 106,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2088,
+                "selected_model_one_qubit_gates": 2464
+              },
+              "row_oracle_sha256": "6e3c224e56ca6e14d389582437f84ff31d5a6506e109ef1ad47ca39d20325409",
+              "width": 33
+            }
+          ],
+          "sum_build_invocations": 2,
+          "sum_build_macros_per_invocation": {
+            "constant_initialization_x": 58,
+            "controlled_add_by_width": {
+              "3": 40,
+              "33": 80,
+              "39": 40
+            },
+            "controlled_add_macros": 160,
+            "scope": "COHERENT_CACHE_PREPARATION_REPORTED_OUTSIDE_MIXER_NUMERATOR"
+          }
+        },
+        "feasibility_oracle_invocations": 2,
+        "independent_cnot_formula_replay": {
+          "bridge_cnot": 7200,
+          "match": true,
+          "replay_selected_model_cnot": 1135430,
+          "terms": {
+            "comparator_by_width": {
+              "3": 32,
+              "33": 16,
+              "39": 8
+            },
+            "controlled_add_by_width": {
+              "3": 160,
+              "33": 320,
+              "39": 160
+            },
+            "direct_cnot": 326,
+            "mcx_by_controls": {
+              "2": 590,
+              "7": 2
+            }
+          }
+        },
+        "instance_id": "QH-N040-BANDS-S7703",
+        "logical_qubits_with_recycled_workspace": 331,
+        "parent_connectivity_sha256": "e060a1d9040e3a251708a2858fafe22c5472e67c01e5066876c1040eef6701db",
+        "promise_scope": "EXACT_FEASIBLE_DATA_X_TWO_ONE_HOT_COIN_REGISTERS",
+        "seed": 7703,
+        "seed_walk_sha256": "da4cd77142886dd2bf91151850a194ba46c3543c78d4a2439f7980ec45ce262e",
+        "select_scaffold": {
+          "ccx_count": 562,
+          "coin_ring_cnot": 160,
+          "direct_cnot_count_including_coin_rings": 326,
+          "resources": {
+            "abstract_ccx": 562,
+            "abstract_cx": 326,
+            "abstract_gate_count": 968,
+            "abstract_mcx": 0,
+            "abstract_x": 0,
+            "clean_decomposition_ancillas": 0,
+            "selected_model_cnot": 3698,
+            "selected_model_one_qubit_gates": 5378
+          }
+        },
+        "selected_model": "CONTROLLED_CUCCARO_RIPPLE_CLEAN_LADDER_6CX_CCX_CRX2CX_V1",
+        "selected_model_step_resources": {
+          "abstract_ccx": 84326,
+          "abstract_cx": 34622,
+          "abstract_gate_count": 170822,
+          "abstract_mcx": 32658,
+          "abstract_x": 19132,
+          "clean_decomposition_ancillas": 37,
+          "selected_model_cnot": 1135430,
+          "selected_model_one_qubit_gates": 1670668
+        },
+        "target_scratch_qubits": 40
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "bridge_ir": [],
+        "bridge_selected_model_cnot": 0,
+        "budget_cnot": 2500000,
+        "budget_margin_cnot": 1393786,
+        "coin_basis_states": 1600,
+        "coin_qubits": 80,
+        "compression_sha256": "40b50739070044007784b897ba79abc61a470ffce6f5f8f86eddfd92197461cc",
+        "constraint_register_widths": [
+          3,
+          3,
+          3,
+          3,
+          36,
+          36,
+          31
+        ],
+        "data_qubits": 40,
+        "decision": "PASSED",
+        "feasibility_oracle": {
+          "cache_offset_initialization_x": 98,
+          "constraint_row_count": 7,
+          "feasibility_oracle_sha256": "125144ff0b140be8c1eaf3671425741ae81363a34172a70ca3e3c7be05b8d5d4",
+          "independent_cnot_formula_replay": 551258,
+          "macro_terms": {
+            "comparator_by_width": {
+              "3": 16,
+              "31": 4,
+              "36": 8
+            },
+            "controlled_add_by_width": {
+              "3": 80,
+              "31": 80,
+              "36": 160
+            },
+            "direct_cnot": 0,
+            "mcx_by_controls": {
+              "2": 14,
+              "7": 1
+            }
+          },
+          "resources": {
+            "abstract_ccx": 41066,
+            "abstract_cx": 16796,
+            "abstract_gate_count": 82975,
+            "abstract_mcx": 16001,
+            "abstract_x": 9112,
+            "clean_decomposition_ancillas": 5,
+            "selected_model_cnot": 551258,
+            "selected_model_one_qubit_gates": 810805
+          },
+          "row_ledger": [
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_1",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "371bec6d013dca649a12c38ab3a49d7a9f3b17b5b39eb51700452f470f5ed542",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_2",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "a8c9f354d3f9fd3858c3f255b053469cc39fb59668fcc0fcb9f1efa4ae6354fc",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_3",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "2d5e6fc97294f62565d15528c70ebe887f85f6f30f337a5ba3e4afa5b3a3be95",
+              "width": 3
+            },
+            {
+              "guarded_lower": 1,
+              "guarded_upper": 3,
+              "kind": "GROUP",
+              "name": "GROUP_4",
+              "resources": {
+                "abstract_ccx": 22,
+                "abstract_cx": 36,
+                "abstract_gate_count": 68,
+                "abstract_mcx": 0,
+                "abstract_x": 10,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 168,
+                "selected_model_one_qubit_gates": 208
+              },
+              "row_oracle_sha256": "9228ab1dba1e6d5c3d1964a95f2b1e4deea8ace4d856120a591f7885134db020",
+              "width": 3
+            },
+            {
+              "guarded_lower": 17909135128,
+              "guarded_upper": 27515493211,
+              "kind": "FACTOR",
+              "name": "FACTOR_1",
+              "resources": {
+                "abstract_ccx": 286,
+                "abstract_cx": 564,
+                "abstract_gate_count": 992,
+                "abstract_mcx": 0,
+                "abstract_x": 142,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2280,
+                "selected_model_one_qubit_gates": 2716
+              },
+              "row_oracle_sha256": "dcef839908663ae679fe332ef7aa11e0c6b00e33d6018c0129d95cbde5653e6f",
+              "width": 36
+            },
+            {
+              "guarded_lower": 20611581600,
+              "guarded_upper": 30730745290,
+              "kind": "FACTOR",
+              "name": "FACTOR_2",
+              "resources": {
+                "abstract_ccx": 286,
+                "abstract_cx": 564,
+                "abstract_gate_count": 1000,
+                "abstract_mcx": 0,
+                "abstract_x": 150,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 2280,
+                "selected_model_one_qubit_gates": 2724
+              },
+              "row_oracle_sha256": "92b46ff56c279cef5d67fedd7bac8ae88d5aa28b0b6e755d57045dc445dfdb15",
+              "width": 36
+            },
+            {
+              "guarded_lower": 735107603,
+              "guarded_upper": 1081118135,
+              "kind": "FACTOR",
+              "name": "FACTOR_3",
+              "resources": {
+                "abstract_ccx": 246,
+                "abstract_cx": 484,
+                "abstract_gate_count": 840,
+                "abstract_mcx": 0,
+                "abstract_x": 110,
+                "clean_decomposition_ancillas": 0,
+                "selected_model_cnot": 1960,
+                "selected_model_one_qubit_gates": 2324
+              },
+              "row_oracle_sha256": "69b30877b3f80a487fa2f0c641b6055c06020725749515ca79e604d4d84b2f6a",
+              "width": 31
+            }
+          ],
+          "sum_build_invocations": 2,
+          "sum_build_macros_per_invocation": {
+            "constant_initialization_x": 49,
+            "controlled_add_by_width": {
+              "3": 40,
+              "31": 40,
+              "36": 80
+            },
+            "controlled_add_macros": 160,
+            "scope": "COHERENT_CACHE_PREPARATION_REPORTED_OUTSIDE_MIXER_NUMERATOR"
+          }
+        },
+        "feasibility_oracle_invocations": 2,
+        "independent_cnot_formula_replay": {
+          "bridge_cnot": 0,
+          "match": true,
+          "replay_selected_model_cnot": 1106214,
+          "terms": {
+            "comparator_by_width": {
+              "3": 32,
+              "31": 8,
+              "36": 16
+            },
+            "controlled_add_by_width": {
+              "3": 160,
+              "31": 160,
+              "36": 320
+            },
+            "direct_cnot": 326,
+            "mcx_by_controls": {
+              "2": 590,
+              "7": 2
+            }
+          }
+        },
+        "instance_id": "QH-N040-BANDS-S8807",
+        "logical_qubits_with_recycled_workspace": 326,
+        "parent_connectivity_sha256": "1c88660f72ed3bf5bed527446f84b66766f73afebce689cee65c2a6f3b636fa0",
+        "promise_scope": "EXACT_FEASIBLE_DATA_X_TWO_ONE_HOT_COIN_REGISTERS",
+        "seed": 8807,
+        "seed_walk_sha256": "4cf94515827aab1de109570cee547c4d7892756662398ca7e91820d1e2c872fb",
+        "select_scaffold": {
+          "ccx_count": 562,
+          "coin_ring_cnot": 160,
+          "direct_cnot_count_including_coin_rings": 326,
+          "resources": {
+            "abstract_ccx": 562,
+            "abstract_cx": 326,
+            "abstract_gate_count": 968,
+            "abstract_mcx": 0,
+            "abstract_x": 0,
+            "clean_decomposition_ancillas": 0,
+            "selected_model_cnot": 3698,
+            "selected_model_one_qubit_gates": 5378
+          }
+        },
+        "selected_model": "CONTROLLED_CUCCARO_RIPPLE_CLEAN_LADDER_6CX_CCX_CRX2CX_V1",
+        "selected_model_step_resources": {
+          "abstract_ccx": 82694,
+          "abstract_cx": 33918,
+          "abstract_gate_count": 166918,
+          "abstract_mcx": 32002,
+          "abstract_x": 18224,
+          "clean_decomposition_ancillas": 5,
+          "selected_model_cnot": 1106214,
+          "selected_model_one_qubit_gates": 1626988
+        },
+        "target_scratch_qubits": 40
+      }
+    ]
+  },
+  "selector_control": {
+    "build_contract": {
+      "command_flags": [
+        "-std=c++17",
+        "-O3",
+        "-DNDEBUG",
+        "-Wall",
+        "-Wextra",
+        "-pedantic"
+      ],
+      "diagnostics_clean": true,
+      "engine_source_raw_file_sha256": "3d73cddfc7c06cf6e0e5bc22a3ad29c3ea79ac22d7c1e5a8b1ca1044789c65ab",
+      "language_standard": "C++17"
+    },
+    "forward": {
+      "algorithm": "INDEPENDENT_CPP_EXHAUSTIVE_PROMISE_SUBSPACE_COINED_SELECT_V1",
+      "arbitrary_supports": 2218,
+      "bridge_cases": 8826,
+      "cleanup_cases": 264328,
+      "cleanup_failures": 0,
+      "full_domain_joint_cases": 28,
+      "full_domain_joint_failures": 0,
+      "joint_component_cases": 2218,
+      "joint_component_failures": 0,
+      "mode": 0,
+      "selector_cases": 264328,
+      "selector_failures": 0,
+      "valid": true
+    },
+    "reverse": {
+      "algorithm": "INDEPENDENT_CPP_EXHAUSTIVE_PROMISE_SUBSPACE_COINED_SELECT_V1",
+      "arbitrary_supports": 2218,
+      "bridge_cases": 8826,
+      "cleanup_cases": 264328,
+      "cleanup_failures": 0,
+      "full_domain_joint_cases": 28,
+      "full_domain_joint_failures": 0,
+      "joint_component_cases": 2218,
+      "joint_component_failures": 0,
+      "mode": 1,
+      "selector_cases": 264328,
+      "selector_failures": 0,
+      "valid": true
+    },
+    "selector_control_sha256": "c7c2a98223c1dc0e45cfd5c8e13dc042f16de126b6ab18476198feead02e4191",
+    "stable_fields": [
+      "algorithm",
+      "arbitrary_supports",
+      "bridge_cases",
+      "cleanup_cases",
+      "cleanup_failures",
+      "full_domain_joint_cases",
+      "full_domain_joint_failures",
+      "joint_component_cases",
+      "joint_component_failures",
+      "selector_cases",
+      "selector_failures",
+      "valid"
+    ],
+    "stable_replay_match": true
+  },
+  "source_sha256": "fc4b9ce991cc866aa7a9b809172df41227e9dcd133a41d210068663ee7bd77e9",
+  "spec_raw_file_sha256": "11b9d7a86fc1617f7c313c2cda58c4b8874d33cb9e4fe11460a65b8920e40674",
+  "spec_sha256": "acf640c11d3dc575ebcc1358919095cf68673583a8c628c7131e664f7859801e",
+  "support_evidence": {
+    "aggregate": {
+      "aggregate_support_sha256": "62e8950fe0672749a17296ce53d9d9cc6acca01783904e4b4614381a0dc193f8",
+      "all_pair_positions_preserved": true,
+      "all_seeds_connected": true,
+      "coin_basis_states_per_data_vertex": 1600,
+      "joint_promise_vertices": 34649241600,
+      "joint_support_edges": 69973909206,
+      "parent_selected_bridge_count": 3,
+      "seed_count": 8
+    },
+    "joint_connectivity_theorem": "CONNECTED_COIN_CARTESIAN_SUPPORT_PLUS_EXACT_V41_DATA_SUPPORT",
+    "seed_rows": [
+      {
+        "addressed_pair_positions_preserved": 780,
+        "authenticated_feasible_data_vertices": 5050560,
+        "authenticated_one_swap_edges": 77090945,
+        "coin_basis_states": 1600,
+        "coin_ring_support_edges": 16161792000,
+        "connected": true,
+        "joint_component_count": 1,
+        "joint_promise_vertices": 8080896000,
+        "joint_support_edges": 16315973890,
+        "replicated_bridge_support_edges": 0,
+        "seed": 1103,
+        "seed_support_sha256": "ed78185d1005bcc77bceab6b250aa30d04b9af1b52ae2ff42ec7142af37a86b3",
+        "selected_bridge_count": 0,
+        "selected_bridge_sha256": [],
+        "selector_one_swap_support_edges": 154181890,
+        "support_correspondence": "EXACT_V41_ONE_SWAP_SUPPORT_PLUS_AUTHENTICATED_DATA_ONLY_BRIDGES"
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "authenticated_feasible_data_vertices": 3981553,
+        "authenticated_one_swap_edges": 67310169,
+        "coin_basis_states": 1600,
+        "coin_ring_support_edges": 12740969600,
+        "connected": true,
+        "joint_component_count": 1,
+        "joint_promise_vertices": 6370484800,
+        "joint_support_edges": 12875591538,
+        "replicated_bridge_support_edges": 1600,
+        "seed": 2207,
+        "seed_support_sha256": "65b158aa37aefba5d4ee62753bd8af468c2ceb3e73d30368aefbea8022d0c153",
+        "selected_bridge_count": 1,
+        "selected_bridge_sha256": [
+          "77b1ee11e599888e593eb8bc950bffecb0905fbb7db80004606481eadc8c168e"
+        ],
+        "selector_one_swap_support_edges": 134620338,
+        "support_correspondence": "EXACT_V41_ONE_SWAP_SUPPORT_PLUS_AUTHENTICATED_DATA_ONLY_BRIDGES"
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "authenticated_feasible_data_vertices": 623921,
+        "authenticated_one_swap_edges": 7996488,
+        "coin_basis_states": 1600,
+        "coin_ring_support_edges": 1996547200,
+        "connected": true,
+        "joint_component_count": 1,
+        "joint_promise_vertices": 998273600,
+        "joint_support_edges": 2012540176,
+        "replicated_bridge_support_edges": 0,
+        "seed": 3301,
+        "seed_support_sha256": "7a3727b190caca5e1d8f2ddf44752fe66079200c17533c73b7b0af29bdcac373",
+        "selected_bridge_count": 0,
+        "selected_bridge_sha256": [],
+        "selector_one_swap_support_edges": 15992976,
+        "support_correspondence": "EXACT_V41_ONE_SWAP_SUPPORT_PLUS_AUTHENTICATED_DATA_ONLY_BRIDGES"
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "authenticated_feasible_data_vertices": 4268642,
+        "authenticated_one_swap_edges": 62193081,
+        "coin_basis_states": 1600,
+        "coin_ring_support_edges": 13659654400,
+        "connected": true,
+        "joint_component_count": 1,
+        "joint_promise_vertices": 6829827200,
+        "joint_support_edges": 13784040562,
+        "replicated_bridge_support_edges": 0,
+        "seed": 4409,
+        "seed_support_sha256": "fae3bbb168b34e6e0aa5c040f107cd40fcb269dc8aeb96c724ace5599042def6",
+        "selected_bridge_count": 0,
+        "selected_bridge_sha256": [],
+        "selector_one_swap_support_edges": 124386162,
+        "support_correspondence": "EXACT_V41_ONE_SWAP_SUPPORT_PLUS_AUTHENTICATED_DATA_ONLY_BRIDGES"
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "authenticated_feasible_data_vertices": 165775,
+        "authenticated_one_swap_edges": 1842395,
+        "coin_basis_states": 1600,
+        "coin_ring_support_edges": 530480000,
+        "connected": true,
+        "joint_component_count": 1,
+        "joint_promise_vertices": 265240000,
+        "joint_support_edges": 534164790,
+        "replicated_bridge_support_edges": 0,
+        "seed": 5501,
+        "seed_support_sha256": "86781adacffff8a5c3dafe4370a9bfa9055016d41d91ad0cbd203596f883d284",
+        "selected_bridge_count": 0,
+        "selected_bridge_sha256": [],
+        "selector_one_swap_support_edges": 3684790,
+        "support_correspondence": "EXACT_V41_ONE_SWAP_SUPPORT_PLUS_AUTHENTICATED_DATA_ONLY_BRIDGES"
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "authenticated_feasible_data_vertices": 2559471,
+        "authenticated_one_swap_edges": 41412247,
+        "coin_basis_states": 1600,
+        "coin_ring_support_edges": 8190307200,
+        "connected": true,
+        "joint_component_count": 1,
+        "joint_promise_vertices": 4095153600,
+        "joint_support_edges": 8273131694,
+        "replicated_bridge_support_edges": 0,
+        "seed": 6607,
+        "seed_support_sha256": "ccbc58271280da5b67539bd248d8812fdd4149c6322ba3d0bee244ed09ca4c45",
+        "selected_bridge_count": 0,
+        "selected_bridge_sha256": [],
+        "selector_one_swap_support_edges": 82824494,
+        "support_correspondence": "EXACT_V41_ONE_SWAP_SUPPORT_PLUS_AUTHENTICATED_DATA_ONLY_BRIDGES"
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "authenticated_feasible_data_vertices": 3053396,
+        "authenticated_one_swap_edges": 50780143,
+        "coin_basis_states": 1600,
+        "coin_ring_support_edges": 9770867200,
+        "connected": true,
+        "joint_component_count": 1,
+        "joint_promise_vertices": 4885433600,
+        "joint_support_edges": 9872430686,
+        "replicated_bridge_support_edges": 3200,
+        "seed": 7703,
+        "seed_support_sha256": "acd33fbe975744210243608d2e9dfed5064be1972ff8a0e971142ce7400e78c3",
+        "selected_bridge_count": 2,
+        "selected_bridge_sha256": [
+          "56ee351aa23c18c2894515626a231b7fceb3e39567379e8a0bbe683ca4c15e28",
+          "cd33eff7d503a5d54b6910a52d119c201a18ecc9ca31910685b5a53889e24eb3"
+        ],
+        "selector_one_swap_support_edges": 101560286,
+        "support_correspondence": "EXACT_V41_ONE_SWAP_SUPPORT_PLUS_AUTHENTICATED_DATA_ONLY_BRIDGES"
+      },
+      {
+        "addressed_pair_positions_preserved": 780,
+        "authenticated_feasible_data_vertices": 1952458,
+        "authenticated_one_swap_edges": 29085135,
+        "coin_basis_states": 1600,
+        "coin_ring_support_edges": 6247865600,
+        "connected": true,
+        "joint_component_count": 1,
+        "joint_promise_vertices": 3123932800,
+        "joint_support_edges": 6306035870,
+        "replicated_bridge_support_edges": 0,
+        "seed": 8807,
+        "seed_support_sha256": "287ab306c4bc0249d1f6ba03d9b9bb13ccf681f5f0961a41b25225b892a8c870",
+        "selected_bridge_count": 0,
+        "selected_bridge_sha256": [],
+        "selector_one_swap_support_edges": 58170270,
+        "support_correspondence": "EXACT_V41_ONE_SWAP_SUPPORT_PLUS_AUTHENTICATED_DATA_ONLY_BRIDGES"
+      }
+    ],
+    "support_evidence_sha256": "f82cc6597b7d42da2915bf148acf1670d3390ff717f8b2980dabb66e5920ac07"
+  },
+  "v42_version": "PHASE III · V4.2 ONE-HOT COINED WALK + SHARED EXACT ARITHMETIC · V1"
+}

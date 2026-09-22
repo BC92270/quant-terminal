@@ -1,0 +1,91 @@
+{
+  "artifact_identity": {
+    "artifact_raw_file_sha256": "616cc12808465916dfcfcde6c8e2c9feed1be4b294ad034f29cb7cb36704031b",
+    "artifact_sha256": "5e6cc7e53f15921f7cbd22ef66f04878b37d54372e04b5bf49f5bb4854050fcd",
+    "validation_manifest_sha256": "bde0dc2e90a355821c8678d2df8ac743820c0a4d2e83701aeeeaab3e1d8e9b91"
+  },
+  "claim_boundary": {
+    "allowed": "A deterministic provider-neutral reversible gate IR implements the sealed exact dyadic BANDS feasibility predicate under its declared domain and passes the frozen validation ladder.",
+    "forbidden": [
+      "hardware executable",
+      "QPU ready",
+      "quantum speedup",
+      "quantum advantage",
+      "seven-constraint preserving mixer"
+    ],
+    "hardware_executable": false,
+    "qpu_submission_enabled": false
+  },
+  "compiler_identity": {
+    "compiler_source_sha256": "b76001c8502eec962dc998d1c8ffa37b2886432149fb193f26e52d82cd348c78",
+    "compiler_spec_sha": "EDAD55227D611B528845",
+    "compiler_spec_sha256": "edad55227d611b52884529fe2da4f8f458e80c36367589a3499bdf075060f3aa",
+    "compiler_status": "SEALED PROVIDER-NEUTRAL REVERSIBLE GATE IR",
+    "gate_set": [
+      "X",
+      "CX",
+      "CCX",
+      "MCX"
+    ]
+  },
+  "freeze_contract_sha": "875CB29DDD26AD9C50EE",
+  "freeze_contract_sha256": "875cb29ddd26ad9c50eebc8eab2f0f1758220e26683d7ad45475db9e1d2f61f2",
+  "freeze_contract_version": "QUANTUM LAB · V3.2 FREEZE CONTRACT · V1",
+  "frozen_date": "2026-09-04",
+  "frozen_files": {
+    "quantum_research_lab/PHASE_III_GATE_COMPILER_SPEC_V1.json": "6e190e5752440998d4b5c3e5050702d9c2b016b20f13a8ff93afa1d9e9487c6d",
+    "quantum_research_lab/phase3_artifact_guard.py": "d151f01c26854b2b3742e88eed54fd8b1b5adfddcc932ad97c5012d6fe03a010",
+    "quantum_research_lab/phase3_gate_compiler.py": "b76001c8502eec962dc998d1c8ffa37b2886432149fb193f26e52d82cd348c78",
+    "quantum_research_lab/phase3_circuit_validation.py": "363f532f8c155bac6e702ebbe9afc8d2a82c155e3d9c11e5515d6abe1cc71252",
+    "quantum_research_lab/verify_phase3_v32.py": "1e5d3f7dade335947cb82ff79ebfa0778cefc546f8639629b6439b7dd77c7924"
+  },
+  "oracle_variants": {
+    "EXACT_K_SUBSPACE": {
+      "abstract_depth_max": 402502,
+      "abstract_gate_count_max": 428273,
+      "constraint_count": 7,
+      "domain": "popcount(x)=10",
+      "fault_tolerant_t_count_max": 111709780,
+      "logical_qubits_max": 119,
+      "max_factor_width": 68
+    },
+    "FULL_BINARY": {
+      "abstract_depth_max": 413016,
+      "abstract_gate_count_max": 438939,
+      "constraint_count": 8,
+      "domain": "all x in {0,1}^40",
+      "fault_tolerant_t_count_max": 115676610,
+      "logical_qubits_max": 121,
+      "max_factor_width": 69,
+      "seeds_requiring_69_factor_bits": [
+        6607
+      ]
+    }
+  },
+  "parent_identity": {
+    "dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+    "dyadic_spec_sha": "9A6F664368F4AC592281",
+    "parent_raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "phase2_execution_spec_sha": "40D3225B0AFC86BC01DD",
+    "phase2_protocol_sha": "8E5EF191FAE97A75",
+    "phase3_preparation_spec_sha": "CDC693C22A3838B0B3C1"
+  },
+  "post_freeze_change_rule": "Any compiler/spec/parent change requires a new versioned contract, a fresh full validation ladder and a new immutable artifact. The V3.2 seal is never rewritten.",
+  "validation": {
+    "canonical_circuit_count": 16,
+    "canonical_seed_count": 8,
+    "full_family_second_pass": true,
+    "gates": {
+      "A_ARITHMETIC": true,
+      "B_SEED": true,
+      "C_SMALL_N_EXHAUSTIVE": true,
+      "D_N40_CONTROLS": true,
+      "E_REPRODUCIBILITY": true,
+      "COMPILER_SPEC_SELF_HASH": true,
+      "FROZEN_PARENT_GUARD": true,
+      "PHASE2_GENERATOR_SOURCE_FROZEN": true,
+      "RESOURCE_RANGES_CERTIFIED": true
+    },
+    "phase2_generator_source_sha256": "30c2cb35444afeeff669b9772d5577e89f32dbead762a09fb90fde70c9b653ce"
+  }
+}

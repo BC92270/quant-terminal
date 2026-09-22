@@ -1,0 +1,218 @@
+{
+  "acceptance_contract": {
+    "accepted_only_if": [
+      "THE_EXACT_V4_4_PARENT_AND_ALL_209_SUCCESSOR_IMMUTABLE_PATHS_AUTHENTICATE",
+      "THE_REGISTER_LEDGER_AND_ORDERED_LIVENESS_CERTIFICATE_AUTHENTICATE",
+      "EVERY_FROZEN_SEED_MATERIALIZES_AT_OR_BELOW_156_LOGICAL_QUBITS",
+      "THE_WORST_CASE_STATIC_DESIGN_WIDTH_IS_AT_OR_BELOW_145_LOGICAL_QUBITS",
+      "THE_BINARY_COIN_ISOMETRY_PRESERVES_THE_ORDERED_V4_3_COIN_RING_ON_THE_VALID_0_TO_39_SUBSPACE",
+      "THE_STREAMED_TARGET_IDENTITY_AND_SEQUENTIAL_ROW_RECOMPUTATION_PRESERVE_THE_V4_3_PROMISE_SUBSPACE_SELECT_OPERATION",
+      "EVERY_REUSED_WORKSPACE_HAS_A_CHECKED_COMPUTE_USE_UNCOMPUTE_ZERO_RESTORATION_CERTIFICATE",
+      "THE_V4_3_OFF_PROMISE_NEGATIVE_WITNESS_IS_RETAINED_AND_NOT_PROMOTED",
+      "THE_INDEPENDENT_STANDARD_LIBRARY_CHECKER_ACCEPTS_WITHOUT_IMPORTING_THE_GENERATOR",
+      "THE_MATERIALIZED_CNOT_COUNT_IS_AT_OR_BELOW_2500000_FOR_EVERY_SEED",
+      "TWO_CLEAN_PROCESS_REPLAYS_PRODUCE_IDENTICAL_CANONICAL_RESULTS",
+      "ALL_PROVIDER_CREDENTIAL_NETWORK_AND_JOB_COUNTERS_REMAIN_ZERO"
+    ],
+    "negative_result_is_a_valid_scientific_outcome": true,
+    "result_state_at_protocol_seal": "NOT_EVALUATED",
+    "success_status": "V45_PROOF_CARRYING_WIDTH_REDUCTION_PASSED_EXACT_PROMISE_PARITY",
+    "width_or_parity_failure_status": "V45_WIDTH_REDUCTION_REJECTED_REPAIR_OR_REDESIGN_REQUIRED"
+  },
+  "chronology": {
+    "confirmatory_inputs_frozen_before_result": true,
+    "parent_release": "V4.4",
+    "protocol_sealed_utc": "2026-09-14T21:30:14Z",
+    "result_state_at_seal": "NOT_EVALUATED",
+    "successor_is_append_only": true,
+    "v43_bytes_rewritten": false,
+    "v44_bytes_rewritten": false
+  },
+  "claim_boundary": {
+    "backend_name": "fake_marrakesh",
+    "backend_selection_kind": "PINNED_OFFLINE_FAKE_BACKEND_SNAPSHOT_INHERITED_FOR_CAPACITY_ONLY",
+    "calibration_aware_fidelity": "NOT_TESTED",
+    "credential_reads": 0,
+    "full_workload_circuit_reconstruction": "DEFERRED_UNTIL_V4_5_WIDTH_AND_PARITY_ADMISSION",
+    "full_workload_routing": "NOT_RUN_IN_V4_5",
+    "full_workload_transpilation": "NOT_RUN_IN_V4_5",
+    "hardware_executable": false,
+    "network_calls": 0,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "snapshot_is_current_hardware_evidence": false
+  },
+  "compiler_contract": {
+    "bridge_workspace": "FIRST_37_CLEAN_QUBITS_OF_SUM_WORK_THEN_CONSTANT_AFTER_SELECT_CLEANUP",
+    "cleanup_rule": "A_PHYSICAL_WORKSPACE_QUBIT_MAY_BE_REUSED_ONLY_AFTER_THE_INVERSE_PRODUCER_RUNS_WITH_ALL_DEPENDENCIES_AVAILABLE_AND_RESTORES_EXACT_ZERO",
+    "coin_encoding": {
+      "address_bit_order": "LITTLE_ENDIAN",
+      "address_width": 6,
+      "invalid_addresses": [
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63
+      ],
+      "isometry": "V43_ONE_HOT_BASIS_E_I_MAPS_TO_V45_SIX_QUBIT_BINARY_BASIS_I_FOR_I_IN_0_TO_39",
+      "physical_conversion_circuit": "NOT_PROVIDED_NEW_COMPILED_INTERFACE_REQUIRES_BINARY_INITIALIZATION",
+      "valid_addresses": "INTEGER_0_THROUGH_39_INCLUSIVE"
+    },
+    "feasibility_schedule": "FOR_EACH_ROW_BUILD_SHARED_SUM_COMPUTE_ROW_FLAG_UNCOMPUTE_SUM;_COMPUTE_SEVEN_ROW_AND;_REBUILD_ROWS_IN_REVERSE_CLEAR_FLAGS_AND_UNCOMPUTE_SUM",
+    "forbidden_cleanup": [
+      "RESET",
+      "MEASUREMENT",
+      "DISCARD",
+      "DEPENDENCY_DESTRUCTION_BEFORE_UNCOMPUTE"
+    ],
+    "register_formula": "DATA_40_PLUS_REMOVE_ADDR_6_PLUS_ADD_ADDR_6_PLUS_SUM_WORK_W_PLUS_CONSTANT_W_PLUS_CARRY_1_PLUS_ADDRESSED_2_PLUS_ROW_FLAGS_7_PLUS_CONTROL_FLAGS_5_EQUALS_67_PLUS_2W",
+    "streamed_target_identity": "TARGET_I_EQUALS_DATA_I_XOR_DIFFERENCE_AND_REMOVE_ADDRESS_EQUALS_I_XOR_DIFFERENCE_AND_ADD_ADDRESS_EQUALS_I",
+    "valid_width_range": {
+      "maximum_row_width": 39,
+      "maximum_total_qubits": 145,
+      "minimum_row_width": 33,
+      "minimum_total_qubits": 133
+    }
+  },
+  "frozen_instances": {
+    "frozen_seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ],
+    "parent_v43_logical_widths": [
+      330,
+      331,
+      327,
+      328,
+      329,
+      331,
+      339,
+      334
+    ],
+    "seed_order_is_normative": true,
+    "v43_materialized_row_widths": [
+      [5, 5, 5, 5, 34, 34, 33],
+      [5, 5, 5, 5, 35, 33, 33],
+      [5, 5, 5, 5, 33, 33, 33],
+      [5, 5, 5, 5, 34, 34, 31],
+      [5, 5, 5, 5, 35, 32, 32],
+      [5, 5, 5, 5, 33, 35, 33],
+      [5, 5, 5, 5, 33, 39, 33],
+      [5, 5, 5, 5, 36, 36, 31]
+    ]
+  },
+  "independent_proof_contract": {
+    "checker_imports_generator": false,
+    "checker_runtime": "PYTHON_STANDARD_LIBRARY_ONLY",
+    "required_checks": [
+      "STRICT_JSON_AND_ALL_SELF_HASHES",
+      "EXACT_PARENT_IDENTITIES",
+      "CONTIGUOUS_NONOVERLAPPING_REGISTER_ALLOCATION",
+      "ORDERED_LIVENESS_EVENTS_AND_NO_UNAUTHORIZED_ALIAS",
+      "EVERY_REUSE_RESTORES_ZERO_BEFORE_REALLOCATION",
+      "WIDTH_FORMULA_AND_156_CAPACITY_FOR_ALL_EIGHT_SEEDS",
+      "EXHAUSTIVE_LOCAL_STREAMED_TARGET_BOOLEAN_IDENTITY",
+      "ORDERED_40_EDGE_BINARY_COIN_ISOMETRY_CONTRACT",
+      "SEQUENTIAL_ROW_RECOMPUTATION_EQUIVALENCE",
+      "PROMISE_SELECT_TRACE_PARITY_AGAINST_AUTHENTICATED_V4_3",
+      "OFF_PROMISE_NEGATIVE_WITNESS_RETENTION",
+      "RESOURCE_BOUND_AND_CLAIM_BOUNDARY"
+    ]
+  },
+  "parent_contract": {
+    "v43_operation_artifact_raw_file_sha256": "626123fda2ee6561fe74cbb073a03f9987ccbd4e3d01c84b4f2815023e8271e3",
+    "v43_operation_artifact_sha256": "36a7a63410da87ce7f98bb10e6d3af3c3d784d9f8e520a6771e42cda9ee593ce",
+    "v43_promise_scope": "ACCEPTED_ONLY_FOR_EXACT_FEASIBLE_N40_DATA_AND_TWO_ONE_HOT_COIN_REGISTERS",
+    "v44_artifact_raw_file_sha256": "3b6824965fa7b2829981d6d35eec5413a24f7340719613e7cd2e8512d6285488",
+    "v44_artifact_sha256": "de1ba4194a0f7220b1cfcb0c61f8faed3f187c0e9c7712775cba53fa79ed98bb",
+    "v44_freeze_contract_raw_file_sha256": "f7b4507410aee41e409b3a0a1ce36ba1adff38299dc8a2d424e13885598ada13",
+    "v44_freeze_contract_sha256": "e17aa8ce04c97416f7f0565f2eda4f16b739c5c921fb58ee25752a546ffe95b3",
+    "v44_frozen_file_count": 211,
+    "v44_frozen_paths_fingerprint_sha256": "eb4fda2c2b862fa279a7f0d60f0a2694e50f9c63bf89f60de9d0af52638c0516",
+    "v44_immutable_successor_file_count": 209,
+    "v44_parent_decision": "V44_FAKE_MARRAKESH_CAPACITY_REJECTED_CANARY_PIPELINE_VALIDATED_ZERO_JOB"
+  },
+  "research_sources": [
+    {
+      "role": "TRANSPILER_LIFETIME_BOUNDARY",
+      "title": "IBM Quantum Documentation · Transpiler",
+      "url": "https://quantum.cloud.ibm.com/docs/en/api/qiskit/transpiler"
+    },
+    {
+      "role": "REVERSIBLE_COMPUTE_COPY_UNCOMPUTE",
+      "title": "Bennett · Logical Reversibility of Computation",
+      "url": "https://doi.org/10.1147/rd.176.0525"
+    },
+    {
+      "role": "SPACE_CONSTRAINED_REVERSIBLE_COMPILATION",
+      "title": "Parent, Roetteler and Svore · Reversible circuit compilation with space constraints",
+      "url": "https://arxiv.org/abs/1510.00377"
+    },
+    {
+      "role": "SPACE_CONSTRAINED_UNCOMPUTATION",
+      "title": "Reqomp · Space-constrained Uncomputation for Quantum Circuits",
+      "url": "https://doi.org/10.22331/q-2024-02-19-1258"
+    },
+    {
+      "role": "FAKE_BACKEND_EVIDENCE_BOUNDARY",
+      "title": "IBM Quantum Documentation · Fake provider",
+      "url": "https://quantum.cloud.ibm.com/docs/en/api/qiskit-ibm-runtime/fake-provider"
+    }
+  ],
+  "resource_contract": {
+    "backend_capacity_qubits": 156,
+    "design_ceiling_qubits": 145,
+    "maximum_materialized_cnot_per_seed": 2500000,
+    "parent_v43_cnot_budget_preserved": true,
+    "width_metric": "LOGICAL_QUBIT_WIRES_NUM_QUBITS_NOT_QUANTUMCIRCUIT_WIDTH_WITH_CLASSICAL_BITS"
+  },
+  "routing_next_gate_contract": {
+    "capacity_fit_required_before_reconstruction": true,
+    "full_workload_routing_in_v45": "NOT_RUN",
+    "maximum_native_cz_expansion_over_v45_cnot": 100,
+    "maximum_routed_cz_per_seed": 250000000,
+    "maximum_routed_depth_per_seed": 250000000,
+    "next_falsifiable_gate": "PINNED_FAKEMARRAKESH_FULL_RECONSTRUCTION_TRANSLATION_AND_ROUTING_OF_WIDTH_ADMITTED_V4_5_STREAMS",
+    "required_coupling_violations": 0,
+    "required_isa_violations": 0,
+    "routing_method": "basic",
+    "seed_transpiler": 4505,
+    "target_snapshot_inherited_from_v44": true,
+    "translation_method": "translator"
+  },
+  "self_hash_contract": "SHA256_OVER_COMPACT_SORTED_UTF8_JSON_AFTER_REMOVING_V45_SPEC_SHA_AND_V45_SPEC_SHA256",
+  "spec_version": "QUANTUM LAB V4.5 PROOF-CARRYING WIDTH REDUCTION · V1",
+  "v45_spec_sha": "BA0C41D1BD0D43817A46",
+  "v45_spec_sha256": "ba0c41d1bd0d43817a46c9d66d84eb2ba517bf8dd3975387324726d24487e4e6"
+}

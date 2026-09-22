@@ -1,0 +1,144 @@
+{
+  "acceptance_contract": {
+    "all_required_checks_must_pass": true,
+    "artifact_write_mode": "CREATE_ONCE_OR_IDENTICAL",
+    "basis_amplitude_tolerance": 1e-12,
+    "resource_reproduction": "BYTE_IDENTICAL_CANONICAL_JSON",
+    "scratch_probability_tolerance": 1e-24
+  },
+  "claim_boundary": {
+    "backend_native": false,
+    "calibration_evidence": "NONE",
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "routed_capacity": "NOT_TESTED"
+  },
+  "family": {
+    "K": 10,
+    "N": 40,
+    "regime": "BANDS",
+    "seeds": [1103, 2207, 3301, 4409, 5501, 6607, 7703, 8807]
+  },
+  "authenticated_v33_witnesses": {
+    "source_contract": "Bits reproduced once from the frozen deterministic Phase-II generator and authenticated against the V3.3 witness SHA-256 ledger before use.",
+    "bits_by_seed": {
+      "1103": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1],
+      "2207": [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+      "3301": [1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+      "4409": [0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+      "5501": [1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0],
+      "6607": [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+      "7703": [0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+      "8807": [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1]
+    }
+  },
+  "interval_optimization": {
+    "disjointness_precondition": "lower <= upper",
+    "identity": "1[lower <= value <= upper] = 1 XOR 1[value <= lower-1] XOR 1[value >= upper+1]",
+    "preserved_contracts": [
+      "FROZEN_DYADIC_INTEGER_PARAMETERS",
+      "LITTLE_ENDIAN_ACCUMULATORS",
+      "SIGNED_TWO_COMPLEMENT_ORDER",
+      "EXACT_K_DOMAIN",
+      "SEVEN_GROUP_AND_FACTOR_CONSTRAINTS",
+      "CLEAN_ANCILLA_BIT_FLIP_ORACLE"
+    ],
+    "removed_live_registers": ["compare_ge", "compare_le"],
+    "required_validation": [
+      "EXHAUSTIVE_SIGNED_AND_UNSIGNED_INTERVAL_TRUTH_TABLES_WIDTH_1_TO_6",
+      "N40_STRUCTURAL_PARITY_WITH_V32",
+      "N40_ALL_2400_NONTRIVIAL_WITNESS_SWAPS",
+      "N40_GATE_LEVEL_CLEANUP_AND_TARGET_PARITY"
+    ]
+  },
+  "lineage_change_control": {
+    "parent_freeze_authentication": "All 15 V3.3 frozen files must be byte-exact while the V3.4 evidence artifact is built.",
+    "post_build_successor_policy": "A V3.4 release verifier may exempt only the declared UI successor from the historical V3.3 byte check; the V3.4 freeze must bind its replacement bytes.",
+    "v33_frozen_files_superseded_after_v34_artifact": [
+      "quantum_research_lab/ui.py"
+    ]
+  },
+  "native_lowering": {
+    "construction": "CX(i,j); CCX(a,b,and_ab); CCX(and_ab,j,guard); CRX(guard,i,2beta); reverse AND ladder; CX(i,j)",
+    "continuous_rotation_contract": "EXACT_MATRIX_IDENTITY",
+    "crx_decomposition": "RZ_i(pi/2); CX(guard,i); RY_i(-beta); CX(guard,i); RY_i(beta); RZ_i(-pi/2)",
+    "logical_controls": ["a=f(x)", "b=f(S_ij x)"],
+    "required_validation": "ALL_16_CLEAN_LOGICAL_BASIS_INPUTS_AT_SIX_PREREGISTERED_ANGLES",
+    "scratch": {
+      "additional_logical_qubits": 0,
+      "count": 2,
+      "reuse": "CLEAN_ORACLE_WORK_REGISTER_AFTER_UNCOMPUTE"
+    },
+    "selected_ccx_accounting_model": {
+      "cx_per_ccx": 6,
+      "h_per_ccx": 2,
+      "status": "RESOURCE_MODEL_NOT_BACKEND_NATIVE",
+      "t_or_t_dagger_per_ccx": 7
+    }
+  },
+  "parent_contract": {
+    "expected_parent_v31_raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "expected_parent_v32_artifact_sha256": "5e6cc7e53f15921f7cbd22ef66f04878b37d54372e04b5bf49f5bb4854050fcd",
+    "expected_parent_v32_raw_file_sha256": "616cc12808465916dfcfcde6c8e2c9feed1be4b294ad034f29cb7cb36704031b",
+    "expected_parent_v33_artifact_raw_file_sha256": "af04ddd8986d59cc18ba33f756b24ade93ef005ff0b0df14d88d4c52d537b565",
+    "expected_parent_v33_artifact_sha256": "5ecd1fd5e3f093934220691e20139eff5c12757c2cf70bbfe6f89c2bc26b958a",
+    "expected_parent_v33_freeze_sha256": "dae2813dabb760ef6c93da0d26be2d9ef40feef2aa1a467f36d237918bdd3f76",
+    "expected_parent_v33_resource_manifest_sha256": "437d9370d0a7b37aac30094b8ebf4c5db97d84abd7cfc633267a22b52eadf8a6",
+    "expected_parent_v33_spec_sha256": "5119490433952d6a4a6151a2890b647479460e3cda4283bf1bc541243d1a8e3e",
+    "expected_parent_v33_validation_manifest_sha256": "7461299442dda626986ac448c1e7ed4cbb20bdd5a4d4c27fc60a7d96deb9285e"
+  },
+  "phase": "PHASE_III_OPTIMIZED_ORACLE_AND_ELEMENTARY_MIXER",
+  "preregistered_validation_ladder": [
+    "V33_FREEZE_AND_RELEASE_CHAIN_AUTHENTICATION",
+    "INTERVAL_IDENTITY_EXHAUSTIVE_SMALL_WIDTH",
+    "N40_OPTIMIZED_ORACLE_COMPILATION_AND_REPRODUCIBILITY",
+    "N40_CONSTRAINT_AND_PREDICATE_PARITY",
+    "N40_WITNESS_SWAP_PARITY_ALL_SEEDS",
+    "N40_GATE_LEVEL_TARGET_AND_CLEANUP",
+    "C2XY_ELEMENTARY_MATRIX_AND_SCRATCH_VALIDATION",
+    "RESOURCE_REDUCTION_AND_REPRODUCIBILITY",
+    "HARDWARE_AND_ADVANTAGE_FAIL_CLOSED"
+  ],
+  "research_basis": [
+    {
+      "claim": "XXPlusYY coherently rotates the odd-parity |01>, |10> subspace.",
+      "source": "https://quantum.cloud.ibm.com/docs/en/api/qiskit/qiskit.circuit.library.XXPlusYYGate"
+    },
+    {
+      "claim": "CRX has an exact controlled single-qubit RX matrix contract.",
+      "source": "https://quantum.cloud.ibm.com/docs/en/api/qiskit/dev/qiskit.circuit.library.CRXGate"
+    },
+    {
+      "claim": "Alternating-operator ansatz separates phase and mixing operator design.",
+      "source": "https://arxiv.org/abs/1709.03489"
+    },
+    {
+      "claim": "Constraint-preserving mixers require explicit feasibility and connectivity analysis.",
+      "source": "https://arxiv.org/abs/2203.06095"
+    }
+  ],
+  "resource_contract": {
+    "canonical_profile": "DUAL_GUARD_CACHED",
+    "canonical_topology": "COMPLETE_SWAP_SCAN",
+    "include": [
+      "OPTIMIZED_ORACLE_PROVIDER_NEUTRAL_COUNTS",
+      "EXACT_ELEMENTARY_C2XY_GATE_COUNTS",
+      "SELECTED_7T_CCX_COST_MODEL"
+    ],
+    "not_estimated": [
+      "ARBITRARY_ROTATION_FAULT_TOLERANT_SYNTHESIS",
+      "NAMED_BACKEND_ROUTING",
+      "CALIBRATION_AWARE_ERROR",
+      "PHYSICAL_QUBITS",
+      "WALL_CLOCK_RUNTIME"
+    ]
+  },
+  "self_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing v34_spec_sha and v34_spec_sha256",
+  "spec_version": "QUANTUM LAB V3.4 OPTIMIZED ORACLE + ELEMENTARY MIXER · V1",
+  "v34_spec_sha": "A287B6BF63F5206672A8",
+  "v34_spec_sha256": "a287b6bf63f5206672a82656483f06c2dd6f005a11f10bdc1a9142820d3f01f7"
+}

@@ -1,0 +1,100 @@
+{
+  "claim_boundary": {
+    "calibration_aware_circuit_fidelity": "NOT_CLAIMED",
+    "hardware_executable": false,
+    "hardware_timing_schedule": "NOT_RUN",
+    "independent_product_is_circuit_fidelity": false,
+    "provider_calls": 0,
+    "qpu_jobs_submitted": 0,
+    "research_classification": "RESEARCH_ONLY",
+    "snapshot_is_current_hardware_evidence": false
+  },
+  "created_utc": "2026-09-20T19:35:00Z",
+  "duration_model": {
+    "clock_count": 156,
+    "cx_macro": [
+      "rz(target)",
+      "sx(target)",
+      "rz(target)",
+      "cz(control,target)",
+      "rz(target)",
+      "sx(target)",
+      "rz(target)"
+    ],
+    "dt_nanoseconds": 4,
+    "input_macros": {
+      "H": ["rz", "sx", "rz"],
+      "RY": ["rz", "sx", "rz", "sx", "rz"],
+      "RZ": ["rz"],
+      "T": ["rz"],
+      "TDG": ["rz"],
+      "X": ["x"]
+    },
+    "limitations": [
+      "NO_PULSE_SCHEDULE",
+      "NO_CONTROL_ELECTRONICS_MODEL",
+      "NO_CROSSTALK_MODEL",
+      "NO_DYNAMICAL_DECOUPLING",
+      "NO_QUEUE_OR_JOB_RUNTIME",
+      "NO_CALIBRATION_DRIFT_MODEL"
+    ],
+    "one_qubit_rule": "start=t[q]; t[q]=start+duration_ticks(gate,q)",
+    "reported_name": "properties_conditioned_asap_duration_estimate",
+    "swap_macro": [
+      "sx(left)||sx(right)",
+      "cz(left,right)",
+      "sx(left)||sx(right)",
+      "cz(left,right)",
+      "sx(left)||sx(right)",
+      "cz(left,right)"
+    ],
+    "two_qubit_rule": "start=max(t[left],t[right]); t[left]=t[right]=start+duration_ticks(cz,left,right)",
+    "unit": "INTEGER_DT_TICKS"
+  },
+  "error_model": {
+    "decimal_precision": 50,
+    "diagnostic_independent_product": "sum(count*log10(1-p)); undefined when any used p>=1",
+    "independent_product_acceptance_role": "NONE",
+    "missing_invalid_or_nonfinite_property": "BLOCK_CALCULATION_FAIL_CLOSED",
+    "normative_formula": "sum(occurrence_count*Decimal(reported_gate_error))",
+    "normative_name": "reported_gate_error_mass",
+    "not_interpreted_as": [
+      "CIRCUIT_FIDELITY",
+      "SUCCESS_PROBABILITY",
+      "EXPECTED_FAILURE_COUNT",
+      "SOLUTION_QUALITY"
+    ],
+    "unit_error_occurrences_reported_separately": true
+  },
+  "optimization_model": {
+    "candidate_name": "FAULT_EXCLUDED_SHORTEST_HOP_RELIABILITY_TIEBREAK_V1",
+    "candidate_optimality_claim": "NONE_BEYOND_STATIC_ORDERED_PAIR_TIEBREAK",
+    "edge_filter": "BOTH_CZ_DIRECTIONS_PRESENT_VALID_AND_GATE_ERROR_LESS_THAN_ONE",
+    "initial_layout": "LOGICAL_ORDER_TO_ASCENDING_LARGEST_COMPONENT_PREFIX",
+    "path_objective_order": [
+      "MINIMUM_HOPS",
+      "MINIMUM_REPORTED_GATE_ERROR_MASS",
+      "MINIMUM_NOMINAL_DURATION_TICKS",
+      "LEXICOGRAPHIC_FULL_PATH"
+    ],
+    "pareto_safe_replacement_requires_every_seed": {
+      "candidate_makespan_ticks_lte_baseline": true,
+      "candidate_native_cz_lte_baseline": true,
+      "candidate_reported_gate_error_mass_strictly_lt_baseline": true
+    },
+    "research_feasibility_requires_every_seed": {
+      "coupling_violations": 0,
+      "exact_parent_input_manifest": true,
+      "final_layout_bijective": true,
+      "isa_violations": 0,
+      "maximum_cz_expansion_over_v45_cx": 100,
+      "maximum_native_cz": 250000000,
+      "maximum_structural_depth": 250000000,
+      "missing_property_occurrences": 0,
+      "unit_error_gate_occurrences": 0
+    }
+  },
+  "self_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing model_contract_sha256",
+  "version": "PHASE III · V4.7 DURATION / ERROR / OPTIMIZATION MODEL CONTRACT · V1",
+  "model_contract_sha256": "7c22bc90483c1bb02365f65564adcfc6e90952ded3062519c05fb2a4bc40d285"
+}

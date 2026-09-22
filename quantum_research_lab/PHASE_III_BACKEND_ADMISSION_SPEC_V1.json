@@ -1,0 +1,206 @@
+{
+  "acceptance_budgets": {
+    "expected_continuous_rotation_count": 1560,
+    "future_clock_skew_seconds": 300,
+    "max_calibration_age_hours": 24,
+    "max_rotation_aggregate_error": 0.001,
+    "max_rotation_approximation_error": 6.41025641025641e-07,
+    "max_routed_depth": 1000000,
+    "max_routed_two_qubit_gates": 2000000,
+    "max_snapshot_capture_to_export_seconds": 900,
+    "max_two_qubit_error": 0.03,
+    "max_two_qubit_error_p95": 0.015,
+    "min_calibration_edge_coverage": 1.0,
+    "min_log_independent_two_qubit_survival_proxy": -0.01005033585350145,
+    "required_logical_qubits": 118
+  },
+  "admission_scope": {
+    "allowed_evidence_classes": [
+      "PROVIDER_EXPORT",
+      "AUDITED_ARCHIVE"
+    ],
+    "allowed_provider_ids": [
+      "IBM_QUANTUM"
+    ],
+    "authentication": "SHA256_PINNED_OUT_OF_BAND",
+    "backend_resolution": "OFFLINE_SNAPSHOT_ONLY",
+    "credential_access": "PROHIBITED",
+    "hardware_execution": "PROHIBITED",
+    "network_access": "NOT_REQUIRED",
+    "qpu_jobs_submitted": 0,
+    "submission_code": "ABSENT"
+  },
+  "decision_contract": {
+    "admission_pass_meaning": "The pinned offline evidence passes the preregistered screening budgets. It does not authorize provider access, QPU submission, hardware execution, or an advantage claim.",
+    "all_metric_gates_required": true,
+    "missing_metric_state": "NOT_RUN",
+    "negative_result_retention": true,
+    "rejection_state": "REJECTED",
+    "untrusted_evidence_state": "BLOCKED"
+  },
+  "parent_contract": {
+    "expected_parent_v34_artifact_raw_file_sha256": "4e15aba6c83dcec0ff3e22652df03c624f635956d10b769514cfbd78cdaed7fd",
+    "expected_parent_v34_artifact_sha256": "2753b81527bf470b8528550d4de491b968e114e4d59541fd16aeca2d995c9210",
+    "expected_parent_v34_freeze_raw_file_sha256": "a2309c3ae551e74970c1c405ac106045f6db85bb2ba5cb87107a88fbfc7ccb12",
+    "expected_parent_v34_freeze_sha256": "ef0c6406b6946e347885699c19422a5a7e224833d19936ec9f5e1298f993c0d6",
+    "expected_parent_v34_resource_manifest_sha256": "c08112f636b2d3d7af167224338eb78ad59ef99effda8a4c43e1a1dda5e3632f",
+    "expected_parent_v34_schedule_sha256": "9231aceff98277a4e3d3e85cc9d520b2d5a61d434250e5fdeaa1c1333aa046bc",
+    "expected_parent_v34_validation_manifest_sha256": "cfbe1b9c55002b9386d3e5b2b59373b0689532deffe3c8de41736a7b10213b45"
+  },
+  "provider_execution_screen": {
+    "canonical_parent_selected_ccx_model_cnot_count": 149405532710,
+    "comparison_rule": "REJECT_PRETRANSPILATION_MODEL_IF_SELECTED_CCX_MODEL_CNOT_COUNT_EXCEEDS_PROVIDER_2Q_GATE_LIMIT",
+    "interpretation_boundary": "The numerator is the frozen V3.4 selected 7T-CCX CNOT accounting result, not a lower bound and not a backend-native transpilation result. This is an early model-admission screen; it cannot establish routed counts, physical runtime or fidelity.",
+    "max_provider_two_qubit_gates_per_circuit": 5000000,
+    "provider_id": "IBM_QUANTUM",
+    "source_document_publication_utc": "NOT_REPORTED_ON_PAGE",
+    "source_checked_utc": "2026-09-05T09:50:26Z",
+    "source_claim": "IBM Quantum documents a maximum of five million two-qubit gates per circuit.",
+    "source_page_title": "Job limits",
+    "source_retrieved_utc": "2026-09-05T09:50:26Z",
+    "source_url": "https://quantum.cloud.ibm.com/docs/en/guides/job-limits"
+  },
+  "confirmatory_protocol": {
+    "backend_selection": {
+      "fallback_backend": "PROHIBITED",
+      "instance_required": true,
+      "least_busy": "PROHIBITED",
+      "named_backend_required": true,
+      "use_fractional_gates_required": true
+    },
+    "deferred_after_model_rejection": [
+      "SDK_ENVIRONMENT_FROZEN",
+      "TARGET_SNAPSHOT_CAPTURED",
+      "TARGET_CANONICAL_HASHED",
+      "TARGET_CONNECTED_CAPACITY",
+      "INPUTS_FULLY_BOUND",
+      "FULL_EIGHT_INSTANCE_TRANSPILE",
+      "SEEDED_REPRODUCIBILITY",
+      "ISA_COMPLIANCE_100_PERCENT",
+      "FAULTY_RESOURCE_CHECK",
+      "LAYOUT_ACCOUNTED",
+      "DETAILED_IBM_SERVICE_LIMITS",
+      "CALIBRATION_COVERAGE_100_PERCENT",
+      "FIDELITY_PROXY_SCREEN",
+      "COHERENCE_SCREEN",
+      "SEMANTIC_CANARIES",
+      "SNAPSHOT_END_CHECK",
+      "QPY_ARTIFACT_ROUNDTRIP"
+    ],
+    "provider_service_limits": {
+      "max_control_system_instructions_per_qubit": 26800000,
+      "max_rz_gates_per_circuit": 30000000,
+      "max_sx_gates_per_circuit": 20000000,
+      "max_two_qubit_gates_per_circuit": 5000000,
+      "source_url": "https://quantum.cloud.ibm.com/docs/en/guides/job-limits"
+    },
+    "rotation_lanes": {
+      "FAULT_TOLERANT_CLIFFORD_T": {
+        "ibm_qpu_native_claim": false,
+        "status": "NOT_RUN",
+        "total_spectral_norm_error_budget": 0.001
+      },
+      "NISQ_TARGET_ISA": {
+        "approximation_degree": 1.0,
+        "fault_tolerant_t_count_applicable": false,
+        "status": "NOT_RUN"
+      }
+    },
+    "sdk_environment": {
+      "qiskit_exact_version": "2.5.2",
+      "qiskit_ibm_runtime_exact_version": "0.49.0",
+      "wheel_hashes_status": "NOT_PINNED · CONFIRMATORY LANE BLOCKED"
+    },
+    "transpilation": {
+      "approximation_degree": 1.0,
+      "layout_method": "sabre",
+      "optimization_level": 3,
+      "routing_method": "sabre",
+      "routing_seeds": [11, 29, 47, 71, 101, 131, 173, 211],
+      "scheduling_method": "alap",
+      "selection_order": [
+        "two_qubit_count",
+        "duration_seconds",
+        "two_qubit_depth",
+        "total_operation_count",
+        "routing_seed"
+      ],
+      "translation_method": "translator"
+    }
+  },
+  "phase": "PHASE_III_NAMED_BACKEND_OFFLINE_ADMISSION",
+  "preregistered_gates": [
+    "V34_PARENT_BINDING",
+    "PARENT_PROVIDER_2Q_GATE_MODEL_SCREEN",
+    "OUT_OF_BAND_SNAPSHOT_DIGEST",
+    "BACKEND_IDENTITY_AND_PROVENANCE",
+    "CALIBRATION_STALENESS",
+    "LOGICAL_AND_ROUTED_WIDTH",
+    "ROUTED_DEPTH",
+    "ROUTED_TWO_QUBIT_COUNT",
+    "TWO_QUBIT_CALIBRATION_ERROR_AND_COVERAGE",
+    "CONTINUOUS_ROTATION_SYNTHESIS",
+    "NOISE_AWARE_SURVIVAL_PROXY",
+    "ZERO_JOB_BOUNDARY"
+  ],
+  "required_candidate_fields": {
+    "rotations": [
+      "status",
+      "method",
+      "evidence_lane",
+      "continuous_rotation_count",
+      "synthesized_rotation_count",
+      "max_approximation_error",
+      "aggregate_approximation_error"
+    ],
+    "transpilation": [
+      "status",
+      "backend_name",
+      "input_artifact_sha256",
+      "sdk_version",
+      "transpiler_version",
+      "optimization_level",
+      "routing_seed",
+      "approximation_degree",
+      "layout_method",
+      "routing_method",
+      "translation_method",
+      "scheduling_method",
+      "target_basis_gates",
+      "routed_width",
+      "routed_depth",
+      "routed_two_qubit_gates"
+    ]
+  },
+  "required_snapshot_fields": {
+    "backend": [
+      "provider_id",
+      "backend_name",
+      "backend_version",
+      "operational",
+      "status_msg",
+      "is_simulator",
+      "num_qubits",
+      "basis_gates",
+      "coupling_map"
+    ],
+    "calibration": [
+      "calibration_id",
+      "captured_at_utc",
+      "properties_last_update_utc",
+      "two_qubit_gate_errors"
+    ],
+    "provenance": [
+      "evidence_class",
+      "source_record_id",
+      "exported_at_utc",
+      "collector"
+    ]
+  },
+  "research_classification": "RESEARCH_ONLY",
+  "self_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing v35_spec_sha and v35_spec_sha256",
+  "snapshot_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing authentication and snapshot_sha256. Admission requires the computed digest to equal both the embedded digest and a caller-supplied out-of-band digest.",
+  "spec_version": "QUANTUM LAB V3.5 NAMED BACKEND OFFLINE ADMISSION · V1",
+  "v35_spec_sha": "AC9CE5953EF06CC8CCD9",
+  "v35_spec_sha256": "ac9ce5953ef06cc8ccd96d9eb5fb89bf7f9a9191f21e5d6da89bb67c923a89a9"
+}

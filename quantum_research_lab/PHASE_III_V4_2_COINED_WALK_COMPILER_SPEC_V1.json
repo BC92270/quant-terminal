@@ -1,0 +1,208 @@
+{
+  "acceptance_contract": {
+    "budget_cnot": 2500000,
+    "connectivity_pass": "PASS only when the authenticated V4.1 one-plus-two-swap support is reproduced exactly and the joint one-hot-coin/data support graph is connected for every frozen seed",
+    "inconclusive_branch": "V42_COINED_WALK_INDETERMINATE when any parent identity, selector proof, support correspondence, resource replay or artifact reconstruction is incomplete",
+    "primary_resource_pass": "PASS only when the maximum selected-model CNOT numerator for one complete coined-walk generator step across all eight frozen seeds is at most 2500000",
+    "promise_scope": "Every admitted input has an exactly feasible N=40 K=10 data basis state and two one-hot 40-qubit coin registers; coin-ring evolution preserves the registered coin subspace",
+    "resource_failure_branch": "REJECTED_SELECTED_MODEL_CNOT_BUDGET",
+    "success_branch": "V42_INDEXED_COINED_WALK_CONNECTED_RESOURCE_SCREEN_PASSED",
+    "validation_failure_branch": "V42_VALIDATION_FAILED"
+  },
+  "candidate_family": {
+    "K": 10,
+    "N": 40,
+    "coin_registers": [
+      {
+        "basis": "HAMMING_WEIGHT_ONE",
+        "name": "REMOVE_ADDRESS",
+        "qubits": 40
+      },
+      {
+        "basis": "HAMMING_WEIGHT_ONE",
+        "name": "ADD_ADDRESS",
+        "qubits": 40
+      }
+    ],
+    "constraint_count": 7,
+    "constraint_regime": "BANDS",
+    "frozen_seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ],
+    "generator_id": "C1_ONE_HOT_COINED_EXACT_FEASIBLE_EXCHANGE_WALK_WITH_DATA_ONLY_CERTIFIED_BRIDGES",
+    "registered_move_support": "Every exact-feasible Hamming-distance-two exchange plus the three authenticated V4.1 Hamming-distance-four bridge transpositions"
+  },
+  "chronology": {
+    "confirmatory_protocol_state": "SEALED_BEFORE_ACCEPTED_CONFIRMATORY_ARTIFACT",
+    "exploratory_audit_disclosed": true,
+    "exploratory_observation": {
+      "observed_utc": "2026-09-13T18:18:00Z",
+      "resource_estimate_maximum_cnot": 1135430,
+      "resource_estimate_use": "Engineering feasibility signal only; it is not an accepted result and cannot satisfy any V4.2 gate",
+      "seeded_forest_distinct_exchange_labels": {
+        "1103": 471,
+        "2207": 490,
+        "3301": 424,
+        "4409": 456,
+        "5501": 375,
+        "6607": 454,
+        "7703": 469,
+        "8807": 468
+      },
+      "six_seeded_hamiltonian_cycles_seed_3301_component_frontier": [
+        266370,
+        62603,
+        18829,
+        11441,
+        2499,
+        1771
+      ],
+      "scope": "Unsealed engineering probes showed that static global pair-position sparsification retained hundreds of labels and that six nested seeded Hamiltonian cycles still fragmented seed 3301; a separate formula estimate suggested that sharing exact arithmetic through a one-hot indexed SELECT could fit the unchanged budget"
+    },
+    "protocol_amendment_policy": "Any post-seal algorithm, formula, budget, candidate or decision change requires a new disclosed specification version and cannot be merged into accepted V4.2 evidence",
+    "protocol_sealed_utc": "2026-09-13T18:31:29Z",
+    "resource_ledger_state_at_seal": "NOT_EVALUATED"
+  },
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "circuit_materialization": "NOT_RUN_NEXT_GATE",
+    "clean_workspace_scope": "CERTIFIED_ONLY_ON_EXACT_FEASIBLE_DATA_AND_ONE_HOT_COIN_PROMISE_SUBSPACE",
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "scope": "EXACT_PROMISE_SUBSPACE_GENERATOR_SUPPORT_AND_PROVIDER_NEUTRAL_SELECTED_MODEL_RESOURCE_LEDGER"
+  },
+  "coin_and_selector_contract": {
+    "address_read": "For a one-hot address q and data x, XOR the forty products q_k AND x_k into one addressed-bit flag; the XOR equals the uniquely addressed data bit on the registered coin subspace",
+    "bridge_action": "Each authenticated V4.1 bridge is a data-only two-level transposition between its exact endpoint masks, appended in registered Kruskal order and independent of the coin basis",
+    "coin_layer": "One complete 40-edge cyclic nearest-neighbor excitation-preserving XY ring on REMOVE_ADDRESS followed by the same canonical ring on ADD_ADDRESS",
+    "coin_support_theorem": "Each one-hot ring is connected. Their Cartesian-product support connects every ordered address pair while preserving Hamming weight one in both registers.",
+    "data_action": "Toggle the two uniquely addressed data bits iff they differ and the exact target portfolio satisfies all seven frozen constraints",
+    "invalid_or_equal_address_policy": "Equal-address and non-opposite addressed-bit states are exact self loops; no favorable filtering or post-observation address removal is permitted",
+    "joint_connectivity_theorem": "For fixed feasible data, the coin support is connected. At any ordered pair coin basis, SELECT realizes exactly the corresponding feasible one-swap edge. The appended authenticated bridges connect the remaining V4.0 components. Therefore the joint promise-support graph is connected whenever the V4.1 augmented data graph is connected.",
+    "promise_subspace_cleanup": "The target-feasible flag is computed on the addressed target, retained through the conditional exchange, and cleared by recomputing the reverse target from the new data. Symmetry is exact because the starting data endpoint is feasible. Addressed-bit, difference, move, target and arithmetic work registers return clean on the registered promise subspace.",
+    "selector_engine_algorithm": "INDEPENDENT_CPP_EXHAUSTIVE_PROMISE_SUBSPACE_COINED_SELECT_V1",
+    "selector_engine_source": "quantum_research_lab/phase3_v42_selector_engine.cpp",
+    "selector_engine_source_raw_file_sha256": "3d73cddfc7c06cf6e0e5bc22a3ad29c3ea79ac22d7c1e5a8b1ca1044789c65ab",
+    "selector_support": "On the registered promise subspace, SELECT is a disjoint union of exact transpositions and identities and is therefore an involution",
+    "small_domain_control": "Exhaust every nonempty feasible-support predicate on every exact-K domain for 2<=N<=5; verify selector involution, feasible-support closure, cleanup symmetry and equality of data versus joint component counts. Also verify all full exact-K joint graphs for 2<=N<=8 and every Hamming-distance-four bridge transposition for 4<=N<=8.",
+    "target_evaluation": "Construct a 40-qubit target copy, apply the addressed exchange only when the addressed data bits differ, evaluate the exact compressed seven-band predicate, erase the copy, apply the accepted data exchange, then symmetrically recompute and clear the target predicate"
+  },
+  "evidence_contract": {
+    "artifact": "outputs/quantum_phase3/v42_coined_walk/SEALED_V4_2_COINED_WALK_COMPILER_ARTIFACT.json",
+    "canonical_payload": "UTF-8 JSON with sorted keys and compact separators, excluding artifact_sha256",
+    "immutability": "An existing non-identical artifact is never overwritten",
+    "parent_authentication": "Authenticate V4.1 specification, selector predecessor sources, artifact, freeze contract and every immutable frozen path without rewriting the parent",
+    "resource_replay": "Two separately implemented formula builders must reproduce every feasibility-oracle term, SELECT scaffold term, bridge term, per-seed total, maximum, margin and decision",
+    "support_replay": "The V4.2 support ledger must cross-link all eight authenticated V4.1 connectivity rows, preserve the exact three bridge identities and prove no one-swap label was deleted",
+    "tamper_policy": "Nested selector, macro, qubit, support, boundary, decision and parent mutations must be rejected"
+  },
+  "parent_contract": {
+    "expected_v41_artifact_raw_file_sha256": "42a5d7caf4e9fab18e771b2bd55fc38c9a77f7fac42f2599feb4fe789cf88c07",
+    "expected_v41_artifact_sha256": "7260336e3a3c6bd2adbd6397d9bed569b91c2da2a7942a17b8090fdcac739e4e",
+    "expected_v41_decision": "V41_AUGMENTED_CONNECTIVITY_CERTIFIED_RESOURCE_SCREEN_REJECTED",
+    "expected_v41_engine_raw_file_sha256": "6b065ac1fb834e9ff226954984fe466901314c9b556c2c253a0ace873f2bf26e",
+    "expected_v41_freeze_raw_file_sha256": "43d3bd4e9cdcb54e9a7c1649430f6bd10cae9ef51ac5d77319a7630639b0c34f",
+    "expected_v41_freeze_sha256": "b9ec84e2110e40cf1c77fb90b18794ff80e26ddf12233d5193eb18ca5aa6c201",
+    "expected_v41_frozen_file_count": 161,
+    "expected_v41_frozen_paths_fingerprint_sha256": "27bb43b53f3c6847d1ef80518c595755c1e606015b423c194c8a2e61f3f76ea8",
+    "expected_v41_source_raw_file_sha256": "5565ce436034183228d27e37b249afc56f19121a5a8c2638533d4480762c62d1",
+    "expected_v41_spec_raw_file_sha256": "0bbe903e7520213f8effcd592051420ac54502934a1840b6052e3b4865950c35",
+    "expected_v41_spec_sha256": "a5977ce4dda24d2fe6e8308e299b8a6b9097cf4fdf7e2835ca8e2fdc6aa99c89",
+    "no_parent_regeneration": true,
+    "required_v41_connectivity_decision": "AUGMENTED_1_2_EXCHANGE_GRAPH_CONNECTED_ALL_SEEDS_BY_CERTIFIED_SUBGRAPH",
+    "required_v41_next_gate": "SPARSE_CONNECTED_GENERATOR_COMPILER_OR_STRONGER_EXACT_ARITHMETIC_REDUCTION",
+    "successor_mutable_paths": [
+      "quantum_research_lab/README.md",
+      "quantum_research_lab/ui.py"
+    ]
+  },
+  "preregistered_checks": [
+    "V41_SPEC_ENGINE_SOURCE_ARTIFACT_FREEZE_AND_159_IMMUTABLE_PATHS_AUTHENTICATED",
+    "SELECTOR_ENGINE_SOURCE_IDENTITY_MATCHES_SEALED_PROTOCOL",
+    "DUAL_CPP_TRAVERSALS_HAVE_IDENTICAL_STABLE_COUNTS",
+    "EVERY_NONEMPTY_FEASIBLE_SUPPORT_THROUGH_N5_SELECTOR_INVOLUTION_AND_CLEANUP",
+    "DATA_AND_JOINT_COIN_GRAPH_COMPONENT_COUNTS_EQUAL_THROUGH_N5",
+    "FULL_EXACT_K_JOINT_SUPPORT_CONNECTED_THROUGH_N8",
+    "V41_ALL_ONE_SWAP_SUPPORT_PRESERVED_WITHOUT_POSITION_DELETION",
+    "V41_THREE_BRIDGES_PRESERVED_IN_REGISTERED_ORDER",
+    "JOINT_PROMISE_SUPPORT_CONNECTED_ALL_EIGHT_SEEDS",
+    "EXACT_COMPRESSED_PREDICATES_AND_WIDTHS_CROSS_LINKED_TO_V41",
+    "COIN_RING_AND_SELECT_SCAFFOLD_MACRO_COUNTS_EXACT",
+    "INDEPENDENT_SELECTED_MODEL_RESOURCE_REPLAY",
+    "MAXIMUM_NOT_MEAN_BUDGET_GATE_ACROSS_ALL_EIGHT_SEEDS",
+    "PROMISE_SCOPE_AND_OFF_SUBSPACE_LIMIT_VISIBLE",
+    "PROVIDER_HARDWARE_OPTIMIZATION_AND_ADVANTAGE_BOUNDARIES_ZERO",
+    "DETERMINISTIC_ARTIFACT_REBUILD_AND_NESTED_TAMPER_REJECTION"
+  ],
+  "research_sources": [
+    {
+      "citation": "Hadfield et al., From the Quantum Approximate Optimization Algorithm to a Quantum Alternating Operator Ansatz, Algorithms 12, 34 (2019)",
+      "role": "CONSTRAINT_PRESERVING_PARTIAL_MIXER_CONTEXT",
+      "url": "https://arxiv.org/abs/1709.03489"
+    },
+    {
+      "citation": "Fuchs et al., Constrained mixers for the quantum approximate optimization algorithm (2022)",
+      "role": "FEASIBLE_SUBSPACE_MIXER_AND_CX_REDUCTION_CONTEXT",
+      "url": "https://arxiv.org/abs/2203.06095"
+    },
+    {
+      "citation": "Cuccaro et al., A new quantum ripple-carry addition circuit (2004)",
+      "role": "MEASUREMENT_FREE_RIPPLE_ARITHMETIC_CONTEXT",
+      "url": "https://arxiv.org/abs/quant-ph/0410184"
+    },
+    {
+      "citation": "Barenco et al., Elementary gates for quantum computation, Physical Review A 52, 3457 (1995)",
+      "role": "MULTI_CONTROLLED_AND_TWO_LEVEL_DECOMPOSITION_CONTEXT",
+      "url": "https://arxiv.org/abs/quant-ph/9503016"
+    }
+  ],
+  "resource_compiler_contract": {
+    "architecture_id": "EXACT_ONE_HOT_COINED_TARGET_RECOMPUTE_ARITHMETIC_WITH_DATA_ONLY_BRIDGES_V1",
+    "bridge_cnot": "For data width m=40 and endpoint Hamming distance h=4: 2*h occurrences of C^(m-1)X-equivalent cost = 3600 CNOT per selected bridge",
+    "coin_ring_cnot": "Two 40-edge cyclic excitation-preserving XY rings at 2 CNOT per edge = 160 CNOT",
+    "controlled_constant_add_cnot": "68*w-102 for width w>=3, inherited without alteration from the authenticated V4.1 selected model",
+    "elementary_basis": [
+      "X",
+      "T",
+      "TDG",
+      "RY",
+      "RZ",
+      "CX"
+    ],
+    "feasibility_oracle_cnot": "2*SUM_BUILD + sum_over_7_rows(2*GE_COMPARATOR + 2*LE_COMPARATOR + 2*CCX) + C7X",
+    "feasibility_oracle_invocations_per_step": 2,
+    "mcx_cnot": "6 for two controls; 6*(2*c-3) for c>=3 with c-2 reusable clean decomposition ancillas",
+    "one_step_numerator": "Two exact target-feasibility oracle invocations plus the complete address/target/data SELECT scaffold, both complete coin rings and every authenticated V4.1 bridge for the seed",
+    "post_observation_switching": "PROHIBITED",
+    "resource_numerator": "One complete coined-walk generator step on data plus both persistent one-hot coin registers; no cancellation between registered macros",
+    "ripple_comparator_cnot": "16*w-9 for width w>=3",
+    "selected_decomposition_model": "CONTROLLED_CUCCARO_RIPPLE_CLEAN_LADDER_6CX_CCX_CRX2CX_V1",
+    "select_scaffold": {
+      "ccx_count": 562,
+      "ccx_derivation": "160 addressed-bit read/clear + 320 target-address toggle/build-clear + 80 accepted data toggles + 2 move compute/clear",
+      "direct_cnot_count": 326,
+      "direct_cnot_derivation": "160 target copy/build-clear + 4 different-bit compute/clear + 2 addressed-bit updates after an accepted move + 160 coin-ring CNOT"
+    },
+    "sum_build": "Use the exact V4.1 compressed guarded coordinates and all 160 nonzero controlled constant additions; unlike V4.1 persistent cache preparation, each V4.2 oracle computes and uncomputes the complete sum bank inside the admitted numerator",
+    "workspace_reuse": "All arithmetic, comparator, row-flag and bridge clean-ladder scratch is sequentially recycled; bridge decomposition may reuse the clean 40-qubit target bank",
+    "zero_span_policy": "All seven rows remain explicit; a zero-span row is checked as exact equality and is never deleted"
+  },
+  "self_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing v42_spec_sha and v42_spec_sha256",
+  "spec_version": "QUANTUM LAB V4.2 ONE-HOT COINED WALK + SHARED EXACT ARITHMETIC COMPILER · V1",
+  "v42_spec_sha": "ACF640C11D3DC575EBCC",
+  "v42_spec_sha256": "acf640c11d3dc575ebcc1358919095cf68673583a8c628c7131e664f7859801e"
+}

@@ -1,0 +1,81 @@
+{
+  "alias_policy": {
+    "archive_or_release_copy_of_identical_raw_bytes": "NOT_A_DISTINCT_SNAPSHOT_AND_NOT_CATALOGED_AS_AN_ALIAS",
+    "metadata_only_or_filename_only_change": "NOT_A_DISTINCT_SNAPSHOT",
+    "normalized_representation_of_same_raw_bytes": "NOT_A_DISTINCT_SNAPSHOT",
+    "synthetic_jitter_bootstrap_or_resampling": "NOT_ADMISSIBLE_AS_AN_AUTHENTIC_SNAPSHOT"
+  },
+  "aliases": [],
+  "catalog_version": "PHASE III · V4.8 AUTHENTIC SNAPSHOT CATALOG · V1",
+  "claim_boundary": {
+    "current_provider_status": "NOT_QUERIED",
+    "hardware_executable": false,
+    "network_calls": 0,
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "qpu_jobs_submitted": 0,
+    "research_classification": "RESEARCH_ONLY",
+    "snapshot_is_current_hardware_evidence": false
+  },
+  "counts": {
+    "admitted_alias_count": 0,
+    "admitted_snapshot_observation_count": 1,
+    "distinct_epoch_count": 1,
+    "minimum_distinct_snapshot_identities_required": 3,
+    "unique_normalized_property_identity_count": 1,
+    "unique_raw_snapshot_identity_count": 1
+  },
+  "created_utc": "2026-09-21T16:20:13Z",
+  "decision": "MULTI_SNAPSHOT_ROBUSTNESS_NOT_EVALUABLE_INSUFFICIENT_DISTINCT_AUTHENTIC_SNAPSHOT_IDENTITIES",
+  "discovery_scope": {
+    "catalog_is_exhaustive_for_authenticated_v47_release_inputs": true,
+    "copy_containers_are_not_snapshot_observations": true,
+    "current_provider_discovery": "NOT_AUTHORIZED_NOT_PERFORMED",
+    "known_local_input": "quantum_research_lab/PHASE_III_V4_7_FAKEMARRAKESH_PROPERTIES_2025_02_26_RAW.json",
+    "v44_structural_snapshot_is_a_second_property_epoch": false
+  },
+  "identity_contract": {
+    "distinct_epoch_requires_distinct_property_vector_sha256": true,
+    "distinct_epoch_requires_distinct_raw_file_sha256": true,
+    "distinct_epoch_requires_distinct_source_timestamp": true,
+    "duplicate_bytes_never_increase_sample_size": true,
+    "same_backend_family_and_structural_target_required": true
+  },
+  "snapshot_catalog_sha256": "9a585764e2de35edcd66695da7abfea9726785c06065133170917d8587341ef6",
+  "snapshots": [
+    {
+      "backend_name": "fake_marrakesh",
+      "basis_gates": [
+        "cz",
+        "id",
+        "rz",
+        "sx",
+        "x"
+      ],
+      "dt_nanoseconds": 4,
+      "global_last_update_date": "2025-02-26T14:52:45-05:00",
+      "maximum_embedded_property_date": "2025-02-26T15:03:24.375784-05:00",
+      "minimum_embedded_property_date": "2024-10-28T02:34:30-04:00",
+      "normalized_properties_path": "quantum_research_lab/PHASE_III_V4_7_NORMALIZED_PROPERTIES_ORACLE_V1.json",
+      "normalized_properties_raw_file_sha256": "46203d513fc295639a314cdb4b95aa1eb407f6a303be28c5033086aa2a210a99",
+      "normalized_properties_sha256": "0e436981a23bd6e75679752f4c139658ef811acc94adc6758b0dc99075e75fe7",
+      "num_qubits": 156,
+      "raw_properties_path": "quantum_research_lab/PHASE_III_V4_7_FAKEMARRAKESH_PROPERTIES_2025_02_26_RAW.json",
+      "raw_properties_raw_file_sha256": "d49d7ae07deb95947ea10e5b9b9c5cbab6df21f98610543817f35ade2b1aece6",
+      "raw_properties_size": 565487,
+      "role": "DEVELOPMENT_SNAPSHOT_KNOWN_BEFORE_V4_8_PROTOCOL_SEAL",
+      "snapshot_id": "fake_marrakesh-2025-02-26-d49d7ae07deb",
+      "snapshot_is_current_hardware_evidence": false,
+      "source_archive_member": "qiskit_ibm_runtime/fake_provider/backends/marrakesh/props_marrakesh.json",
+      "source_backend_name": "ibm_marrakesh",
+      "source_backend_version": "1.0.7",
+      "source_kind": "PINNED_FAKE_PROVIDER_WHEEL_MEMBER_NOT_LIVE_PROVIDER_EXPORT",
+      "source_wheel_filename": "qiskit_ibm_runtime-0.49.0-py3-none-any.whl",
+      "source_wheel_sha256": "b29b4a0a5e013b6e6fd6556158fd34a05e2930dea870c60edef738b834977f2b",
+      "structural_snapshot_path": "quantum_research_lab/PHASE_III_V4_4_FROZEN_BACKEND_SNAPSHOT_V1.json",
+      "structural_snapshot_raw_file_sha256": "816814f383c7b9890a137ead7799c28f3fbfc0cac188ab274dfb65050e2b7fbd",
+      "structural_snapshot_sha256": "3a604026627653e697fba1b2b9b06d84298a13ca7a7f2c2f9f2ed551bdbfdaf3",
+      "structural_target_family": "Heron"
+    }
+  ]
+}

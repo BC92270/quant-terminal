@@ -1,0 +1,127 @@
+{
+  "acceptance_contract": {
+    "ccx_basis_columns_checked": 8,
+    "complete_layer_cnot_count": 3632,
+    "complete_layer_one_qubit_gate_count": 5920,
+    "elementary_basis": [
+      "X",
+      "H",
+      "T",
+      "TDG",
+      "RY",
+      "RZ",
+      "CX"
+    ],
+    "maximum_clean_ancilla_qubits": 8,
+    "maximum_total_logical_qubits": 18,
+    "n40_budget_cnot": 2500000,
+    "n40_frozen_seed_count": 8,
+    "n40_production_admission": "BLOCKED_INCOMPLETE_REVERSIBLE_IR",
+    "numeric_tolerance": 1e-12,
+    "primitive_basis_beta_cases_checked": 49152,
+    "prototype_decision": "ELEMENTARY_PROTOTYPE_PASSED_N40_ADMISSION_BLOCKED"
+  },
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "global_impossibility": "NOT_CLAIMED",
+    "hardware_executable": false,
+    "n40_selected_model_cnot": "NOT_ESTIMATED",
+    "optimization_performance": "NOT_TESTED",
+    "production_n40_equivalence": "NOT_PROVEN",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "scope": "ELEMENTARY_LOWERING_OF_AUTHENTICATED_V37_N4_K2_PROTOTYPE_ONLY"
+  },
+  "counting_contract": {
+    "ancilla_policy": "CLEAN_ZERO_INITIALIZED_AND_RETURNED_TO_ZERO_PER_LOGICAL_PRIMITIVE",
+    "connectivity_model": "ABSTRACT_ALL_TO_ALL_LOGICAL",
+    "controlled_rx_template": {
+      "cnot_count": 2,
+      "one_qubit_gate_count": 4,
+      "sequence": "RZ(pi/2) · RY(theta/2) · CX · RY(-theta/2) · CX · RZ(-pi/2)",
+      "template_id": "CRX_2CX_RZ_RY_V1"
+    },
+    "cnot_depth_policy": "CONSERVATIVE_SERIAL_EMISSION_ORDER_EQUAL_TO_CNOT_COUNT",
+    "negative_control_policy": "X_BEFORE_AND_AFTER_EACH_PATTERN_PRIMITIVE",
+    "post_observation_candidate_switching": "PROHIBITED",
+    "selected_decomposition_model": "CLEAN_ANCILLA_TOFFOLI_LADDER_6CX_CCX_CRX2CX_V1",
+    "toffoli_template": {
+      "cnot_count": 6,
+      "one_qubit_gate_count": 9,
+      "sequence": "H-CX-TDG-CX-T-CX-TDG-CX-T-T-H-CX-T-TDG-CX",
+      "template_id": "CCX_CLIFFORD_T_6CX_V1"
+    }
+  },
+  "n40_admission_contract": {
+    "admission_requires_all": [
+      "AUTHENTICATED_V37_AND_V36_PARENT_CHAIN",
+      "AUTHENTICATED_SEVEN_CONSTRAINT_REGISTER_CONTRACT_ON_8_OF_8_SEEDS",
+      "SCALABLE_REVERSIBLE_ARITHMETIC_AND_CACHE_UPDATE_IR_ON_8_OF_8_SEEDS",
+      "ELEMENTARY_LOWERING_ON_8_OF_8_SEEDS",
+      "FULL_EQUIVALENCE_AND_CLEANUP_ON_8_OF_8_SEEDS",
+      "ORDERED_LAYER_CONNECTIVITY_EVIDENCE_ON_8_OF_8_SEEDS",
+      "SELECTED_MODEL_CNOT_LEDGER_ON_8_OF_8_SEEDS",
+      "MAXIMUM_SELECTED_MODEL_CNOT_AT_MOST_2500000",
+      "NO_POST_OBSERVATION_MODEL_OR_TOPOLOGY_SWITCHING"
+    ],
+    "budget_cnot": 2500000,
+    "failure_policy": "ANY_MISSING_EVIDENCE_BLOCKS_ADMISSION_WITHOUT_IMPUTING_A_COST",
+    "frozen_seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ],
+    "historical_v34_costs": "PRESERVED_AS_REJECTED_NONCOMPARABLE_PARENT_EVIDENCE",
+    "registered_family": "N40_K10_BANDS_SEVEN_CONSTRAINTS",
+    "selected_model_budget_gate_when_compiler_absent": "NOT_EVALUATED"
+  },
+  "parent_contract": {
+    "expected_v37_artifact_raw_file_sha256": "93c207a6c0d6723277bf682a678740b330a6a3127d59d63ce28a244bdf606365",
+    "expected_v37_artifact_sha256": "5773b8f38bd1400f4eb1edf5a016ab69c85fc794aefe31fd1a742d08174bee36",
+    "expected_v37_decision": "SMALL_INSTANCE_REVERSIBLE_PROTOTYPE_PASSED",
+    "expected_v37_freeze_raw_file_sha256": "57b273f87e4e2f2a95e0ccbdd6c844c1c3f5d8bfec5dbfd5d488aaefb0290970",
+    "expected_v37_freeze_sha256": "86f247a9dfb918a2eca04ffe96c03adee62c3d8603d99aab3e0d6bf8c07167e7",
+    "expected_v37_next_gate": "ELEMENTARY_BASIS_DECOMPOSITION_AND_N40_RESOURCE_LEDGER",
+    "expected_v37_spec_raw_file_sha256": "dd90f5177a2183da202df5c1d9e6b8e3b6d26a3cf63afadfa02530d5bceb6e68",
+    "expected_v37_spec_sha256": "69fd43383554108709960b145436304cc8b687104fd68dc3ffd713e1bcd1cf2c"
+  },
+  "preregistered_checks": [
+    "V37_PARENT_RAW_SEMANTIC_AND_NESTED_RECOMPUTATION_AUTHENTICATION",
+    "DECOMPOSITION_MODEL_AND_COUNTING_CONVENTION_FROZEN",
+    "CCX_TEMPLATE_EXACT_ON_ALL_8_BASIS_COLUMNS",
+    "CRX_TEMPLATE_EXACT_ON_ALL_4_BASIS_COLUMNS_AND_3_BETAS",
+    "EVERY_V37_PATTERN_PRIMITIVE_LOWERED_DETERMINISTICALLY",
+    "ALL_49152_PRIMITIVE_BASIS_BETA_CASES_EQUIVALENT",
+    "ALL_CLEAN_ANCILLAS_RETURN_TO_ZERO",
+    "COMPLETE_LAYER_LEDGER_RECOMPUTES_TO_3632_CNOT",
+    "COMPLETE_LAYER_LEDGER_RECOMPUTES_TO_5920_ONE_QUBIT_GATES",
+    "N40_SEED_IDENTITIES_AND_SEVEN_CONSTRAINT_PARENT_EVIDENCE_AUTHENTICATED",
+    "N40_MISSING_REVERSIBLE_IR_FAILS_CLOSED_WITH_NO_IMPUTED_CNOT",
+    "FROZEN_V34_NEGATIVE_COST_RESULT_PRESERVED_AND_NOT_RELABELED",
+    "NO_POST_OBSERVATION_CANDIDATE_SWITCHING",
+    "PROVIDER_HARDWARE_AND_ADVANTAGE_BOUNDARIES_ZERO",
+    "DETERMINISTIC_ARTIFACT_REPLAY_AND_TAMPER_REJECTION"
+  ],
+  "research_sources": [
+    {
+      "citation": "Barenco et al., Elementary gates for quantum computation, Physical Review A 52, 3457 (1995)",
+      "doi": "10.1103/PhysRevA.52.3457",
+      "role": "UNIVERSAL_ONE_QUBIT_PLUS_XOR_AND_MULTI_CONTROLLED_GATE_DECOMPOSITION_CONTEXT",
+      "url": "https://arxiv.org/abs/quant-ph/9503016"
+    }
+  ],
+  "self_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing v38_spec_sha and v38_spec_sha256",
+  "spec_version": "QUANTUM LAB V3.8 ELEMENTARY DECOMPOSITION AND N40 ADMISSION · V1",
+  "v38_spec_sha": "0C7E33AC23FC0CAF0C14",
+  "v38_spec_sha256": "0c7e33ac23fc0caf0c14b0c6bde730d0fa898851fdb60f5afa24887d98fd066c"
+}

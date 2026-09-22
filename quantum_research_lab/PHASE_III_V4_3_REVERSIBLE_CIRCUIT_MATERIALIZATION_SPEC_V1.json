@@ -1,0 +1,192 @@
+{
+  "acceptance_contract": {
+    "artifact_failure_branch": "V43_MATERIALIZATION_INDETERMINATE",
+    "budget_cnot": 2500000,
+    "off_promise_required_result": "OFF_PROMISE_CLEANUP_REJECTED_WITH_WITNESS",
+    "promise_success_branch": "V43_BACKEND_AGNOSTIC_CIRCUIT_MATERIALIZED_PROMISE_SIMULATION_PASSED",
+    "required_seed_count": 8,
+    "success_requires": [
+      "EXACT_V42_PARENT_AND_175_IMMUTABLE_PATHS_AUTHENTICATED",
+      "ALL_EIGHT_FULL_ELEMENTARY_STREAMS_DETERMINISTIC_AND_BUDGET_ADMITTED",
+      "REGISTER_LIVENESS_PROOF_PASSED",
+      "CCX_ADDER_COMPARATOR_COIN_AND_BRIDGE_TEMPLATE_CONTROLS_PASSED",
+      "INDEPENDENT_CPP_PROMISE_SIMULATION_PASSED",
+      "MANDATORY_OFF_PROMISE_WITNESS_REJECTED",
+      "PROVIDER_BACKEND_HARDWARE_AND_ADVANTAGE_BOUNDARIES_ZERO"
+    ]
+  },
+  "angle_contract": {
+    "bridge_two_level_ry": {
+      "pi_denominator": 2,
+      "pi_numerator": 1,
+      "role": "NONZERO_TWO_LEVEL_DATA_MIXING_ROTATION"
+    },
+    "coin_xx_plus_yy_beta": {
+      "pi_denominator": 1,
+      "pi_numerator": 0
+    },
+    "coin_xx_plus_yy_theta": {
+      "pi_denominator": 2,
+      "pi_numerator": 1,
+      "role": "BALANCED_SINGLE_EXCITATION_MIXING"
+    },
+    "exact_representation": "SIGNED_REDUCED_RATIONAL_MULTIPLE_OF_PI"
+  },
+  "arithmetic_materialization_contract": {
+    "comparator": "REVERSIBLE_HIGH_BIT_CARRY_COMPUTE_COPY_UNCOMPUTE_FOR_UNSIGNED_LT_WITH_GE_AND_LE_WRAPPERS",
+    "controlled_constant_add": "OUTER_CONTROLLED_CUCCARO_MODULO_ADDER_WITH_CONSTANT_LOAD_AND_CLEAN_CARRY",
+    "negative_constants": "TWO_COMPLEMENT_MODULO_2_POWER_WIDTH",
+    "v42_width_correction": {
+      "effect": "ONLY_FOUR_GROUP_SUM_BANKS_PER_SEED_ARE_LIFTED_FROM_3_TO_5_BITS; EXACT_PREDICATE_IS_PRESERVED_BY_ZERO_EXTENSION",
+      "materialized_width": "MAX_5_AND_V42_GUARDED_WIDTH",
+      "preregistered_cnot_delta_per_seed": 22784,
+      "reason": "THE_SELECTED_CUCCARO_SEQUENCE_MATERIALIZED_HERE_REQUIRES_WIDTH_AT_LEAST_FIVE; V42_WAS_A_FORMULA_SCREEN_AND_IS_NOT_REWRITTEN"
+    }
+  },
+  "chronology": {
+    "confirmatory_protocol_state": "SEALED_BEFORE_ACCEPTED_V43_ARTIFACT",
+    "exploratory_inputs_disclosed": [
+      "V42_ACCEPTED_SELECTED_MODEL_LEDGER",
+      "CUCCARO_TEMPLATE_ALGEBRA_PROBES",
+      "V42_OFF_PROMISE_CLEANUP_COUNTEREXAMPLE"
+    ],
+    "protocol_amendment_policy": "ANY_CHANGE_TO_ANGLES_DECOMPOSITIONS_WIDTH_POLICY_BUDGET_WITNESSES_OR_DECISIONS_REQUIRES_A_NEW_DISCLOSED_SPECIFICATION_VERSION",
+    "protocol_sealed_utc": "2026-09-13T23:49:16Z",
+    "result_state_at_seal": "NOT_EVALUATED"
+  },
+  "circuit_materialization_contract": {
+    "canonical_instruction": "UTF8_PIPE_SEPARATED_GATE_INDEX_STAGE_OPCODE_QUBIT_IDS_AND_EXACT_ANGLE_WITH_NEWLINE",
+    "chunk_instruction_count": 8192,
+    "elementary_basis": [
+      "X",
+      "H",
+      "T",
+      "TDG",
+      "RY",
+      "RZ",
+      "CX"
+    ],
+    "full_stream_scope": "ONE_COMPLETE_V42_GENERATOR_STEP_PER_FROZEN_SEED",
+    "manifest_policy": "STORE_COUNTS_STREAM_ROOT_AND_ORDERED_CHUNK_HASHES_IN_THE_SINGLE_SEALED_ARTIFACT; DO_NOT_STORE_MULTI_MILLION_GATE_SIDE_FILES",
+    "provider_neutral": true,
+    "template_contracts": {
+      "bridge": "GRAY_PATH_TWO_LEVEL_RY_WITH_2H_C39X_OCCURRENCES_AND_CLEAN_LADDER_DECOMPOSITION",
+      "ccx": "EXACT_6CX_9_ONE_QUBIT_CLIFFORD_T_TEMPLATE",
+      "coin": "XX_PLUS_YY_TEMPLATE_WITH_2CX_PER_EDGE_EXPANDED_TO_THE_FROZEN_ELEMENTARY_BASIS",
+      "mcx": "2C_MINUS_3_CCX_CLEAN_LADDER_FOR_C_AT_LEAST_3",
+      "selector": "ADDRESS_READ_TARGET_BUILD_EXACT_FEASIBILITY_MOVE_REVERSE_TARGET_CLEANUP"
+    },
+    "v42_basis_amendment": {
+      "disposition": "APPEND_ONLY_NOMENCLATURE_CORRECTION_NO_RETROACTIVE_PARENT_REWRITE",
+      "issue": "V42_ELEMENTARY_BASIS_OMITTED_H_WHILE_THE_INHERITED_EXACT_6CX_CCX_TEMPLATE_USES_H",
+      "resolution": "V43_EXPLICITLY_INCLUDES_H; V42_CNOT_DECISION_AND_BYTES_REMAIN_UNCHANGED"
+    }
+  },
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "hardware_executable": false,
+    "named_backend_selected": false,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "scope": "BACKEND_AGNOSTIC_ELEMENTARY_CIRCUIT_MATERIALIZATION_AND_FINITE_REVERSIBLE_CONTROLS"
+  },
+  "independent_validation_contract": {
+    "cpp_engine": "quantum_research_lab/phase3_v43_reversible_simulator.cpp",
+    "mandatory_negative_control": {
+      "add_index": 0,
+      "feasible_masks_binary": [
+        "01"
+      ],
+      "n": 2,
+      "remove_index": 1,
+      "required_status": "OFF_PROMISE_CLEANUP_REJECTED_WITH_WITNESS",
+      "start_mask_binary": "10",
+      "target_mask_binary": "01"
+    },
+    "promise_scope": "STARTING_DATA_MUST_BE_EXACTLY_FEASIBLE_AND_BOTH_COIN_REGISTERS_MUST_BE_ONE_HOT",
+    "required_controls": [
+      "EXHAUSTIVE_SMALL_WIDTH_CUCCARO_ADDER",
+      "EXHAUSTIVE_SMALL_WIDTH_HIGH_BIT_COMPARATOR",
+      "EXHAUSTIVE_SMALL_DOMAIN_PROMISE_SELECT_CLEANUP",
+      "REAL_N40_SELECTED_FEASIBLE_WITNESS_REPLAY",
+      "TEMPLATE_UNITARY_EQUIVALENCE_UP_TO_GLOBAL_PHASE"
+    ]
+  },
+  "parent_contract": {
+    "expected_v42_artifact_raw_file_sha256": "0952111064db57f6c1122e9a7b4d45ee997667e0d57137ea173be0009ba4feec",
+    "expected_v42_artifact_sha256": "f2f294f8f0a21804d7dd6a23d7695b161723fcc1efea48b2f9d1ce7bcbb3f5be",
+    "expected_v42_decision": "V42_INDEXED_COINED_WALK_CONNECTED_RESOURCE_SCREEN_PASSED",
+    "expected_v42_freeze_raw_file_sha256": "faf9250d6f76acdeb2644d52a45c7ae1d8930b3f4c7367ca6ba3861e063371c5",
+    "expected_v42_freeze_sha256": "36ebd4acedb1563227324b56ab6731293d38935c2c888f37c33029858a0f3068",
+    "expected_v42_frozen_file_count": 177,
+    "expected_v42_frozen_paths_fingerprint_sha256": "cc3dd736d2475cfc1d143bc720fc37863d62ede26019a3aa99cd33e96643b166",
+    "expected_v42_source_raw_file_sha256": "fc4b9ce991cc866aa7a9b809172df41227e9dcd133a41d210068663ee7bd77e9",
+    "expected_v42_spec_raw_file_sha256": "11b9d7a86fc1617f7c313c2cda58c4b8874d33cb9e4fe11460a65b8920e40674",
+    "expected_v42_spec_sha256": "acf640c11d3dc575ebcc1358919095cf68673583a8c628c7131e664f7859801e",
+    "no_parent_regeneration": true,
+    "required_v42_next_gate": "INDEPENDENT_REVERSIBLE_SIMULATION_AND_BACKEND_AGNOSTIC_CIRCUIT_MATERIALIZATION",
+    "successor_mutable_paths": [
+      "quantum_research_lab/README.md",
+      "quantum_research_lab/ui.py"
+    ]
+  },
+  "preregistered_resource_expectation": {
+    "maximum_logical_qubits_with_recycled_workspace": 339,
+    "maximum_materialized_cnot": 1158214,
+    "minimum_budget_margin_cnot": 1341786,
+    "status": "DERIVED_EXPECTATION_NOT_AN_ACCEPTED_RESULT_AT_PROTOCOL_SEAL"
+  },
+  "register_and_liveness_contract": {
+    "allocation_order": [
+      "DATA_40",
+      "REMOVE_COIN_40",
+      "ADD_COIN_40",
+      "TARGET_40",
+      "SEVEN_SUM_BANKS_MATERIALIZED_WIDTHS",
+      "CONSTANT_SCRATCH_MAX_WIDTH",
+      "CARRY_1",
+      "ADDRESSED_FLAGS_2",
+      "ROW_FLAGS_7",
+      "CONTROL_FLAGS_5"
+    ],
+    "bridge_reuse": "TARGET_FIRST_37_QUBITS_REUSED_ONLY_AFTER_SELECTOR_AND_ORACLE_WORK_ARE_CLEAN",
+    "clean_exit_required": [
+      "TARGET",
+      "ALL_SUM_BANKS",
+      "CONSTANT_SCRATCH",
+      "CARRY",
+      "ADDRESSED_FLAGS",
+      "ROW_FLAGS",
+      "CONTROL_FLAGS"
+    ],
+    "mcx_reuse": "CONSTANT_SCRATCH_FIRST_5_QUBITS_REUSED_FOR_C7X_ONLY_AFTER_COMPARATOR_CONSTANTS_ARE_CLEAN",
+    "peak_width_rule": "160_PLUS_SUM_OF_SEVEN_MATERIALIZED_WIDTHS_PLUS_MAXIMUM_WIDTH_PLUS_15"
+  },
+  "research_sources": [
+    {
+      "citation": "Cuccaro et al., A new quantum ripple-carry addition circuit (2004)",
+      "role": "RIPPLE_CARRY_ADDITION_AND_HIGH_BIT_CARRY_CONTEXT",
+      "url": "https://arxiv.org/abs/quant-ph/0410184"
+    },
+    {
+      "citation": "Barenco et al., Elementary gates for quantum computation (1995)",
+      "role": "MULTI_CONTROLLED_AND_TWO_LEVEL_DECOMPOSITION_CONTEXT",
+      "url": "https://arxiv.org/abs/quant-ph/9503016"
+    },
+    {
+      "citation": "Qiskit XXPlusYYGate source definition, consulted before protocol seal",
+      "role": "TWO_CX_COIN_TEMPLATE_CROSS_CHECK",
+      "url": "https://github.com/Qiskit/qiskit/blob/main/qiskit/circuit/library/standard_gates/xx_plus_yy.py"
+    }
+  ],
+  "self_hash_contract": "SHA256_OVER_COMPACT_SORTED_UTF8_JSON_AFTER_REMOVING_V43_SPEC_SHA_AND_V43_SPEC_SHA256",
+  "spec_version": "QUANTUM LAB V4.3 BACKEND-AGNOSTIC REVERSIBLE CIRCUIT MATERIALIZATION · V1",
+  "v43_spec_sha": "71F6D1F642A6D6A1E99D",
+  "v43_spec_sha256": "71f6d1f642a6d6a1e99d9d265e6cba914302ea9763a854a13cf4aa0b95d8cf5f"
+}

@@ -1,0 +1,108 @@
+{
+  "acceptance_contract": {
+    "all_eight_basic_swap_routes_required": true,
+    "all_eight_candidate_streams_required": true,
+    "candidate_cx_must_be_strictly_below_parent_v45": true,
+    "candidate_routed_cz_must_be_strictly_below_parent_v46": true,
+    "equivalence_exhaustive_widths": [
+      5,
+      6
+    ],
+    "equivalence_random_cases_per_wide_width": 2000,
+    "equivalence_wide_widths": [
+      7,
+      8,
+      16,
+      31,
+      33,
+      34,
+      35,
+      36,
+      39
+    ],
+    "logical_qubit_capacity": 156,
+    "seed_order": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ]
+  },
+  "adder_candidate": {
+    "candidate_name": "CONTROL_LOADED_CONSTANT_CUCCARO_V1",
+    "clean_constant_register_precondition": true,
+    "construction": [
+      "LOAD_EACH_SET_CONSTANT_BIT_BY_CX_FROM_CONTROL",
+      "EXECUTE_EXACT_UNCONTROLLED_CUCCARO_CONSTANT_ADD",
+      "UNLOAD_EACH_SET_CONSTANT_BIT_BY_CX_FROM_CONTROL"
+    ],
+    "legacy_cx_per_add": "68*w-102",
+    "new_cx_per_add": "17*w-25+2*popcount(c_mod_2_pow_w)",
+    "semantic_scope": "EXACT_MODULAR_CONTROLLED_CONSTANT_ADDITION_WITH_CLEAN_CONSTANT_AND_CARRY_EXIT",
+    "width_scope": [
+      5,
+      39
+    ]
+  },
+  "architecture_scope": {
+    "coin_rings": "UNCHANGED_AUTHENTICATED_V4_5_BINARY_COIN_RINGS",
+    "data_bridges": "UNCHANGED_AUTHENTICATED_V4_5_CERTIFIED_BRIDGES",
+    "logical_width": "UNCHANGED_V4_5_67_PLUS_2W_LAYOUT",
+    "routing": "FROZEN_V4_6_BASIC_SWAP_PATH_ORACLE_REPLAY",
+    "selector": "V4_5_STREAMED_BENNETT_SELECTOR_WITH_ONLY_CONTROLLED_CONSTANT_ADDER_REPLACED"
+  },
+  "chronology": {
+    "architecture_candidate_defined_before_evaluation": true,
+    "created_utc": "2026-09-21T00:00:00Z",
+    "result_state_at_seal": "NOT_EVALUATED"
+  },
+  "claim_boundary": {
+    "backend_run_calls": 0,
+    "calibration_aware_circuit_fidelity": "NOT_EVALUATED",
+    "credential_reads": 0,
+    "hardware_executable": false,
+    "historical_snapshot_scope": "V4_7_SINGLE_DATED_PROPERTIES_SNAPSHOT_ONLY_FOR_COMPARABLE_NECESSARY_LOWER_BOUND",
+    "local_simulator_jobs_submitted": 0,
+    "multi_snapshot_robustness": "NOT_EVALUATED_NO_SECOND_AUTHENTICATED_SNAPSHOT",
+    "network_calls": 0,
+    "optimization_scope": "EXACT_LOGICAL_STREAM_MATERIALIZATION_AND_FROZEN_BASIC_SWAP_STRUCTURAL_ROUTING",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "snapshot_is_current_hardware_evidence": false
+  },
+  "equivalence_contract": {
+    "basis_scope": "COMPUTATIONAL_BASIS_PERMUTATION_PLUS_EXACT_GATE_DECOMPOSITION",
+    "deterministic_random_seed": 480048,
+    "required_clean_exit": [
+      "CONSTANT",
+      "CARRY"
+    ],
+    "required_reference": "LEGACY_GATE_CONTROLLED_CUCCARO_CONSTRUCTION",
+    "superposition_argument": "BOTH_CIRCUITS_IMPLEMENT_THE_SAME_EXACT_BASIS_PERMUTATION_WITHOUT_RELATIVE_PHASE_AND_THEREFORE_THE_SAME_LINEAR_UNITARY"
+  },
+  "experiment_id": "QLAB-PHASE3-V4.8-ARCH-CANDIDATE-001",
+  "lower_bound_contract": {
+    "comparison_version": "V4_7_ARCHITECTURE_LOWER_BOUND_FORMULA_EXACT_REUSE",
+    "duration_screen": "CEIL(DIRECT_CX/78)*MINIMUM_HISTORICAL_CZ_DURATION_TICKS_LE_MAXIMUM_HISTORICAL_T2_TICKS",
+    "reported_error_mass_screen": "DIRECT_CX*MINIMUM_HISTORICAL_REPORTED_CZ_ERROR_LT_1",
+    "scope": "ZERO_SWAP_ZERO_1Q_IDEALIZED_NECESSARY_CONDITION_NOT_A_SUFFICIENT_HARDWARE_MODEL"
+  },
+  "routing_contract": {
+    "initial_layout": "TRIVIAL_LOGICAL_Q_TO_PHYSICAL_Q",
+    "path_oracle": "PHASE_III_V4_6_FAKEMARRAKESH_BASIC_PATH_ORACLE_V1",
+    "routing_method": "QISKIT_2_5_2_BASIC_SWAP_FROZEN_ORDERED_SHORTEST_PATH_ORACLE",
+    "target_snapshot": "PHASE_III_V4_4_FROZEN_BACKEND_SNAPSHOT_V1",
+    "timing_or_fidelity_claim": "NONE_STRUCTURAL_NATIVE_CZ_ONLY"
+  },
+  "schema_version": "QUANTUM LAB V4.8 ARCHITECTURE CANDIDATE ORACLE · V1",
+  "v48_spec_sha": "689C6B5AC55703EA869A",
+  "v48_spec_sha256": "689c6b5ac55703ea869abc4087245bc6a13f1ab35cc5e5eab8c86dc49ffaac6a"
+}

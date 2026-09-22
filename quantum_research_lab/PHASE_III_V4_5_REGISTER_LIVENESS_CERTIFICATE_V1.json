@@ -1,0 +1,3056 @@
+{
+  "certificate_sha256": "93f119c6493fac2eb0e7d281db1842482201cd7a680cf8ca93b9fdcc69a53102",
+  "certificate_version": "QUANTUM LAB V4.5 REGISTER LIVENESS AND CLEANUP CERTIFICATE · V1",
+  "cleanup_obligations": {
+    "address_ladder": "EVERY_EXACT_OR_RELATIVE_PHASE_MCX_LADDER_RETURNS_ITS_CLEAN_ANCILLAS_TO_ZERO",
+    "bennett_rows": "BUILD_SUM_COMPUTE_FLAG_UNCOMPUTE_SUM;_AFTER_AND_REBUILD_SUM_CLEAR_FLAG_UNCOMPUTE_SUM",
+    "bridge_alias": "FIRST_37_SUM_WORK_THEN_CONSTANT_QUBITS_BORROWED_ONLY_AFTER_SELECT_CLEAN_EXIT",
+    "forbidden": [
+      "RESET",
+      "MEASUREMENT",
+      "DISCARD",
+      "DEPENDENCY_DESTRUCTION_BEFORE_UNCOMPUTE"
+    ],
+    "relative_phase": "B_DAGGER_U_B_WITH_EXPLICIT_ADJOINT;_U_PRESERVES_B_INPUTS_STREAM_BIT_AND_LADDER_SO_ALL_MONOMIAL_PHASES_CANCEL",
+    "selector_exit": [
+      "SUM_WORK",
+      "CONSTANT",
+      "CARRY",
+      "ADDRESSED",
+      "ROW_FLAGS",
+      "CONTROL_FLAGS"
+    ]
+  },
+  "maximum_logical_qubits": 145,
+  "minimum_capacity_margin_qubits": 11,
+  "parent": {
+    "v44_artifact_raw_file_sha256": "3b6824965fa7b2829981d6d35eec5413a24f7340719613e7cd2e8512d6285488",
+    "v44_artifact_sha256": "de1ba4194a0f7220b1cfcb0c61f8faed3f187c0e9c7712775cba53fa79ed98bb",
+    "v44_freeze_raw_file_sha256": "f7b4507410aee41e409b3a0a1ce36ba1adff38299dc8a2d424e13885598ada13",
+    "v44_freeze_sha256": "e17aa8ce04c97416f7f0565f2eda4f16b739c5c921fb58ee25752a546ffe95b3"
+  },
+  "register_formula": "67+2W",
+  "seed_rows": [
+    {
+      "liveness": {
+        "bridge_pool_disjoint_from_data": true,
+        "clean_exit_registers": [
+          "SUM_WORK",
+          "CONSTANT",
+          "CARRY",
+          "ADDRESSED",
+          "ROW_FLAGS",
+          "CONTROL_FLAGS"
+        ],
+        "events": [
+          {
+            "borrow_reason": "C5X_LADDER_FOR_EXACT_TWO_LEVEL_RX",
+            "borrowed_clean_qubits": [
+              86,
+              87,
+              88
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "BINARY_COIN_RINGS"
+          },
+          {
+            "borrow_reason": "C7X_BINARY_ADDRESS_MATCH_LADDER",
+            "borrowed_clean_qubits": [
+              86,
+              87,
+              88,
+              89,
+              90
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "SELECT_ADDRESS_READ_AND_DATA_UPDATE"
+          },
+          {
+            "borrow_reason": "RELATIVE_PHASE_ADDRESS_MATCH_ONLY_WHILE_CONSTANT_IS_ZERO;_EXACT_ADJOINT_AFTER_ADDER_CLEARS_PHASE_AND_BOOLEAN_TEMPORARIES",
+            "borrowed_clean_qubits": [
+              86,
+              87,
+              88,
+              89,
+              90
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "phase": "STREAMED_TARGET_ROW_ARITHMETIC",
+            "row_flag_lifecycle": "ROW_FLAG_I_BECOMES_LIVE_AFTER_ITS_PREDICATE;_ALL_SEVEN_REMAIN_LIVE_THROUGH_AND;_REVERSE_RECOMPUTATION_CLEARS_I"
+          },
+          {
+            "borrow_reason": "C39X_LADDER_AFTER_SELECTOR_CLEAN_EXIT",
+            "borrowed_clean_qubits": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "phase": "CERTIFIED_DATA_BRIDGES"
+          }
+        ],
+        "liveness_certificate_sha256": "330783168a74768e644e5307becdd37753412c504734216e8674eebafda66d43",
+        "liveness_decision": "PASSED_STATIC_PHASE_LOCAL_BORROW_AND_CLEAN_EXIT_CONTRACT",
+        "relative_phase_compute_use_uncompute": {
+          "exactness_argument": "FOR_B_MONOMIAL_AND_U_PRESERVING_ALL_B_INPUTS_AND_TEMPORARIES,_B_DAGGER_U_B_CANCELS_EVERY_RELATIVE_PHASE_EXACTLY",
+          "scope": "ONLY_FOUR_ADDRESS_EQUALITY_TOGGLES_AROUND_EACH_STREAMED_CONTROLLED_ADD",
+          "temporary_restoration": "RCCX_LADDER_ANCILLAS_RETURN_TO_ZERO_INSIDE_EACH_B_OR_B_DAGGER",
+          "uncompute": "EXPLICIT_EXACT_ADJOINT_IN_REVERSE_ORDER"
+        },
+        "reset_instruction_count": 0
+      },
+      "register_layout": {
+        "allocation_formula": "67+2W",
+        "arithmetic_width": 34,
+        "register_map_sha256": "fe78a9238738e45daa7a49faf9f8d5254e1ea6c5e69b725e1e882e7c16ad9001",
+        "registers": [
+          {
+            "name": "DATA",
+            "qubit_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39
+            ],
+            "role": "PERSISTENT_PORTFOLIO_BASIS",
+            "start": 0,
+            "width": 40
+          },
+          {
+            "name": "REMOVE_ADDR",
+            "qubit_ids": [
+              40,
+              41,
+              42,
+              43,
+              44,
+              45
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 40,
+            "width": 6
+          },
+          {
+            "name": "ADD_ADDR",
+            "qubit_ids": [
+              46,
+              47,
+              48,
+              49,
+              50,
+              51
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 46,
+            "width": 6
+          },
+          {
+            "name": "SUM_WORK",
+            "qubit_ids": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85
+            ],
+            "role": "BENNETT_RECYCLED_SEVEN_ROW_SUM_BANK_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 52,
+            "width": 34
+          },
+          {
+            "name": "CONSTANT",
+            "qubit_ids": [
+              86,
+              87,
+              88,
+              89,
+              90,
+              91,
+              92,
+              93,
+              94,
+              95,
+              96,
+              97,
+              98,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              107,
+              108,
+              109,
+              110,
+              111,
+              112,
+              113,
+              114,
+              115,
+              116,
+              117,
+              118,
+              119
+            ],
+            "role": "REUSABLE_CLASSICAL_CONSTANT_MCX_LADDER_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 86,
+            "width": 34
+          },
+          {
+            "name": "CARRY",
+            "qubit_ids": [
+              120
+            ],
+            "role": "CLEAN_CUCCARO_CARRY",
+            "start": 120,
+            "width": 1
+          },
+          {
+            "name": "ADDRESSED",
+            "qubit_ids": [
+              121,
+              122
+            ],
+            "role": "REMOVE_AND_ADD_ADDRESSED_DATA_FLAGS",
+            "start": 121,
+            "width": 2
+          },
+          {
+            "name": "ROW_FLAGS",
+            "qubit_ids": [
+              123,
+              124,
+              125,
+              126,
+              127,
+              128,
+              129
+            ],
+            "role": "SEVEN_INTERVAL_PREDICATE_FLAGS",
+            "start": 123,
+            "width": 7
+          },
+          {
+            "name": "CONTROL_FLAGS",
+            "qubit_ids": [
+              130,
+              131,
+              132,
+              133,
+              134
+            ],
+            "role": "DIFFERENCE_FEASIBLE_MOVE_STREAM_BIT_AND_ADDER_LADDER",
+            "start": 130,
+            "width": 5
+          }
+        ],
+        "total_qubits": 135
+      },
+      "row_widths": [
+        5,
+        5,
+        5,
+        5,
+        34,
+        34,
+        33
+      ],
+      "seed": 1103,
+      "seed_liveness_sha256": "a45213f6fe85a8532ff8c79e38b7bbf409a0583bf4f34d815b1e59a7e3c825c6",
+      "width": {
+        "capacity_fit": true,
+        "capacity_margin_qubits": 21,
+        "maximum_row_width": 34,
+        "new_logical_qubits": 135,
+        "old_logical_qubits": 330,
+        "reduction_qubits": 195,
+        "seed": 1103,
+        "width_row_sha256": "a79cfc1c6444d4dbee51e30d140db7746a02b36fb5b9743509f52df697991f4d"
+      }
+    },
+    {
+      "liveness": {
+        "bridge_pool_disjoint_from_data": true,
+        "clean_exit_registers": [
+          "SUM_WORK",
+          "CONSTANT",
+          "CARRY",
+          "ADDRESSED",
+          "ROW_FLAGS",
+          "CONTROL_FLAGS"
+        ],
+        "events": [
+          {
+            "borrow_reason": "C5X_LADDER_FOR_EXACT_TWO_LEVEL_RX",
+            "borrowed_clean_qubits": [
+              87,
+              88,
+              89
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "BINARY_COIN_RINGS"
+          },
+          {
+            "borrow_reason": "C7X_BINARY_ADDRESS_MATCH_LADDER",
+            "borrowed_clean_qubits": [
+              87,
+              88,
+              89,
+              90,
+              91
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "SELECT_ADDRESS_READ_AND_DATA_UPDATE"
+          },
+          {
+            "borrow_reason": "RELATIVE_PHASE_ADDRESS_MATCH_ONLY_WHILE_CONSTANT_IS_ZERO;_EXACT_ADJOINT_AFTER_ADDER_CLEARS_PHASE_AND_BOOLEAN_TEMPORARIES",
+            "borrowed_clean_qubits": [
+              87,
+              88,
+              89,
+              90,
+              91
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "phase": "STREAMED_TARGET_ROW_ARITHMETIC",
+            "row_flag_lifecycle": "ROW_FLAG_I_BECOMES_LIVE_AFTER_ITS_PREDICATE;_ALL_SEVEN_REMAIN_LIVE_THROUGH_AND;_REVERSE_RECOMPUTATION_CLEARS_I"
+          },
+          {
+            "borrow_reason": "C39X_LADDER_AFTER_SELECTOR_CLEAN_EXIT",
+            "borrowed_clean_qubits": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "phase": "CERTIFIED_DATA_BRIDGES"
+          }
+        ],
+        "liveness_certificate_sha256": "eb354a180e5679344b760f50726faba521a58c08bf84d3305b9c03e7884f1b45",
+        "liveness_decision": "PASSED_STATIC_PHASE_LOCAL_BORROW_AND_CLEAN_EXIT_CONTRACT",
+        "relative_phase_compute_use_uncompute": {
+          "exactness_argument": "FOR_B_MONOMIAL_AND_U_PRESERVING_ALL_B_INPUTS_AND_TEMPORARIES,_B_DAGGER_U_B_CANCELS_EVERY_RELATIVE_PHASE_EXACTLY",
+          "scope": "ONLY_FOUR_ADDRESS_EQUALITY_TOGGLES_AROUND_EACH_STREAMED_CONTROLLED_ADD",
+          "temporary_restoration": "RCCX_LADDER_ANCILLAS_RETURN_TO_ZERO_INSIDE_EACH_B_OR_B_DAGGER",
+          "uncompute": "EXPLICIT_EXACT_ADJOINT_IN_REVERSE_ORDER"
+        },
+        "reset_instruction_count": 0
+      },
+      "register_layout": {
+        "allocation_formula": "67+2W",
+        "arithmetic_width": 35,
+        "register_map_sha256": "43f5617123c878252117edccc6314f256a18a21c89cc51834dd873077102b739",
+        "registers": [
+          {
+            "name": "DATA",
+            "qubit_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39
+            ],
+            "role": "PERSISTENT_PORTFOLIO_BASIS",
+            "start": 0,
+            "width": 40
+          },
+          {
+            "name": "REMOVE_ADDR",
+            "qubit_ids": [
+              40,
+              41,
+              42,
+              43,
+              44,
+              45
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 40,
+            "width": 6
+          },
+          {
+            "name": "ADD_ADDR",
+            "qubit_ids": [
+              46,
+              47,
+              48,
+              49,
+              50,
+              51
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 46,
+            "width": 6
+          },
+          {
+            "name": "SUM_WORK",
+            "qubit_ids": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86
+            ],
+            "role": "BENNETT_RECYCLED_SEVEN_ROW_SUM_BANK_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 52,
+            "width": 35
+          },
+          {
+            "name": "CONSTANT",
+            "qubit_ids": [
+              87,
+              88,
+              89,
+              90,
+              91,
+              92,
+              93,
+              94,
+              95,
+              96,
+              97,
+              98,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              107,
+              108,
+              109,
+              110,
+              111,
+              112,
+              113,
+              114,
+              115,
+              116,
+              117,
+              118,
+              119,
+              120,
+              121
+            ],
+            "role": "REUSABLE_CLASSICAL_CONSTANT_MCX_LADDER_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 87,
+            "width": 35
+          },
+          {
+            "name": "CARRY",
+            "qubit_ids": [
+              122
+            ],
+            "role": "CLEAN_CUCCARO_CARRY",
+            "start": 122,
+            "width": 1
+          },
+          {
+            "name": "ADDRESSED",
+            "qubit_ids": [
+              123,
+              124
+            ],
+            "role": "REMOVE_AND_ADD_ADDRESSED_DATA_FLAGS",
+            "start": 123,
+            "width": 2
+          },
+          {
+            "name": "ROW_FLAGS",
+            "qubit_ids": [
+              125,
+              126,
+              127,
+              128,
+              129,
+              130,
+              131
+            ],
+            "role": "SEVEN_INTERVAL_PREDICATE_FLAGS",
+            "start": 125,
+            "width": 7
+          },
+          {
+            "name": "CONTROL_FLAGS",
+            "qubit_ids": [
+              132,
+              133,
+              134,
+              135,
+              136
+            ],
+            "role": "DIFFERENCE_FEASIBLE_MOVE_STREAM_BIT_AND_ADDER_LADDER",
+            "start": 132,
+            "width": 5
+          }
+        ],
+        "total_qubits": 137
+      },
+      "row_widths": [
+        5,
+        5,
+        5,
+        5,
+        35,
+        33,
+        33
+      ],
+      "seed": 2207,
+      "seed_liveness_sha256": "84e4cf4b520fe31c9a56771cd3edba87ae0243260922bca200490d370287937c",
+      "width": {
+        "capacity_fit": true,
+        "capacity_margin_qubits": 19,
+        "maximum_row_width": 35,
+        "new_logical_qubits": 137,
+        "old_logical_qubits": 331,
+        "reduction_qubits": 194,
+        "seed": 2207,
+        "width_row_sha256": "a7b3e2a92d28b732413f77aa9d96fede85cefa11ecb32f606251363413e29844"
+      }
+    },
+    {
+      "liveness": {
+        "bridge_pool_disjoint_from_data": true,
+        "clean_exit_registers": [
+          "SUM_WORK",
+          "CONSTANT",
+          "CARRY",
+          "ADDRESSED",
+          "ROW_FLAGS",
+          "CONTROL_FLAGS"
+        ],
+        "events": [
+          {
+            "borrow_reason": "C5X_LADDER_FOR_EXACT_TWO_LEVEL_RX",
+            "borrowed_clean_qubits": [
+              85,
+              86,
+              87
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "BINARY_COIN_RINGS"
+          },
+          {
+            "borrow_reason": "C7X_BINARY_ADDRESS_MATCH_LADDER",
+            "borrowed_clean_qubits": [
+              85,
+              86,
+              87,
+              88,
+              89
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "SELECT_ADDRESS_READ_AND_DATA_UPDATE"
+          },
+          {
+            "borrow_reason": "RELATIVE_PHASE_ADDRESS_MATCH_ONLY_WHILE_CONSTANT_IS_ZERO;_EXACT_ADJOINT_AFTER_ADDER_CLEARS_PHASE_AND_BOOLEAN_TEMPORARIES",
+            "borrowed_clean_qubits": [
+              85,
+              86,
+              87,
+              88,
+              89
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "phase": "STREAMED_TARGET_ROW_ARITHMETIC",
+            "row_flag_lifecycle": "ROW_FLAG_I_BECOMES_LIVE_AFTER_ITS_PREDICATE;_ALL_SEVEN_REMAIN_LIVE_THROUGH_AND;_REVERSE_RECOMPUTATION_CLEARS_I"
+          },
+          {
+            "borrow_reason": "C39X_LADDER_AFTER_SELECTOR_CLEAN_EXIT",
+            "borrowed_clean_qubits": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "phase": "CERTIFIED_DATA_BRIDGES"
+          }
+        ],
+        "liveness_certificate_sha256": "b0bf41f3d194f42690e634c04639c66c05499d55e846b59ceedabcb4c39a9bb5",
+        "liveness_decision": "PASSED_STATIC_PHASE_LOCAL_BORROW_AND_CLEAN_EXIT_CONTRACT",
+        "relative_phase_compute_use_uncompute": {
+          "exactness_argument": "FOR_B_MONOMIAL_AND_U_PRESERVING_ALL_B_INPUTS_AND_TEMPORARIES,_B_DAGGER_U_B_CANCELS_EVERY_RELATIVE_PHASE_EXACTLY",
+          "scope": "ONLY_FOUR_ADDRESS_EQUALITY_TOGGLES_AROUND_EACH_STREAMED_CONTROLLED_ADD",
+          "temporary_restoration": "RCCX_LADDER_ANCILLAS_RETURN_TO_ZERO_INSIDE_EACH_B_OR_B_DAGGER",
+          "uncompute": "EXPLICIT_EXACT_ADJOINT_IN_REVERSE_ORDER"
+        },
+        "reset_instruction_count": 0
+      },
+      "register_layout": {
+        "allocation_formula": "67+2W",
+        "arithmetic_width": 33,
+        "register_map_sha256": "4299ef262750b4e24dc344d3abdf95efbf7c0ba9a847defb7560e2f5466a42dd",
+        "registers": [
+          {
+            "name": "DATA",
+            "qubit_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39
+            ],
+            "role": "PERSISTENT_PORTFOLIO_BASIS",
+            "start": 0,
+            "width": 40
+          },
+          {
+            "name": "REMOVE_ADDR",
+            "qubit_ids": [
+              40,
+              41,
+              42,
+              43,
+              44,
+              45
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 40,
+            "width": 6
+          },
+          {
+            "name": "ADD_ADDR",
+            "qubit_ids": [
+              46,
+              47,
+              48,
+              49,
+              50,
+              51
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 46,
+            "width": 6
+          },
+          {
+            "name": "SUM_WORK",
+            "qubit_ids": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84
+            ],
+            "role": "BENNETT_RECYCLED_SEVEN_ROW_SUM_BANK_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 52,
+            "width": 33
+          },
+          {
+            "name": "CONSTANT",
+            "qubit_ids": [
+              85,
+              86,
+              87,
+              88,
+              89,
+              90,
+              91,
+              92,
+              93,
+              94,
+              95,
+              96,
+              97,
+              98,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              107,
+              108,
+              109,
+              110,
+              111,
+              112,
+              113,
+              114,
+              115,
+              116,
+              117
+            ],
+            "role": "REUSABLE_CLASSICAL_CONSTANT_MCX_LADDER_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 85,
+            "width": 33
+          },
+          {
+            "name": "CARRY",
+            "qubit_ids": [
+              118
+            ],
+            "role": "CLEAN_CUCCARO_CARRY",
+            "start": 118,
+            "width": 1
+          },
+          {
+            "name": "ADDRESSED",
+            "qubit_ids": [
+              119,
+              120
+            ],
+            "role": "REMOVE_AND_ADD_ADDRESSED_DATA_FLAGS",
+            "start": 119,
+            "width": 2
+          },
+          {
+            "name": "ROW_FLAGS",
+            "qubit_ids": [
+              121,
+              122,
+              123,
+              124,
+              125,
+              126,
+              127
+            ],
+            "role": "SEVEN_INTERVAL_PREDICATE_FLAGS",
+            "start": 121,
+            "width": 7
+          },
+          {
+            "name": "CONTROL_FLAGS",
+            "qubit_ids": [
+              128,
+              129,
+              130,
+              131,
+              132
+            ],
+            "role": "DIFFERENCE_FEASIBLE_MOVE_STREAM_BIT_AND_ADDER_LADDER",
+            "start": 128,
+            "width": 5
+          }
+        ],
+        "total_qubits": 133
+      },
+      "row_widths": [
+        5,
+        5,
+        5,
+        5,
+        33,
+        33,
+        33
+      ],
+      "seed": 3301,
+      "seed_liveness_sha256": "3daafc0d9f17dd59c9499355fa6622722d40071b4b268fe857a1bc0aaca1e7d2",
+      "width": {
+        "capacity_fit": true,
+        "capacity_margin_qubits": 23,
+        "maximum_row_width": 33,
+        "new_logical_qubits": 133,
+        "old_logical_qubits": 327,
+        "reduction_qubits": 194,
+        "seed": 3301,
+        "width_row_sha256": "3ad80aeb4e7a8e29d4953e90f6f8498e5993e90a218deff49bdf6bbd04c4fd3f"
+      }
+    },
+    {
+      "liveness": {
+        "bridge_pool_disjoint_from_data": true,
+        "clean_exit_registers": [
+          "SUM_WORK",
+          "CONSTANT",
+          "CARRY",
+          "ADDRESSED",
+          "ROW_FLAGS",
+          "CONTROL_FLAGS"
+        ],
+        "events": [
+          {
+            "borrow_reason": "C5X_LADDER_FOR_EXACT_TWO_LEVEL_RX",
+            "borrowed_clean_qubits": [
+              86,
+              87,
+              88
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "BINARY_COIN_RINGS"
+          },
+          {
+            "borrow_reason": "C7X_BINARY_ADDRESS_MATCH_LADDER",
+            "borrowed_clean_qubits": [
+              86,
+              87,
+              88,
+              89,
+              90
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "SELECT_ADDRESS_READ_AND_DATA_UPDATE"
+          },
+          {
+            "borrow_reason": "RELATIVE_PHASE_ADDRESS_MATCH_ONLY_WHILE_CONSTANT_IS_ZERO;_EXACT_ADJOINT_AFTER_ADDER_CLEARS_PHASE_AND_BOOLEAN_TEMPORARIES",
+            "borrowed_clean_qubits": [
+              86,
+              87,
+              88,
+              89,
+              90
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "phase": "STREAMED_TARGET_ROW_ARITHMETIC",
+            "row_flag_lifecycle": "ROW_FLAG_I_BECOMES_LIVE_AFTER_ITS_PREDICATE;_ALL_SEVEN_REMAIN_LIVE_THROUGH_AND;_REVERSE_RECOMPUTATION_CLEARS_I"
+          },
+          {
+            "borrow_reason": "C39X_LADDER_AFTER_SELECTOR_CLEAN_EXIT",
+            "borrowed_clean_qubits": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "phase": "CERTIFIED_DATA_BRIDGES"
+          }
+        ],
+        "liveness_certificate_sha256": "330783168a74768e644e5307becdd37753412c504734216e8674eebafda66d43",
+        "liveness_decision": "PASSED_STATIC_PHASE_LOCAL_BORROW_AND_CLEAN_EXIT_CONTRACT",
+        "relative_phase_compute_use_uncompute": {
+          "exactness_argument": "FOR_B_MONOMIAL_AND_U_PRESERVING_ALL_B_INPUTS_AND_TEMPORARIES,_B_DAGGER_U_B_CANCELS_EVERY_RELATIVE_PHASE_EXACTLY",
+          "scope": "ONLY_FOUR_ADDRESS_EQUALITY_TOGGLES_AROUND_EACH_STREAMED_CONTROLLED_ADD",
+          "temporary_restoration": "RCCX_LADDER_ANCILLAS_RETURN_TO_ZERO_INSIDE_EACH_B_OR_B_DAGGER",
+          "uncompute": "EXPLICIT_EXACT_ADJOINT_IN_REVERSE_ORDER"
+        },
+        "reset_instruction_count": 0
+      },
+      "register_layout": {
+        "allocation_formula": "67+2W",
+        "arithmetic_width": 34,
+        "register_map_sha256": "fe78a9238738e45daa7a49faf9f8d5254e1ea6c5e69b725e1e882e7c16ad9001",
+        "registers": [
+          {
+            "name": "DATA",
+            "qubit_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39
+            ],
+            "role": "PERSISTENT_PORTFOLIO_BASIS",
+            "start": 0,
+            "width": 40
+          },
+          {
+            "name": "REMOVE_ADDR",
+            "qubit_ids": [
+              40,
+              41,
+              42,
+              43,
+              44,
+              45
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 40,
+            "width": 6
+          },
+          {
+            "name": "ADD_ADDR",
+            "qubit_ids": [
+              46,
+              47,
+              48,
+              49,
+              50,
+              51
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 46,
+            "width": 6
+          },
+          {
+            "name": "SUM_WORK",
+            "qubit_ids": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85
+            ],
+            "role": "BENNETT_RECYCLED_SEVEN_ROW_SUM_BANK_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 52,
+            "width": 34
+          },
+          {
+            "name": "CONSTANT",
+            "qubit_ids": [
+              86,
+              87,
+              88,
+              89,
+              90,
+              91,
+              92,
+              93,
+              94,
+              95,
+              96,
+              97,
+              98,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              107,
+              108,
+              109,
+              110,
+              111,
+              112,
+              113,
+              114,
+              115,
+              116,
+              117,
+              118,
+              119
+            ],
+            "role": "REUSABLE_CLASSICAL_CONSTANT_MCX_LADDER_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 86,
+            "width": 34
+          },
+          {
+            "name": "CARRY",
+            "qubit_ids": [
+              120
+            ],
+            "role": "CLEAN_CUCCARO_CARRY",
+            "start": 120,
+            "width": 1
+          },
+          {
+            "name": "ADDRESSED",
+            "qubit_ids": [
+              121,
+              122
+            ],
+            "role": "REMOVE_AND_ADD_ADDRESSED_DATA_FLAGS",
+            "start": 121,
+            "width": 2
+          },
+          {
+            "name": "ROW_FLAGS",
+            "qubit_ids": [
+              123,
+              124,
+              125,
+              126,
+              127,
+              128,
+              129
+            ],
+            "role": "SEVEN_INTERVAL_PREDICATE_FLAGS",
+            "start": 123,
+            "width": 7
+          },
+          {
+            "name": "CONTROL_FLAGS",
+            "qubit_ids": [
+              130,
+              131,
+              132,
+              133,
+              134
+            ],
+            "role": "DIFFERENCE_FEASIBLE_MOVE_STREAM_BIT_AND_ADDER_LADDER",
+            "start": 130,
+            "width": 5
+          }
+        ],
+        "total_qubits": 135
+      },
+      "row_widths": [
+        5,
+        5,
+        5,
+        5,
+        34,
+        34,
+        31
+      ],
+      "seed": 4409,
+      "seed_liveness_sha256": "374a9d444a1f5de2f137ae94d7504d7d2b6f6953203ac78dba0d6a67999a1014",
+      "width": {
+        "capacity_fit": true,
+        "capacity_margin_qubits": 21,
+        "maximum_row_width": 34,
+        "new_logical_qubits": 135,
+        "old_logical_qubits": 328,
+        "reduction_qubits": 193,
+        "seed": 4409,
+        "width_row_sha256": "7765fcc5b37739960693538f1dd4cbba4a1b1e9a27020637e0c67059fc9e07d5"
+      }
+    },
+    {
+      "liveness": {
+        "bridge_pool_disjoint_from_data": true,
+        "clean_exit_registers": [
+          "SUM_WORK",
+          "CONSTANT",
+          "CARRY",
+          "ADDRESSED",
+          "ROW_FLAGS",
+          "CONTROL_FLAGS"
+        ],
+        "events": [
+          {
+            "borrow_reason": "C5X_LADDER_FOR_EXACT_TWO_LEVEL_RX",
+            "borrowed_clean_qubits": [
+              87,
+              88,
+              89
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "BINARY_COIN_RINGS"
+          },
+          {
+            "borrow_reason": "C7X_BINARY_ADDRESS_MATCH_LADDER",
+            "borrowed_clean_qubits": [
+              87,
+              88,
+              89,
+              90,
+              91
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "SELECT_ADDRESS_READ_AND_DATA_UPDATE"
+          },
+          {
+            "borrow_reason": "RELATIVE_PHASE_ADDRESS_MATCH_ONLY_WHILE_CONSTANT_IS_ZERO;_EXACT_ADJOINT_AFTER_ADDER_CLEARS_PHASE_AND_BOOLEAN_TEMPORARIES",
+            "borrowed_clean_qubits": [
+              87,
+              88,
+              89,
+              90,
+              91
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "phase": "STREAMED_TARGET_ROW_ARITHMETIC",
+            "row_flag_lifecycle": "ROW_FLAG_I_BECOMES_LIVE_AFTER_ITS_PREDICATE;_ALL_SEVEN_REMAIN_LIVE_THROUGH_AND;_REVERSE_RECOMPUTATION_CLEARS_I"
+          },
+          {
+            "borrow_reason": "C39X_LADDER_AFTER_SELECTOR_CLEAN_EXIT",
+            "borrowed_clean_qubits": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "phase": "CERTIFIED_DATA_BRIDGES"
+          }
+        ],
+        "liveness_certificate_sha256": "eb354a180e5679344b760f50726faba521a58c08bf84d3305b9c03e7884f1b45",
+        "liveness_decision": "PASSED_STATIC_PHASE_LOCAL_BORROW_AND_CLEAN_EXIT_CONTRACT",
+        "relative_phase_compute_use_uncompute": {
+          "exactness_argument": "FOR_B_MONOMIAL_AND_U_PRESERVING_ALL_B_INPUTS_AND_TEMPORARIES,_B_DAGGER_U_B_CANCELS_EVERY_RELATIVE_PHASE_EXACTLY",
+          "scope": "ONLY_FOUR_ADDRESS_EQUALITY_TOGGLES_AROUND_EACH_STREAMED_CONTROLLED_ADD",
+          "temporary_restoration": "RCCX_LADDER_ANCILLAS_RETURN_TO_ZERO_INSIDE_EACH_B_OR_B_DAGGER",
+          "uncompute": "EXPLICIT_EXACT_ADJOINT_IN_REVERSE_ORDER"
+        },
+        "reset_instruction_count": 0
+      },
+      "register_layout": {
+        "allocation_formula": "67+2W",
+        "arithmetic_width": 35,
+        "register_map_sha256": "43f5617123c878252117edccc6314f256a18a21c89cc51834dd873077102b739",
+        "registers": [
+          {
+            "name": "DATA",
+            "qubit_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39
+            ],
+            "role": "PERSISTENT_PORTFOLIO_BASIS",
+            "start": 0,
+            "width": 40
+          },
+          {
+            "name": "REMOVE_ADDR",
+            "qubit_ids": [
+              40,
+              41,
+              42,
+              43,
+              44,
+              45
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 40,
+            "width": 6
+          },
+          {
+            "name": "ADD_ADDR",
+            "qubit_ids": [
+              46,
+              47,
+              48,
+              49,
+              50,
+              51
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 46,
+            "width": 6
+          },
+          {
+            "name": "SUM_WORK",
+            "qubit_ids": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86
+            ],
+            "role": "BENNETT_RECYCLED_SEVEN_ROW_SUM_BANK_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 52,
+            "width": 35
+          },
+          {
+            "name": "CONSTANT",
+            "qubit_ids": [
+              87,
+              88,
+              89,
+              90,
+              91,
+              92,
+              93,
+              94,
+              95,
+              96,
+              97,
+              98,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              107,
+              108,
+              109,
+              110,
+              111,
+              112,
+              113,
+              114,
+              115,
+              116,
+              117,
+              118,
+              119,
+              120,
+              121
+            ],
+            "role": "REUSABLE_CLASSICAL_CONSTANT_MCX_LADDER_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 87,
+            "width": 35
+          },
+          {
+            "name": "CARRY",
+            "qubit_ids": [
+              122
+            ],
+            "role": "CLEAN_CUCCARO_CARRY",
+            "start": 122,
+            "width": 1
+          },
+          {
+            "name": "ADDRESSED",
+            "qubit_ids": [
+              123,
+              124
+            ],
+            "role": "REMOVE_AND_ADD_ADDRESSED_DATA_FLAGS",
+            "start": 123,
+            "width": 2
+          },
+          {
+            "name": "ROW_FLAGS",
+            "qubit_ids": [
+              125,
+              126,
+              127,
+              128,
+              129,
+              130,
+              131
+            ],
+            "role": "SEVEN_INTERVAL_PREDICATE_FLAGS",
+            "start": 125,
+            "width": 7
+          },
+          {
+            "name": "CONTROL_FLAGS",
+            "qubit_ids": [
+              132,
+              133,
+              134,
+              135,
+              136
+            ],
+            "role": "DIFFERENCE_FEASIBLE_MOVE_STREAM_BIT_AND_ADDER_LADDER",
+            "start": 132,
+            "width": 5
+          }
+        ],
+        "total_qubits": 137
+      },
+      "row_widths": [
+        5,
+        5,
+        5,
+        5,
+        35,
+        32,
+        32
+      ],
+      "seed": 5501,
+      "seed_liveness_sha256": "8fc2c8e0e540a514fda328f37b1e6259777be3c47bb2f553fdb9960a1e6e9619",
+      "width": {
+        "capacity_fit": true,
+        "capacity_margin_qubits": 19,
+        "maximum_row_width": 35,
+        "new_logical_qubits": 137,
+        "old_logical_qubits": 329,
+        "reduction_qubits": 192,
+        "seed": 5501,
+        "width_row_sha256": "28264b6021eb9f4358a80829c743e60cfa2865a9bb2bc470208992c71a5fddb7"
+      }
+    },
+    {
+      "liveness": {
+        "bridge_pool_disjoint_from_data": true,
+        "clean_exit_registers": [
+          "SUM_WORK",
+          "CONSTANT",
+          "CARRY",
+          "ADDRESSED",
+          "ROW_FLAGS",
+          "CONTROL_FLAGS"
+        ],
+        "events": [
+          {
+            "borrow_reason": "C5X_LADDER_FOR_EXACT_TWO_LEVEL_RX",
+            "borrowed_clean_qubits": [
+              87,
+              88,
+              89
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "BINARY_COIN_RINGS"
+          },
+          {
+            "borrow_reason": "C7X_BINARY_ADDRESS_MATCH_LADDER",
+            "borrowed_clean_qubits": [
+              87,
+              88,
+              89,
+              90,
+              91
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "SELECT_ADDRESS_READ_AND_DATA_UPDATE"
+          },
+          {
+            "borrow_reason": "RELATIVE_PHASE_ADDRESS_MATCH_ONLY_WHILE_CONSTANT_IS_ZERO;_EXACT_ADJOINT_AFTER_ADDER_CLEARS_PHASE_AND_BOOLEAN_TEMPORARIES",
+            "borrowed_clean_qubits": [
+              87,
+              88,
+              89,
+              90,
+              91
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "phase": "STREAMED_TARGET_ROW_ARITHMETIC",
+            "row_flag_lifecycle": "ROW_FLAG_I_BECOMES_LIVE_AFTER_ITS_PREDICATE;_ALL_SEVEN_REMAIN_LIVE_THROUGH_AND;_REVERSE_RECOMPUTATION_CLEARS_I"
+          },
+          {
+            "borrow_reason": "C39X_LADDER_AFTER_SELECTOR_CLEAN_EXIT",
+            "borrowed_clean_qubits": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "phase": "CERTIFIED_DATA_BRIDGES"
+          }
+        ],
+        "liveness_certificate_sha256": "eb354a180e5679344b760f50726faba521a58c08bf84d3305b9c03e7884f1b45",
+        "liveness_decision": "PASSED_STATIC_PHASE_LOCAL_BORROW_AND_CLEAN_EXIT_CONTRACT",
+        "relative_phase_compute_use_uncompute": {
+          "exactness_argument": "FOR_B_MONOMIAL_AND_U_PRESERVING_ALL_B_INPUTS_AND_TEMPORARIES,_B_DAGGER_U_B_CANCELS_EVERY_RELATIVE_PHASE_EXACTLY",
+          "scope": "ONLY_FOUR_ADDRESS_EQUALITY_TOGGLES_AROUND_EACH_STREAMED_CONTROLLED_ADD",
+          "temporary_restoration": "RCCX_LADDER_ANCILLAS_RETURN_TO_ZERO_INSIDE_EACH_B_OR_B_DAGGER",
+          "uncompute": "EXPLICIT_EXACT_ADJOINT_IN_REVERSE_ORDER"
+        },
+        "reset_instruction_count": 0
+      },
+      "register_layout": {
+        "allocation_formula": "67+2W",
+        "arithmetic_width": 35,
+        "register_map_sha256": "43f5617123c878252117edccc6314f256a18a21c89cc51834dd873077102b739",
+        "registers": [
+          {
+            "name": "DATA",
+            "qubit_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39
+            ],
+            "role": "PERSISTENT_PORTFOLIO_BASIS",
+            "start": 0,
+            "width": 40
+          },
+          {
+            "name": "REMOVE_ADDR",
+            "qubit_ids": [
+              40,
+              41,
+              42,
+              43,
+              44,
+              45
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 40,
+            "width": 6
+          },
+          {
+            "name": "ADD_ADDR",
+            "qubit_ids": [
+              46,
+              47,
+              48,
+              49,
+              50,
+              51
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 46,
+            "width": 6
+          },
+          {
+            "name": "SUM_WORK",
+            "qubit_ids": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86
+            ],
+            "role": "BENNETT_RECYCLED_SEVEN_ROW_SUM_BANK_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 52,
+            "width": 35
+          },
+          {
+            "name": "CONSTANT",
+            "qubit_ids": [
+              87,
+              88,
+              89,
+              90,
+              91,
+              92,
+              93,
+              94,
+              95,
+              96,
+              97,
+              98,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              107,
+              108,
+              109,
+              110,
+              111,
+              112,
+              113,
+              114,
+              115,
+              116,
+              117,
+              118,
+              119,
+              120,
+              121
+            ],
+            "role": "REUSABLE_CLASSICAL_CONSTANT_MCX_LADDER_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 87,
+            "width": 35
+          },
+          {
+            "name": "CARRY",
+            "qubit_ids": [
+              122
+            ],
+            "role": "CLEAN_CUCCARO_CARRY",
+            "start": 122,
+            "width": 1
+          },
+          {
+            "name": "ADDRESSED",
+            "qubit_ids": [
+              123,
+              124
+            ],
+            "role": "REMOVE_AND_ADD_ADDRESSED_DATA_FLAGS",
+            "start": 123,
+            "width": 2
+          },
+          {
+            "name": "ROW_FLAGS",
+            "qubit_ids": [
+              125,
+              126,
+              127,
+              128,
+              129,
+              130,
+              131
+            ],
+            "role": "SEVEN_INTERVAL_PREDICATE_FLAGS",
+            "start": 125,
+            "width": 7
+          },
+          {
+            "name": "CONTROL_FLAGS",
+            "qubit_ids": [
+              132,
+              133,
+              134,
+              135,
+              136
+            ],
+            "role": "DIFFERENCE_FEASIBLE_MOVE_STREAM_BIT_AND_ADDER_LADDER",
+            "start": 132,
+            "width": 5
+          }
+        ],
+        "total_qubits": 137
+      },
+      "row_widths": [
+        5,
+        5,
+        5,
+        5,
+        33,
+        35,
+        33
+      ],
+      "seed": 6607,
+      "seed_liveness_sha256": "ad7b6c4484918a784c4548c7529568dd3b0b3d17f028163b6ee1493379319dab",
+      "width": {
+        "capacity_fit": true,
+        "capacity_margin_qubits": 19,
+        "maximum_row_width": 35,
+        "new_logical_qubits": 137,
+        "old_logical_qubits": 331,
+        "reduction_qubits": 194,
+        "seed": 6607,
+        "width_row_sha256": "f4f8b9b87afbcfd2d2bfff915f096d671e1643735de4ad2b5966ed02ac6d49bc"
+      }
+    },
+    {
+      "liveness": {
+        "bridge_pool_disjoint_from_data": true,
+        "clean_exit_registers": [
+          "SUM_WORK",
+          "CONSTANT",
+          "CARRY",
+          "ADDRESSED",
+          "ROW_FLAGS",
+          "CONTROL_FLAGS"
+        ],
+        "events": [
+          {
+            "borrow_reason": "C5X_LADDER_FOR_EXACT_TWO_LEVEL_RX",
+            "borrowed_clean_qubits": [
+              91,
+              92,
+              93
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "BINARY_COIN_RINGS"
+          },
+          {
+            "borrow_reason": "C7X_BINARY_ADDRESS_MATCH_LADDER",
+            "borrowed_clean_qubits": [
+              91,
+              92,
+              93,
+              94,
+              95
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "SELECT_ADDRESS_READ_AND_DATA_UPDATE"
+          },
+          {
+            "borrow_reason": "RELATIVE_PHASE_ADDRESS_MATCH_ONLY_WHILE_CONSTANT_IS_ZERO;_EXACT_ADJOINT_AFTER_ADDER_CLEARS_PHASE_AND_BOOLEAN_TEMPORARIES",
+            "borrowed_clean_qubits": [
+              91,
+              92,
+              93,
+              94,
+              95
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "phase": "STREAMED_TARGET_ROW_ARITHMETIC",
+            "row_flag_lifecycle": "ROW_FLAG_I_BECOMES_LIVE_AFTER_ITS_PREDICATE;_ALL_SEVEN_REMAIN_LIVE_THROUGH_AND;_REVERSE_RECOMPUTATION_CLEARS_I"
+          },
+          {
+            "borrow_reason": "C39X_LADDER_AFTER_SELECTOR_CLEAN_EXIT",
+            "borrowed_clean_qubits": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "phase": "CERTIFIED_DATA_BRIDGES"
+          }
+        ],
+        "liveness_certificate_sha256": "54a72a90702ee63a184af1211ee29c5a2a545ccc65711614868a1a46fabc4ae3",
+        "liveness_decision": "PASSED_STATIC_PHASE_LOCAL_BORROW_AND_CLEAN_EXIT_CONTRACT",
+        "relative_phase_compute_use_uncompute": {
+          "exactness_argument": "FOR_B_MONOMIAL_AND_U_PRESERVING_ALL_B_INPUTS_AND_TEMPORARIES,_B_DAGGER_U_B_CANCELS_EVERY_RELATIVE_PHASE_EXACTLY",
+          "scope": "ONLY_FOUR_ADDRESS_EQUALITY_TOGGLES_AROUND_EACH_STREAMED_CONTROLLED_ADD",
+          "temporary_restoration": "RCCX_LADDER_ANCILLAS_RETURN_TO_ZERO_INSIDE_EACH_B_OR_B_DAGGER",
+          "uncompute": "EXPLICIT_EXACT_ADJOINT_IN_REVERSE_ORDER"
+        },
+        "reset_instruction_count": 0
+      },
+      "register_layout": {
+        "allocation_formula": "67+2W",
+        "arithmetic_width": 39,
+        "register_map_sha256": "6338aa81861ccca3b826e9f595847df4880e07229cf6989830d199acff1e45f2",
+        "registers": [
+          {
+            "name": "DATA",
+            "qubit_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39
+            ],
+            "role": "PERSISTENT_PORTFOLIO_BASIS",
+            "start": 0,
+            "width": 40
+          },
+          {
+            "name": "REMOVE_ADDR",
+            "qubit_ids": [
+              40,
+              41,
+              42,
+              43,
+              44,
+              45
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 40,
+            "width": 6
+          },
+          {
+            "name": "ADD_ADDR",
+            "qubit_ids": [
+              46,
+              47,
+              48,
+              49,
+              50,
+              51
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 46,
+            "width": 6
+          },
+          {
+            "name": "SUM_WORK",
+            "qubit_ids": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88,
+              89,
+              90
+            ],
+            "role": "BENNETT_RECYCLED_SEVEN_ROW_SUM_BANK_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 52,
+            "width": 39
+          },
+          {
+            "name": "CONSTANT",
+            "qubit_ids": [
+              91,
+              92,
+              93,
+              94,
+              95,
+              96,
+              97,
+              98,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              107,
+              108,
+              109,
+              110,
+              111,
+              112,
+              113,
+              114,
+              115,
+              116,
+              117,
+              118,
+              119,
+              120,
+              121,
+              122,
+              123,
+              124,
+              125,
+              126,
+              127,
+              128,
+              129
+            ],
+            "role": "REUSABLE_CLASSICAL_CONSTANT_MCX_LADDER_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 91,
+            "width": 39
+          },
+          {
+            "name": "CARRY",
+            "qubit_ids": [
+              130
+            ],
+            "role": "CLEAN_CUCCARO_CARRY",
+            "start": 130,
+            "width": 1
+          },
+          {
+            "name": "ADDRESSED",
+            "qubit_ids": [
+              131,
+              132
+            ],
+            "role": "REMOVE_AND_ADD_ADDRESSED_DATA_FLAGS",
+            "start": 131,
+            "width": 2
+          },
+          {
+            "name": "ROW_FLAGS",
+            "qubit_ids": [
+              133,
+              134,
+              135,
+              136,
+              137,
+              138,
+              139
+            ],
+            "role": "SEVEN_INTERVAL_PREDICATE_FLAGS",
+            "start": 133,
+            "width": 7
+          },
+          {
+            "name": "CONTROL_FLAGS",
+            "qubit_ids": [
+              140,
+              141,
+              142,
+              143,
+              144
+            ],
+            "role": "DIFFERENCE_FEASIBLE_MOVE_STREAM_BIT_AND_ADDER_LADDER",
+            "start": 140,
+            "width": 5
+          }
+        ],
+        "total_qubits": 145
+      },
+      "row_widths": [
+        5,
+        5,
+        5,
+        5,
+        33,
+        39,
+        33
+      ],
+      "seed": 7703,
+      "seed_liveness_sha256": "566aeda434af8b2ff8d8df3f02c087f8b4dd6befc65fd48aaebd7a79676d7d9b",
+      "width": {
+        "capacity_fit": true,
+        "capacity_margin_qubits": 11,
+        "maximum_row_width": 39,
+        "new_logical_qubits": 145,
+        "old_logical_qubits": 339,
+        "reduction_qubits": 194,
+        "seed": 7703,
+        "width_row_sha256": "027d545891ceb8e8616fe331f921df26370e70820b67ea5d5f1cce20cc57ebb6"
+      }
+    },
+    {
+      "liveness": {
+        "bridge_pool_disjoint_from_data": true,
+        "clean_exit_registers": [
+          "SUM_WORK",
+          "CONSTANT",
+          "CARRY",
+          "ADDRESSED",
+          "ROW_FLAGS",
+          "CONTROL_FLAGS"
+        ],
+        "events": [
+          {
+            "borrow_reason": "C5X_LADDER_FOR_EXACT_TWO_LEVEL_RX",
+            "borrowed_clean_qubits": [
+              88,
+              89,
+              90
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "BINARY_COIN_RINGS"
+          },
+          {
+            "borrow_reason": "C7X_BINARY_ADDRESS_MATCH_LADDER",
+            "borrowed_clean_qubits": [
+              88,
+              89,
+              90,
+              91,
+              92
+            ],
+            "clean_after": [
+              "CONSTANT"
+            ],
+            "clean_before": [
+              "CONSTANT"
+            ],
+            "phase": "SELECT_ADDRESS_READ_AND_DATA_UPDATE"
+          },
+          {
+            "borrow_reason": "RELATIVE_PHASE_ADDRESS_MATCH_ONLY_WHILE_CONSTANT_IS_ZERO;_EXACT_ADJOINT_AFTER_ADDER_CLEARS_PHASE_AND_BOOLEAN_TEMPORARIES",
+            "borrowed_clean_qubits": [
+              88,
+              89,
+              90,
+              91,
+              92
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "CONTROL_FLAGS[3:5]"
+            ],
+            "phase": "STREAMED_TARGET_ROW_ARITHMETIC",
+            "row_flag_lifecycle": "ROW_FLAG_I_BECOMES_LIVE_AFTER_ITS_PREDICATE;_ALL_SEVEN_REMAIN_LIVE_THROUGH_AND;_REVERSE_RECOMPUTATION_CLEARS_I"
+          },
+          {
+            "borrow_reason": "C39X_LADDER_AFTER_SELECTOR_CLEAN_EXIT",
+            "borrowed_clean_qubits": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88
+            ],
+            "clean_after": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "clean_before": [
+              "SUM_WORK",
+              "CONSTANT",
+              "CARRY",
+              "ADDRESSED",
+              "ROW_FLAGS",
+              "CONTROL_FLAGS"
+            ],
+            "phase": "CERTIFIED_DATA_BRIDGES"
+          }
+        ],
+        "liveness_certificate_sha256": "831db666f748eba751a1478a7db159a330c39f80c02bbb76b093e4f9459fa044",
+        "liveness_decision": "PASSED_STATIC_PHASE_LOCAL_BORROW_AND_CLEAN_EXIT_CONTRACT",
+        "relative_phase_compute_use_uncompute": {
+          "exactness_argument": "FOR_B_MONOMIAL_AND_U_PRESERVING_ALL_B_INPUTS_AND_TEMPORARIES,_B_DAGGER_U_B_CANCELS_EVERY_RELATIVE_PHASE_EXACTLY",
+          "scope": "ONLY_FOUR_ADDRESS_EQUALITY_TOGGLES_AROUND_EACH_STREAMED_CONTROLLED_ADD",
+          "temporary_restoration": "RCCX_LADDER_ANCILLAS_RETURN_TO_ZERO_INSIDE_EACH_B_OR_B_DAGGER",
+          "uncompute": "EXPLICIT_EXACT_ADJOINT_IN_REVERSE_ORDER"
+        },
+        "reset_instruction_count": 0
+      },
+      "register_layout": {
+        "allocation_formula": "67+2W",
+        "arithmetic_width": 36,
+        "register_map_sha256": "3c3c1552b6dc6c04d54aea6700b9f5870fdc58235c14e314cf08e16864a99b0c",
+        "registers": [
+          {
+            "name": "DATA",
+            "qubit_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39
+            ],
+            "role": "PERSISTENT_PORTFOLIO_BASIS",
+            "start": 0,
+            "width": 40
+          },
+          {
+            "name": "REMOVE_ADDR",
+            "qubit_ids": [
+              40,
+              41,
+              42,
+              43,
+              44,
+              45
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 40,
+            "width": 6
+          },
+          {
+            "name": "ADD_ADDR",
+            "qubit_ids": [
+              46,
+              47,
+              48,
+              49,
+              50,
+              51
+            ],
+            "role": "PERSISTENT_BINARY_ADDRESS_VALID_0_TO_39",
+            "start": 46,
+            "width": 6
+          },
+          {
+            "name": "SUM_WORK",
+            "qubit_ids": [
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87
+            ],
+            "role": "BENNETT_RECYCLED_SEVEN_ROW_SUM_BANK_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 52,
+            "width": 36
+          },
+          {
+            "name": "CONSTANT",
+            "qubit_ids": [
+              88,
+              89,
+              90,
+              91,
+              92,
+              93,
+              94,
+              95,
+              96,
+              97,
+              98,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              107,
+              108,
+              109,
+              110,
+              111,
+              112,
+              113,
+              114,
+              115,
+              116,
+              117,
+              118,
+              119,
+              120,
+              121,
+              122,
+              123
+            ],
+            "role": "REUSABLE_CLASSICAL_CONSTANT_MCX_LADDER_AND_POST_SELECTOR_BRIDGE_POOL",
+            "start": 88,
+            "width": 36
+          },
+          {
+            "name": "CARRY",
+            "qubit_ids": [
+              124
+            ],
+            "role": "CLEAN_CUCCARO_CARRY",
+            "start": 124,
+            "width": 1
+          },
+          {
+            "name": "ADDRESSED",
+            "qubit_ids": [
+              125,
+              126
+            ],
+            "role": "REMOVE_AND_ADD_ADDRESSED_DATA_FLAGS",
+            "start": 125,
+            "width": 2
+          },
+          {
+            "name": "ROW_FLAGS",
+            "qubit_ids": [
+              127,
+              128,
+              129,
+              130,
+              131,
+              132,
+              133
+            ],
+            "role": "SEVEN_INTERVAL_PREDICATE_FLAGS",
+            "start": 127,
+            "width": 7
+          },
+          {
+            "name": "CONTROL_FLAGS",
+            "qubit_ids": [
+              134,
+              135,
+              136,
+              137,
+              138
+            ],
+            "role": "DIFFERENCE_FEASIBLE_MOVE_STREAM_BIT_AND_ADDER_LADDER",
+            "start": 134,
+            "width": 5
+          }
+        ],
+        "total_qubits": 139
+      },
+      "row_widths": [
+        5,
+        5,
+        5,
+        5,
+        36,
+        36,
+        31
+      ],
+      "seed": 8807,
+      "seed_liveness_sha256": "23901266b5cf39d9382ac1040d01e059f3e255c7b4e37593b936b92269577ed8",
+      "width": {
+        "capacity_fit": true,
+        "capacity_margin_qubits": 17,
+        "maximum_row_width": 36,
+        "new_logical_qubits": 139,
+        "old_logical_qubits": 334,
+        "reduction_qubits": 195,
+        "seed": 8807,
+        "width_row_sha256": "68596dde27f8f82e9bd40557f564368d746bde59cac1adb70c23ae9c219dea8d"
+      }
+    }
+  ],
+  "spec_raw_file_sha256": "fca97bae23543fccb04ba7ca606fa2abb9e4c6e4ebeae3c1501031967a3bfea2",
+  "spec_sha256": "ba0c41d1bd0d43817a46c9d66d84eb2ba517bf8dd3975387324726d24487e4e6",
+  "target_logical_qubits": 156
+}

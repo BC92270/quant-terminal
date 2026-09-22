@@ -1,0 +1,63 @@
+{
+  "handoff_version": "QUANTUM LAB CODEX HANDOFF V3.1",
+  "current_lab_version": "V3.1 · EXACT DYADIC BANDS ORACLE",
+  "frozen_engines": {
+    "regime_density": "V2.2.1",
+    "qmc_risk": "V2.3.2",
+    "qubo_ising": "V2.4.1",
+    "quantum_information_tensor": "V2.5.1",
+    "evidence_governance": "V2.6.1"
+  },
+  "phase2": {
+    "manifest_sha": "AA06BE666EBFE379C82B",
+    "qubo_protocol_sha": "8E5EF191FAE97A75",
+    "execution_spec_sha": "40D3225B0AFC86BC01DD",
+    "source_evidence_id": "QQUBO-20260821-861D4D08E8",
+    "canonical_instances": 120,
+    "result": "HARDNESS GATE · PASSED",
+    "selected_family": "N=40 · BANDS",
+    "finalized_artifact_sha": "A19AAC26DEF729FA0C8F"
+  },
+  "phase3": {
+    "preparation_spec_sha": "CDC693C22A3838B0B3C1",
+    "fixed_point_oracle_spec_sha": "62854F1D7076BA742775",
+    "dyadic_oracle_spec_sha": "9A6F664368F4AC592281",
+    "fixed_point_ladder_result": "8/12/16 ALL FALSIFIED · CERTIFIED COUNTEREXAMPLE",
+    "dyadic_family_result": "8/8 PASS · 126/126 EXACT IDENTITIES PER SEED",
+    "max_dyadic_denominator_exponent": 63,
+    "max_factor_accumulator_bits": 68,
+    "logical_qubits_sequential_reuse": 151,
+    "logical_qubits_parallel_envelope": 336,
+    "current_gate": "SEAL DYADIC LOGICAL ORACLE, THEN BUILD GATE-LEVEL COMPILER",
+    "hardware_executable": false
+  },
+  "file_sha256": {
+    "app.py": "d35640437fc3a79d19b7c82f89a4f3f78d417bfee8208ad152361ed2934fa5b0",
+    "asset_class_router.py": "40d0073b8b85c9a010e22e4141487b3fb961de619c583e32c95b924f8dafe4d5",
+    "quantum_research_lab/data.py": "96b40e82fa938f2f2c25f89d4f4c75c85f1c981a5115f38f8cb6e7735ef02449",
+    "quantum_research_lab/engine.py": "70726d2933c195edd89d94acdceb2d3fbb2fa114701b3210c309ddf0135f1e70",
+    "quantum_research_lab/evidence.py": "aec17335d00dea42f96b7c06a95ece32759b61ce4f92fc8e223f08a89c7d5443",
+    "quantum_research_lab/experiments.py": "0f426875098e117ad2b7458eadf55023e9ad04cf18867dd4fa3fbd88ddb5032f",
+    "quantum_research_lab/phase2_qhardness.py": "30c2cb35444afeeff669b9772d5577e89f32dbead762a09fb90fde70c9b653ce",
+    "quantum_research_lab/phase3_bands_oracle.py": "f870fc0a5b372f48abd1532370a25292f6ac9d6318afaae2b739d55dd1fd1827",
+    "quantum_research_lab/phase3_dyadic_oracle.py": "843db34f4bb140f9ed4066bb044b1754d12820521c8ee603389bf031bdd3b2e0",
+    "quantum_research_lab/phase3_qpu.py": "31b94a26a88c9b7c79f22ff8426cfd5b597250ac2a642dfb9b54b56dda0fb2e3",
+    "quantum_research_lab/ui.py": "a4cc7750c5e40a4ae81de3fd62b38b98b99bf7b8616849f51984e843981186af",
+    "quantum_research_lab/PHASE_II_PREREGISTRATION_V1.json": "3b46bffc8631834bea755d423ec24d3e17f417975cef3d096b58b4d5ded2e465",
+    "quantum_research_lab/QUBO_PHASEII_EXECUTION_SPEC_V1.json": "4ed11a390a23c73dc65b761eed72f25c9a4738739f865ffc6ec42d2070688001",
+    "quantum_research_lab/PHASE_III_QPU_PREPARATION_SPEC_V1.json": "b04196d41195177e86aaf042e06ffb669d20e4b8a2ecf0d953cedc9d3091925d",
+    "quantum_research_lab/PHASE_III_BANDS_ORACLE_SPEC_V1.json": "a344857690fe3819fead3629e611865761712f3add3c45afc5c03011f11822ef",
+    "quantum_research_lab/PHASE_III_DYADIC_BANDS_ORACLE_SPEC_V1.json": "aa1893c226f6f8a557f3945c218501f28ddc3624b5bcc3b9104cf53143299851"
+  },
+  "forbidden_without_new_protocol": [
+    "change Phase-II seeds",
+    "change Phase-II N grid",
+    "change Phase-II constraint regimes",
+    "change hardness thresholds",
+    "rerun or replace completed canonical Phase-II instances",
+    "rewrite V3.0 8/12/16 failures",
+    "replace exact dyadic coefficients with approximate coefficients",
+    "set hardware_executable=true before a sealed gate-level compiler and backend validation exist",
+    "claim quantum advantage from classical hardness, logical-oracle fidelity, simulation, or transpilation alone"
+  ]
+}

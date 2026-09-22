@@ -1,0 +1,225 @@
+{
+  "acceptance_contract": {
+    "bridge_counterexample_branch": "AUGMENTED_1_2_EXCHANGE_GRAPH_DISCONNECTED_COUNTEREXAMPLE when any authenticated V4.0 component remains disconnected after exhaustive incident two-swap bridge audits",
+    "bridge_success_branch": "AUGMENTED_1_2_EXCHANGE_GRAPH_CONNECTED_ALL_SEEDS_BY_CERTIFIED_SUBGRAPH only when deterministic bridge selection reduces every authenticated V4.0 seed component inventory to one component",
+    "budget_cnot": 2500000,
+    "inconclusive_branch": "V41_BRIDGE_CONNECTIVITY_INDETERMINATE when any required audit, replay, identity or component proof is incomplete",
+    "primary_resource_pass": "PASS only when R2 connectivity and all proof gates pass and the maximum selected-model R2 CNOT numerator across all eight frozen seeds is at most 2500000",
+    "publish_both_registered_candidates": true,
+    "required_bridge_audit_universe_per_isolated_vertex": 19575,
+    "required_frozen_seed_count": 8,
+    "resource_failure_branch": "REJECTED_SELECTED_MODEL_CNOT_BUDGET",
+    "validation_failure_branch": "V41_VALIDATION_FAILED"
+  },
+  "bridge_protocol": {
+    "adjacency_extension": "In addition to every V4.0 feasible Hamming-distance-two edge, a registered bridge joins two exactly feasible K-subsets whose Hamming distance is four",
+    "arithmetic": "SIGNED_INT128_EXACT_NO_FLOATING_POINT",
+    "audit_scope": "Exhaust all C(10,2)*C(30,2) two-out/two-in candidates incident to every singleton component authenticated by V4.0",
+    "canonical_candidate_order": "For each source: removed indices ascending lexicographic pair, then added indices ascending lexicographic pair",
+    "canonical_ledger_line": "source_hex|removed0,removed1|added0,added1|target_hex|seven_decimal_exact_values|feasible_bit followed by LF",
+    "component_membership_rule": "A feasible target distinct from every V4.0 singleton representative belongs to the only remaining component when the authenticated seed inventory consists of one non-singleton component plus singleton components",
+    "complete_augmented_edge_count": "NOT_REQUIRED_AND_NOT_ENUMERATED",
+    "connectivity_certificate": "The authenticated complete V4.0 one-swap component forest plus every deterministically selected exact two-swap bridge is a spanning subgraph. Connectivity of this subgraph proves connectivity of the full one-plus-two-swap supergraph.",
+    "engine_algorithm": "INDEPENDENT_CPP_INT128_FULL_TWO_SWAP_AUDIT_V1",
+    "engine_source": "quantum_research_lab/phase3_v41_bridge_engine.cpp",
+    "engine_source_raw_file_sha256": "6b065ac1fb834e9ff226954984fe466901314c9b556c2c253a0ace873f2bf26e",
+    "hamming_distance": 4,
+    "independent_python_method_a": "DELTA_UPDATE_IN_CANONICAL_ORDER",
+    "independent_python_method_b": "FULL_MASK_RECOMPUTATION_IN_REVERSED_ADDED_PAIR_ORDER_THEN_CANONICAL_SORT",
+    "kruskal_order": "Within each seed sort candidate bridges by normalized V4.0 component-representative pair, normalized endpoint-mask pair, removed pair and added pair; accept iff the endpoints currently occupy distinct DSU components",
+    "replay_equality_fields": [
+      "audit_universe",
+      "candidates_audited",
+      "classification_ledger_sha256",
+      "feasible_neighbor_count",
+      "feasible_record_sha256",
+      "feasible_records",
+      "seed",
+      "source_mask_hex"
+    ],
+    "selection_stop_rule": "Continue deterministic Kruskal selection until the seed is connected or the complete registered candidate list is exhausted",
+    "selected_subgraph_edge_count": "Authenticated V4.0 exact one-swap edge count plus successful registered bridge unions; this is not the full augmented edge count"
+  },
+  "candidate_family": {
+    "K": 10,
+    "N": 40,
+    "constraint_count": 7,
+    "constraint_regime": "BANDS",
+    "frozen_seeds": [1103, 2207, 3301, 4409, 5501, 6607, 7703, 8807],
+    "parent_graph": "V4.0 COMPLETE FEASIBLE HAMMING-DISTANCE-TWO GRAPH",
+    "registered_resource_candidates": [
+      {
+        "candidate_id": "R1_LINEAR_SLACK_ALL_ONE_SWAP",
+        "move_family": "ALL FEASIBLE HAMMING_DISTANCE_TWO SWAPS",
+        "required_connectivity": "MUST_PASS_OR_CANDIDATE_REJECTED"
+      },
+      {
+        "bridge_policy": "DETERMINISTIC_KRUSKAL_EARLIEST_EXACT_FEASIBLE_HAMMING_DISTANCE_FOUR_COMPONENT_BRIDGES",
+        "candidate_id": "R2_LINEAR_SLACK_ONE_SWAP_PLUS_TWO_SWAP_BRIDGES",
+        "move_family": "ALL FEASIBLE HAMMING_DISTANCE_TWO SWAPS PLUS SELECTED CERTIFIED HAMMING_DISTANCE_FOUR BRIDGES",
+        "required_connectivity": "MUST_PASS_OR_CANDIDATE_REJECTED"
+      }
+    ]
+  },
+  "chronology": {
+    "confirmatory_protocol_state": "SEALED_BEFORE_CONFIRMATORY_REPLAY",
+    "exploratory_audit_disclosed": true,
+    "exploratory_observation": {
+      "observed_utc": "2026-09-10T23:28:46Z",
+      "scope": "Unsealed Python engineering audit of all 19575 two-out/two-in candidates incident to each of the three V4.0 isolated portfolios",
+      "signals": [
+        {"exploratory_feasible_neighbor_count": 267, "mask_hex": "08b4208484", "seed": 2207},
+        {"exploratory_feasible_neighbor_count": 260, "mask_hex": "a8180000ec", "seed": 7703},
+        {"exploratory_feasible_neighbor_count": 260, "mask_hex": "e2008a4082", "seed": 7703}
+      ],
+      "use": "Motivated the sealed bridge compiler; no count, target, digest or final decision is an acceptance expectation"
+    },
+    "protocol_sealed_utc": "2026-09-11T10:33:37Z",
+    "protocol_amendments": [
+      {
+        "amended_utc": "2026-09-11T10:42:54Z",
+        "reason": "The first confirmatory attempt failed closed because the independent C++ SHA-256 implementation contained two truncated hexadecimal round constants. Candidate records agreed across implementations, but no evidence or decision was accepted. The constants and engine identity were corrected; all algorithms, branch rules, candidate ordering and resource rules remained unchanged.",
+        "status": "DISCLOSED_VALIDATION_REPAIR_BEFORE_ACCEPTED_CONFIRMATORY_EVIDENCE"
+      },
+      {
+        "amended_utc": "2026-09-11T10:49:00Z",
+        "reason": "Before the first mixer resource ledger, the preregistered measurement-free ripple architecture was completed with the published Cuccaro modulo-adder and comparator primitive counts and an explicit controlled-gate lift. Compression proof development had begun, but no candidate CNOT numerator or budget outcome had been computed. No candidate family, connectivity rule or budget was changed.",
+        "status": "DISCLOSED_RESOURCE_MODEL_COMPLETION_BEFORE_FIRST_RESOURCE_LEDGER"
+      }
+    ],
+    "resource_ledger_state_at_seal": "NOT_EVALUATED",
+    "resource_model_timing": "FIXED_BEFORE_FIRST_V4.1_RESOURCE_LEDGER"
+  },
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "complete_two_swap_edge_enumeration": "NOT_RUN_NOT_REQUIRED_FOR_CERTIFICATE",
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "scope": "EXACT_AUGMENTED_CONNECTIVITY_CERTIFICATE_AND_PROVIDER_NEUTRAL_PROOF_CARRYING_RESOURCE_LEDGER"
+  },
+  "compression_protocol": {
+    "canonical_margin_witness_order": "Minimum (distance, portfolio mask, threshold tag LOWER before UPPER, exact sum)",
+    "canonical_error_witness_order": "Maximum absolute residual, then minimum portfolio mask, then signed residual",
+    "classification_domain": "COMPLETE GROUP-BAND-VALID EXACT-K UNIVERSE, independently for every factor row and seed",
+    "compressed_predicate": "ceil(L/2^s) <= sum_i b_i x_i <= floor(U/2^s)",
+    "coefficient_rule": "b_i is a_i divided by 2^s rounded to nearest integer; exact half ties choose the even integer using Euclidean divmod",
+    "dual_mitm_partitions": [
+      [[0, 1], [2, 3]],
+      [[0, 2], [1, 3]]
+    ],
+    "error_bound": "Exact maximum over the complete registered domain of abs(sum_i (a_i-2^s*b_i) x_i), reproduced by both MITM partitions",
+    "identity_shift_rule": "s=0 is exact by identity even when the minimum threshold distance is zero",
+    "margin_certificate": "Exact minimum over the complete registered domain of min(abs(A-L),abs(A-U)), with canonical witnesses and dual-partition equality",
+    "parity_gate": "For s>0 require exact_error_bound < exact_minimum_threshold_distance, then independently replay original-versus-compressed classification over the complete MITM domain",
+    "rejection_policy": "Any row without complete dual evidence, strict certificate or exact predicate parity forces the candidate resource architecture to fail closed",
+    "shift_search_range": "All integers from zero through max_i bit_length(abs(a_i)) plus two, evaluated without early stopping",
+    "shift_selection": "Choose the greatest nonnegative s satisfying every registered proof condition; ties are impossible",
+    "threshold_rounding": "lower=ceil(L/2^s), upper=floor(U/2^s), both by exact signed integer arithmetic"
+  },
+  "evidence_contract": {
+    "artifact": "outputs/quantum_phase3/v41_certified_bridge/SEALED_V4_1_CERTIFIED_BRIDGE_COMPILER_ARTIFACT.json",
+    "canonical_payload": "UTF-8 JSON with sorted keys and compact separators, excluding artifact_sha256",
+    "complete_candidate_storage": "Store full feasible bridge inventories and SHA-256 commitments to every feasible and infeasible incident candidate classification",
+    "immutability": "An existing non-identical artifact is never overwritten",
+    "parent_authentication": "Authenticate V4.0 specification, C++ engine, Python source, artifact, freeze contract and every immutable frozen path without regenerating the parent",
+    "resource_replay": "Two independent builders must reproduce every compressed row, macro count, selected-model ledger, candidate decision and artifact identity",
+    "tamper_policy": "Nested bridge, compression, connectivity, resource, boundary and parent mutations must be rejected"
+  },
+  "parent_contract": {
+    "expected_v40_artifact_raw_file_sha256": "3e2918c31ff01d0545125fb641c850af6429a1f8db11709f419c38a2d9f619f2",
+    "expected_v40_artifact_sha256": "0fbbddcdf73dde6708814521cc3df741acb53c079e25b6c8829965de56778f01",
+    "expected_v40_decision": "GLOBAL_FEASIBLE_GRAPH_DISCONNECTED_COUNTEREXAMPLE",
+    "expected_v40_engine_raw_file_sha256": "16cdfffe8dde853f534349d0531f52c4026271f6f03de53ade77af4ec6726944",
+    "expected_v40_freeze_raw_file_sha256": "748829b2153611ffba0751ea5da9d0785ca44ce4f12a02546436d4a1e79a94b4",
+    "expected_v40_freeze_sha256": "c6d380e5541182b6cc2096c3d2a6de6f129cb92c80288a43dae6f924314cff1e",
+    "expected_v40_frozen_file_count": 145,
+    "expected_v40_frozen_paths_fingerprint_sha256": "43e80508152726db7fb8b255ba5642301abaadb6a562783fd235367475000fe3",
+    "expected_v40_source_raw_file_sha256": "4ad9704cf4007a447195c6c9544ba38caa02316c32c1c0d7032b6a0cb6755afc",
+    "expected_v40_spec_raw_file_sha256": "c86e73ebc4e7852407972dfcab89000e68dbeac4e9d635093a31eadc835109e2",
+    "expected_v40_spec_sha256": "3ab75513efc7014157ef74633ef5c4d9bd4f23b22390f341dbfd033cb8a9694e",
+    "no_parent_regeneration": true,
+    "required_v40_next_gate": "AUGMENTED_1_2_EXCHANGE_GRAPH_CONNECTIVITY_OR_COUNTEREXAMPLE",
+    "successor_mutable_paths": [
+      "quantum_research_lab/README.md",
+      "quantum_research_lab/ui.py"
+    ]
+  },
+  "preregistered_checks": [
+    "V40_ARTIFACT_SPEC_SOURCES_FREEZE_AND_143_IMMUTABLE_PATHS_AUTHENTICATED",
+    "BRIDGE_ENGINE_SOURCE_IDENTITY_MATCHES_SEALED_PROTOCOL",
+    "ALL_V40_SINGLETON_COMPONENTS_DISCOVERED_FROM_AUTHENTICATED_ARTIFACT",
+    "COMPLETE_19575_CANDIDATE_AUDIT_PER_SINGLETON",
+    "PYTHON_DELTA_PYTHON_FULL_RECOMPUTE_AND_CPP_INT128_RESULTS_IDENTICAL",
+    "EVERY_SELECTED_BRIDGE_ENDPOINT_EXACT_K_AND_ALL_SEVEN_BANDS_FEASIBLE",
+    "DETERMINISTIC_KRUSKAL_SELECTION_REPLAY",
+    "AUTHENTICATED_V40_COMPONENT_FOREST_PLUS_SELECTED_BRIDGES_CONNECTED_OR_COUNTEREXAMPLE",
+    "FULL_AUGMENTED_EDGE_COUNT_NOT_MISREPRESENTED",
+    "DUAL_MITM_EXACT_THRESHOLD_MARGIN_AND_ERROR_CERTIFICATES",
+    "COMPLETE_ORIGINAL_VERSUS_COMPRESSED_PREDICATE_PARITY",
+    "UNSIGNED_GUARDED_SLACK_RANGE_AND_NO_WRAP_PROOF",
+    "MEASUREMENT_FREE_PAIR_ACTION_FORWARD_INVERSE_AND_CLEAN_SCRATCH_PROOF",
+    "R1_AND_R2_PUBLISHED_WITHOUT_POST_OBSERVATION_SWITCHING",
+    "INDEPENDENT_SELECTED_MODEL_RESOURCE_REPLAY",
+    "CACHE_PREPARATION_REPORTED_SEPARATELY_FROM_LAYER_NUMERATOR",
+    "PROVIDER_HARDWARE_AND_ADVANTAGE_BOUNDARIES_ZERO",
+    "DETERMINISTIC_ARTIFACT_REBUILD_AND_NESTED_TAMPER_REJECTION"
+  ],
+  "research_sources": [
+    {
+      "citation": "Barenco et al., Elementary gates for quantum computation, Physical Review A 52, 3457 (1995)",
+      "role": "MULTI_CONTROLLED_GATE_AND_TWO_LEVEL_UNITARY_DECOMPOSITION_CONTEXT",
+      "url": "https://arxiv.org/abs/quant-ph/9503016"
+    },
+    {
+      "citation": "Hadfield et al., From the Quantum Approximate Optimization Algorithm to a Quantum Alternating Operator Ansatz, Algorithms 12, 34 (2019)",
+      "role": "CONSTRAINT_PRESERVING_PARTIAL_MIXER_CONTEXT",
+      "url": "https://arxiv.org/abs/1709.03489"
+    },
+    {
+      "citation": "Cuccaro et al., A new quantum ripple-carry addition circuit (2004)",
+      "role": "MEASUREMENT_FREE_RIPPLE_ARITHMETIC_CONTEXT",
+      "url": "https://arxiv.org/abs/quant-ph/0410184"
+    }
+  ],
+  "resource_compiler_contract": {
+    "architecture_id": "EXACT_COMPRESSED_UNSIGNED_SLACK_LINEAR_ARITHMETIC_WITH_CERTIFIED_BRIDGES_V1",
+    "bridge_template": "Exact two-level rotation on the full data-plus-guarded-slack joint register along the lexicographically earliest differing-bit Gray path, using forward and inverse C^(m-1)X conjugations and one C^(m-1)RY",
+    "cache_preparation": "Caller-supplied coherent guarded-slack caches; a separate exact selected-model preparation ledger is mandatory and excluded from the mixer-layer numerator",
+    "cache_semantics": "For compressed row sum B, lower l, upper u and G=max_i,j abs(b_i-b_j), store guarded unsigned slack Z=(B-l)+G. Feasible support is G<=Z<=G+(u-l).",
+    "dead_edge_policy": "Retain each of 780 lexicographic asset-pair positions as a live pair-action or an exact row-disjointness identity; no sampling-based removal",
+    "decomposition_costs": {
+      "C1X_CNOT": 1,
+      "C2X_CNOT": 6,
+      "CmX_CNOT_FOR_M_GE_3": "6*(2*m-3)",
+      "CmRY_CNOT": "2*CmX_CNOT",
+      "one_control_RY_CNOT": 2
+    },
+    "elementary_basis": ["X", "H", "T", "TDG", "RY", "RZ", "CX"],
+    "guard_width": "max(3,ceil(log2(2*G+(u-l)+1)))",
+    "ripple_macro_counts_for_width_w_at_least_3": {
+      "controlled_modular_constant_add_selected_model_cnot": "18*(2*w-3)+6*(5*w-7)+(2*w-6)=68*w-102; obtained by adding one clean predicate control to each 2*w-3 Toffoli, 5*w-7 CNOT and 2*w-6 X primitive of the Cuccaro modulo-2^w adder",
+      "uncontrolled_comparator_selected_model_cnot": "6*(2*w-1)+(4*w-3)=16*w-9 for one clean output toggle",
+      "orientation_predicate_selected_model_cnot": "6 to compute and 6 to clear",
+      "scratch_contract": "One w-bit constant register, one carry, orientation, bound flags, row flags and aggregate are returned clean; constant-register X preparation contributes no CNOT"
+    },
+    "no_wrap_proof": "On feasible support Z lies in [G,G+u-l]; one swap delta lies in [-G,G], so normalized Z+delta lies in [0,2G+u-l], fully represented by guard_width",
+    "one_swap_template": "V3.9 exact cache-normalized pair-action topology replayed in guarded-slack coordinates: compute different-bit guard, normalize, compute exact interval flags, aggregate, Gray-conjugated controlled RY, uncompute flags, denormalize with the new endpoint orientation, clear scratch",
+    "ordered_layer": "All 780 canonical one-swap positions in lexicographic i,j order, followed for R2 only by selected bridges in registered Kruskal order",
+    "post_observation_switching": "PROHIBITED",
+    "resource_numerator": "One complete ordered mixer layer; no cancellation between macros or positions",
+    "selected_decomposition_model": "CONTROLLED_CUCCARO_RIPPLE_CLEAN_LADDER_6CX_CCX_CRX2CX_V1",
+    "two_level_bridge_cost": "For joint register width m and joint endpoint Hamming distance h, 2*h occurrences of C^(m-1)X-equivalent cost, including the two C^(m-1)X gates that synthesize C^(m-1)RY",
+    "zero_span_policy": "A row with u=l is represented and checked exactly; register width remains at least one"
+  },
+  "self_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing v41_spec_sha and v41_spec_sha256",
+  "spec_version": "QUANTUM LAB V4.1 CERTIFIED BRIDGE + PROOF-CARRYING RESOURCE COMPILER · V1",
+  "v41_spec_sha": "A5977CE4DDA24D2FE6E8",
+  "v41_spec_sha256": "a5977ce4dda24d2fe6e8308e299b8a6b9097cf4fdf7e2835ca8e2fdc6aa99c89"
+}

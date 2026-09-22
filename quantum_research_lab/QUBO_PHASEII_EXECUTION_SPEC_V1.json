@@ -1,0 +1,69 @@
+{
+  "canonical_order": "N ascending -> regime BASE/PAIRWISE/BANDS -> preregistered seed order",
+  "constraints": {
+    "BANDS": {
+      "description": "exact cardinality + 4 group-count bands + 3 factor-exposure bands",
+      "factor_band_tolerance_scale": 0.35,
+      "factor_bands": 3,
+      "group_count_half_width": 1,
+      "groups": 4
+    },
+    "BASE": "exact cardinality only",
+    "PAIRWISE": {
+      "description": "exact cardinality + witness-safe random pairwise exclusions",
+      "target_conflict_density": 0.06
+    }
+  },
+  "execution_spec_sha": "40D3225B0AFC86BC01DD",
+  "execution_spec_version": "QUBO PHASE-II EXECUTION SPEC \u00b7 V1",
+  "family_definition": "one family = fixed (N, constraint regime) across all 8 preregistered seeds",
+  "gap_definition": "best fixed-budget heuristic relative gap = (min(E_SA,E_Local)-E_reference) / max(abs(E_reference),1e-12); E_reference is the best feasible incumbent among MILP, SA and Local Search. MILP optimality certification is reported separately.",
+  "objective": {
+    "cardinality_fraction": 0.25,
+    "expected_return_clip": [
+      -0.05,
+      0.3
+    ],
+    "expected_return_mean": 0.1,
+    "expected_return_sd": 0.06,
+    "factor_corr_weight": 0.65,
+    "factor_rank": 5,
+    "idiosyncratic_corr_weight": 0.35,
+    "portfolio_type": "equal-weight binary selection",
+    "risk_aversion": 5.0,
+    "volatility_range": [
+      0.12,
+      0.35
+    ]
+  },
+  "operational_rules": {
+    "checkpoint_after_each_instance": true,
+    "final_gate_only_after_all_instances": true,
+    "no_instance_skipping": true,
+    "no_rerun_of_completed_instance": true,
+    "no_seed_replacement": true,
+    "resume_requires_identical_environment_fingerprint": true
+  },
+  "phase2_manifest_sha": "AA06BE666EBFE379C82B",
+  "protocol_key": "QUBO_HARD_INSTANCE_SUITE",
+  "protocol_sha": "8E5EF191FAE97A75",
+  "solver_budgets": {
+    "initial_randomization_swaps": 128,
+    "local_candidate_swaps_per_pass": 128,
+    "local_max_passes": 64,
+    "local_restarts": 16,
+    "milp_relative_gap_target": 1e-09,
+    "milp_time_limit_seconds": 75.0,
+    "sa_restarts": 8,
+    "sa_sweeps": 64
+  },
+  "source_evidence_id": "QQUBO-20260821-861D4D08E8",
+  "success_gate": {
+    "heuristic_gap_gate": 0.005,
+    "heuristic_hard_fraction_gate": 0.25,
+    "milp_median_gate_seconds": 10.0,
+    "milp_p95_gate_seconds": 60.0,
+    "required_instances_per_family": 8,
+    "technical_failure_policy": "any canonical instance without a valid recorded result makes the global confirmatory outcome INDETERMINATE"
+  }
+}

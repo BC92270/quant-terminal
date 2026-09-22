@@ -1,0 +1,1661 @@
+{
+  "artifact_sha256": "2d0980803e81564e455836d1fd9c52aab04adbf20a8dfd15958b6d4c3cd7b21f",
+  "artifact_version": "PHASE III · V3.8 PROOF-CARRYING ELEMENTARY ADMISSION · V1",
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "global_impossibility": "NOT_CLAIMED",
+    "hardware_executable": false,
+    "n40_budget_gate": "NOT_EVALUATED",
+    "n40_selected_model_cnot": "NOT_ESTIMATED",
+    "optimization_performance": "NOT_TESTED",
+    "production_n40_equivalence": "NOT_PROVEN",
+    "prototype_scope": "AUTHENTICATED_V37_SYNTHETIC_N4_K2_ONLY",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED"
+  },
+  "decisions": {
+    "backend_native": "NOT_RUN_PROVIDER_FREE_PHASE",
+    "elementary_decomposition": "VALIDATED_ON_REGISTERED_N4_K2_PROTOTYPE",
+    "n40_resource_admission": "BLOCKED_INCOMPLETE_REVERSIBLE_IR",
+    "n40_selected_model_budget": "NOT_EVALUATED",
+    "next_falsifiable_gate": "SCALABLE_N40_REVERSIBLE_ARITHMETIC_IR_AND_EIGHT_SEED_EQUIVALENCE",
+    "overall": "ELEMENTARY_PROTOTYPE_PASSED_N40_ADMISSION_BLOCKED"
+  },
+  "decomposition_contract": {
+    "ccx_template": "CCX_CLIFFORD_T_6CX_V1",
+    "clean_ancilla_policy": "ZERO_INITIALIZED_AND_ZERO_RETURN_PER_LOGICAL_PRIMITIVE",
+    "cnot_depth_policy": "CONSERVATIVE_SERIAL_EMISSION_ORDER_EQUAL_TO_CNOT_COUNT",
+    "connectivity_model": "ABSTRACT_ALL_TO_ALL_LOGICAL",
+    "controlled_rx_template": "CRX_2CX_RZ_RY_V1",
+    "elementary_basis": [
+      "X",
+      "H",
+      "T",
+      "TDG",
+      "RY",
+      "RZ",
+      "CX"
+    ],
+    "post_observation_candidate_switching": "PROHIBITED",
+    "selected_model": "CLEAN_ANCILLA_TOFFOLI_LADDER_6CX_CCX_CRX2CX_V1"
+  },
+  "elementary_resource_ledger": {
+    "cnot_count": 3632,
+    "data_qubits": 10,
+    "elementary_gate_counts": {
+      "CX": 3632,
+      "H": 1208,
+      "RY": 8,
+      "RZ": 8,
+      "T": 2416,
+      "TDG": 1812,
+      "X": 468
+    },
+    "elementary_ir_sha256": "d31d50fb316837b69b25b40129e24b597bae4fa3818fa28f9e8aedbe42f0f5bd",
+    "elementary_ledger_sha256": "5cf145f05fe6486c3e05a399ed71a74780c4806b37df9b7afb85be7fec1c29d3",
+    "logical_occurrence_count": 40,
+    "maximum_clean_ancilla_qubits": 8,
+    "maximum_total_qubits": 18,
+    "one_qubit_gate_count": 5920,
+    "rows": [
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "77356879ab193c9ca97ac422a3efcc0d21afa5aa445e1ff5b0624a291f0150e3",
+        "negative_control_count": 7,
+        "occurrence": 0,
+        "one_qubit_gate_count": 149,
+        "serial_cnot_depth": 90,
+        "target": 0,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "3dd21f0dc5e4b657fd6a0a7e24ae9b9717da346933244d71b529d9df94638df3",
+        "negative_control_count": 7,
+        "occurrence": 1,
+        "one_qubit_gate_count": 149,
+        "serial_cnot_depth": 90,
+        "target": 1,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "7c88aa3ed4cc46a78d88a8d28df6b3333b3698df693094f40fe75ce871f08a62",
+        "negative_control_count": 6,
+        "occurrence": 2,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 4,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 8,
+        "cnot_count": 98,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCRX",
+        "lowered_ir_sha256": "0322d7a3b2c4cf38a8606636887892b372ab6b4270538d1d8692a7531df3a092",
+        "negative_control_count": 5,
+        "occurrence": 3,
+        "one_qubit_gate_count": 158,
+        "serial_cnot_depth": 98,
+        "target": 7,
+        "template_id": "SIGNED_MCRX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "7c88aa3ed4cc46a78d88a8d28df6b3333b3698df693094f40fe75ce871f08a62",
+        "negative_control_count": 6,
+        "occurrence": 4,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 4,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "3dd21f0dc5e4b657fd6a0a7e24ae9b9717da346933244d71b529d9df94638df3",
+        "negative_control_count": 7,
+        "occurrence": 5,
+        "one_qubit_gate_count": 149,
+        "serial_cnot_depth": 90,
+        "target": 1,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "77356879ab193c9ca97ac422a3efcc0d21afa5aa445e1ff5b0624a291f0150e3",
+        "negative_control_count": 7,
+        "occurrence": 6,
+        "one_qubit_gate_count": 149,
+        "serial_cnot_depth": 90,
+        "target": 0,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "aa9dcaf6409d1ea2637a969369fc4b9a45a7ede5c199cc5195e1066ca550b09d",
+        "negative_control_count": 5,
+        "occurrence": 7,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 0,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "85c29bff6b19de47df0c564f8d6a7f40a67d6505b4d7fcb876391ebf59fb8f85",
+        "negative_control_count": 5,
+        "occurrence": 8,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 1,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "82f43491f1fe879b5161dec1675a9e037adffd42efbbfe5820a0a7ce67fbd150",
+        "negative_control_count": 5,
+        "occurrence": 9,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 4,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "5b70d0d5ceb84260f42c3e0564a35855e6c8f05ca1db7de8ff9d019de5c18597",
+        "negative_control_count": 6,
+        "occurrence": 10,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 5,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "bbaaf1c15f19a21844fe8ac136e44913e7180ecba96ee3208eb34bda21af78fb",
+        "negative_control_count": 6,
+        "occurrence": 11,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 6,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "4285a649626c0b1a00f936190d1ae2bd6ec439f6d85130a05b8f581971f1dd11",
+        "negative_control_count": 6,
+        "occurrence": 12,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 7,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 8,
+        "cnot_count": 98,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCRX",
+        "lowered_ir_sha256": "c068f1aba4fad1c7de99daa3e547d3ad805a9440541daa8530f40d46f25daa7e",
+        "negative_control_count": 6,
+        "occurrence": 13,
+        "one_qubit_gate_count": 160,
+        "serial_cnot_depth": 98,
+        "target": 8,
+        "template_id": "SIGNED_MCRX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "4285a649626c0b1a00f936190d1ae2bd6ec439f6d85130a05b8f581971f1dd11",
+        "negative_control_count": 6,
+        "occurrence": 14,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 7,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "bbaaf1c15f19a21844fe8ac136e44913e7180ecba96ee3208eb34bda21af78fb",
+        "negative_control_count": 6,
+        "occurrence": 15,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 6,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "5b70d0d5ceb84260f42c3e0564a35855e6c8f05ca1db7de8ff9d019de5c18597",
+        "negative_control_count": 6,
+        "occurrence": 16,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 5,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "82f43491f1fe879b5161dec1675a9e037adffd42efbbfe5820a0a7ce67fbd150",
+        "negative_control_count": 5,
+        "occurrence": 17,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 4,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "85c29bff6b19de47df0c564f8d6a7f40a67d6505b4d7fcb876391ebf59fb8f85",
+        "negative_control_count": 5,
+        "occurrence": 18,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 1,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "aa9dcaf6409d1ea2637a969369fc4b9a45a7ede5c199cc5195e1066ca550b09d",
+        "negative_control_count": 5,
+        "occurrence": 19,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 0,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "7c0c55f518412a324330bfb4b6e97c2a30be732ce1e35865d5c0c6d90db36e7b",
+        "negative_control_count": 7,
+        "occurrence": 20,
+        "one_qubit_gate_count": 149,
+        "serial_cnot_depth": 90,
+        "target": 2,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "45c7bf2f6727fe393af04a8fd7f706884507e3c005d0f2ca1d37be926402b168",
+        "negative_control_count": 7,
+        "occurrence": 21,
+        "one_qubit_gate_count": 149,
+        "serial_cnot_depth": 90,
+        "target": 3,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "d8d2dc5f3288df47d66286934cc97ffda754f24b6c6f986d7b0c293124931d3b",
+        "negative_control_count": 6,
+        "occurrence": 22,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 4,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 8,
+        "cnot_count": 98,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCRX",
+        "lowered_ir_sha256": "755126658bb0a4033ca3d84ac99aa44a86a0b233dba8abff320115d20a707859",
+        "negative_control_count": 5,
+        "occurrence": 23,
+        "one_qubit_gate_count": 158,
+        "serial_cnot_depth": 98,
+        "target": 7,
+        "template_id": "SIGNED_MCRX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "d8d2dc5f3288df47d66286934cc97ffda754f24b6c6f986d7b0c293124931d3b",
+        "negative_control_count": 6,
+        "occurrence": 24,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 4,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "45c7bf2f6727fe393af04a8fd7f706884507e3c005d0f2ca1d37be926402b168",
+        "negative_control_count": 7,
+        "occurrence": 25,
+        "one_qubit_gate_count": 149,
+        "serial_cnot_depth": 90,
+        "target": 3,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "7c0c55f518412a324330bfb4b6e97c2a30be732ce1e35865d5c0c6d90db36e7b",
+        "negative_control_count": 7,
+        "occurrence": 26,
+        "one_qubit_gate_count": 149,
+        "serial_cnot_depth": 90,
+        "target": 2,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "a1e64415aceef75f4e8e9492c9995b515246c7718e8539f2cc2bc30667a97f81",
+        "negative_control_count": 5,
+        "occurrence": 27,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 2,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "e3386e3bb5d238f3804b5f3c06dceecaa14c21120165396ee0999bb270c75b0d",
+        "negative_control_count": 5,
+        "occurrence": 28,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 3,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "82f43491f1fe879b5161dec1675a9e037adffd42efbbfe5820a0a7ce67fbd150",
+        "negative_control_count": 5,
+        "occurrence": 29,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 4,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "5b70d0d5ceb84260f42c3e0564a35855e6c8f05ca1db7de8ff9d019de5c18597",
+        "negative_control_count": 6,
+        "occurrence": 30,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 5,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "bbaaf1c15f19a21844fe8ac136e44913e7180ecba96ee3208eb34bda21af78fb",
+        "negative_control_count": 6,
+        "occurrence": 31,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 6,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "4285a649626c0b1a00f936190d1ae2bd6ec439f6d85130a05b8f581971f1dd11",
+        "negative_control_count": 6,
+        "occurrence": 32,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 7,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 8,
+        "cnot_count": 98,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCRX",
+        "lowered_ir_sha256": "c068f1aba4fad1c7de99daa3e547d3ad805a9440541daa8530f40d46f25daa7e",
+        "negative_control_count": 6,
+        "occurrence": 33,
+        "one_qubit_gate_count": 160,
+        "serial_cnot_depth": 98,
+        "target": 8,
+        "template_id": "SIGNED_MCRX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "4285a649626c0b1a00f936190d1ae2bd6ec439f6d85130a05b8f581971f1dd11",
+        "negative_control_count": 6,
+        "occurrence": 34,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 7,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "bbaaf1c15f19a21844fe8ac136e44913e7180ecba96ee3208eb34bda21af78fb",
+        "negative_control_count": 6,
+        "occurrence": 35,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 6,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "5b70d0d5ceb84260f42c3e0564a35855e6c8f05ca1db7de8ff9d019de5c18597",
+        "negative_control_count": 6,
+        "occurrence": 36,
+        "one_qubit_gate_count": 147,
+        "serial_cnot_depth": 90,
+        "target": 5,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "82f43491f1fe879b5161dec1675a9e037adffd42efbbfe5820a0a7ce67fbd150",
+        "negative_control_count": 5,
+        "occurrence": 37,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 4,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "e3386e3bb5d238f3804b5f3c06dceecaa14c21120165396ee0999bb270c75b0d",
+        "negative_control_count": 5,
+        "occurrence": 38,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 3,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      },
+      {
+        "clean_ancilla_qubits": 7,
+        "cnot_count": 90,
+        "control_count": 9,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "a1e64415aceef75f4e8e9492c9995b515246c7718e8539f2cc2bc30667a97f81",
+        "negative_control_count": 5,
+        "occurrence": 39,
+        "one_qubit_gate_count": 145,
+        "serial_cnot_depth": 90,
+        "target": 2,
+        "template_id": "SIGNED_MCX_CLEAN_AND_LADDER_V1"
+      }
+    ],
+    "selected_model": "CLEAN_ANCILLA_TOFFOLI_LADDER_6CX_CCX_CRX2CX_V1",
+    "serial_cnot_depth": 3632
+  },
+  "elementary_validation": {
+    "checks": {
+      "all_40_v37_logical_occurrences_lowered": true,
+      "all_49152_registered_primitive_cases_checked": true,
+      "all_allocated_ancillas_return_to_zero_per_primitive": true,
+      "deterministic_composition_inherits_authenticated_v37_layer_action": true,
+      "elementary_layer_cnot_count_is_3632": true,
+      "elementary_layer_one_qubit_count_is_5920": true,
+      "elementary_templates_pass": true,
+      "every_logical_occurrence_matches_on_full_data_domain": true,
+      "every_primitive_preserves_norm": true,
+      "maximum_clean_ancilla_count_is_8": true
+    },
+    "clean_ancilla_failures": 0,
+    "composition_proof": "Each of the 40 deterministic elementary blocks equals its authenticated V3.7 logical primitive on all 1024 data basis columns and returns every clean ancilla to zero. Exact equality is therefore preserved under ordered composition; the authenticated V3.7 exhaustive complete-layer action and Gram proof remains the independent logical reference.",
+    "elementary_validation_sha256": "9c6bd8c21b8901caca719aaaf46027d50a47253509974950e06e8d4dc5a14bda",
+    "logical_occurrences_checked": 40,
+    "maximum_action_error": 4.043178621822051e-15,
+    "maximum_norm_error": 7.993605777301127e-15,
+    "numeric_tolerance": 1e-12,
+    "passed": true,
+    "primitive_basis_beta_cases_checked": 49152,
+    "rows": [
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "77356879ab193c9ca97ac422a3efcc0d21afa5aa445e1ff5b0624a291f0150e3",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 0
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "3dd21f0dc5e4b657fd6a0a7e24ae9b9717da346933244d71b529d9df94638df3",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 1
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "7c88aa3ed4cc46a78d88a8d28df6b3333b3698df693094f40fe75ce871f08a62",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 2
+      },
+      {
+        "basis_beta_cases_checked": 3072,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCRX",
+        "lowered_ir_sha256": "0322d7a3b2c4cf38a8606636887892b372ab6b4270538d1d8692a7531df3a092",
+        "maximum_action_error": 4.043178621822051e-15,
+        "maximum_norm_error": 7.993605777301127e-15,
+        "occurrence": 3
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "7c88aa3ed4cc46a78d88a8d28df6b3333b3698df693094f40fe75ce871f08a62",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 4
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "3dd21f0dc5e4b657fd6a0a7e24ae9b9717da346933244d71b529d9df94638df3",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 5
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "77356879ab193c9ca97ac422a3efcc0d21afa5aa445e1ff5b0624a291f0150e3",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 6
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "aa9dcaf6409d1ea2637a969369fc4b9a45a7ede5c199cc5195e1066ca550b09d",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 7
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "85c29bff6b19de47df0c564f8d6a7f40a67d6505b4d7fcb876391ebf59fb8f85",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 8
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "82f43491f1fe879b5161dec1675a9e037adffd42efbbfe5820a0a7ce67fbd150",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 9
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "5b70d0d5ceb84260f42c3e0564a35855e6c8f05ca1db7de8ff9d019de5c18597",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 10
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "bbaaf1c15f19a21844fe8ac136e44913e7180ecba96ee3208eb34bda21af78fb",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 11
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "4285a649626c0b1a00f936190d1ae2bd6ec439f6d85130a05b8f581971f1dd11",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 12
+      },
+      {
+        "basis_beta_cases_checked": 3072,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCRX",
+        "lowered_ir_sha256": "c068f1aba4fad1c7de99daa3e547d3ad805a9440541daa8530f40d46f25daa7e",
+        "maximum_action_error": 4.043178621822051e-15,
+        "maximum_norm_error": 7.993605777301127e-15,
+        "occurrence": 13
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "4285a649626c0b1a00f936190d1ae2bd6ec439f6d85130a05b8f581971f1dd11",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 14
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "bbaaf1c15f19a21844fe8ac136e44913e7180ecba96ee3208eb34bda21af78fb",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 15
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "5b70d0d5ceb84260f42c3e0564a35855e6c8f05ca1db7de8ff9d019de5c18597",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 16
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "82f43491f1fe879b5161dec1675a9e037adffd42efbbfe5820a0a7ce67fbd150",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 17
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "85c29bff6b19de47df0c564f8d6a7f40a67d6505b4d7fcb876391ebf59fb8f85",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 18
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          0,
+          1
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "aa9dcaf6409d1ea2637a969369fc4b9a45a7ede5c199cc5195e1066ca550b09d",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 19
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "7c0c55f518412a324330bfb4b6e97c2a30be732ce1e35865d5c0c6d90db36e7b",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 20
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "45c7bf2f6727fe393af04a8fd7f706884507e3c005d0f2ca1d37be926402b168",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 21
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "d8d2dc5f3288df47d66286934cc97ffda754f24b6c6f986d7b0c293124931d3b",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 22
+      },
+      {
+        "basis_beta_cases_checked": 3072,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCRX",
+        "lowered_ir_sha256": "755126658bb0a4033ca3d84ac99aa44a86a0b233dba8abff320115d20a707859",
+        "maximum_action_error": 4.043178621822051e-15,
+        "maximum_norm_error": 7.993605777301127e-15,
+        "occurrence": 23
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "d8d2dc5f3288df47d66286934cc97ffda754f24b6c6f986d7b0c293124931d3b",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 24
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "45c7bf2f6727fe393af04a8fd7f706884507e3c005d0f2ca1d37be926402b168",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 25
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "7c0c55f518412a324330bfb4b6e97c2a30be732ce1e35865d5c0c6d90db36e7b",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 26
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "a1e64415aceef75f4e8e9492c9995b515246c7718e8539f2cc2bc30667a97f81",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 27
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "e3386e3bb5d238f3804b5f3c06dceecaa14c21120165396ee0999bb270c75b0d",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 28
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "82f43491f1fe879b5161dec1675a9e037adffd42efbbfe5820a0a7ce67fbd150",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 29
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "5b70d0d5ceb84260f42c3e0564a35855e6c8f05ca1db7de8ff9d019de5c18597",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 30
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "bbaaf1c15f19a21844fe8ac136e44913e7180ecba96ee3208eb34bda21af78fb",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 31
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "4285a649626c0b1a00f936190d1ae2bd6ec439f6d85130a05b8f581971f1dd11",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 32
+      },
+      {
+        "basis_beta_cases_checked": 3072,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCRX",
+        "lowered_ir_sha256": "c068f1aba4fad1c7de99daa3e547d3ad805a9440541daa8530f40d46f25daa7e",
+        "maximum_action_error": 4.043178621822051e-15,
+        "maximum_norm_error": 7.993605777301127e-15,
+        "occurrence": 33
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "4285a649626c0b1a00f936190d1ae2bd6ec439f6d85130a05b8f581971f1dd11",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 34
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "bbaaf1c15f19a21844fe8ac136e44913e7180ecba96ee3208eb34bda21af78fb",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 35
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "5b70d0d5ceb84260f42c3e0564a35855e6c8f05ca1db7de8ff9d019de5c18597",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 36
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "82f43491f1fe879b5161dec1675a9e037adffd42efbbfe5820a0a7ce67fbd150",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 37
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "e3386e3bb5d238f3804b5f3c06dceecaa14c21120165396ee0999bb270c75b0d",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 38
+      },
+      {
+        "basis_beta_cases_checked": 1024,
+        "clean_ancilla_return": true,
+        "edge": [
+          2,
+          3
+        ],
+        "logical_kind": "PATTERN_MCX",
+        "lowered_ir_sha256": "a1e64415aceef75f4e8e9492c9995b515246c7718e8539f2cc2bc30667a97f81",
+        "maximum_action_error": 3.7258694339903e-15,
+        "maximum_norm_error": 7.105427357601002e-15,
+        "occurrence": 39
+      }
+    ],
+    "template_validation": {
+      "ccx_basis_columns_checked": 8,
+      "ccx_maximum_action_error": 3.1401849173675503e-16,
+      "checks": {
+        "ccx_exact_on_all_8_basis_columns": true,
+        "ccx_template_has_exactly_6_cnot": true,
+        "ccx_template_has_exactly_9_one_qubit_gates": true,
+        "crx_exact_on_all_4_basis_columns_and_3_betas": true,
+        "crx_template_has_exactly_2_cnot": true,
+        "crx_template_has_exactly_4_one_qubit_gates": true
+      },
+      "crx_basis_beta_cases_checked": 12,
+      "crx_maximum_action_error": 2.220446049250313e-16,
+      "numeric_tolerance": 1e-12,
+      "passed": true,
+      "template_validation_sha256": "5fdec2de5bfcef5b2ef8e718285f45fdac671ac43d2f6e78da76e609a13dde6a"
+    },
+    "validation_betas": [
+      0.0,
+      0.2718281828459045,
+      0.7853981633974483
+    ]
+  },
+  "n40_admission": {
+    "admission_decision": "BLOCKED_INCOMPLETE_REVERSIBLE_IR",
+    "authentication": {
+      "errors": [],
+      "nested_integrity": {
+        "artifact_sha256_computed": "52b9b98a36bf8f6d661b42cdc63f3cc0f6476c207f273a171dcc0516c4c0a54d",
+        "artifact_sha256_stored": "52b9b98a36bf8f6d661b42cdc63f3cc0f6476c207f273a171dcc0516c4c0a54d",
+        "errors": [],
+        "valid": true
+      },
+      "valid": true
+    },
+    "blocking_evidence": [
+      "SCALABLE_REVERSIBLE_ARITHMETIC_AND_CACHE_UPDATE_IR",
+      "ELEMENTARY_LOWERING_ON_ALL_EIGHT_SEEDS",
+      "FULL_COHERENT_EQUIVALENCE_AND_CLEANUP_ON_ALL_EIGHT_SEEDS",
+      "ORDERED_LAYER_CONNECTIVITY_ON_ALL_EIGHT_SEEDS",
+      "SELECTED_MODEL_CNOT_LEDGER_ON_ALL_EIGHT_SEEDS"
+    ],
+    "budget_cnot": 2500000,
+    "budget_gate": "NOT_EVALUATED",
+    "coverage_counts_out_of_8": {
+      "authenticated_seed_contract": 8,
+      "classical_delta_equivalence": 8,
+      "clean_ancilla_proof": 0,
+      "elementary_lowering": 0,
+      "full_coherent_equivalence": 0,
+      "ordered_layer_connectivity": 0,
+      "scalable_reversible_ir": 0,
+      "selected_model_budget_at_most_2500000": 0,
+      "selected_model_cnot_ledger": 0,
+      "seven_constraint_parent_evidence": 8
+    },
+    "frozen_seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ],
+    "maximum_selected_model_cnot": "NOT_ESTIMATED",
+    "minimum_budget_margin_cnot": "NOT_COMPUTED",
+    "n40_admission_sha256": "ffabd6ef8ab6e44c26b06df72f4b7a2d324d88e3fc955658aa9ea468cc2347d7",
+    "negative_result_preservation": "The frozen V3.4 cost rejection remains authentic historical evidence for its own architecture. It is not relabeled as the V3.8 selected-model cost and does not establish a global impossibility result.",
+    "registered_family": "N40_K10_BANDS_SEVEN_CONSTRAINTS",
+    "rows": [
+      {
+        "budget_margin_cnot": "NOT_COMPUTED",
+        "constraint_count": 7,
+        "decision": "BLOCKED_INCOMPLETE_REVERSIBLE_IR",
+        "gates": {
+          "authenticated_seed_contract": true,
+          "classical_delta_equivalence": true,
+          "clean_ancilla_proof": false,
+          "elementary_lowering": false,
+          "full_coherent_equivalence": false,
+          "ordered_layer_connectivity": false,
+          "scalable_reversible_ir": false,
+          "selected_model_budget_at_most_2500000": false,
+          "selected_model_cnot_ledger": false,
+          "seven_constraint_parent_evidence": true
+        },
+        "historical_v34_selected_model_cnot": 143881157326,
+        "historical_v34_status": "REJECTED_SELECTED_MODEL_BUDGET_NONCOMPARABLE_PARENT",
+        "instance_id": "QH-N040-BANDS-S1103",
+        "parent_constraint_row_cases": 5460,
+        "parent_evidence_sha256": "f60010a069d57c29c96077803c8cc65735ff2524994cc83ee90b2420f2070b6b",
+        "parent_swap_cases": 780,
+        "row_sha256": "392f17e9c5f67726f12b935e5646624393d3cbef11b8e6e245991d3a8d830e59",
+        "seed": 1103,
+        "selected_model_clean_ancilla_qubits": "NOT_ESTIMATED",
+        "selected_model_cnot": "NOT_ESTIMATED",
+        "selected_model_logical_qubits": "NOT_ESTIMATED",
+        "selected_model_one_qubit_gates": "NOT_ESTIMATED",
+        "selected_model_serial_cnot_depth": "NOT_ESTIMATED"
+      },
+      {
+        "budget_margin_cnot": "NOT_COMPUTED",
+        "constraint_count": 7,
+        "decision": "BLOCKED_INCOMPLETE_REVERSIBLE_IR",
+        "gates": {
+          "authenticated_seed_contract": true,
+          "classical_delta_equivalence": true,
+          "clean_ancilla_proof": false,
+          "elementary_lowering": false,
+          "full_coherent_equivalence": false,
+          "ordered_layer_connectivity": false,
+          "scalable_reversible_ir": false,
+          "selected_model_budget_at_most_2500000": false,
+          "selected_model_cnot_ledger": false,
+          "seven_constraint_parent_evidence": true
+        },
+        "historical_v34_selected_model_cnot": 146973076970,
+        "historical_v34_status": "REJECTED_SELECTED_MODEL_BUDGET_NONCOMPARABLE_PARENT",
+        "instance_id": "QH-N040-BANDS-S2207",
+        "parent_constraint_row_cases": 5460,
+        "parent_evidence_sha256": "b4aa551a5a76312d2fc6b4a29e12a7bac9184d1df56b925185a460b361b379b2",
+        "parent_swap_cases": 780,
+        "row_sha256": "664f2edf554e4065f3fd8aa3194c608756a241b158f685572f749d4633a6fb89",
+        "seed": 2207,
+        "selected_model_clean_ancilla_qubits": "NOT_ESTIMATED",
+        "selected_model_cnot": "NOT_ESTIMATED",
+        "selected_model_logical_qubits": "NOT_ESTIMATED",
+        "selected_model_one_qubit_gates": "NOT_ESTIMATED",
+        "selected_model_serial_cnot_depth": "NOT_ESTIMATED"
+      },
+      {
+        "budget_margin_cnot": "NOT_COMPUTED",
+        "constraint_count": 7,
+        "decision": "BLOCKED_INCOMPLETE_REVERSIBLE_IR",
+        "gates": {
+          "authenticated_seed_contract": true,
+          "classical_delta_equivalence": true,
+          "clean_ancilla_proof": false,
+          "elementary_lowering": false,
+          "full_coherent_equivalence": false,
+          "ordered_layer_connectivity": false,
+          "scalable_reversible_ir": false,
+          "selected_model_budget_at_most_2500000": false,
+          "selected_model_cnot_ledger": false,
+          "seven_constraint_parent_evidence": true
+        },
+        "historical_v34_selected_model_cnot": 148134817594,
+        "historical_v34_status": "REJECTED_SELECTED_MODEL_BUDGET_NONCOMPARABLE_PARENT",
+        "instance_id": "QH-N040-BANDS-S3301",
+        "parent_constraint_row_cases": 5460,
+        "parent_evidence_sha256": "5f9e5d36b3a72b51f0ed801821b39ee126ed210a9e7bd9d00620cb14470d86ef",
+        "parent_swap_cases": 780,
+        "row_sha256": "18de5377862e0c24b005bd4ca6fae0796720ff27da69c31502833523a60a70d8",
+        "seed": 3301,
+        "selected_model_clean_ancilla_qubits": "NOT_ESTIMATED",
+        "selected_model_cnot": "NOT_ESTIMATED",
+        "selected_model_logical_qubits": "NOT_ESTIMATED",
+        "selected_model_one_qubit_gates": "NOT_ESTIMATED",
+        "selected_model_serial_cnot_depth": "NOT_ESTIMATED"
+      },
+      {
+        "budget_margin_cnot": "NOT_COMPUTED",
+        "constraint_count": 7,
+        "decision": "BLOCKED_INCOMPLETE_REVERSIBLE_IR",
+        "gates": {
+          "authenticated_seed_contract": true,
+          "classical_delta_equivalence": true,
+          "clean_ancilla_proof": false,
+          "elementary_lowering": false,
+          "full_coherent_equivalence": false,
+          "ordered_layer_connectivity": false,
+          "scalable_reversible_ir": false,
+          "selected_model_budget_at_most_2500000": false,
+          "selected_model_cnot_ledger": false,
+          "seven_constraint_parent_evidence": true
+        },
+        "historical_v34_selected_model_cnot": 144768354582,
+        "historical_v34_status": "REJECTED_SELECTED_MODEL_BUDGET_NONCOMPARABLE_PARENT",
+        "instance_id": "QH-N040-BANDS-S4409",
+        "parent_constraint_row_cases": 5460,
+        "parent_evidence_sha256": "9646a98d36162b23134390e98e3b8a97d68a827ab42dfd072c13f4e0d452d639",
+        "parent_swap_cases": 780,
+        "row_sha256": "b7b9006001fd54ab7e7a0063d0980134236466ad72cce82d1edbb07fc373e2de",
+        "seed": 4409,
+        "selected_model_clean_ancilla_qubits": "NOT_ESTIMATED",
+        "selected_model_cnot": "NOT_ESTIMATED",
+        "selected_model_logical_qubits": "NOT_ESTIMATED",
+        "selected_model_one_qubit_gates": "NOT_ESTIMATED",
+        "selected_model_serial_cnot_depth": "NOT_ESTIMATED"
+      },
+      {
+        "budget_margin_cnot": "NOT_COMPUTED",
+        "constraint_count": 7,
+        "decision": "BLOCKED_INCOMPLETE_REVERSIBLE_IR",
+        "gates": {
+          "authenticated_seed_contract": true,
+          "classical_delta_equivalence": true,
+          "clean_ancilla_proof": false,
+          "elementary_lowering": false,
+          "full_coherent_equivalence": false,
+          "ordered_layer_connectivity": false,
+          "scalable_reversible_ir": false,
+          "selected_model_budget_at_most_2500000": false,
+          "selected_model_cnot_ledger": false,
+          "seven_constraint_parent_evidence": true
+        },
+        "historical_v34_selected_model_cnot": 149405532710,
+        "historical_v34_status": "REJECTED_SELECTED_MODEL_BUDGET_NONCOMPARABLE_PARENT",
+        "instance_id": "QH-N040-BANDS-S5501",
+        "parent_constraint_row_cases": 5460,
+        "parent_evidence_sha256": "b03b920044b082ac938b77916fc3a09e2e22e40b24c95ca6570a090f1af09848",
+        "parent_swap_cases": 780,
+        "row_sha256": "f4cd67a8955e9d112579947ba5807c50f3484c16c413abceaba24b87154170fb",
+        "seed": 5501,
+        "selected_model_clean_ancilla_qubits": "NOT_ESTIMATED",
+        "selected_model_cnot": "NOT_ESTIMATED",
+        "selected_model_logical_qubits": "NOT_ESTIMATED",
+        "selected_model_one_qubit_gates": "NOT_ESTIMATED",
+        "selected_model_serial_cnot_depth": "NOT_ESTIMATED"
+      },
+      {
+        "budget_margin_cnot": "NOT_COMPUTED",
+        "constraint_count": 7,
+        "decision": "BLOCKED_INCOMPLETE_REVERSIBLE_IR",
+        "gates": {
+          "authenticated_seed_contract": true,
+          "classical_delta_equivalence": true,
+          "clean_ancilla_proof": false,
+          "elementary_lowering": false,
+          "full_coherent_equivalence": false,
+          "ordered_layer_connectivity": false,
+          "scalable_reversible_ir": false,
+          "selected_model_budget_at_most_2500000": false,
+          "selected_model_cnot_ledger": false,
+          "seven_constraint_parent_evidence": true
+        },
+        "historical_v34_selected_model_cnot": 143853516174,
+        "historical_v34_status": "REJECTED_SELECTED_MODEL_BUDGET_NONCOMPARABLE_PARENT",
+        "instance_id": "QH-N040-BANDS-S6607",
+        "parent_constraint_row_cases": 5460,
+        "parent_evidence_sha256": "6cccf4418b8a7f1d05dc4b7af91e688f276d81dbb80d34c860765b6a01028890",
+        "parent_swap_cases": 780,
+        "row_sha256": "fffbff04ffd8d3b2604b1709c99940f0caf55c57ebf3b677b6acc5bf732efd69",
+        "seed": 6607,
+        "selected_model_clean_ancilla_qubits": "NOT_ESTIMATED",
+        "selected_model_cnot": "NOT_ESTIMATED",
+        "selected_model_logical_qubits": "NOT_ESTIMATED",
+        "selected_model_one_qubit_gates": "NOT_ESTIMATED",
+        "selected_model_serial_cnot_depth": "NOT_ESTIMATED"
+      },
+      {
+        "budget_margin_cnot": "NOT_COMPUTED",
+        "constraint_count": 7,
+        "decision": "BLOCKED_INCOMPLETE_REVERSIBLE_IR",
+        "gates": {
+          "authenticated_seed_contract": true,
+          "classical_delta_equivalence": true,
+          "clean_ancilla_proof": false,
+          "elementary_lowering": false,
+          "full_coherent_equivalence": false,
+          "ordered_layer_connectivity": false,
+          "scalable_reversible_ir": false,
+          "selected_model_budget_at_most_2500000": false,
+          "selected_model_cnot_ledger": false,
+          "seven_constraint_parent_evidence": true
+        },
+        "historical_v34_selected_model_cnot": 149357426234,
+        "historical_v34_status": "REJECTED_SELECTED_MODEL_BUDGET_NONCOMPARABLE_PARENT",
+        "instance_id": "QH-N040-BANDS-S7703",
+        "parent_constraint_row_cases": 5460,
+        "parent_evidence_sha256": "aca4d1bf2f71ac4290d2d10d88cbbb2f12ea97eb8a71a67e883f58bbccafd593",
+        "parent_swap_cases": 780,
+        "row_sha256": "cc2e247a85338ea8f0b7933956663560d572bcec8d3cd32f7ab9858db9d9187c",
+        "seed": 7703,
+        "selected_model_clean_ancilla_qubits": "NOT_ESTIMATED",
+        "selected_model_cnot": "NOT_ESTIMATED",
+        "selected_model_logical_qubits": "NOT_ESTIMATED",
+        "selected_model_one_qubit_gates": "NOT_ESTIMATED",
+        "selected_model_serial_cnot_depth": "NOT_ESTIMATED"
+      },
+      {
+        "budget_margin_cnot": "NOT_COMPUTED",
+        "constraint_count": 7,
+        "decision": "BLOCKED_INCOMPLETE_REVERSIBLE_IR",
+        "gates": {
+          "authenticated_seed_contract": true,
+          "classical_delta_equivalence": true,
+          "clean_ancilla_proof": false,
+          "elementary_lowering": false,
+          "full_coherent_equivalence": false,
+          "ordered_layer_connectivity": false,
+          "scalable_reversible_ir": false,
+          "selected_model_budget_at_most_2500000": false,
+          "selected_model_cnot_ledger": false,
+          "seven_constraint_parent_evidence": true
+        },
+        "historical_v34_selected_model_cnot": 145221643858,
+        "historical_v34_status": "REJECTED_SELECTED_MODEL_BUDGET_NONCOMPARABLE_PARENT",
+        "instance_id": "QH-N040-BANDS-S8807",
+        "parent_constraint_row_cases": 5460,
+        "parent_evidence_sha256": "adeda4aa74ddff6bb5826fec170e35b425144e7c46902c5fea33e643161a6196",
+        "parent_swap_cases": 780,
+        "row_sha256": "cea09da9116439cfcf7a247eb35f4f249108f7657c428ed2b50cd64d29d12bcb",
+        "seed": 8807,
+        "selected_model_clean_ancilla_qubits": "NOT_ESTIMATED",
+        "selected_model_cnot": "NOT_ESTIMATED",
+        "selected_model_logical_qubits": "NOT_ESTIMATED",
+        "selected_model_one_qubit_gates": "NOT_ESTIMATED",
+        "selected_model_serial_cnot_depth": "NOT_ESTIMATED"
+      }
+    ],
+    "selected_model": "CLEAN_ANCILLA_TOFFOLI_LADDER_6CX_CCX_CRX2CX_V1"
+  },
+  "parent": {
+    "authentication": {
+      "comparisons": {
+        "artifact_decision": {
+          "actual": "SMALL_INSTANCE_REVERSIBLE_PROTOTYPE_PASSED",
+          "expected": "SMALL_INSTANCE_REVERSIBLE_PROTOTYPE_PASSED",
+          "valid": true
+        },
+        "artifact_next_gate": {
+          "actual": "ELEMENTARY_BASIS_DECOMPOSITION_AND_N40_RESOURCE_LEDGER",
+          "expected": "ELEMENTARY_BASIS_DECOMPOSITION_AND_N40_RESOURCE_LEDGER",
+          "valid": true
+        },
+        "artifact_raw": {
+          "actual": "93c207a6c0d6723277bf682a678740b330a6a3127d59d63ce28a244bdf606365",
+          "expected": "93c207a6c0d6723277bf682a678740b330a6a3127d59d63ce28a244bdf606365",
+          "valid": true
+        },
+        "artifact_semantic": {
+          "actual": "5773b8f38bd1400f4eb1edf5a016ab69c85fc794aefe31fd1a742d08174bee36",
+          "expected": "5773b8f38bd1400f4eb1edf5a016ab69c85fc794aefe31fd1a742d08174bee36",
+          "valid": true
+        },
+        "freeze_raw": {
+          "actual": "57b273f87e4e2f2a95e0ccbdd6c844c1c3f5d8bfec5dbfd5d488aaefb0290970",
+          "expected": "57b273f87e4e2f2a95e0ccbdd6c844c1c3f5d8bfec5dbfd5d488aaefb0290970",
+          "valid": true
+        },
+        "freeze_semantic": {
+          "actual": "86f247a9dfb918a2eca04ffe96c03adee62c3d8603d99aab3e0d6bf8c07167e7",
+          "expected": "86f247a9dfb918a2eca04ffe96c03adee62c3d8603d99aab3e0d6bf8c07167e7",
+          "valid": true
+        }
+      },
+      "errors": [],
+      "nested_artifact_integrity": {
+        "artifact_sha256_computed": "5773b8f38bd1400f4eb1edf5a016ab69c85fc794aefe31fd1a742d08174bee36",
+        "artifact_sha256_stored": "5773b8f38bd1400f4eb1edf5a016ab69c85fc794aefe31fd1a742d08174bee36",
+        "errors": [],
+        "valid": true
+      },
+      "valid": true
+    },
+    "v37_artifact_raw_file_sha256": "93c207a6c0d6723277bf682a678740b330a6a3127d59d63ce28a244bdf606365",
+    "v37_artifact_sha256": "5773b8f38bd1400f4eb1edf5a016ab69c85fc794aefe31fd1a742d08174bee36",
+    "v37_freeze_raw_file_sha256": "57b273f87e4e2f2a95e0ccbdd6c844c1c3f5d8bfec5dbfd5d488aaefb0290970",
+    "v37_freeze_sha256": "86f247a9dfb918a2eca04ffe96c03adee62c3d8603d99aab3e0d6bf8c07167e7"
+  },
+  "research_classification": "RESEARCH_ONLY",
+  "source_sha256": "bc969d7918e0d81c867c846e40d1b9a8d5609ce67119708cd0bcb5d7db4a63b5",
+  "spec_raw_file_sha256": "b0c8c99246dbb850002f770b9da9bcdc36d8e52cd86ac230e01d7b47e3bd87d9",
+  "spec_sha256": "0c7e33ac23fc0caf0c14b0c6bde730d0fa898851fdb60f5afa24887d98fd066c",
+  "v38_version": "PHASE III · V3.8 ELEMENTARY DECOMPOSITION & N40 ADMISSION · V1"
+}

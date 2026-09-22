@@ -1,0 +1,199 @@
+{
+  "acceptance_contract": {
+    "connected_branch": "GLOBAL_FEASIBLE_GRAPH_CONNECTED_ALL_SEEDS only when all eight complete dual replays have exactly one component",
+    "counterexample_branch": "GLOBAL_FEASIBLE_GRAPH_DISCONNECTED_COUNTEREXAMPLE when at least one complete dual replay has more than one component",
+    "counterexample_stop_policy": "RUN_ALL_EIGHT_SEEDS_DESPITE_FIRST_COUNTEREXAMPLE",
+    "inconclusive_branch": "GLOBAL_FEASIBLE_GRAPH_CONNECTIVITY_INDETERMINATE when no admissible counterexample exists and any seed is incomplete",
+    "required_frozen_seed_count": 8,
+    "required_nine_core_incidences_per_vertex": 10,
+    "validation_failure_branch": "V40_VALIDATION_FAILED"
+  },
+  "candidate_family": {
+    "K": 10,
+    "N": 40,
+    "constraint_count": 7,
+    "constraint_regime": "BANDS",
+    "frozen_seeds": [1103, 2207, 3301, 4409, 5501, 6607, 7703, 8807],
+    "parent_candidate": "V3.9 COMPLETE 780 INDEX-PAIR ORDERED LAYER"
+  },
+  "chronology": {
+    "confirmatory_protocol_state": "SEALED_BEFORE_CONFIRMATORY_REPLAY",
+    "exploratory_audit_disclosed": true,
+    "exploratory_observation": {
+      "scope": "Unsealed engineering run of the exact nine-core engine over all eight frozen seeds",
+      "signal": "Seeds 2207 and 7703 exhibited isolated feasible portfolios; all counts and conclusions remain exploratory until the locked dual replay passes",
+      "use": "Motivated mandatory direct 300-neighbor audits and a future multi-asset bridge candidate; not accepted as confirmatory evidence"
+    },
+    "protocol_sealed_utc": "2026-09-10T20:00:00Z",
+    "resource_redesign_registration_timing": "AFTER_V3.9_REJECTION_AND_DISCLOSED_V4.0_EXPLORATION_BEFORE_ANY_V4.1_RESOURCE_LEDGER"
+  },
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "resource_redesign": "PREREGISTERED_NOT_EVALUATED",
+    "scope": "EXACT_GLOBAL_FEASIBLE_STATE_GRAPH_CONNECTIVITY_AND_FUTURE_RESOURCE_REDESIGN_PREREGISTRATION"
+  },
+  "connectivity_protocol": {
+    "adjacency": "Two distinct feasible K-subsets are adjacent iff their Hamming distance is two",
+    "arithmetic": "SIGNED_INT128_EXACT_NO_FLOATING_POINT",
+    "cache_semantics": "The seven coherent V3.9 caches are deterministic functions of a portfolio and are not additional graph vertices",
+    "component_algorithm": "Deterministic disjoint-set union over all equal nine-element cores",
+    "completeness_argument": "The four authenticated ten-asset groups partition all forty assets. Enumerating every allowed local subset and every four-way product whose counts sum to ten emits each group-valid exact-K portfolio exactly once; exact factor filtering then emits the complete feasible vertex set.",
+    "edge_core_theorem": "For distinct ten-subsets S and T, Hamming distance two is equivalent to existence of one unique nine-subset C with C subset S and C subset T",
+    "engine_algorithm": "EXHAUSTIVE_GROUP_MITM_PLUS_NINE_CORE_DSU_V1",
+    "engine_source": "quantum_research_lab/phase3_v40_connectivity_engine.cpp",
+    "engine_source_raw_file_sha256": "16cdfffe8dde853f534349d0531f52c4026271f6f03de53ade77af4ec6726944",
+    "graph_definition": {
+      "edges": "ALL FEASIBLE ONE-OUT ONE-IN SWAPS",
+      "vertices": "ALL N=40 K=10 PORTFOLIOS SATISFYING FOUR GROUP BANDS AND THREE EXACT DYADIC FACTOR BANDS"
+    },
+    "primary_replay": {
+      "group_split": [[0, 1], [2, 3]],
+      "primary_factor_filter": 0,
+      "run_mode": 0
+    },
+    "replay_equality_fields": [
+      "component_assignment_sha256",
+      "component_count",
+      "component_representatives",
+      "connected",
+      "core_index_sha256",
+      "distinct_nine_cores",
+      "enumeration_sha256",
+      "exact_state_graph_edge_count",
+      "feasible_vertex_count",
+      "forest_sha256",
+      "group_candidate_count",
+      "incidence_invariant_valid",
+      "largest_component_size",
+      "observed_nine_core_incidences",
+      "smallest_component_size",
+      "successful_unions",
+      "union_attempts",
+      "union_forest_invariant_valid",
+      "witness_mask_hex"
+    ],
+    "structural_replay": {
+      "group_split": [[0, 2], [1, 3]],
+      "primary_factor_filter": 1,
+      "run_mode": 1
+    }
+  },
+  "evidence_contract": {
+    "artifact": "outputs/quantum_phase3/v40_connectivity/SEALED_V4_0_GLOBAL_CONNECTIVITY_ARTIFACT.json",
+    "canonical_payload": "UTF-8 JSON with sorted keys and compact separators, excluding artifact_sha256",
+    "counterexample_direct_audit": "Every isolated representative is independently checked against all K*(N-K)=300 one-swap neighbors with exact integers",
+    "immutability": "An existing non-identical artifact is never overwritten",
+    "replay": "Every seed must be reproduced under both registered MITM partitions and all stable equality fields must match",
+    "state_digest_encoding": "Sorted feasible masks encoded as unsigned 64-bit big-endian words",
+    "union_digest_encoding": "Nine-core, first feasible mask and current feasible mask encoded as unsigned 64-bit big-endian words for every successful deterministic union"
+  },
+  "parent_contract": {
+    "expected_v31_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+    "expected_v31_raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "expected_v39_artifact_raw_file_sha256": "38d2d16856f1930f1f86848929a4341cab18e02edf387208debc6cd5213aed29",
+    "expected_v39_artifact_sha256": "26856f1e26bed5dc5b9a6d6af7bb25c53ef0b25188d8c787276afbeb08027775",
+    "expected_v39_decision": "N40_REVERSIBLE_IR_PASSED_RESOURCE_SCREEN_REJECTED",
+    "expected_v39_freeze_raw_file_sha256": "e44295aaab7689be7090ff6022a67e2e7d96cc40fcdaedf0328aa50294880c59",
+    "expected_v39_freeze_sha256": "510790b4682e09376feb226b9d0b8b0046477ea456abf0a38e0cadb2410300ac",
+    "expected_v39_source_raw_file_sha256": "94dfd1691252bc4896e6f29bb0727ad75a2736a0de019d22bb0dea7643ceda94",
+    "expected_v39_spec_raw_file_sha256": "b710e884216a765118c6309b59b0a30adf284ba89163ac34151e26d4629d1b7d",
+    "expected_v39_spec_sha256": "a3845e1b553f25eaebb4a80cb697c28dae2da07e1193ecf6cd03158de428ec5c",
+    "no_parent_regeneration": true,
+    "required_v39_budget_decision": "REJECTED_SELECTED_MODEL_CNOT_BUDGET",
+    "required_v39_next_gate": "GLOBAL_FEASIBLE_GRAPH_CONNECTIVITY_OR_COUNTEREXAMPLE"
+  },
+  "preregistered_checks": [
+    "V39_ARTIFACT_SPEC_SOURCE_FREEZE_AND_V31_CHAIN_AUTHENTICATED",
+    "ENGINE_SOURCE_IDENTITY_MATCHES_SEALED_PROTOCOL",
+    "FOUR_GROUPS_PARTITION_ALL_FORTY_ASSETS",
+    "DUAL_GROUP_SPLIT_ENUMERATION_REPLAY_ALL_EIGHT_SEEDS",
+    "SORTED_FEASIBLE_VERTEX_HASH_MATCHES_ACROSS_REPLAYS",
+    "EVERY_EMITTED_VERTEX_EXACT_K_AND_ALL_SEVEN_BANDS_FEASIBLE",
+    "TEN_NINE_CORE_INCIDENCES_PER_VERTEX",
+    "NINE_CORE_DSU_COMPONENT_ASSIGNMENT_REPLAY",
+    "SUCCESSFUL_UNIONS_PLUS_COMPONENTS_EQUALS_VERTICES",
+    "DIRECT_300_NEIGHBOR_AUDIT_FOR_EVERY_ISOLATED_COUNTEREXAMPLE",
+    "ALL_EIGHT_SEEDS_RUN_DESPITE_EARLY_COUNTEREXAMPLE",
+    "RESOURCE_REDESIGN_REMAINS_NOT_EVALUATED",
+    "V39_RESOURCE_REJECTION_PRESERVED",
+    "PROVIDER_HARDWARE_AND_ADVANTAGE_BOUNDARIES_ZERO",
+    "DETERMINISTIC_ARTIFACT_REBUILD_AND_NESTED_TAMPER_REJECTION"
+  ],
+  "research_sources": [
+    {
+      "citation": "Hadfield et al., From the Quantum Approximate Optimization Algorithm to a Quantum Alternating Operator Ansatz, Algorithms 12, 34 (2019)",
+      "role": "HARD_CONSTRAINT_MIXER_DESIGN_CONTEXT",
+      "url": "https://arxiv.org/abs/1709.03489"
+    },
+    {
+      "citation": "Fuchs et al., Constrained mixers for the quantum approximate optimization algorithm, Algorithms 15, 202 (2022)",
+      "role": "FEASIBLE_SUBSPACE_MIXER_AND_CX_COST_CONTEXT",
+      "url": "https://arxiv.org/abs/2203.06095"
+    },
+    {
+      "citation": "Cuccaro et al., A new quantum ripple-carry addition circuit (2004)",
+      "role": "FUTURE_MEASUREMENT_FREE_LINEAR_ARITHMETIC_CONTEXT_ONLY",
+      "url": "https://arxiv.org/abs/quant-ph/0410184"
+    },
+    {
+      "citation": "Wolk, Capala and Rycerz, Design and Analysis of an Improved Constrained Hypercube Mixer in QAOA (2026)",
+      "role": "PRECOMPUTED_LINEAR_FUNCTION_CACHE_REDESIGN_CONTEXT_ONLY",
+      "url": "https://arxiv.org/abs/2603.05187"
+    }
+  ],
+  "resource_redesign_preregistration": {
+    "architecture_id": "EXACT_COMPRESSED_UNSIGNED_SLACK_LINEAR_ARITHMETIC_WITH_CERTIFIED_BRIDGES_V1",
+    "budget_cnot": 2500000,
+    "candidate_set": [
+      {
+        "candidate_id": "R1_LINEAR_SLACK_ALL_ONE_SWAP",
+        "move_family": "ALL FEASIBLE HAMMING_DISTANCE_TWO SWAPS",
+        "required_connectivity": "MUST_PASS_OR_CANDIDATE_REJECTED"
+      },
+      {
+        "bridge_rule": "Add lexicographically earliest exact-feasible Hamming-distance-four component bridges under deterministic Kruskal ordering until connected or exhaustively impossible",
+        "candidate_id": "R2_LINEAR_SLACK_ONE_SWAP_PLUS_TWO_SWAP_BRIDGES",
+        "move_family": "ONE-OUT ONE-IN SWAPS PLUS PREREGISTERED TWO-OUT TWO-IN BRIDGES",
+        "required_connectivity": "MUST_BE_RECERTIFIED_AFTER_BRIDGE_SELECTION"
+      }
+    ],
+    "correctness_gates": [
+      "Exact integer threshold-margin certificate before any coefficient shift",
+      "Original-versus-compressed predicate parity over the complete exact-K group-valid universe",
+      "Unsigned slack cache range proof on feasible support",
+      "Measurement-free ripple arithmetic forward/inverse equivalence",
+      "Clean scratch and coherent pair-action proof",
+      "Complete topology connectivity certificate or counterexample",
+      "Independent selected-model resource replay"
+    ],
+    "decomposition_policy": "MEASUREMENT_FREE_ELEMENTARY_MODEL_TO_BE_FIXED_IN_V4.1_BEFORE_FIRST_LEDGER",
+    "edge_universe_policy": "Retain separate labels for selected compiled moves, proven joint-empty moves and moves excluded by a registered sparse policy",
+    "future_release": "V4.1",
+    "multiple_candidate_policy": "PUBLISH_ALL_REGISTERED_RESULTS; NO SILENT WINNER SELECTION",
+    "post_observation_switching": "PROHIBITED",
+    "precision_policy": "Choose the maximum power-of-two coefficient shift whose strict exact threshold-margin inequality proves zero classification changes; no floating-point feasibility decision",
+    "primary_endpoint": "PASS IFF MAXIMUM SELECTED-MODEL CNOT ACROSS ALL EIGHT FROZEN SEEDS IS AT MOST 2500000 AFTER ALL CORRECTNESS AND CONNECTIVITY GATES PASS",
+    "resource_numerator": "One complete ordered mixer layer; coherent cache preparation remains outside the numerator and must be reported separately",
+    "result_fields": {
+      "budget_margin": "NOT_COMPUTED",
+      "cnot": "NOT_EVALUATED",
+      "projected_or_expected_cost": "PROHIBITED",
+      "status": "PREREGISTERED_NOT_EVALUATED"
+    },
+    "slack_encoding": "For each row use S=A-L on feasible support, prove 0<=S<=U-L, and update by the unchanged exact coefficient delta",
+    "status": "RESOURCE_ARCHITECTURE_PREREGISTERED_NOT_EVALUATED"
+  },
+  "self_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing v40_spec_sha and v40_spec_sha256",
+  "spec_version": "QUANTUM LAB V4.0 GLOBAL FEASIBLE-GRAPH CONNECTIVITY · V1",
+  "v40_spec_sha": "3AB75513EFC7014157EF",
+  "v40_spec_sha256": "3ab75513efc7014157ef74633ef5c4d9bd4f23b22390f341dbfd033cb8a9694e"
+}

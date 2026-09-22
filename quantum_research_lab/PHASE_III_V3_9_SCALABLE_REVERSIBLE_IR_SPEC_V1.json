@@ -1,0 +1,136 @@
+{
+  "acceptance_contract": {
+    "budget_cnot": 2500000,
+    "canonical_edge_count_per_seed": 780,
+    "constraint_count": 7,
+    "frozen_seed_count": 8,
+    "global_connectivity_required_for_production": true,
+    "production_admission_on_budget_failure": "REJECTED",
+    "required_ordered_positions_per_seed": 780,
+    "required_parent_decision": "ELEMENTARY_PROTOTYPE_PASSED_N40_ADMISSION_BLOCKED",
+    "valid_overall_decisions": [
+      "N40_REVERSIBLE_IR_PASSED_RESOURCE_SCREEN_PASSED",
+      "N40_REVERSIBLE_IR_PASSED_RESOURCE_SCREEN_REJECTED",
+      "N40_REVERSIBLE_IR_VALIDATION_FAILED",
+      "BLOCKED_INCOMPLETE_N40_REVERSIBLE_EVIDENCE"
+    ]
+  },
+  "candidate_family": {
+    "N": 40,
+    "K": 10,
+    "constraint_regime": "BANDS",
+    "constraints": "FOUR_GROUP_COUNTS_PLUS_THREE_EXACT_DYADIC_FACTOR_BANDS",
+    "edge_order": "LEXICOGRAPHIC_I_THEN_J_FOR_0_LE_I_LT_J_LT_40",
+    "frozen_seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ]
+  },
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "global_feasible_graph_connectivity": "INDETERMINATE",
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "scope": "PROOF_CARRYING_PROVIDER_NEUTRAL_N40_REVERSIBLE_IR_AND_SELECTED_MODEL_RESOURCE_LEDGER"
+  },
+  "compiler_contract": {
+    "cache_contract": "Caller supplies the seven exact integer cache registers coherently consistent with the exact-K portfolio register; preparation is outside the compiled ordered mixer layer.",
+    "cache_normalization": "For each edge and constraint row, deterministically conjugate one endpoint cache by the exact signed coefficient difference so both endpoint encodings share one canonical cache value during the two-level rotation.",
+    "coherent_pair_identity": "C_inverse times controlled_XY times C maps |10,A10> and |01,A01> exactly within their two-dimensional encoded subspace when A01=A10+c_j-c_i.",
+    "constant_addition": "Two-pattern-controlled exact two's-complement addition modulo 2^w, synthesized as descending multi-controlled increments inherited from the authenticated proof-carrying compiler.",
+    "dead_edge_policy": "Emit a certified identity position only when an exact-K conditional reachable interval is disjoint from the symmetric feasible interval for at least one constraint row.",
+    "elementary_basis": [
+      "X",
+      "H",
+      "T",
+      "TDG",
+      "RY",
+      "RZ",
+      "CX"
+    ],
+    "expanded_gate_materialization": "NOT_REQUIRED; canonical macro schedules, exact closed-form expansion counts and inherited elementary templates are hashed and independently replayed.",
+    "global_topology_switching": "PROHIBITED",
+    "different_bit_guard": "Compute d=x_i XOR x_j into clean scratch; the aggregate guard includes d and d is uncomputed only after the restored portfolio pair and caches are available.",
+    "interval_guard": "Let delta=c_i-c_j and q in {0,1} name the chosen canonical endpoint orientation. After cache normalization to B=A_q, both endpoints satisfy row r iff B lies in [max(L,L-(1-2q)delta), min(U,U-(1-2q)delta)].",
+    "normalization_orientation": "Choose independently per edge and constraint the endpoint orientation q with the lower exact selected-model normalization CNOT cost; ties choose q=1 (the 10 endpoint).",
+    "ordered_layer": "All 780 canonical positions remain present in order as either a live compiled rotation or a proof-carrying identity record.",
+    "post_observation_candidate_switching": "PROHIBITED",
+    "reachable_range": "For an oriented 10-to-01 edge on the exact-K domain, the canonical cache range is c_i plus the sums of the K-1 smallest and largest remaining coefficients; the 01 orientation is symmetric.",
+    "selected_decomposition_model": "CLEAN_ANCILLA_TOFFOLI_LADDER_6CX_CCX_CRX2CX_V1",
+    "static_simplification": "A lower or upper comparator may be removed only when the exact conditional reachable interval proves it identically true; no sampled or witness-only pruning is allowed.",
+    "uncompute_order": "Compute d, normalize caches, compute interval flags and aggregate guard, apply the Gray-conjugated controlled rotation, uncompute aggregate and interval flags while caches remain normalized, denormalize caches using the new endpoint orientation, then clear d.",
+    "xy_template": "Two CX Gray conjugations around one aggregate-controlled CRX using the inherited two-CX CRX template; the aggregate flag already contains the different-bit condition."
+  },
+  "evidence_contract": {
+    "artifact": "outputs/quantum_phase3/v39_scalable_ir/SEALED_V3_9_SCALABLE_REVERSIBLE_IR_ARTIFACT.json",
+    "canonical_payload": "UTF-8 JSON with sorted keys and compact separators, excluding the self-hash field",
+    "immutability": "An existing non-identical artifact is never overwritten.",
+    "per_edge_manifest": "Every canonical position contributes a deterministic row hash; the ordered hash chain commits to all 780 positions without requiring a monolithic expanded gate file.",
+    "replay": "Two independent builds must reproduce every seed hash, ledger total, validation hash and final artifact identity."
+  },
+  "parent_contract": {
+    "expected_v31_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+    "expected_v31_raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "expected_v38_artifact_raw_file_sha256": "c8062c7836f7abdf164e5cb274db9fcf2c41780714d91f71a99b81b4fd0a8195",
+    "expected_v38_artifact_sha256": "2d0980803e81564e455836d1fd9c52aab04adbf20a8dfd15958b6d4c3cd7b21f",
+    "expected_v38_decision": "ELEMENTARY_PROTOTYPE_PASSED_N40_ADMISSION_BLOCKED",
+    "expected_v38_freeze_raw_file_sha256": "a267509a153ff2bbec671b963823f818278bad3ee74f8c56e8a5687d805fd7d6",
+    "expected_v38_freeze_sha256": "5b73497b5a06071aa9411296aa0ed6ec5e924b4372066a1b4a9b9ca240cfc810",
+    "expected_v38_spec_raw_file_sha256": "b0c8c99246dbb850002f770b9da9bcdc36d8e52cd86ac230e01d7b47e3bd87d9",
+    "expected_v38_spec_sha256": "0c7e33ac23fc0caf0c14b0c6bde730d0fa898851fdb60f5afa24887d98fd066c",
+    "expected_v38_source_raw_file_sha256": "bc969d7918e0d81c867c846e40d1b9a8d5609ce67119708cd0bcb5d7db4a63b5",
+    "no_parent_regeneration": true
+  },
+  "preregistered_checks": [
+    "V38_ARTIFACT_SPEC_SOURCE_AND_FREEZE_CHAIN_AUTHENTICATED",
+    "ALL_EIGHT_FROZEN_SEED_CERTIFICATES_AND_SEVEN_ROWS_AUTHENTICATED",
+    "EXACT_K_CONDITIONAL_RANGE_CERTIFICATES_FOR_EVERY_EDGE_ROW",
+    "SYMMETRIC_INTERVAL_IDENTITY_FOR_EVERY_EDGE_ROW",
+    "STATIC_DEAD_EDGE_CERTIFICATES_HAVE_EXACT_DISJOINTNESS_WITNESSES",
+    "TWO_PATTERN_CONTROLLED_ADD_SMALL_WIDTH_EXHAUSTIVE_EQUIVALENCE",
+    "SIGNED_AND_UNSIGNED_COMPARATOR_SMALL_WIDTH_EXHAUSTIVE_EQUIVALENCE",
+    "CONTROLLED_XY_ELEMENTARY_TEMPLATE_ALL_BASIS_COLUMNS_AND_REGISTERED_BETAS",
+    "CACHE_NORMALIZATION_PAIR_ACTION_SMALL_INSTANCE_EXHAUSTIVE",
+    "CLEAN_SCRATCH_AND_INVERSE_SCHEDULE_STRUCTURAL_PROOF",
+    "ALL_780_ORDERED_POSITIONS_PRESENT_FOR_ALL_EIGHT_SEEDS",
+    "SELECTED_MODEL_LEDGER_RECOMPUTED_FROM_CANONICAL_MACROS",
+    "BUDGET_GATE_EVALUATED_WITHOUT_MODEL_OR_TOPOLOGY_SWITCHING",
+    "GLOBAL_CONNECTIVITY_REMAINS_INDETERMINATE",
+    "PROVIDER_HARDWARE_AND_ADVANTAGE_BOUNDARIES_ZERO",
+    "DETERMINISTIC_REPLAY_AND_NESTED_TAMPER_REJECTION"
+  ],
+  "research_sources": [
+    {
+      "citation": "Barenco et al., Elementary gates for quantum computation, Physical Review A 52, 3457 (1995)",
+      "role": "MULTI_CONTROLLED_GATE_DECOMPOSITION_CONTEXT",
+      "url": "https://arxiv.org/abs/quant-ph/9503016"
+    },
+    {
+      "citation": "Hadfield et al., From the Quantum Approximate Optimization Algorithm to a Quantum Alternating Operator Ansatz, Algorithms 12, 34 (2019)",
+      "role": "CONSTRAINT_PRESERVING_PARTIAL_MIXER_DESIGN_CONTEXT",
+      "url": "https://arxiv.org/abs/1709.03489"
+    },
+    {
+      "citation": "Cuccaro et al., A new quantum ripple-carry addition circuit (2004)",
+      "role": "REGISTER_ARITHMETIC_SUCCESSOR_RESEARCH_CONTEXT_ONLY_NOT_THE_SELECTED_V39_ADDER",
+      "url": "https://arxiv.org/abs/quant-ph/0410184"
+    }
+  ],
+  "self_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing v39_spec_sha and v39_spec_sha256",
+  "spec_version": "QUANTUM LAB V3.9 SCALABLE N40 REVERSIBLE IR AND SELECTED-MODEL ADMISSION · V1",
+  "v39_spec_sha": "A3845E1B553F25EAEBB4",
+  "v39_spec_sha256": "a3845e1b553f25eaebb4a80cb697c28dae2da07e1193ecf6cd03158de428ec5c"
+}

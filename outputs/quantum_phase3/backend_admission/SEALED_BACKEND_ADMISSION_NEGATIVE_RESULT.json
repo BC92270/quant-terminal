@@ -1,0 +1,358 @@
+{
+  "artifact_sha256": "7e217693093dca453ab478c003fe2303e3f6fa21e2a8f36d5bcadef9c58508da",
+  "artifact_version": "PHASE III · V3.5 ZERO-JOB BACKEND ADMISSION ARTIFACT · V1",
+  "backend": {
+    "backend_name": null,
+    "backend_version": null,
+    "basis_gates": [],
+    "class": "UNKNOWN",
+    "coupling_map_edges": 0,
+    "provider_id": null,
+    "status_msg": null
+  },
+  "backend_admission_version": "PHASE III · V3.5 NAMED BACKEND OFFLINE ADMISSION · V1",
+  "calibration": {
+    "calibration_id": "NOT_RECORDED",
+    "captured_at_utc": "NOT_RECORDED",
+    "properties_last_update_utc": "NOT_RECORDED"
+  },
+  "claim_boundary": {
+    "backend_native_reproduction_verified_here": false,
+    "credentials_read": false,
+    "hardware_executable": false,
+    "network_calls": 0,
+    "offline_admission_authorizes_transpilation_audit_only": true,
+    "provider_session_opened": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED"
+  },
+  "compilation": {
+    "basis_gates": [],
+    "coupling_map_edges": 0,
+    "optimization_level": "NOT_RECORDED",
+    "seed_transpiler": "NOT_RECORDED",
+    "stage": "PROVIDER_NEUTRAL"
+  },
+  "decisions": {
+    "downstream_evidence": "BLOCKED_OR_NOT_RUN",
+    "hardware_executable": false,
+    "hardware_execution": "BLOCKED · ZERO JOBS",
+    "local_transpilation_reproduction": "NOT_RUN · QISKIT ABSENT",
+    "offline_backend_admission": "REJECTED_MODEL_SCREEN · DOWNSTREAM EVIDENCE BLOCKED",
+    "online_backend_resolution": "NOT_RUN · OFFLINE SNAPSHOT ONLY",
+    "pretranspilation_model_screen": "REJECTED_MODEL_SCREEN",
+    "provider_authentication": "NOT_RUN · CREDENTIAL ACCESS PROHIBITED",
+    "qpu_jobs_submitted": 0,
+    "qpu_submission": "DISABLED",
+    "quantum_advantage": "NOT_CLAIMED"
+  },
+  "evaluated_at_utc": "2026-09-05T09:52:00+00:00",
+  "evidence": {
+    "captured_at_utc": "NOT_RECORDED",
+    "live_provider_probe": "NOT_RUN",
+    "mode": "NONE"
+  },
+  "gates": {
+    "backend_identity_and_provenance": {
+      "reason": "Backend identity cannot be evaluated without a snapshot.",
+      "state": "NOT_RUN"
+    },
+    "calibration_freshness": {
+      "reason": "Calibration freshness cannot be evaluated without a snapshot.",
+      "state": "NOT_RUN"
+    },
+    "calibration_two_qubit_error": {
+      "reason": "Two-qubit calibration cannot be evaluated without a snapshot.",
+      "state": "NOT_RUN"
+    },
+    "candidate_parent_binding": {
+      "reason": "No routed candidate manifest was supplied.",
+      "state": "NOT_RUN"
+    },
+    "connected_capacity": {
+      "reason": "Connected capacity cannot be evaluated without a snapshot.",
+      "state": "NOT_RUN"
+    },
+    "logical_width": {
+      "reason": "Logical width cannot be evaluated without a snapshot.",
+      "state": "NOT_RUN"
+    },
+    "noise_aware_survival_proxy": {
+      "reason": "Noise proxy requires passing routed 2Q count and calibration gates.",
+      "state": "NOT_RUN"
+    },
+    "parent_provider_2q_gate_model_screen": {
+      "budget": {
+        "maximum_two_qubit_gates_per_circuit": 5000000
+      },
+      "evidence": {
+        "comparison_rule": "REJECT_PRETRANSPILATION_MODEL_IF_SELECTED_CCX_MODEL_CNOT_COUNT_EXCEEDS_PROVIDER_2Q_GATE_LIMIT",
+        "interpretation_boundary": "The numerator is the frozen V3.4 selected 7T-CCX CNOT accounting result, not a lower bound and not a backend-native transpilation result. This is an early model-admission screen; it cannot establish routed counts, physical runtime or fidelity.",
+        "provider_id": "IBM_QUANTUM",
+        "source_checked_utc": "2026-09-05T09:50:26Z",
+        "source_document_publication_utc": "NOT_REPORTED_ON_PAGE",
+        "source_page_title": "Job limits",
+        "source_retrieved_utc": "2026-09-05T09:50:26Z",
+        "source_url": "https://quantum.cloud.ibm.com/docs/en/guides/job-limits"
+      },
+      "observed": {
+        "multiple_of_limit": 29881.106542,
+        "selected_ccx_model_cnot_count": 149405532710
+      },
+      "reason": "PRETRANSPILATION MODEL SCREEN: frozen V3.4 selected-CCX CNOT accounting exceeds the documented IBM two-qubit gate limit per circuit.",
+      "stage": "PRETRANSPILATION_MODEL_SCREEN",
+      "state": "REJECTED"
+    },
+    "rotation_synthesis": {
+      "reason": "No rotation-synthesis manifest was supplied.",
+      "state": "NOT_RUN"
+    },
+    "routed_depth": {
+      "reason": "Routed depth is unavailable because transpilation was not run.",
+      "state": "NOT_RUN"
+    },
+    "routed_two_qubit_count": {
+      "reason": "Routed two-qubit count is unavailable because transpilation was not run.",
+      "state": "NOT_RUN"
+    },
+    "routed_width": {
+      "reason": "Routed width is unavailable because transpilation was not run.",
+      "state": "NOT_RUN"
+    },
+    "snapshot_authentication": {
+      "reason": "No offline backend snapshot was supplied.",
+      "state": "BLOCKED"
+    },
+    "transpilation_metadata": {
+      "reason": "Backend-native transpilation metadata is absent.",
+      "state": "NOT_RUN"
+    },
+    "v34_parent_binding": {
+      "observed": {
+        "artifact_raw": "4e15aba6c83dcec0ff3e22652df03c624f635956d10b769514cfbd78cdaed7fd",
+        "artifact_semantic": "2753b81527bf470b8528550d4de491b968e114e4d59541fd16aeca2d995c9210",
+        "artifact_semantic_recomputed": "2753b81527bf470b8528550d4de491b968e114e4d59541fd16aeca2d995c9210",
+        "freeze_raw": "a2309c3ae551e74970c1c405ac106045f6db85bb2ba5cb87107a88fbfc7ccb12",
+        "freeze_semantic": "ef0c6406b6946e347885699c19422a5a7e224833d19936ec9f5e1298f993c0d6",
+        "freeze_semantic_recomputed": "ef0c6406b6946e347885699c19422a5a7e224833d19936ec9f5e1298f993c0d6",
+        "resource_manifest": "c08112f636b2d3d7af167224338eb78ad59ef99effda8a4c43e1a1dda5e3632f",
+        "schedule": "9231aceff98277a4e3d3e85cc9d520b2d5a61d434250e5fdeaa1c1333aa046bc",
+        "validation_manifest": "cfbe1b9c55002b9386d3e5b2b59373b0689532deffe3c8de41736a7b10213b45"
+      },
+      "reason": "Frozen V3.4 artifact and freeze are byte/semantic exact.",
+      "state": "PASS"
+    }
+  },
+  "input_commitments": {
+    "candidate_manifest_sha256": null,
+    "out_of_band_snapshot_sha256": null,
+    "parent_v34_artifact_sha256": "2753b81527bf470b8528550d4de491b968e114e4d59541fd16aeca2d995c9210",
+    "snapshot_payload_sha256": null
+  },
+  "parents": {
+    "v34_artifact_sha256": "2753b81527bf470b8528550d4de491b968e114e4d59541fd16aeca2d995c9210",
+    "v34_freeze_sha256": "ef0c6406b6946e347885699c19422a5a7e224833d19936ec9f5e1298f993c0d6"
+  },
+  "pre_transpile_provider_limit": {
+    "decision": "REJECTED",
+    "multiple_of_limit": 29881.106542,
+    "selected_ccx_model_cnot_count": 149405532710
+  },
+  "provider_limits": {
+    "limit_name": "IBM documented maximum two-qubit gates per circuit",
+    "max_two_qubit_gates_per_circuit": 5000000,
+    "observed_at_utc": "2026-09-05T09:50:26Z",
+    "source_url": "https://quantum.cloud.ibm.com/docs/en/guides/job-limits"
+  },
+  "release_evidence": {
+    "decision_logic_validation": "16 / 16 PASS",
+    "model_screen_result": "REJECTED_MODEL_SCREEN",
+    "real_backend_snapshot_included": false,
+    "routed_candidate_included": false,
+    "synthetic_fixture_in_scientific_artifact": false,
+    "validation_manifest_sha256": "e0b785286c69c6e01a4c1165dd6d6a34b702546551a20739a3f5e3857d3f11f5"
+  },
+  "research_classification": "RESEARCH_ONLY",
+  "resources": {
+    "input_depth": 628414456,
+    "input_two_qubit_gates": 149405532710,
+    "output_depth": 0,
+    "output_total_gates": 0,
+    "output_two_qubit_gates": 0,
+    "swap_count": 0
+  },
+  "runtime_inventory": {
+    "backend_resolution": "NOT_RUN · OFFLINE SNAPSHOT ONLY",
+    "credential_lookup": "NOT_PERFORMED",
+    "inventory_scope": "CURRENT_PYTHON_PROCESS_BUILD_RUNTIME",
+    "local_transpilation_reproduction": "NOT_RUN · QISKIT ABSENT",
+    "machine": "x86_64",
+    "platform": "macOS-12.7.6-x86_64-i386-64bit",
+    "provider_network_call": "NOT_PERFORMED",
+    "python": "3.11.9",
+    "qiskit_available": false,
+    "qiskit_ibm_runtime_available": false
+  },
+  "source_commitments": {
+    "backend_admission_source_sha256": "48769639a1c6d7bb692d74da11ffd625f609e7857d34160231b49d5561434a9d"
+  },
+  "spec_sha256": "ac9ce5953ef06cc8ccd96d9eb5fb89bf7f9a9191f21e5d6da89bb67c923a89a9",
+  "validation": {
+    "checks": {
+      "backend_identity_and_provenance": false,
+      "calibration_freshness": false,
+      "calibration_two_qubit_error": false,
+      "candidate_parent_binding": false,
+      "connected_capacity": false,
+      "logical_width": false,
+      "noise_aware_survival_proxy": false,
+      "rotation_synthesis": false,
+      "routed_depth": false,
+      "routed_two_qubit_count": false,
+      "routed_width": false,
+      "snapshot_authentication": false,
+      "transpilation_metadata": false
+    },
+    "gate_states": {
+      "backend_identity_and_provenance": "NOT_RUN",
+      "calibration_freshness": "NOT_RUN",
+      "calibration_two_qubit_error": "NOT_RUN",
+      "candidate_parent_binding": "NOT_RUN",
+      "connected_capacity": "NOT_RUN",
+      "logical_width": "NOT_RUN",
+      "noise_aware_survival_proxy": "NOT_RUN",
+      "rotation_synthesis": "NOT_RUN",
+      "routed_depth": "NOT_RUN",
+      "routed_two_qubit_count": "NOT_RUN",
+      "routed_width": "NOT_RUN",
+      "snapshot_authentication": "BLOCKED",
+      "transpilation_metadata": "NOT_RUN"
+    },
+    "overall_pass": false
+  },
+  "validation_ladder": {
+    "checks": {
+      "absent_bundle_fails_closed_and_retains_provider_negative": true,
+      "artifact_is_deterministic_and_self_authenticating": true,
+      "excess_2q_error_rejected": true,
+      "excess_depth_rejected": true,
+      "excess_routed_2q_rejected": true,
+      "frozen_v34_parent_exact": true,
+      "future_calibration_blocks": true,
+      "insufficient_width_rejected": true,
+      "missing_out_of_band_pin_blocks": true,
+      "missing_rotation_synthesis_not_run": true,
+      "nominal_offline_metric_gates_pass": true,
+      "provider_limit_is_independent_pretranspile_rejection": true,
+      "snapshot_tamper_blocks": true,
+      "spec_self_hash_and_research_boundary": true,
+      "stale_calibration_rejected": true,
+      "zero_job_boundary_is_immutable": true
+    },
+    "detail": {
+      "absent_bundle_decision": {
+        "downstream_evidence": "BLOCKED_OR_NOT_RUN",
+        "hardware_executable": false,
+        "hardware_execution": "BLOCKED · ZERO JOBS",
+        "local_transpilation_reproduction": "NOT_RUN · QISKIT ABSENT",
+        "offline_backend_admission": "REJECTED_MODEL_SCREEN · DOWNSTREAM EVIDENCE BLOCKED",
+        "online_backend_resolution": "NOT_RUN · OFFLINE SNAPSHOT ONLY",
+        "pretranspilation_model_screen": "REJECTED_MODEL_SCREEN",
+        "provider_authentication": "NOT_RUN · CREDENTIAL ACCESS PROHIBITED",
+        "qpu_jobs_submitted": 0,
+        "qpu_submission": "DISABLED",
+        "quantum_advantage": "NOT_CLAIMED"
+      },
+      "nominal_artifact_sha256": "1e540c224fc918174a7c1b32669908bd2b103298ea7b935cba5c77b9b742cc44",
+      "nominal_decision": {
+        "downstream_evidence": "COMPLETE",
+        "hardware_executable": false,
+        "hardware_execution": "BLOCKED · ZERO JOBS",
+        "local_transpilation_reproduction": "NOT_RUN · QISKIT ABSENT",
+        "offline_backend_admission": "REJECTED_MODEL_SCREEN · DOCUMENTED PROVIDER LIMIT",
+        "online_backend_resolution": "NOT_RUN · OFFLINE SNAPSHOT ONLY",
+        "pretranspilation_model_screen": "REJECTED_MODEL_SCREEN",
+        "provider_authentication": "NOT_RUN · CREDENTIAL ACCESS PROHIBITED",
+        "qpu_jobs_submitted": 0,
+        "qpu_submission": "DISABLED",
+        "quantum_advantage": "NOT_CLAIMED"
+      },
+      "nominal_gate_states": {
+        "backend_identity_and_provenance": "PASS",
+        "calibration_freshness": "PASS",
+        "calibration_two_qubit_error": "PASS",
+        "candidate_parent_binding": "PASS",
+        "connected_capacity": "PASS",
+        "logical_width": "PASS",
+        "noise_aware_survival_proxy": "PASS",
+        "parent_provider_2q_gate_model_screen": "REJECTED",
+        "rotation_synthesis": "PASS",
+        "routed_depth": "PASS",
+        "routed_two_qubit_count": "PASS",
+        "routed_width": "PASS",
+        "snapshot_authentication": "PASS",
+        "transpilation_metadata": "PASS",
+        "v34_parent_binding": "PASS"
+      },
+      "provider_pretranspile_gate": {
+        "budget": {
+          "maximum_two_qubit_gates_per_circuit": 5000000
+        },
+        "evidence": {
+          "comparison_rule": "REJECT_PRETRANSPILATION_MODEL_IF_SELECTED_CCX_MODEL_CNOT_COUNT_EXCEEDS_PROVIDER_2Q_GATE_LIMIT",
+          "interpretation_boundary": "The numerator is the frozen V3.4 selected 7T-CCX CNOT accounting result, not a lower bound and not a backend-native transpilation result. This is an early model-admission screen; it cannot establish routed counts, physical runtime or fidelity.",
+          "provider_id": "IBM_QUANTUM",
+          "source_checked_utc": "2026-09-05T09:50:26Z",
+          "source_document_publication_utc": "NOT_REPORTED_ON_PAGE",
+          "source_page_title": "Job limits",
+          "source_retrieved_utc": "2026-09-05T09:50:26Z",
+          "source_url": "https://quantum.cloud.ibm.com/docs/en/guides/job-limits"
+        },
+        "observed": {
+          "multiple_of_limit": 29881.106542,
+          "selected_ccx_model_cnot_count": 149405532710
+        },
+        "reason": "PRETRANSPILATION MODEL SCREEN: frozen V3.4 selected-CCX CNOT accounting exceeds the documented IBM two-qubit gate limit per circuit.",
+        "stage": "PRETRANSPILATION_MODEL_SCREEN",
+        "state": "REJECTED"
+      },
+      "runtime_inventory": {
+        "backend_resolution": "NOT_RUN · OFFLINE SNAPSHOT ONLY",
+        "credential_lookup": "NOT_PERFORMED",
+        "inventory_scope": "CURRENT_PYTHON_PROCESS_BUILD_RUNTIME",
+        "local_transpilation_reproduction": "NOT_RUN · QISKIT ABSENT",
+        "machine": "x86_64",
+        "platform": "macOS-12.7.6-x86_64-i386-64bit",
+        "provider_network_call": "NOT_PERFORMED",
+        "python": "3.11.9",
+        "qiskit_available": false,
+        "qiskit_ibm_runtime_available": false
+      }
+    },
+    "overall_pass": true,
+    "spec_sha256": "ac9ce5953ef06cc8ccd96d9eb5fb89bf7f9a9191f21e5d6da89bb67c923a89a9",
+    "validation_manifest_sha256": "e0b785286c69c6e01a4c1165dd6d6a34b702546551a20739a3f5e3857d3f11f5",
+    "validation_source_sha256": "bb63b8fda788c81a2279e480817f9fecfee134e6fcaf8232117ff123d8997e8f",
+    "validation_version": "PHASE III · V3.5 BACKEND ADMISSION VALIDATION · V1"
+  },
+  "veto": {
+    "active": true,
+    "reasons": [
+      "parent_provider_2q_gate_model_screen: REJECTED · PRETRANSPILATION MODEL SCREEN: frozen V3.4 selected-CCX CNOT accounting exceeds the documented IBM two-qubit gate limit per circuit.",
+      "snapshot_authentication: BLOCKED · No offline backend snapshot was supplied.",
+      "backend_identity_and_provenance: NOT_RUN · Backend identity cannot be evaluated without a snapshot.",
+      "calibration_freshness: NOT_RUN · Calibration freshness cannot be evaluated without a snapshot.",
+      "candidate_parent_binding: NOT_RUN · No routed candidate manifest was supplied.",
+      "transpilation_metadata: NOT_RUN · Backend-native transpilation metadata is absent.",
+      "logical_width: NOT_RUN · Logical width cannot be evaluated without a snapshot.",
+      "connected_capacity: NOT_RUN · Connected capacity cannot be evaluated without a snapshot.",
+      "routed_width: NOT_RUN · Routed width is unavailable because transpilation was not run.",
+      "routed_depth: NOT_RUN · Routed depth is unavailable because transpilation was not run.",
+      "routed_two_qubit_count: NOT_RUN · Routed two-qubit count is unavailable because transpilation was not run.",
+      "calibration_two_qubit_error: NOT_RUN · Two-qubit calibration cannot be evaluated without a snapshot.",
+      "rotation_synthesis: NOT_RUN · No rotation-synthesis manifest was supplied.",
+      "noise_aware_survival_proxy: NOT_RUN · Noise proxy requires passing routed 2Q count and calibration gates."
+    ]
+  }
+}

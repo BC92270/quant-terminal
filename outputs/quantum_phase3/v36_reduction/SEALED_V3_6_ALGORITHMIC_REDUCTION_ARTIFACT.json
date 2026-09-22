@@ -1,0 +1,527 @@
+{
+  "artifact_sha256": "52b9b98a36bf8f6d661b42cdc63f3cc0f6476c207f273a171dcc0516c4c0a54d",
+  "artifact_version": "PHASE III · V3.6 STRUCTURAL COST + REWRITE ADMISSION ARTIFACT · V1",
+  "claim_boundary": {
+    "backend_transpilation": "NOT_RUN",
+    "global_impossibility": "NOT_CLAIMED",
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED"
+  },
+  "decisions": {
+    "backend_native": "NOT_RUN_PROVIDER_FREE_PHASE",
+    "block_coordinate": "CHANGED_SEMANTICS",
+    "frozen_v34_architecture": "REJECTED_SELECTED_MODEL_BUDGET",
+    "global_impossibility": "NOT_CLAIMED",
+    "incremental_exposure_guard": "BLOCKED_PENDING_REVERSIBLE_COMPILER",
+    "next_falsifiable_gate": "CLEAN_REVERSIBLE_INCREMENTAL_EXPOSURE_COMPILER",
+    "overall": "ARCHITECTURE_REWRITE_REQUIRED",
+    "topology_only": "REJECTED_WITHIN_FROZEN_V34_ARCHITECTURE"
+  },
+  "guard_scope_proof": {
+    "different_outside_feasible_support": true,
+    "equal_on_all_feasible_support_cases": true,
+    "feasible_support_cases": 4,
+    "rows": [
+      {
+        "current_feasible": false,
+        "different_bits": false,
+        "dual_guard_active": false,
+        "equal": true,
+        "single_guard_active": false,
+        "swapped_feasible": false
+      },
+      {
+        "current_feasible": false,
+        "different_bits": true,
+        "dual_guard_active": false,
+        "equal": true,
+        "single_guard_active": false,
+        "swapped_feasible": false
+      },
+      {
+        "current_feasible": false,
+        "different_bits": false,
+        "dual_guard_active": false,
+        "equal": true,
+        "single_guard_active": false,
+        "swapped_feasible": true
+      },
+      {
+        "current_feasible": false,
+        "different_bits": true,
+        "dual_guard_active": false,
+        "equal": false,
+        "single_guard_active": true,
+        "swapped_feasible": true
+      },
+      {
+        "current_feasible": true,
+        "different_bits": false,
+        "dual_guard_active": false,
+        "equal": true,
+        "single_guard_active": false,
+        "swapped_feasible": false
+      },
+      {
+        "current_feasible": true,
+        "different_bits": true,
+        "dual_guard_active": false,
+        "equal": true,
+        "single_guard_active": false,
+        "swapped_feasible": false
+      },
+      {
+        "current_feasible": true,
+        "different_bits": false,
+        "dual_guard_active": false,
+        "equal": true,
+        "single_guard_active": false,
+        "swapped_feasible": true
+      },
+      {
+        "current_feasible": true,
+        "different_bits": true,
+        "dual_guard_active": true,
+        "equal": true,
+        "single_guard_active": true,
+        "swapped_feasible": true
+      }
+    ],
+    "semantic_classification": "PRESERVED_ON_FROZEN_FEASIBLE_SUPPORT_ONLY",
+    "total_cases": 8
+  },
+  "incremental_exposure_audit": {
+    "affected_constraint_count_histogram": {
+      "0": 3840,
+      "3": 576,
+      "5": 1824
+    },
+    "arithmetic_identity": "A_r(S_ij x) = A_r(x) + (x_j - x_i)(c_ri - c_rj)",
+    "checks": {
+      "all_43680_constraint_rows_exact": true,
+      "all_6240_swap_cases_exact": true,
+      "all_eight_authenticated_witnesses_feasible": true,
+      "exact_k_preserved_by_every_swap": true,
+      "prospective_feasibility_equals_full_recompute": true
+    },
+    "claim_boundary": "Classical integer delta equivalence only. No clean-ancilla reversible gate IR, CNOT count, depth, or coherent cache update is claimed.",
+    "incremental_audit_sha256": "748b510e0e5195e2442b4630e8ef49fbbb42e58d70e35d9ea2814f9cb9b6dbb6",
+    "passed": true,
+    "reversible_compiler_status": "BLOCKED_PENDING_REVERSIBLE_COMPILER",
+    "rows": [
+      {
+        "affected_constraint_row_total": 1360,
+        "constraint_row_cases": 5460,
+        "delta_arithmetic_exact": true,
+        "exact_k_preserved": true,
+        "prospective_predicate_exact": true,
+        "seed": 1103,
+        "swap_cases": 780,
+        "witness_feasible": true
+      },
+      {
+        "affected_constraint_row_total": 1356,
+        "constraint_row_cases": 5460,
+        "delta_arithmetic_exact": true,
+        "exact_k_preserved": true,
+        "prospective_predicate_exact": true,
+        "seed": 2207,
+        "swap_cases": 780,
+        "witness_feasible": true
+      },
+      {
+        "affected_constraint_row_total": 1352,
+        "constraint_row_cases": 5460,
+        "delta_arithmetic_exact": true,
+        "exact_k_preserved": true,
+        "prospective_predicate_exact": true,
+        "seed": 3301,
+        "swap_cases": 780,
+        "witness_feasible": true
+      },
+      {
+        "affected_constraint_row_total": 1356,
+        "constraint_row_cases": 5460,
+        "delta_arithmetic_exact": true,
+        "exact_k_preserved": true,
+        "prospective_predicate_exact": true,
+        "seed": 4409,
+        "swap_cases": 780,
+        "witness_feasible": true
+      },
+      {
+        "affected_constraint_row_total": 1352,
+        "constraint_row_cases": 5460,
+        "delta_arithmetic_exact": true,
+        "exact_k_preserved": true,
+        "prospective_predicate_exact": true,
+        "seed": 5501,
+        "swap_cases": 780,
+        "witness_feasible": true
+      },
+      {
+        "affected_constraint_row_total": 1352,
+        "constraint_row_cases": 5460,
+        "delta_arithmetic_exact": true,
+        "exact_k_preserved": true,
+        "prospective_predicate_exact": true,
+        "seed": 6607,
+        "swap_cases": 780,
+        "witness_feasible": true
+      },
+      {
+        "affected_constraint_row_total": 1352,
+        "constraint_row_cases": 5460,
+        "delta_arithmetic_exact": true,
+        "exact_k_preserved": true,
+        "prospective_predicate_exact": true,
+        "seed": 7703,
+        "swap_cases": 780,
+        "witness_feasible": true
+      },
+      {
+        "affected_constraint_row_total": 1368,
+        "constraint_row_cases": 5460,
+        "delta_arithmetic_exact": true,
+        "exact_k_preserved": true,
+        "prospective_predicate_exact": true,
+        "seed": 8807,
+        "swap_cases": 780,
+        "witness_feasible": true
+      }
+    ],
+    "semantic_classification": "PRESERVATION_TARGET_EXACT_BUT_REVERSIBLE_IMPLEMENTATION_UNPROVEN",
+    "total_constraint_row_cases": 43680,
+    "total_swap_cases": 6240
+  },
+  "parent_authentication": {
+    "checks": {
+      "all_hashes_exact": true,
+      "v34_zero_job_boundary": true,
+      "v35_negative_result_retained": true,
+      "v35_zero_job_boundary": true
+    },
+    "comparisons": {
+      "v31_raw": {
+        "actual": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+        "expected": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+        "valid": true
+      },
+      "v34_raw": {
+        "actual": "4e15aba6c83dcec0ff3e22652df03c624f635956d10b769514cfbd78cdaed7fd",
+        "expected": "4e15aba6c83dcec0ff3e22652df03c624f635956d10b769514cfbd78cdaed7fd",
+        "valid": true
+      },
+      "v34_resource_manifest": {
+        "actual": "c08112f636b2d3d7af167224338eb78ad59ef99effda8a4c43e1a1dda5e3632f",
+        "expected": "c08112f636b2d3d7af167224338eb78ad59ef99effda8a4c43e1a1dda5e3632f",
+        "valid": true
+      },
+      "v34_semantic_recomputed": {
+        "actual": "2753b81527bf470b8528550d4de491b968e114e4d59541fd16aeca2d995c9210",
+        "expected": "2753b81527bf470b8528550d4de491b968e114e4d59541fd16aeca2d995c9210",
+        "valid": true
+      },
+      "v34_semantic_stored": {
+        "actual": "2753b81527bf470b8528550d4de491b968e114e4d59541fd16aeca2d995c9210",
+        "expected": "2753b81527bf470b8528550d4de491b968e114e4d59541fd16aeca2d995c9210",
+        "valid": true
+      },
+      "v34_spec_raw": {
+        "actual": "1ffe8fcd54b5becd4688975d4a206919558a2707aa73af91756c55dc24a42059",
+        "expected": "1ffe8fcd54b5becd4688975d4a206919558a2707aa73af91756c55dc24a42059",
+        "valid": true
+      },
+      "v34_spec_semantic_recomputed": {
+        "actual": "a287b6bf63f5206672a82656483f06c2dd6f005a11f10bdc1a9142820d3f01f7",
+        "expected": "a287b6bf63f5206672a82656483f06c2dd6f005a11f10bdc1a9142820d3f01f7",
+        "valid": true
+      },
+      "v34_spec_semantic_stored": {
+        "actual": "a287b6bf63f5206672a82656483f06c2dd6f005a11f10bdc1a9142820d3f01f7",
+        "expected": "a287b6bf63f5206672a82656483f06c2dd6f005a11f10bdc1a9142820d3f01f7",
+        "valid": true
+      },
+      "v35_freeze_raw": {
+        "actual": "8d0a5ca3f37cf4c7a755537d55eb7b2a202bb72603527ec9f4f8fb7d1ba21f52",
+        "expected": "8d0a5ca3f37cf4c7a755537d55eb7b2a202bb72603527ec9f4f8fb7d1ba21f52",
+        "valid": true
+      },
+      "v35_freeze_semantic_recomputed": {
+        "actual": "efda21e201cd9ecc7b4fab7544c4c024a96b925dc39f977c17331a5278c994d2",
+        "expected": "efda21e201cd9ecc7b4fab7544c4c024a96b925dc39f977c17331a5278c994d2",
+        "valid": true
+      },
+      "v35_freeze_semantic_stored": {
+        "actual": "efda21e201cd9ecc7b4fab7544c4c024a96b925dc39f977c17331a5278c994d2",
+        "expected": "efda21e201cd9ecc7b4fab7544c4c024a96b925dc39f977c17331a5278c994d2",
+        "valid": true
+      },
+      "v35_raw": {
+        "actual": "94e8741cf2d1564a513917aeb83f5cbca4ce75821a3a8517cefbad48bbfb0ef4",
+        "expected": "94e8741cf2d1564a513917aeb83f5cbca4ce75821a3a8517cefbad48bbfb0ef4",
+        "valid": true
+      },
+      "v35_semantic_recomputed": {
+        "actual": "7e217693093dca453ab478c003fe2303e3f6fa21e2a8f36d5bcadef9c58508da",
+        "expected": "7e217693093dca453ab478c003fe2303e3f6fa21e2a8f36d5bcadef9c58508da",
+        "valid": true
+      },
+      "v35_semantic_stored": {
+        "actual": "7e217693093dca453ab478c003fe2303e3f6fa21e2a8f36d5bcadef9c58508da",
+        "expected": "7e217693093dca453ab478c003fe2303e3f6fa21e2a8f36d5bcadef9c58508da",
+        "valid": true
+      },
+      "v35_spec": {
+        "actual": "ac9ce5953ef06cc8ccd96d9eb5fb89bf7f9a9191f21e5d6da89bb67c923a89a9",
+        "expected": "ac9ce5953ef06cc8ccd96d9eb5fb89bf7f9a9191f21e5d6da89bb67c923a89a9",
+        "valid": true
+      }
+    },
+    "errors": [],
+    "valid": true
+  },
+  "parents": {
+    "v31_raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "v34_artifact_raw_file_sha256": "4e15aba6c83dcec0ff3e22652df03c624f635956d10b769514cfbd78cdaed7fd",
+    "v34_artifact_sha256": "2753b81527bf470b8528550d4de491b968e114e4d59541fd16aeca2d995c9210",
+    "v35_artifact_raw_file_sha256": "94e8741cf2d1564a513917aeb83f5cbca4ce75821a3a8517cefbad48bbfb0ef4",
+    "v35_artifact_sha256": "7e217693093dca453ab478c003fe2303e3f6fa21e2a8f36d5bcadef9c58508da",
+    "v35_freeze_sha256": "efda21e201cd9ecc7b4fab7544c4c024a96b925dc39f977c17331a5278c994d2"
+  },
+  "research_classification": "RESEARCH_ONLY",
+  "rewrite_admission": {
+    "budget_cnot": 2500000,
+    "decisions": {
+      "backend_native": "NOT_RUN_PROVIDER_FREE_PHASE",
+      "block_coordinate": "CHANGED_SEMANTICS",
+      "frozen_v34_architecture": "REJECTED_SELECTED_MODEL_BUDGET",
+      "global_impossibility": "NOT_CLAIMED",
+      "incremental_exposure_guard": "BLOCKED_PENDING_REVERSIBLE_COMPILER",
+      "next_falsifiable_gate": "CLEAN_REVERSIBLE_INCREMENTAL_EXPOSURE_COMPILER",
+      "overall": "ARCHITECTURE_REWRITE_REQUIRED",
+      "topology_only": "REJECTED_WITHIN_FROZEN_V34_ARCHITECTURE"
+    },
+    "lanes": {
+      "BACKEND_NATIVE": {
+        "admission_decision": "NOT_RUN",
+        "provider_calls": 0,
+        "qpu_jobs_submitted": 0,
+        "semantic_classification": "NOT_EVALUATED",
+        "status": "NOT_RUN_PROVIDER_FREE_PHASE"
+      },
+      "BLOCK_COORDINATE": {
+        "admission_decision": "SEPARATE_PROTOCOL_REQUIRED",
+        "inherit_v34_equivalence": false,
+        "selected_model_cnot": "NOT_COMPARABLE",
+        "semantic_classification": "CHANGED_SEMANTICS",
+        "status": "SEPARATE_RESEARCH_PROTOCOL_REQUIRED"
+      },
+      "FEASIBLE_SUPPORT_SINGLE_GUARD": {
+        "admission_decision": "REJECTED",
+        "budget_cnot": 2500000,
+        "conservative_nontrivial_pair_floor_cnot": 184191414,
+        "semantic_classification": "PRESERVED_ON_FROZEN_FEASIBLE_SUPPORT_ONLY",
+        "status": "REJECTED_SELECTED_MODEL_BUDGET",
+        "truth_table_pass": true
+      },
+      "FROZEN_V34_IDENTITY": {
+        "admission_decision": "REJECTED",
+        "budget_cnot": 2500000,
+        "selected_model_cnot": 149405532710,
+        "semantic_classification": "PRESERVED_EXACT_FULL_OPERATOR",
+        "status": "REJECTED_SELECTED_MODEL_BUDGET"
+      },
+      "INCREMENTAL_EXPOSURE_GUARD": {
+        "admission_decision": "BLOCKED",
+        "classical_delta_audit_pass": true,
+        "required_next_evidence": [
+          "REVERSIBLE_GATE_IR",
+          "CLEAN_ANCILLA_PROOF",
+          "COHERENT_CACHE_UPDATE_PROOF",
+          "FULL_DIFFERENTIAL_MIXER_ACTION",
+          "SELECTED_MODEL_RESOURCE_LEDGER"
+        ],
+        "selected_model_cnot": "NOT_ESTIMATED",
+        "semantic_classification": "PRESERVATION_TARGET_EXACT_BUT_REVERSIBLE_IMPLEMENTATION_UNPROVEN",
+        "status": "BLOCKED_PENDING_REVERSIBLE_COMPILER"
+      },
+      "TOPOLOGY_ONLY_PRESERVE_OPERATOR": {
+        "admission_decision": "REJECTED",
+        "budget_cnot": 2500000,
+        "reason": "Preserving the exact ordered V3.4 partial-mixer product permits no edge deletion; the frozen count is unchanged.",
+        "selected_model_cnot": 149405532710,
+        "semantic_classification": "PRESERVED_EXACT_FULL_OPERATOR",
+        "status": "REJECTED_NO_EDGE_REMOVAL_AVAILABLE"
+      },
+      "TOPOLOGY_ONLY_PRUNED": {
+        "admission_decision": "REJECTED",
+        "budget_cnot": 2500000,
+        "conservative_nontrivial_pair_floor_cnot": 184191414,
+        "reason": "Deleting ordered mixer edges changes semantics, and even the two-call oracle compute/uncompute floor exceeds the budget.",
+        "semantic_classification": "CHANGED_SEMANTICS",
+        "status": "REJECTED_SELECTED_MODEL_BUDGET_AND_SEPARATE_PROTOCOL_REQUIRED"
+      }
+    },
+    "rewrite_manifest_sha256": "906adc1c1515716bef4228aac6cf933bba32288dad943d6659f447492fabdfc6"
+  },
+  "spec_sha256": "c13750ace7903d164db6ecef295414a3ad62e2e29d4c9f75b5d4a7be06c8cbdc",
+  "structural_cost_attribution": {
+    "canonical_ledger_key": "DUAL_GUARD_CACHED::COMPLETE_SWAP_SCAN",
+    "edge_count": 780,
+    "equation": "total_cnot = oracle_calls * per_oracle_cnot + edge_count * per_edge_cnot",
+    "oracle_calls": 1562,
+    "per_edge_selected_model_cnot": 28,
+    "rows": [
+      {
+        "division_remainder": 0,
+        "edge_cnot_subtotal": 21840,
+        "edge_count": 780,
+        "instance_id": "QH-N040-BANDS-S1103",
+        "oracle_calls": 1562,
+        "oracle_cnot_subtotal": 143881135486,
+        "oracle_share_of_total": 0.99999984820806,
+        "per_edge_cnot": 28,
+        "per_oracle_cnot": 92113403,
+        "reconstructed_total_cnot": 143881157326,
+        "reconstruction_exact": true,
+        "row_sha256": "e57707482decb1c8e96791df829bb1a350921c3dee7b05d4896c0ecd7dd8045d",
+        "seed": 1103,
+        "total_cnot": 143881157326
+      },
+      {
+        "division_remainder": 0,
+        "edge_cnot_subtotal": 21840,
+        "edge_count": 780,
+        "instance_id": "QH-N040-BANDS-S2207",
+        "oracle_calls": 1562,
+        "oracle_cnot_subtotal": 146973055130,
+        "oracle_share_of_total": 0.9999998514013556,
+        "per_edge_cnot": 28,
+        "per_oracle_cnot": 94092865,
+        "reconstructed_total_cnot": 146973076970,
+        "reconstruction_exact": true,
+        "row_sha256": "ee5296ca792375916808641dc9cb8363fae56281758edab11c547133edc6173b",
+        "seed": 2207,
+        "total_cnot": 146973076970
+      },
+      {
+        "division_remainder": 0,
+        "edge_cnot_subtotal": 21840,
+        "edge_count": 780,
+        "instance_id": "QH-N040-BANDS-S3301",
+        "oracle_calls": 1562,
+        "oracle_cnot_subtotal": 148134795754,
+        "oracle_share_of_total": 0.9999998525667337,
+        "per_edge_cnot": 28,
+        "per_oracle_cnot": 94836617,
+        "reconstructed_total_cnot": 148134817594,
+        "reconstruction_exact": true,
+        "row_sha256": "e0c59731877fce0091b086b1cae48b5c359635e0c65e5f4088edc24b09cfae67",
+        "seed": 3301,
+        "total_cnot": 148134817594
+      },
+      {
+        "division_remainder": 0,
+        "edge_cnot_subtotal": 21840,
+        "edge_count": 780,
+        "instance_id": "QH-N040-BANDS-S4409",
+        "oracle_calls": 1562,
+        "oracle_cnot_subtotal": 144768332742,
+        "oracle_share_of_total": 0.9999998491383005,
+        "per_edge_cnot": 28,
+        "per_oracle_cnot": 92681391,
+        "reconstructed_total_cnot": 144768354582,
+        "reconstruction_exact": true,
+        "row_sha256": "8aa5ae27fa520ff372af388bd686576474f7d6a9573a41f6294f442cd7394b04",
+        "seed": 4409,
+        "total_cnot": 144768354582
+      },
+      {
+        "division_remainder": 0,
+        "edge_cnot_subtotal": 21840,
+        "edge_count": 780,
+        "instance_id": "QH-N040-BANDS-S5501",
+        "oracle_calls": 1562,
+        "oracle_cnot_subtotal": 149405510870,
+        "oracle_share_of_total": 0.9999998538206745,
+        "per_edge_cnot": 28,
+        "per_oracle_cnot": 95650135,
+        "reconstructed_total_cnot": 149405532710,
+        "reconstruction_exact": true,
+        "row_sha256": "6853e41ede4f0f8d2e571575f5839e8fe758c2ff4ffa996c93c43e5074133531",
+        "seed": 5501,
+        "total_cnot": 149405532710
+      },
+      {
+        "division_remainder": 0,
+        "edge_cnot_subtotal": 21840,
+        "edge_count": 780,
+        "instance_id": "QH-N040-BANDS-S6607",
+        "oracle_calls": 1562,
+        "oracle_cnot_subtotal": 143853494334,
+        "oracle_share_of_total": 0.9999998481788935,
+        "per_edge_cnot": 28,
+        "per_oracle_cnot": 92095707,
+        "reconstructed_total_cnot": 143853516174,
+        "reconstruction_exact": true,
+        "row_sha256": "db3864eb64e2a99f47aa40367ace4470422ae63798178d691ba8f702611cebb9",
+        "seed": 6607,
+        "total_cnot": 143853516174
+      },
+      {
+        "division_remainder": 0,
+        "edge_cnot_subtotal": 21840,
+        "edge_count": 780,
+        "instance_id": "QH-N040-BANDS-S7703",
+        "oracle_calls": 1562,
+        "oracle_cnot_subtotal": 149357404394,
+        "oracle_share_of_total": 0.9999998537735917,
+        "per_edge_cnot": 28,
+        "per_oracle_cnot": 95619337,
+        "reconstructed_total_cnot": 149357426234,
+        "reconstruction_exact": true,
+        "row_sha256": "33baccfd5a04dfa72c8ecc2dbe4b13927d7d0e216ce77811d0e19c3da4641835",
+        "seed": 7703,
+        "total_cnot": 149357426234
+      },
+      {
+        "division_remainder": 0,
+        "edge_cnot_subtotal": 21840,
+        "edge_count": 780,
+        "instance_id": "QH-N040-BANDS-S8807",
+        "oracle_calls": 1562,
+        "oracle_cnot_subtotal": 145221622018,
+        "oracle_share_of_total": 0.9999998496091945,
+        "per_edge_cnot": 28,
+        "per_oracle_cnot": 92971589,
+        "reconstructed_total_cnot": 145221643858,
+        "reconstruction_exact": true,
+        "row_sha256": "19180f6b27af0883e1de7ce30b1c24818c26b3005658ca9945edb068d619cb0e",
+        "seed": 8807,
+        "total_cnot": 145221643858
+      }
+    ],
+    "structural_manifest_sha256": "7b2b58558ba15e16f49da433476b22d8a46cdf918cb4f84025c0dfe52e06d419",
+    "summary": {
+      "all_eight_equations_exact": true,
+      "attribution_scope": "Frozen V3.4 selected 7T-CCX accounting only; not a backend-native count and not a global lower bound over alternative algorithms.",
+      "canonical_total_cnot_max": 149405532710,
+      "canonical_total_cnot_min": 143853516174,
+      "pair_floor_exceeds_budget": true,
+      "pair_floor_multiple_of_budget": 73.6765656,
+      "per_oracle_cnot_max": 95650135,
+      "per_oracle_cnot_min": 92095707,
+      "required_compute_uncompute_pair_cnot_floor": 184191414,
+      "required_nontrivial_oracle_calls": 2,
+      "selected_model_budget_cnot": 2500000
+    }
+  },
+  "v36_version": "PHASE III · V3.6 PROVIDER-FREE ALGORITHMIC REDUCTION · V1"
+}

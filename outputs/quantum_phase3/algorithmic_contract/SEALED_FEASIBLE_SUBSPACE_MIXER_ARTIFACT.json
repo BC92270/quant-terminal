@@ -1,0 +1,1552 @@
+{
+  "algorithm": {
+    "algorithm_source_sha256": "309a262415ba5f9017c8185c1a3b98fabbbd57c6a2ec5559eec904df44d02ec8",
+    "algorithm_spec_sha": "5119490433952D6A4A61",
+    "algorithm_spec_sha256": "5119490433952d6a4a6151a2890b647479460e3cda4283bf1bc541243d1a8e3e",
+    "algorithm_version": "PHASE III · EXACT FEASIBLE-SUBSPACE MIXER · V1",
+    "canonical_profile": "DUAL_GUARD_CACHED",
+    "canonical_topology": "COMPLETE_SWAP_SCAN",
+    "status": "SEALED EXACT FEASIBILITY-INVARIANCE CONTRACT"
+  },
+  "artifact_sha256": "5ecd1fd5e3f093934220691e20139eff5c12757c2cf70bbfe6f89c2bc26b958a",
+  "artifact_version": "PHASE III · SEALED EXACT FEASIBLE-SUBSPACE MIXER · V1",
+  "claim_boundary": {
+    "allowed": "A deterministic guarded-mixer contract preserves the feasible subspace of the frozen V3.2 exact-K predicate and satisfies the declared clean-ancilla proof obligations.",
+    "forbidden": [
+      "globally connected feasible graph",
+      "ergodic mixer",
+      "backend-native circuit",
+      "hardware executable",
+      "QPU ready",
+      "optimization performance",
+      "quantum speedup",
+      "quantum advantage"
+    ],
+    "hardware_executable": false,
+    "qpu_submission_enabled": false
+  },
+  "construction": {
+    "cached_dual_guard": true,
+    "controlled_rotation": "C2-XY(beta)",
+    "oracle_calls_per_layer": "2E+2",
+    "ordered_partial_mixers": true,
+    "physical_swap_gates_in_logical_ir": 0,
+    "profiles": {
+      "DUAL_GUARD_CACHED": {
+        "cleanliness_domain": "Every exact-K computational-basis input and every superposition over that domain",
+        "guard_flags": 2,
+        "status": "INSTITUTIONAL_REFERENCE"
+      },
+      "FEASIBLE_SUPPORT_OPTIMIZED": {
+        "cleanliness_domain": "Only states whose support is already entirely feasible",
+        "guard_flags": 1,
+        "status": "RESEARCH_ONLY_PRECONDITIONED"
+      }
+    },
+    "static_neighbor_oracle_wire_relabel": true
+  },
+  "created_utc": "2026-09-04T17:54:18.297975+00:00",
+  "decisions": {
+    "backend_native_lowering": "NOT_RUN",
+    "complete_global_connectivity": "INDETERMINATE",
+    "complete_witness_local_reachability": "PASS · WITNESS LOCAL REACHABILITY ONLY",
+    "controlled_xy_native_synthesis": "NOT_RUN",
+    "feasibility_invariance": "PASS · RELATIVE TO FROZEN V3.2 PREDICATE",
+    "guard_ancilla_cleanup": "PASS",
+    "hardware_execution": "BLOCKED · ZERO JOBS",
+    "optimization_performance": "NOT_TESTED",
+    "quantum_advantage": "NOT_CLAIMED",
+    "ring_topology": "REJECTED · AUTHENTICATED WITNESS ISOLATION"
+  },
+  "family": {
+    "N": 40,
+    "Regime": "BANDS",
+    "seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ]
+  },
+  "limitations": [
+    "The complete single-swap feasible graph was not exhaustively enumerated at N=40; global connectivity and ergodicity remain indeterminate.",
+    "Ring-only exploration is rejected because the authenticated seed-5501 witness has zero feasible ring-swap neighbors.",
+    "C2-XY is an algorithmic IR primitive whose native decomposition, synthesis precision and T cost are not estimated.",
+    "Static wire relabelling is free only in provider-neutral logical IR; backend routing cost is not run.",
+    "No variational optimization, sampling advantage, runtime advantage or QPU execution was performed.",
+    "The optimized single-guard profile is clean only under an explicit feasible-support precondition; it is not the institutional default."
+  ],
+  "parents": {
+    "v31_dyadic_oracle_sha": "D9D109D117E1795CFFEF",
+    "v31_raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "v32_artifact_sha256": "5e6cc7e53f15921f7cbd22ef66f04878b37d54372e04b5bf49f5bb4854050fcd",
+    "v32_compiler_source_sha256": "b76001c8502eec962dc998d1c8ffa37b2886432149fb193f26e52d82cd348c78",
+    "v32_compiler_spec_sha256": "edad55227d611b52884529fe2da4f8f458e80c36367589a3499bdf075060f3aa",
+    "v32_raw_file_sha256": "616cc12808465916dfcfcde6c8e2c9feed1be4b294ad034f29cb7cb36704031b",
+    "v32_validation_manifest_sha256": "bde0dc2e90a355821c8678d2df8ac743820c0a4d2e83701aeeeaab3e1d8e9b91"
+  },
+  "resource_envelopes": {
+    "canonical_profile": "DUAL_GUARD_CACHED",
+    "canonical_topology": "COMPLETE_SWAP_SCAN",
+    "ledgers": {
+      "DUAL_GUARD_CACHED::COMPLETE_SWAP_SCAN": {
+        "backend_transpilation_status": "NOT_RUN",
+        "controlled_xy_native_cost": "NOT_ESTIMATED",
+        "edge_count": 780,
+        "edge_schedule_sha256": "8a4aefd1adc4d9948bc8b487e60a1b0034d0a3008e275f1957bbb51494f04117",
+        "maxima": {
+          "logical_qubits_sequential_reuse": 120,
+          "oracle_path_t_count_upper_subtotal": 174490676360,
+          "provider_neutral_depth": 628708904,
+          "provider_neutral_gate_count": 668963206,
+          "provider_neutral_gate_count_with_physical_swap_fallback": 668972566
+        },
+        "oracle_calls": 1562,
+        "per_seed": [
+          {
+            "algorithmic_ir_sha256": "2cf8deff6d0590aa69f5ac4e9d5ab35f8f71dc24d0348510fd44ee6fc028ff8b",
+            "base_oracle_abstract_depth": 383998,
+            "base_oracle_abstract_gates": 409849,
+            "base_oracle_gate_ir_sha256": "27681172f14e58731fe2d6fb20412f85b9a3f352c25b31772402ff6237603a26",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S1103",
+            "logical_qubits_sequential_reuse": 116,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1562,
+            "oracle_path_t_count_upper_subtotal": 168108850448,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 599805656,
+            "provider_neutral_gate_count": 640184918,
+            "seed": 1103,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "8d623920768f3dd10840601d2977aed5d9386b2858db207763ce379024f728ab",
+            "base_oracle_abstract_depth": 392418,
+            "base_oracle_abstract_gates": 418033,
+            "base_oracle_gate_ir_sha256": "1c5fe59f05757a24a936d887b571277870776990ce7aee36cec4946521f23914",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S2207",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1562,
+            "oracle_path_t_count_upper_subtotal": 171706836224,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 612957696,
+            "provider_neutral_gate_count": 652968326,
+            "seed": 2207,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "75ed273dbaa5ab8896344fdf53f0ac356171760c9b9dcb5bad22aa17fd72b5ef",
+            "base_oracle_abstract_depth": 393580,
+            "base_oracle_abstract_gates": 419513,
+            "base_oracle_gate_ir_sha256": "e152596adf24031a0af0b01a57bcdd65d16f9e61d1817e2d9022c6524d4ebbc7",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S3301",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1562,
+            "oracle_path_t_count_upper_subtotal": 172970937832,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 614772740,
+            "provider_neutral_gate_count": 655280086,
+            "seed": 3301,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "d3152f06f2d5c50217baafb763ae96a219e74d6f51c8dac01986eb57ac987cab",
+            "base_oracle_abstract_depth": 388374,
+            "base_oracle_abstract_gates": 413773,
+            "base_oracle_gate_ir_sha256": "f1336320609fd7619e735102cb8ed24d9261e549ae91fb091188df65f8d88925",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S4409",
+            "logical_qubits_sequential_reuse": 116,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1562,
+            "oracle_path_t_count_upper_subtotal": 169083463472,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 606640968,
+            "provider_neutral_gate_count": 646314206,
+            "seed": 4409,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "968841f02ce1a6aa2684b2d8efd8450fa81d596d46511742bceb9fd00549a338",
+            "base_oracle_abstract_depth": 397750,
+            "base_oracle_abstract_gates": 423833,
+            "base_oracle_gate_ir_sha256": "c8b6dae38c55936d6ceb73f22f4a02250eb12a9dd71239c78bf2828cc4a193a3",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S5501",
+            "logical_qubits_sequential_reuse": 117,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1562,
+            "oracle_path_t_count_upper_subtotal": 174488620768,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 621286280,
+            "provider_neutral_gate_count": 662027926,
+            "seed": 5501,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "d377549cf484628e03f3fff869d20bc56d60318dc62b152133b36831797f9440",
+            "base_oracle_abstract_depth": 382872,
+            "base_oracle_abstract_gates": 408497,
+            "base_oracle_gate_ir_sha256": "1a07cea7b6a1d938a470afc6e8b9f59dda7932eebb94b4ce592f815360e14d19",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S6607",
+            "logical_qubits_sequential_reuse": 120,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1562,
+            "oracle_path_t_count_upper_subtotal": 168014030800,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 598046844,
+            "provider_neutral_gate_count": 638073094,
+            "seed": 6607,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "2e51a7a017fa98651ec52bee3640d1f3a1a490cd677a8451986dd9ebc7ede220",
+            "base_oracle_abstract_depth": 402502,
+            "base_oracle_abstract_gates": 428273,
+            "base_oracle_gate_ir_sha256": "4e45ff317b0b2b9ee73496c4b24ac93326372abe735d9f14e07708a52e60cc59",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S7703",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1562,
+            "oracle_path_t_count_upper_subtotal": 174490676360,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 628708904,
+            "provider_neutral_gate_count": 668963206,
+            "seed": 7703,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "2c88f6cfec055501845579393421ede88fd4e5475396dc3a8d6753a9c2541893",
+            "base_oracle_abstract_depth": 391274,
+            "base_oracle_abstract_gates": 417281,
+            "base_oracle_gate_ir_sha256": "69f70f040f83632d2576151b0a274cd082e38837a32be00635ccf438dacf1e5b",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S8807",
+            "logical_qubits_sequential_reuse": 116,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1562,
+            "oracle_path_t_count_upper_subtotal": 169617392560,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 611170768,
+            "provider_neutral_gate_count": 651793702,
+            "seed": 8807,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          }
+        ],
+        "profile": "DUAL_GUARD_CACHED",
+        "resource_boundary": "Provider-neutral exact frozen-oracle accounting. C2-XY native synthesis, routing, calibration and noise costs are excluded and NOT_ESTIMATED.",
+        "topology": "COMPLETE_SWAP_SCAN"
+      },
+      "DUAL_GUARD_CACHED::RING_SWAP_SCAN": {
+        "backend_transpilation_status": "NOT_RUN",
+        "controlled_xy_native_cost": "NOT_ESTIMATED",
+        "edge_count": 40,
+        "edge_schedule_sha256": "8adeb61ffac082d23066b0a1f643837fe5b697bc21354ecdf0bc854c359b68d5",
+        "maxima": {
+          "logical_qubits_sequential_reuse": 120,
+          "oracle_path_t_count_upper_subtotal": 9160201960,
+          "provider_neutral_depth": 33005204,
+          "provider_neutral_gate_count": 35118426,
+          "provider_neutral_gate_count_with_physical_swap_fallback": 35118906
+        },
+        "oracle_calls": 82,
+        "per_seed": [
+          {
+            "algorithmic_ir_sha256": "7a9349daf7c2f60cd3d555784cb917d4e2edf7add6093e86054169b2efc69236",
+            "base_oracle_abstract_depth": 383998,
+            "base_oracle_abstract_gates": 409849,
+            "base_oracle_gate_ir_sha256": "27681172f14e58731fe2d6fb20412f85b9a3f352c25b31772402ff6237603a26",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S1103",
+            "logical_qubits_sequential_reuse": 116,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 82,
+            "oracle_path_t_count_upper_subtotal": 8825176528,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 31487876,
+            "provider_neutral_gate_count": 33607658,
+            "seed": 1103,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "4b72744082d1a33d9dd71069ab837a1395ddbb1380f2c72e81c15bcd051a3e1a",
+            "base_oracle_abstract_depth": 392418,
+            "base_oracle_abstract_gates": 418033,
+            "base_oracle_gate_ir_sha256": "1c5fe59f05757a24a936d887b571277870776990ce7aee36cec4946521f23914",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S2207",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 82,
+            "oracle_path_t_count_upper_subtotal": 9014059264,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 32178316,
+            "provider_neutral_gate_count": 34278746,
+            "seed": 2207,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "1077f279808c4f2d0e3a58cb23d638b57f6d5fb85bf64e45160c0b5d56e4913a",
+            "base_oracle_abstract_depth": 393580,
+            "base_oracle_abstract_gates": 419513,
+            "base_oracle_gate_ir_sha256": "e152596adf24031a0af0b01a57bcdd65d16f9e61d1817e2d9022c6524d4ebbc7",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S3301",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 82,
+            "oracle_path_t_count_upper_subtotal": 9080420552,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 32273600,
+            "provider_neutral_gate_count": 34400106,
+            "seed": 3301,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "0b1d597bdd159831b97d37b6fbb10932f6fa5b81582d7b6ae623ca621ead51b1",
+            "base_oracle_abstract_depth": 388374,
+            "base_oracle_abstract_gates": 413773,
+            "base_oracle_gate_ir_sha256": "f1336320609fd7619e735102cb8ed24d9261e549ae91fb091188df65f8d88925",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S4409",
+            "logical_qubits_sequential_reuse": 116,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 82,
+            "oracle_path_t_count_upper_subtotal": 8876340592,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 31846708,
+            "provider_neutral_gate_count": 33929426,
+            "seed": 4409,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "b20968947dad01c97349ecab71fe8155d6efe66c3fe58ac55a609bd00c213af9",
+            "base_oracle_abstract_depth": 397750,
+            "base_oracle_abstract_gates": 423833,
+            "base_oracle_gate_ir_sha256": "c8b6dae38c55936d6ceb73f22f4a02250eb12a9dd71239c78bf2828cc4a193a3",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S5501",
+            "logical_qubits_sequential_reuse": 117,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 82,
+            "oracle_path_t_count_upper_subtotal": 9160094048,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 32615540,
+            "provider_neutral_gate_count": 34754346,
+            "seed": 5501,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "6611d2a6403dc992bddbe48aa2538630a1503f3646f11fc7c5eb5ddc2fa91a35",
+            "base_oracle_abstract_depth": 382872,
+            "base_oracle_abstract_gates": 408497,
+            "base_oracle_gate_ir_sha256": "1a07cea7b6a1d938a470afc6e8b9f59dda7932eebb94b4ce592f815360e14d19",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S6607",
+            "logical_qubits_sequential_reuse": 120,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 82,
+            "oracle_path_t_count_upper_subtotal": 8820198800,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 31395544,
+            "provider_neutral_gate_count": 33496794,
+            "seed": 6607,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "4da279a36a4bdd1a76b140b18b8bdef47ea20bec485aeb6a01c15cd048b78623",
+            "base_oracle_abstract_depth": 402502,
+            "base_oracle_abstract_gates": 428273,
+            "base_oracle_gate_ir_sha256": "4e45ff317b0b2b9ee73496c4b24ac93326372abe735d9f14e07708a52e60cc59",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S7703",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 82,
+            "oracle_path_t_count_upper_subtotal": 9160201960,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 33005204,
+            "provider_neutral_gate_count": 35118426,
+            "seed": 7703,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "8c05e293878bfe0db9f1e0573bffa6b9240118d02e0422181deee1b52a810df0",
+            "base_oracle_abstract_depth": 391274,
+            "base_oracle_abstract_gates": 417281,
+            "base_oracle_gate_ir_sha256": "69f70f040f83632d2576151b0a274cd082e38837a32be00635ccf438dacf1e5b",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S8807",
+            "logical_qubits_sequential_reuse": 116,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 82,
+            "oracle_path_t_count_upper_subtotal": 8904370160,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "DUAL_GUARD_CACHED",
+            "provider_neutral_depth": 32084508,
+            "provider_neutral_gate_count": 34217082,
+            "seed": 8807,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          }
+        ],
+        "profile": "DUAL_GUARD_CACHED",
+        "resource_boundary": "Provider-neutral exact frozen-oracle accounting. C2-XY native synthesis, routing, calibration and noise costs are excluded and NOT_ESTIMATED.",
+        "topology": "RING_SWAP_SCAN"
+      },
+      "FEASIBLE_SUPPORT_OPTIMIZED::COMPLETE_SWAP_SCAN": {
+        "backend_transpilation_status": "NOT_RUN",
+        "controlled_xy_native_cost": "NOT_ESTIMATED",
+        "edge_count": 780,
+        "edge_schedule_sha256": "8a4aefd1adc4d9948bc8b487e60a1b0034d0a3008e275f1957bbb51494f04117",
+        "maxima": {
+          "logical_qubits_sequential_reuse": 119,
+          "oracle_path_t_count_upper_subtotal": 174267256800,
+          "provider_neutral_depth": 627903900,
+          "provider_neutral_gate_count": 668106660,
+          "provider_neutral_gate_count_with_physical_swap_fallback": 668116020
+        },
+        "oracle_calls": 1560,
+        "per_seed": [
+          {
+            "algorithmic_ir_sha256": "1a3c5f6b47675b1952650ae614ffa3d414ab79d8ac6c8fe6bef778948a4b8560",
+            "base_oracle_abstract_depth": 383998,
+            "base_oracle_abstract_gates": 409849,
+            "base_oracle_gate_ir_sha256": "27681172f14e58731fe2d6fb20412f85b9a3f352c25b31772402ff6237603a26",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S1103",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1560,
+            "oracle_path_t_count_upper_subtotal": 167893602240,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 599037660,
+            "provider_neutral_gate_count": 639365220,
+            "seed": 1103,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "544a499ed8a342bafa34691b9f3e87539f78685894eb2c2438263b84b0fb2ca4",
+            "base_oracle_abstract_depth": 392418,
+            "base_oracle_abstract_gates": 418033,
+            "base_oracle_gate_ir_sha256": "1c5fe59f05757a24a936d887b571277870776990ce7aee36cec4946521f23914",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S2207",
+            "logical_qubits_sequential_reuse": 114,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1560,
+            "oracle_path_t_count_upper_subtotal": 171486981120,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 612172860,
+            "provider_neutral_gate_count": 652132260,
+            "seed": 2207,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "bdb0d32c06d8336f7568955736ba4d06464b7ca1a8869cbff008c17e30756370",
+            "base_oracle_abstract_depth": 393580,
+            "base_oracle_abstract_gates": 419513,
+            "base_oracle_gate_ir_sha256": "e152596adf24031a0af0b01a57bcdd65d16f9e61d1817e2d9022c6524d4ebbc7",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S3301",
+            "logical_qubits_sequential_reuse": 114,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1560,
+            "oracle_path_t_count_upper_subtotal": 172749464160,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 613985580,
+            "provider_neutral_gate_count": 654441060,
+            "seed": 3301,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "7af6ecfd3a540e6ad5263b3a0323d53638dde3216c6b62af362ff43acfbb5d89",
+            "base_oracle_abstract_depth": 388374,
+            "base_oracle_abstract_gates": 413773,
+            "base_oracle_gate_ir_sha256": "f1336320609fd7619e735102cb8ed24d9261e549ae91fb091188df65f8d88925",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S4409",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1560,
+            "oracle_path_t_count_upper_subtotal": 168866967360,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 605864220,
+            "provider_neutral_gate_count": 645486660,
+            "seed": 4409,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "ac8b3d3ad89ddd58a3c8d6bcfda15c288d37d5e4614ef1b46abeeb783577cb57",
+            "base_oracle_abstract_depth": 397750,
+            "base_oracle_abstract_gates": 423833,
+            "base_oracle_gate_ir_sha256": "c8b6dae38c55936d6ceb73f22f4a02250eb12a9dd71239c78bf2828cc4a193a3",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S5501",
+            "logical_qubits_sequential_reuse": 116,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1560,
+            "oracle_path_t_count_upper_subtotal": 174265203840,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 620490780,
+            "provider_neutral_gate_count": 661180260,
+            "seed": 5501,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "8c9b5b34e4f17fe586075c52ef144b74662dc152f696be8b0fc23beeb7c1663a",
+            "base_oracle_abstract_depth": 382872,
+            "base_oracle_abstract_gates": 408497,
+            "base_oracle_gate_ir_sha256": "1a07cea7b6a1d938a470afc6e8b9f59dda7932eebb94b4ce592f815360e14d19",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S6607",
+            "logical_qubits_sequential_reuse": 119,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1560,
+            "oracle_path_t_count_upper_subtotal": 167798904000,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 597281100,
+            "provider_neutral_gate_count": 637256100,
+            "seed": 6607,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "069f26d44c9d3746a7c30c4ad33115676610914fa5c808bce27d4d1b5fd0af25",
+            "base_oracle_abstract_depth": 402502,
+            "base_oracle_abstract_gates": 428273,
+            "base_oracle_gate_ir_sha256": "4e45ff317b0b2b9ee73496c4b24ac93326372abe735d9f14e07708a52e60cc59",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S7703",
+            "logical_qubits_sequential_reuse": 114,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1560,
+            "oracle_path_t_count_upper_subtotal": 174267256800,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 627903900,
+            "provider_neutral_gate_count": 668106660,
+            "seed": 7703,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "4286663128cf421efdf85321d77c7893f6fbeeb6b82d53e4e97ef3ea587a0e43",
+            "base_oracle_abstract_depth": 391274,
+            "base_oracle_abstract_gates": 417281,
+            "base_oracle_gate_ir_sha256": "69f70f040f83632d2576151b0a274cd082e38837a32be00635ccf438dacf1e5b",
+            "controlled_xy_primitives": 780,
+            "instance_id": "QH-N040-BANDS-S8807",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 1560,
+            "oracle_path_t_count_upper_subtotal": 169400212800,
+            "physical_swap_fallback_cx_addition": 9360,
+            "physical_swap_fallback_depth_addition": 9360,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 610388220,
+            "provider_neutral_gate_count": 650959140,
+            "seed": 8807,
+            "topology": "COMPLETE_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          }
+        ],
+        "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+        "resource_boundary": "Provider-neutral exact frozen-oracle accounting. C2-XY native synthesis, routing, calibration and noise costs are excluded and NOT_ESTIMATED.",
+        "topology": "COMPLETE_SWAP_SCAN"
+      },
+      "FEASIBLE_SUPPORT_OPTIMIZED::RING_SWAP_SCAN": {
+        "backend_transpilation_status": "NOT_RUN",
+        "controlled_xy_native_cost": "NOT_ESTIMATED",
+        "edge_count": 40,
+        "edge_schedule_sha256": "8adeb61ffac082d23066b0a1f643837fe5b697bc21354ecdf0bc854c359b68d5",
+        "maxima": {
+          "logical_qubits_sequential_reuse": 119,
+          "oracle_path_t_count_upper_subtotal": 8936782400,
+          "provider_neutral_depth": 32200200,
+          "provider_neutral_gate_count": 34261880,
+          "provider_neutral_gate_count_with_physical_swap_fallback": 34262360
+        },
+        "oracle_calls": 80,
+        "per_seed": [
+          {
+            "algorithmic_ir_sha256": "b6a0b2e89932063bf07e9fcbbff2614c55a6e1bbca259ed9ae9a0c00f06ae089",
+            "base_oracle_abstract_depth": 383998,
+            "base_oracle_abstract_gates": 409849,
+            "base_oracle_gate_ir_sha256": "27681172f14e58731fe2d6fb20412f85b9a3f352c25b31772402ff6237603a26",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S1103",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 80,
+            "oracle_path_t_count_upper_subtotal": 8609928320,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 30719880,
+            "provider_neutral_gate_count": 32787960,
+            "seed": 1103,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "6e8c42f6e3deff5a8d15d2bbd0f34f6310518793173cbaf499ff43d8d533dbe7",
+            "base_oracle_abstract_depth": 392418,
+            "base_oracle_abstract_gates": 418033,
+            "base_oracle_gate_ir_sha256": "1c5fe59f05757a24a936d887b571277870776990ce7aee36cec4946521f23914",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S2207",
+            "logical_qubits_sequential_reuse": 114,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 80,
+            "oracle_path_t_count_upper_subtotal": 8794204160,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 31393480,
+            "provider_neutral_gate_count": 33442680,
+            "seed": 2207,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "dab19fe98b3fe6f18c4bd9161a6328ac5ffbde4be8dbe2ef67c8c930204e8db3",
+            "base_oracle_abstract_depth": 393580,
+            "base_oracle_abstract_gates": 419513,
+            "base_oracle_gate_ir_sha256": "e152596adf24031a0af0b01a57bcdd65d16f9e61d1817e2d9022c6524d4ebbc7",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S3301",
+            "logical_qubits_sequential_reuse": 114,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 80,
+            "oracle_path_t_count_upper_subtotal": 8858946880,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 31486440,
+            "provider_neutral_gate_count": 33561080,
+            "seed": 3301,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "84233fb48eef58012f4712f0ab764d037699a5e31a0e297da30285e633564e4e",
+            "base_oracle_abstract_depth": 388374,
+            "base_oracle_abstract_gates": 413773,
+            "base_oracle_gate_ir_sha256": "f1336320609fd7619e735102cb8ed24d9261e549ae91fb091188df65f8d88925",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S4409",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 80,
+            "oracle_path_t_count_upper_subtotal": 8659844480,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 31069960,
+            "provider_neutral_gate_count": 33101880,
+            "seed": 4409,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "564ab9e7c46fbe25a0bf7953bd1633b0ce35bf95ae8aa47ae82d745d3ad48d8f",
+            "base_oracle_abstract_depth": 397750,
+            "base_oracle_abstract_gates": 423833,
+            "base_oracle_gate_ir_sha256": "c8b6dae38c55936d6ceb73f22f4a02250eb12a9dd71239c78bf2828cc4a193a3",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S5501",
+            "logical_qubits_sequential_reuse": 116,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 80,
+            "oracle_path_t_count_upper_subtotal": 8936677120,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 31820040,
+            "provider_neutral_gate_count": 33906680,
+            "seed": 5501,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "46415d75c5d6a702ff41d1e8aaf03ec1257dfbc98ad682fd9f11b598c5a40fa9",
+            "base_oracle_abstract_depth": 382872,
+            "base_oracle_abstract_gates": 408497,
+            "base_oracle_gate_ir_sha256": "1a07cea7b6a1d938a470afc6e8b9f59dda7932eebb94b4ce592f815360e14d19",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S6607",
+            "logical_qubits_sequential_reuse": 119,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 80,
+            "oracle_path_t_count_upper_subtotal": 8605072000,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 30629800,
+            "provider_neutral_gate_count": 32679800,
+            "seed": 6607,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "4dea9c4bc6eb625ece21c3a799d5e1ac98f839dfe00f3af6e4f533b7c820571b",
+            "base_oracle_abstract_depth": 402502,
+            "base_oracle_abstract_gates": 428273,
+            "base_oracle_gate_ir_sha256": "4e45ff317b0b2b9ee73496c4b24ac93326372abe735d9f14e07708a52e60cc59",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S7703",
+            "logical_qubits_sequential_reuse": 114,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 80,
+            "oracle_path_t_count_upper_subtotal": 8936782400,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 32200200,
+            "provider_neutral_gate_count": 34261880,
+            "seed": 7703,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          },
+          {
+            "algorithmic_ir_sha256": "fc4110386c372d316317a98a7d7dd46c0077a114ca0a1c766a8344369054d943",
+            "base_oracle_abstract_depth": 391274,
+            "base_oracle_abstract_gates": 417281,
+            "base_oracle_gate_ir_sha256": "69f70f040f83632d2576151b0a274cd082e38837a32be00635ccf438dacf1e5b",
+            "controlled_xy_primitives": 40,
+            "instance_id": "QH-N040-BANDS-S8807",
+            "logical_qubits_sequential_reuse": 115,
+            "native_controlled_xy_status": "NOT_DECOMPOSED",
+            "oracle_calls": 80,
+            "oracle_path_t_count_upper_subtotal": 8687190400,
+            "physical_swap_fallback_cx_addition": 480,
+            "physical_swap_fallback_depth_addition": 480,
+            "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+            "provider_neutral_depth": 31301960,
+            "provider_neutral_gate_count": 33382520,
+            "seed": 8807,
+            "topology": "RING_SWAP_SCAN",
+            "transpiled_backend_specific": "NOT_RUN"
+          }
+        ],
+        "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+        "resource_boundary": "Provider-neutral exact frozen-oracle accounting. C2-XY native synthesis, routing, calibration and noise costs are excluded and NOT_ESTIMATED.",
+        "topology": "RING_SWAP_SCAN"
+      }
+    },
+    "resource_manifest_sha256": "437d9370d0a7b37aac30094b8ebf4c5db97d84abd7cfc633267a22b52eadf8a6"
+  },
+  "roadmap_change_control": {
+    "deferred_to": "V3.4",
+    "new_v33_scope": "Algorithmic enforcement contract, feasibility invariance, connectivity audit and resource falsification",
+    "prior_v33_scope": "Backend-native MCX lowering and routing",
+    "reason": "Backend routing before proving that the algorithm preserves all seven constraints would validate the wrong scientific object. The reordering is explicit and does not claim the prior V3.3 milestone was completed."
+  },
+  "validation": {
+    "algorithm_source_sha256": "309a262415ba5f9017c8185c1a3b98fabbbd57c6a2ec5559eec904df44d02ec8",
+    "algorithm_spec_sha256": "5119490433952d6a4a6151a2890b647479460e3cda4283bf1bc541243d1a8e3e",
+    "checks": {
+      "A_PARENT_CHAIN": true,
+      "B_SPEC_SELF_HASH": true,
+      "C_GUARD_SYMBOLIC": true,
+      "D_SMALL_N_EXHAUSTIVE_UNITARY": true,
+      "E_N40_WITNESS_GRAPH": true,
+      "F_RESOURCE_REPRODUCIBILITY": true,
+      "G_NEGATIVE_RESULTS_RETAINED": true,
+      "H_HARDWARE_FAIL_CLOSED": true
+    },
+    "guard_symbolic": {
+      "checks": {
+        "dual_guard_activation_iff_both_feasible": true,
+        "dual_guard_cleanup_all_exact_k_truth_cases": true,
+        "equal_bits_never_rotate": true,
+        "optimized_cleanup_under_feasible_support_precondition": true,
+        "optimized_out_of_contract_dirty_counterexample_retained": true
+      },
+      "passed": true,
+      "rows": [
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": false,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": false,
+          "different_bits": true,
+          "orientation": "01",
+          "precondition_met": true,
+          "profile": "DUAL_GUARD_CACHED",
+          "swapped_feasible": false,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": false,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": false,
+          "different_bits": true,
+          "orientation": "10",
+          "precondition_met": true,
+          "profile": "DUAL_GUARD_CACHED",
+          "swapped_feasible": false,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": false,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": false,
+          "different_bits": true,
+          "orientation": "01",
+          "precondition_met": true,
+          "profile": "DUAL_GUARD_CACHED",
+          "swapped_feasible": true,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": false,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": false,
+          "different_bits": true,
+          "orientation": "10",
+          "precondition_met": true,
+          "profile": "DUAL_GUARD_CACHED",
+          "swapped_feasible": true,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": true,
+          "different_bits": true,
+          "orientation": "01",
+          "precondition_met": true,
+          "profile": "DUAL_GUARD_CACHED",
+          "swapped_feasible": false,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": true,
+          "different_bits": true,
+          "orientation": "10",
+          "precondition_met": true,
+          "profile": "DUAL_GUARD_CACHED",
+          "swapped_feasible": false,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": true,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            },
+            {
+              "branch": "Sx",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": true,
+          "different_bits": true,
+          "orientation": "01",
+          "precondition_met": true,
+          "profile": "DUAL_GUARD_CACHED",
+          "swapped_feasible": true,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": true,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            },
+            {
+              "branch": "Sx",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": true,
+          "different_bits": true,
+          "orientation": "10",
+          "precondition_met": true,
+          "profile": "DUAL_GUARD_CACHED",
+          "swapped_feasible": true,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": false,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": false,
+          "different_bits": false,
+          "orientation": "equal",
+          "precondition_met": true,
+          "profile": "DUAL_GUARD_CACHED",
+          "swapped_feasible": false,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": true,
+          "different_bits": false,
+          "orientation": "equal",
+          "precondition_met": true,
+          "profile": "DUAL_GUARD_CACHED",
+          "swapped_feasible": true,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": false,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": false,
+          "different_bits": true,
+          "orientation": "01",
+          "precondition_met": false,
+          "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+          "swapped_feasible": false,
+          "within_contract_cleanup": false
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": false,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": false,
+          "different_bits": true,
+          "orientation": "10",
+          "precondition_met": false,
+          "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+          "swapped_feasible": false,
+          "within_contract_cleanup": false
+        },
+        {
+          "active": true,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": false,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            },
+            {
+              "branch": "Sx",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 1,
+              "transient_b_clean": false
+            }
+          ],
+          "current_feasible": false,
+          "different_bits": true,
+          "orientation": "01",
+          "precondition_met": false,
+          "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+          "swapped_feasible": true,
+          "within_contract_cleanup": false
+        },
+        {
+          "active": true,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": false,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            },
+            {
+              "branch": "Sx",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 1,
+              "transient_b_clean": false
+            }
+          ],
+          "current_feasible": false,
+          "different_bits": true,
+          "orientation": "10",
+          "precondition_met": false,
+          "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+          "swapped_feasible": true,
+          "within_contract_cleanup": false
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": true,
+          "different_bits": true,
+          "orientation": "01",
+          "precondition_met": true,
+          "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+          "swapped_feasible": false,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": true,
+          "different_bits": true,
+          "orientation": "10",
+          "precondition_met": true,
+          "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+          "swapped_feasible": false,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": true,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            },
+            {
+              "branch": "Sx",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": true,
+          "different_bits": true,
+          "orientation": "01",
+          "precondition_met": true,
+          "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+          "swapped_feasible": true,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": true,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            },
+            {
+              "branch": "Sx",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": true,
+          "different_bits": true,
+          "orientation": "10",
+          "precondition_met": true,
+          "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+          "swapped_feasible": true,
+          "within_contract_cleanup": true
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": false,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": false,
+          "different_bits": false,
+          "orientation": "equal",
+          "precondition_met": false,
+          "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+          "swapped_feasible": false,
+          "within_contract_cleanup": false
+        },
+        {
+          "active": false,
+          "branches": [
+            {
+              "branch": "x",
+              "current_predicate": true,
+              "retained_a_consistent": true,
+              "transient_b_after_uncompute": 0,
+              "transient_b_clean": true
+            }
+          ],
+          "current_feasible": true,
+          "different_bits": false,
+          "orientation": "equal",
+          "precondition_met": true,
+          "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+          "swapped_feasible": true,
+          "within_contract_cleanup": true
+        }
+      ],
+      "truth_case_count": 20
+    },
+    "n40_witness_graph": {
+      "checks": {
+        "all_300_nontrivial_swaps_audited": true,
+        "all_eight_authenticated_witnesses": true,
+        "all_witnesses_feasible": true,
+        "complete_topology_positive_local_degree": true,
+        "direct_predicate_matches_integer_delta": true,
+        "ring_isolation_negative_result_retained": true,
+        "two_hop_order_independent": true
+      },
+      "complete_global_connectivity": "INDETERMINATE",
+      "complete_local_decision": "PASS · WITNESS LOCAL REACHABILITY ONLY",
+      "isolated_ring_seeds": [
+        5501
+      ],
+      "passed": true,
+      "ring_decision": "REJECTED · AUTHENTICATED WITNESS ISOLATION",
+      "rows": [
+        {
+          "complete_degree": 65,
+          "direct_delta_neighbor_parity": true,
+          "instance_id": "QH-N040-BANDS-S1103",
+          "nontrivial_swap_candidates": 300,
+          "ring_degree": 4,
+          "seed": 1103,
+          "two_hop_order_independent": true,
+          "two_hop_reachable_lower_bound": 1204,
+          "two_hop_shells": [
+            65,
+            1138
+          ],
+          "two_hop_shells_reverse": [
+            65,
+            1138
+          ],
+          "two_hop_state_set_sha256": "748e8a58529fad09642860494dc1fd2fd5189fae758eb87b44a9e02c0087c16a",
+          "witness_feasible": true,
+          "witness_sha256": "36759a2effad8a81bd31a5955c3e639f9fede5561495c6b3931d1bde0692b4f0"
+        },
+        {
+          "complete_degree": 53,
+          "direct_delta_neighbor_parity": true,
+          "instance_id": "QH-N040-BANDS-S2207",
+          "nontrivial_swap_candidates": 300,
+          "ring_degree": 3,
+          "seed": 2207,
+          "two_hop_order_independent": true,
+          "two_hop_reachable_lower_bound": 969,
+          "two_hop_shells": [
+            53,
+            915
+          ],
+          "two_hop_shells_reverse": [
+            53,
+            915
+          ],
+          "two_hop_state_set_sha256": "815beb6640de7edff89c92a49eb4cdf5db9da4f971f680765eca878ec1e6ac2e",
+          "witness_feasible": true,
+          "witness_sha256": "4d0effcf469214dcf21cd948a4a59231d38e0a7728d82ca7786e11f5a47237c3"
+        },
+        {
+          "complete_degree": 50,
+          "direct_delta_neighbor_parity": true,
+          "instance_id": "QH-N040-BANDS-S3301",
+          "nontrivial_swap_candidates": 300,
+          "ring_degree": 2,
+          "seed": 3301,
+          "two_hop_order_independent": true,
+          "two_hop_reachable_lower_bound": 746,
+          "two_hop_shells": [
+            50,
+            695
+          ],
+          "two_hop_shells_reverse": [
+            50,
+            695
+          ],
+          "two_hop_state_set_sha256": "b11b0bf05df50fee08dde0b60444d4b4a45f0a20e702d79f540d4e775bb4245d",
+          "witness_feasible": true,
+          "witness_sha256": "d6f2684efa3404161bf52a71430099bc97255eb218182a087f0d5d706a4b3860"
+        },
+        {
+          "complete_degree": 55,
+          "direct_delta_neighbor_parity": true,
+          "instance_id": "QH-N040-BANDS-S4409",
+          "nontrivial_swap_candidates": 300,
+          "ring_degree": 2,
+          "seed": 4409,
+          "two_hop_order_independent": true,
+          "two_hop_reachable_lower_bound": 941,
+          "two_hop_shells": [
+            55,
+            885
+          ],
+          "two_hop_shells_reverse": [
+            55,
+            885
+          ],
+          "two_hop_state_set_sha256": "a2f03d44d85b48956c83dbd7c0bc93e6e06119bb7228b609861c4d5de303023b",
+          "witness_feasible": true,
+          "witness_sha256": "f21b108fddf2adc6749d49c8088917f99c9e0b7ae21b985258b7764f3a2b3e26"
+        },
+        {
+          "complete_degree": 31,
+          "direct_delta_neighbor_parity": true,
+          "instance_id": "QH-N040-BANDS-S5501",
+          "nontrivial_swap_candidates": 300,
+          "ring_degree": 0,
+          "seed": 5501,
+          "two_hop_order_independent": true,
+          "two_hop_reachable_lower_bound": 302,
+          "two_hop_shells": [
+            31,
+            270
+          ],
+          "two_hop_shells_reverse": [
+            31,
+            270
+          ],
+          "two_hop_state_set_sha256": "3163f4c1e343ac898293dc9c9f5b1256f48aee6883463b4d172b8192895cdad1",
+          "witness_feasible": true,
+          "witness_sha256": "f555289da335e38bcbfe21f1d28afe0b416f370fd4308ac5500adab16606be74"
+        },
+        {
+          "complete_degree": 59,
+          "direct_delta_neighbor_parity": true,
+          "instance_id": "QH-N040-BANDS-S6607",
+          "nontrivial_swap_candidates": 300,
+          "ring_degree": 7,
+          "seed": 6607,
+          "two_hop_order_independent": true,
+          "two_hop_reachable_lower_bound": 1047,
+          "two_hop_shells": [
+            59,
+            987
+          ],
+          "two_hop_shells_reverse": [
+            59,
+            987
+          ],
+          "two_hop_state_set_sha256": "23078b808abeda44922030807d2aa23b3de9e7b7a99097cf45dd63dfa559e821",
+          "witness_feasible": true,
+          "witness_sha256": "ceb84adb5d7a0827b8bfc42ec2487bdeb7caee119bfff585f5a83f3f6178d230"
+        },
+        {
+          "complete_degree": 61,
+          "direct_delta_neighbor_parity": true,
+          "instance_id": "QH-N040-BANDS-S7703",
+          "nontrivial_swap_candidates": 300,
+          "ring_degree": 3,
+          "seed": 7703,
+          "two_hop_order_independent": true,
+          "two_hop_reachable_lower_bound": 1151,
+          "two_hop_shells": [
+            61,
+            1089
+          ],
+          "two_hop_shells_reverse": [
+            61,
+            1089
+          ],
+          "two_hop_state_set_sha256": "421b9acc120e26f05a7603e569d41fec75f2e1ccf97611d9c06b67677fc70790",
+          "witness_feasible": true,
+          "witness_sha256": "becbefcfae781f44eebc7cc3664b9910d060584b7b52df1c2f36b502ad54e952"
+        },
+        {
+          "complete_degree": 55,
+          "direct_delta_neighbor_parity": true,
+          "instance_id": "QH-N040-BANDS-S8807",
+          "nontrivial_swap_candidates": 300,
+          "ring_degree": 4,
+          "seed": 8807,
+          "two_hop_order_independent": true,
+          "two_hop_reachable_lower_bound": 790,
+          "two_hop_shells": [
+            55,
+            734
+          ],
+          "two_hop_shells_reverse": [
+            55,
+            734
+          ],
+          "two_hop_state_set_sha256": "645ab165b29e33f4035742a5120b5729bfd4c8b41ec6ed81930a2e897f49988d",
+          "witness_feasible": true,
+          "witness_sha256": "e08a9e583c2d45a2644f2b32edac8df0ba823d072ec6d5922b09dab33c038104"
+        }
+      ]
+    },
+    "overall_pass": true,
+    "parent_chain": {
+      "v31_raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+      "v32_artifact_sha256": "5e6cc7e53f15921f7cbd22ef66f04878b37d54372e04b5bf49f5bb4854050fcd",
+      "v32_raw_file_sha256": "616cc12808465916dfcfcde6c8e2c9feed1be4b294ad034f29cb7cb36704031b",
+      "v32_validation_manifest_sha256": "bde0dc2e90a355821c8678d2df8ac743820c0a4d2e83701aeeeaab3e1d8e9b91",
+      "verified": true
+    },
+    "resource_manifest_sha256": "437d9370d0a7b37aac30094b8ebf4c5db97d84abd7cfc633267a22b52eadf8a6",
+    "resource_reproducibility": {
+      "first_sha256": "03c6cbdf880270c140312b19012b13634c07a59fb09bbdcab4081f2274d757e9",
+      "passed": true,
+      "second_sha256": "03c6cbdf880270c140312b19012b13634c07a59fb09bbdcab4081f2274d757e9"
+    },
+    "small_n_exhaustive": {
+      "checks": {
+        "all_declared_cleanup_conditions_pass": true,
+        "all_edge_actions_normalized": true,
+        "feasible_support_invariant": true,
+        "full_layer_unitary": true,
+        "nontrivial_feasible_subset": true
+      },
+      "complete_edge_count": 15,
+      "domain_size": 20,
+      "edge_action_cases": 1800,
+      "feasible_basis_count": 10,
+      "passed": true,
+      "profiles": [
+        {
+          "basis_domain_size": 20,
+          "edge_action_cleanup": true,
+          "edge_action_feasible_invariance": true,
+          "edge_action_norm_max_error": 0.0,
+          "full_layer_feasible_invariance": true,
+          "full_layer_gram_max_error": 2.220446049250313e-16,
+          "full_layer_norm_max_error": 2.220446049250313e-16,
+          "profile": "DUAL_GUARD_CACHED",
+          "unitary_domain_size": 20
+        },
+        {
+          "basis_domain_size": 10,
+          "edge_action_cleanup": true,
+          "edge_action_feasible_invariance": true,
+          "edge_action_norm_max_error": 0.0,
+          "full_layer_feasible_invariance": true,
+          "full_layer_gram_max_error": 2.220446049250313e-16,
+          "full_layer_norm_max_error": 2.220446049250313e-16,
+          "profile": "FEASIBLE_SUPPORT_OPTIMIZED",
+          "unitary_domain_size": 10
+        }
+      ],
+      "synthetic_contract": {
+        "K": 3,
+        "N": 6,
+        "factor_coefficients": [
+          -3,
+          -1,
+          1,
+          2,
+          4,
+          5
+        ],
+        "factor_interval": [
+          1,
+          7
+        ],
+        "group_a": {
+          "indices": [
+            0,
+            1,
+            2
+          ],
+          "interval": [
+            1,
+            2
+          ]
+        },
+        "group_b": {
+          "indices": [
+            2,
+            3,
+            4
+          ],
+          "interval": [
+            1,
+            2
+          ]
+        }
+      }
+    },
+    "validation_manifest_sha256": "7461299442dda626986ac448c1e7ed4cbb20bdd5a4d4c27fc60a7d96deb9285e",
+    "validation_source_sha256": "dba6549d4831f0b5cffeca9dbd4cc741751136df0535abb52ef1b5f7f6547393",
+    "validation_version": "PHASE III · ALGORITHMIC CONTRACT VALIDATION LADDER · V1",
+    "verifier_source_sha256": "3f23095e4619127760fde37c7d811f841618e86a4ca27e993518bf31f58d46be"
+  }
+}

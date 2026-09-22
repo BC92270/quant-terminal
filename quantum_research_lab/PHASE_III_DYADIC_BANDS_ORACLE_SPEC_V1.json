@@ -1,0 +1,45 @@
+{
+  "candidate_family": {
+    "N": 40,
+    "Regime": "BANDS",
+    "seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ]
+  },
+  "dyadic_oracle_version": "PHASE III \u00b7 EXACT DYADIC BANDS ORACLE \u00b7 V1",
+  "dyadic_spec_sha": "9A6F664368F4AC592281",
+  "dyadic_spec_version": "IEEE-754 BINARY64 \u2192 EXACT DYADIC INTEGER ORACLE SPEC \u00b7 V1",
+  "exact_mapping": "For each factor, every binary64 coefficient and bound is converted with float.as_integer_ratio(). All denominators are powers of two. A per-factor common denominator 2^E is selected and all coefficients/bounds are lifted to signed integers exactly, with no coefficient or bound rounding.",
+  "phase2_execution_spec_sha": "40D3225B0AFC86BC01DD",
+  "phase2_protocol_sha": "8E5EF191FAE97A75",
+  "phase3_preparation_spec_sha": "CDC693C22A3838B0B3C1",
+  "proof_contract": {
+    "algebraic_equivalence": "For every x in {0,1}^N, sum(beta_i*x_i) in exact rational semantics equals sum(B_i*x_i)/2^E; therefore hard-band inequalities are exactly equivalent to integer comparisons.",
+    "family_rule": "All 8 sealed N=40 BANDS seeds must receive exact parameter-identity certificates before the logical oracle may be sealed.",
+    "parameter_identity": "Every original coefficient/bound must reconstruct bit-for-bit to the same Python float after integer/dyadic conversion.",
+    "v3_0_falsification_dependency": "The V3.0 8/12/16 approximate fixed-point ladder must remain preserved as a falsification record; V3.1 does not overwrite or reinterpret those failed audits."
+  },
+  "reversible_oracle_contract": {
+    "arbitrary_penalty_substitution": false,
+    "cardinality": "Preserved by the number-preserving XY mixer.",
+    "clean_ancilla": true,
+    "factor_exposures": "Exact controlled signed-integer additions using the dyadic coefficient integers, exact integer lower/upper comparisons, then uncompute.",
+    "gate_level_compiler_required_after_logical_seal": true,
+    "group_counts": "Exact reversible integer counts and comparisons.",
+    "phase2_economic_qubo_unchanged": true
+  },
+  "source_fixed_point_oracle_spec_sha": "62854F1D7076BA742775",
+  "source_semantics": {
+    "coefficients": "The exact IEEE-754 binary64 values emitted by the sealed Phase-II deterministic generator.",
+    "hard_band_bounds": "The exact IEEE-754 binary64 lower/upper BANDS bounds used by the authoritative Phase-II MILP model.",
+    "phase2_feasibility_validator_tolerance": 1e-08,
+    "tolerance_role": "The 1e-8 tolerance is retained as a numerical validator/post-processing convention; it is not widened into the canonical hard-band oracle."
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "acceptance_contract": {
+    "accepted_only_if": [
+      "THE_EXACT_V4_5_FREEZE_ARTIFACT_AND_ALL_227_SUCCESSOR_IMMUTABLE_PATHS_AUTHENTICATE",
+      "THE_PINNED_V4_4_FAKEMARRAKESH_SNAPSHOT_AND_V4_6_QISKIT_2_5_2_PATH_ORACLE_AUTHENTICATE",
+      "THE_BOUNDED_QISKIT_NATIVE_TRANSLATION_CANARIES_AND_SYMBOLIC_MACRO_CONTRACT_AUTHENTICATE",
+      "ALL_EIGHT_V4_5_STREAMS_RECONSTRUCT_EVERY_ELEMENTARY_INSTRUCTION_AND_REPRODUCE_THE_EXACT_PARENT_STREAM_MANIFEST",
+      "EVERY_INPUT_INSTRUCTION_PRODUCES_ONE_CANONICAL_CHUNKED_ROUTE_RECORD",
+      "EVERY_NONLOCAL_CX_USES_THE_EXACT_ORDERED_QISKIT_2_5_2_SHORTEST_PATH_AND_DISTANCE_MINUS_ONE_BASIC_SWAPS",
+      "EVERY_FINAL_LAYOUT_IS_A_BIJECTION_BETWEEN_THE_LOGICAL_WORKLOAD_AND_156_PHYSICAL_QUBITS",
+      "THE_EXACT_NATIVE_COUNT_ALGEBRA_AND_RECORDED_GLOBAL_PHASE_AUTHENTICATE",
+      "ISA_VIOLATIONS_EQUAL_ZERO_FOR_EVERY_SEED",
+      "COUPLING_VIOLATIONS_EQUAL_ZERO_FOR_EVERY_SEED",
+      "ROUTED_CZ_IS_AT_OR_BELOW_250000000_FOR_EVERY_SEED",
+      "ASAP_STRUCTURAL_DEPTH_IS_AT_OR_BELOW_250000000_FOR_EVERY_SEED",
+      "ROUTED_CZ_OVER_V4_5_CX_IS_AT_OR_BELOW_100_FOR_EVERY_SEED",
+      "THE_STANDARD_LIBRARY_CHECKER_RECOMPUTES_ALL_NESTED_IDENTITIES_COUNTS_LAYOUTS_AND_RESOURCE_GATES_WITHOUT_IMPORTING_THE_COMPILER",
+      "A_CLEAN_PROCESS_REPLAY_PRODUCES_THE_IDENTICAL_CANONICAL_ARTIFACT",
+      "ALL_PROVIDER_CREDENTIAL_NETWORK_BACKEND_SIMULATOR_AND_QPU_JOB_COUNTERS_REMAIN_ZERO"
+    ],
+    "negative_result_is_a_valid_scientific_outcome": true,
+    "result_state_at_protocol_seal": "NOT_EVALUATED",
+    "success_status": "V46_FAKEMARRAKESH_FULL_STREAM_ROUTING_PASSED_STRUCTURAL_AND_PREREGISTERED_RESOURCE_GATES",
+    "failure_status": "V46_FAKEMARRAKESH_FULL_STREAM_ROUTING_REJECTED"
+  },
+  "chronology": {
+    "confirmatory_eight_seed_result_state_at_seal": "NOT_EVALUATED",
+    "inherited_thresholds_were_sealed_in_v45_before_any_v46_pilot": true,
+    "nonconfirmatory_pilot_disclosure": "ONE_SEED_1103_EXPLORATORY_ROUTING_IMPLEMENTATION_PILOT_OCCURRED_BEFORE_THIS_V46_SPEC;_NO_THRESHOLD_OR_ACCEPTANCE_RULE_WAS_CHANGED;_THE_PILOT_IS_NOT_CONFIRMATORY_EVIDENCE",
+    "parent_release": "V4.5",
+    "path_oracle_and_bounded_translation_canaries_frozen_before_confirmatory_run": true,
+    "protocol_sealed_utc": "2026-09-15T11:04:58Z",
+    "result_state_at_seal": "NOT_EVALUATED",
+    "successor_is_append_only": true,
+    "v44_bytes_rewritten": false,
+    "v45_bytes_rewritten": false
+  },
+  "claim_boundary": {
+    "backend_name": "fake_marrakesh",
+    "backend_run_calls": 0,
+    "backend_selection_kind": "PINNED_OFFLINE_FAKE_BACKEND_SNAPSHOT_FROM_V4_4",
+    "calibration_aware_fidelity": "NOT_TESTED",
+    "confirmatory_compiler_qiskit_imported": false,
+    "credential_reads": 0,
+    "full_workload_circuit_reconstruction": "EVALUATED_ONLY_AS_STREAMING_CANONICAL_IR_BY_THE_AUTHENTICATED_SEALED_ARTIFACT",
+    "full_workload_routing": "EVALUATED_ONLY_AS_COMPACT_EXACT_BASIC_SWAP_ROUTE_IR_BY_THE_AUTHENTICATED_SEALED_ARTIFACT",
+    "full_workload_transpilation": "EVALUATED_ONLY_AS_DETERMINISTICALLY_EXPANDABLE_NATIVE_MACRO_IR_BY_THE_AUTHENTICATED_SEALED_ARTIFACT",
+    "hardware_executable": false,
+    "hardware_timing_schedule": "NOT_RUN",
+    "local_simulator_jobs_submitted": 0,
+    "monolithic_qiskit_quantum_circuit_constructed": false,
+    "network_calls": 0,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qiskit_reference_builder_imported_qiskit_2_5_2": true,
+    "qpu_jobs_submitted": 0,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "snapshot_is_current_hardware_evidence": false,
+    "structural_asap_depth_uses_gate_layers_not_calibrated_durations": true
+  },
+  "compiler_contract": {
+    "canonical_route_record": "INDEX|STAGE|INPUT_OPCODE|LOGICAL_QUBITS|PHYSICAL_BEFORE|ANGLE|FULL_ORDERED_PATH_OR_DASH|INSERTED_SWAP_COUNT_NEWLINE",
+    "chunk_instruction_limit": 8192,
+    "cx_translation": "NATIVE_H_ON_TARGET_THEN_CZ_THEN_NATIVE_H_ON_TARGET_WITH_GLOBAL_PHASE_PI_OVER_2",
+    "final_layout_semantics": "COMES_FROM_PERMUTATION_RECORDED_FOR_LOGICAL_OUTPUT_INTERPRETATION",
+    "full_reconstruction_definition": "EVERY_V4_5_ELEMENTARY_INSTRUCTION_IS_REEMITTED_THROUGH_THE_FROZEN_V4_5_COMPILER_FUNCTIONS_AND_THE_COMPLETE_CANONICAL_PARENT_STREAM_MANIFEST_MUST_MATCH",
+    "initial_layout": "TRIVIAL_LOGICAL_Q_TO_PHYSICAL_Q",
+    "native_basis": [
+      "cz",
+      "id",
+      "rz",
+      "sx",
+      "x"
+    ],
+    "native_ir_representation": "ONE_EXACT_DETERMINISTICALLY_EXPANDABLE_NATIVE_MACRO_ROUTE_RECORD_PER_INPUT_INSTRUCTION_WITH_CHUNK_STAGE_AND_GLOBAL_COMMITMENTS",
+    "routing_algorithm": "FOR_EACH_CANONICAL_INPUT_CX_USE_THE_FROZEN_ORDERED_QISKIT_SHORTEST_UNDIRECTED_PATH;_INSERT_SWAPS_ON_ALL_PATH_EDGES_EXCEPT_THE_LAST;_UPDATE_LAYOUT;_EMIT_ADJACENT_CX;_RETAIN_FINAL_LAYOUT",
+    "routing_method": "basic",
+    "scheduling_metric": "ASAP_STRUCTURAL_GATE_LAYER_DEPTH_WITHOUT_DURATION_OR_CALIBRATION_DATA",
+    "seed_transpiler": 4505,
+    "swap_translation": "THREE_REPETITIONS_OF_PARALLEL_SX_ON_BOTH_ENDPOINTS_THEN_CZ_WITH_GLOBAL_PHASE_3PI_OVER_2",
+    "translation_equivalence": "EXACT_UNITARY_UP_TO_THE_RECORDED_GLOBAL_PHASE",
+    "translation_method": "translator"
+  },
+  "frozen_instances": {
+    "expected_input_instruction_counts": [
+      6077566,
+      6086776,
+      5969118,
+      5969230,
+      5969310,
+      6077382,
+      6312490,
+      6185342
+    ],
+    "expected_input_logical_qubits": [
+      135,
+      137,
+      133,
+      135,
+      137,
+      137,
+      145,
+      139
+    ],
+    "frozen_seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ],
+    "seed_order_is_normative": true
+  },
+  "independent_checker_contract": {
+    "checker_imports_v46_compiler": false,
+    "checker_runtime": "PYTHON_STANDARD_LIBRARY_ONLY",
+    "required_checks": [
+      "STRICT_JSON_AND_ALL_SELF_HASHES",
+      "EXACT_V4_5_PARENT_AND_227_IMMUTABLE_PATHS",
+      "EXACT_SPEC_PATH_ORACLE_TRANSLATION_SOURCE_AND_CHECKER_CROSSLINKS",
+      "EXACT_PARENT_INPUT_STREAM_MANIFESTS",
+      "ROUTE_CHUNK_COMPLETENESS_AND_STAGE_TOTALS",
+      "DISTANCE_MINUS_ONE_SWAP_IDENTITY",
+      "NATIVE_COUNT_ALGEBRA",
+      "FINAL_LAYOUT_BIJECTIONS",
+      "INHERITED_PREREGISTERED_RESOURCE_GATES",
+      "AGGREGATE_RECOMPUTATION",
+      "PROVIDER_NETWORK_JOB_HARDWARE_AND_ADVANTAGE_BOUNDARY"
+    ]
+  },
+  "inherited_preregistered_resource_contract": {
+    "capacity_fit_required_before_reconstruction": true,
+    "maximum_native_cz_expansion_over_v45_cnot": 100,
+    "maximum_routed_cz_per_seed": 250000000,
+    "maximum_routed_depth_per_seed": 250000000,
+    "origin": "V4_5_ROUTING_NEXT_GATE_CONTRACT_SEALED_BEFORE_V46_EXPLORATION",
+    "required_coupling_violations": 0,
+    "required_isa_violations": 0,
+    "routing_method": "basic",
+    "seed_transpiler": 4505,
+    "target_snapshot_inherited_from_v44": true,
+    "translation_method": "translator"
+  },
+  "parent_contract": {
+    "v45_artifact_raw_file_sha256": "f28f2975b83d38e32b285cac8c2b7506a07f6341739f3153bde01d42e1219257",
+    "v45_artifact_sha256": "9ab980071cc247cdbc70e8f964ccfbb09c48997d1d14cc26148c39518facda45",
+    "v45_freeze_contract_raw_file_sha256": "1f20e7c3c82c9441132d530a9204b0db19ad0d31c43b867cc029394bda276cd7",
+    "v45_freeze_contract_sha256": "05197d460b076275a3c7712aa895959d9d1916b09e1999750e1e36cc0c27a218",
+    "v45_frozen_file_count": 229,
+    "v45_frozen_paths_fingerprint_sha256": "1c81474eee596a857d099c7882ddb02d409a620a2ddf311f25c783c491370d14",
+    "v45_immutable_successor_file_count": 227,
+    "v45_parent_decision": "V45_PROOF_CARRYING_WIDTH_REDUCTION_PASSED_EXACT_PROMISE_PARITY"
+  },
+  "reference_contracts": {
+    "path_oracle": {
+      "ordered_path_count": 24180,
+      "path_oracle_raw_file_sha256": "faf9573fa7fe7c50e0a872e0d989a8d8938f181a9c136e6138121a53a7e55a5b",
+      "path_oracle_sha256": "0956cfa11e6a507cf8e4197e8c054b0bd90f4ca2a37ac895b61265e95d91ecf7",
+      "qiskit_version": "2.5.2",
+      "target_qubits": 156
+    },
+    "translation": {
+      "canary_count": 9,
+      "native_basis": [
+        "cz",
+        "id",
+        "rz",
+        "sx",
+        "x"
+      ],
+      "translation_contract_raw_file_sha256": "7600a95edce3af75fda671f836585e99b837a04527a2f3e29dca8812b0f008dc",
+      "translation_contract_sha256": "e0ab1b7612f7dac1ee9946ff296ee82ab603ed069a228d0dbffd537621f266a7"
+    }
+  },
+  "research_sources": [
+    {
+      "role": "TRANSPILER_CONFIGURATION_AND_VERSION",
+      "title": "IBM Quantum Documentation · Transpilation defaults and configuration",
+      "url": "https://quantum.cloud.ibm.com/docs/en/guides/defaults-and-configuration-options"
+    },
+    {
+      "role": "TARGET_CONSTRAINT_MODEL",
+      "title": "IBM Quantum Documentation · Represent quantum computers for the transpiler",
+      "url": "https://quantum.cloud.ibm.com/docs/en/guides/represent-quantum-computers"
+    },
+    {
+      "role": "BASIC_SWAP_ALGORITHM",
+      "title": "Qiskit source · BasicSwap",
+      "url": "https://github.com/Qiskit/qiskit/blob/main/qiskit/transpiler/passes/routing/basic_swap.py"
+    },
+    {
+      "role": "BASIS_TRANSLATION_ALGORITHM",
+      "title": "IBM Quantum Documentation · BasisTranslator",
+      "url": "https://quantum.cloud.ibm.com/docs/en/api/qiskit/2.3/qiskit.transpiler.passes.BasisTranslator"
+    }
+  ],
+  "self_hash_contract": "SHA256_OVER_COMPACT_SORTED_UTF8_JSON_AFTER_REMOVING_V46_SPEC_SHA_AND_V46_SPEC_SHA256",
+  "spec_version": "QUANTUM LAB V4.6 FULL-STREAM FAKEMARRAKESH ROUTING · V1",
+  "v46_spec_sha": "2A2480F6932F3EF41FF9",
+  "v46_spec_sha256": "2a2480f6932f3ef41ff94b1450467a703ed260767370a6dc75304f55820addf8"
+}

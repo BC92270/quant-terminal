@@ -1,0 +1,106 @@
+{
+  "acceptance_contract": {
+    "canonical_selected_model_budget_cnot": 2500000,
+    "headroom_against_documented_provider_limit": 0.5,
+    "ibm_documented_two_qubit_limit": 5000000,
+    "provider_backend_required": false,
+    "provider_credentials": "PROHIBITED",
+    "qpu_jobs_submitted": 0,
+    "reduction_target": "ATTACK_PROVIDER_NEUTRAL_SELECTED_MODEL_NUMERATOR_BEFORE_BACKEND_TRANSPILATION"
+  },
+  "claim_boundary": {
+    "backend_native": false,
+    "global_impossibility": "NOT_CLAIMED",
+    "hardware_executable": false,
+    "optimization_performance": "NOT_TESTED",
+    "provider_calls": 0,
+    "qpu_submission_enabled": false,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY"
+  },
+  "incremental_exposure_contract": {
+    "arithmetic_identity": "A_r(S_ij x) = A_r(x) + (x_j - x_i)(c_ri - c_rj)",
+    "admission_requirement": "A reversible compiler must compute the exact prospective values, flags, controlled exchange and coherent cache update with all ancillas clean.",
+    "classical_delta_validation_scope": "All 8 authenticated N=40 witnesses, all 780 unordered swaps and all 7 hard-band rows.",
+    "current_status": "BLOCKED_PENDING_REVERSIBLE_COMPILER",
+    "exact_k_note": "A bit exchange preserves Hamming weight exactly.",
+    "resource_claim": "NO_CNOT_REDUCTION_ADMITTED_UNTIL_GATE_IR_AND_DIFFERENTIAL_VALIDATION_EXIST"
+  },
+  "lane_contracts": {
+    "BACKEND_NATIVE": {
+      "semantic_classification": "NOT_EVALUATED",
+      "status": "NOT_RUN_PROVIDER_FREE_PHASE"
+    },
+    "BLOCK_COORDINATE": {
+      "semantic_classification": "CHANGED_SEMANTICS",
+      "status": "SEPARATE_RESEARCH_PROTOCOL_REQUIRED"
+    },
+    "FEASIBLE_SUPPORT_SINGLE_GUARD": {
+      "semantic_classification": "PRESERVED_ON_FROZEN_FEASIBLE_SUPPORT_ONLY",
+      "status": "REJECTED_SELECTED_MODEL_BUDGET"
+    },
+    "FROZEN_V34_IDENTITY": {
+      "semantic_classification": "PRESERVED_EXACT_FULL_OPERATOR",
+      "status": "REJECTED_SELECTED_MODEL_BUDGET"
+    },
+    "INCREMENTAL_EXPOSURE_GUARD": {
+      "semantic_classification": "PRESERVATION_TARGET_EXACT_BUT_REVERSIBLE_IMPLEMENTATION_UNPROVEN",
+      "status": "BLOCKED_PENDING_REVERSIBLE_COMPILER"
+    },
+    "TOPOLOGY_ONLY_PRESERVE_OPERATOR": {
+      "semantic_classification": "PRESERVED_EXACT_FULL_OPERATOR",
+      "status": "REJECTED_NO_EDGE_REMOVAL_AVAILABLE"
+    },
+    "TOPOLOGY_ONLY_PRUNED": {
+      "semantic_classification": "CHANGED_SEMANTICS",
+      "status": "REJECTED_SELECTED_MODEL_BUDGET_AND_SEPARATE_PROTOCOL_REQUIRED"
+    }
+  },
+  "parent_contract": {
+    "expected_parent_v31_raw_file_sha256": "7b39a20ec9200b16996ec25edd660ba7bf26bfb2b454ed44dd1a333513afd50e",
+    "expected_parent_v34_artifact_raw_file_sha256": "4e15aba6c83dcec0ff3e22652df03c624f635956d10b769514cfbd78cdaed7fd",
+    "expected_parent_v34_artifact_sha256": "2753b81527bf470b8528550d4de491b968e114e4d59541fd16aeca2d995c9210",
+    "expected_parent_v34_resource_manifest_sha256": "c08112f636b2d3d7af167224338eb78ad59ef99effda8a4c43e1a1dda5e3632f",
+    "expected_parent_v34_spec_raw_file_sha256": "1ffe8fcd54b5becd4688975d4a206919558a2707aa73af91756c55dc24a42059",
+    "expected_parent_v34_spec_sha256": "a287b6bf63f5206672a82656483f06c2dd6f005a11f10bdc1a9142820d3f01f7",
+    "expected_parent_v35_artifact_raw_file_sha256": "94e8741cf2d1564a513917aeb83f5cbca4ce75821a3a8517cefbad48bbfb0ef4",
+    "expected_parent_v35_artifact_sha256": "7e217693093dca453ab478c003fe2303e3f6fa21e2a8f36d5bcadef9c58508da",
+    "expected_parent_v35_freeze_raw_file_sha256": "8d0a5ca3f37cf4c7a755537d55eb7b2a202bb72603527ec9f4f8fb7d1ba21f52",
+    "expected_parent_v35_freeze_sha256": "efda21e201cd9ecc7b4fab7544c4c024a96b925dc39f977c17331a5278c994d2",
+    "expected_parent_v35_spec_sha256": "ac9ce5953ef06cc8ccd96d9eb5fb89bf7f9a9191f21e5d6da89bb67c923a89a9"
+  },
+  "phase": "PHASE_III_PROVIDER_FREE_STRUCTURAL_COST_AND_REWRITE_ADMISSION",
+  "preregistered_checks": [
+    "V31_V34_V35_PARENT_AUTHENTICATION",
+    "CANONICAL_LEDGER_SHAPE_EXACT",
+    "ALL_EIGHT_CNOT_EQUATIONS_RECONSTRUCT",
+    "PER_ORACLE_CNOT_RANGE_EXACT",
+    "NONTRIVIAL_ORACLE_PAIR_FLOOR_EXCEEDS_BUDGET",
+    "TOPOLOGY_ONLY_REJECTION",
+    "GUARD_SCOPE_TRUTH_TABLE",
+    "INCREMENTAL_EXPOSURE_DELTA_ALL_43680_ROWS",
+    "SEMANTIC_CLASSIFICATION_COMPLETE",
+    "BACKEND_AND_HARDWARE_FAIL_CLOSED"
+  ],
+  "semantic_taxonomy": {
+    "CHANGED_SEMANTICS": "The successor changes the ordered mixer operator, problem domain, objective, hard constraints or decomposition; it cannot inherit V3.4 equivalence labels.",
+    "PRESERVED_EXACT_FULL_OPERATOR": "The exact V3.4 operator is unchanged on the full declared input domain.",
+    "PRESERVED_ON_FROZEN_FEASIBLE_SUPPORT_ONLY": "Action is identical only for states whose support is entirely inside the frozen feasible subspace; behavior outside that invariant domain differs.",
+    "PRESERVATION_TARGET_EXACT_BUT_REVERSIBLE_IMPLEMENTATION_UNPROVEN": "Classical arithmetic identities pass, but no clean-ancilla reversible gate IR exists; the rewrite is not admitted."
+  },
+  "structural_cost_contract": {
+    "canonical_edge_count": 780,
+    "canonical_oracle_calls": 1562,
+    "canonical_profile": "DUAL_GUARD_CACHED",
+    "canonical_topology": "COMPLETE_SWAP_SCAN",
+    "equation": "total_cnot = oracle_calls * per_oracle_cnot + edge_count * per_edge_cnot",
+    "per_edge_selected_model_cnot": 28,
+    "required_nontrivial_oracle_calls": 2,
+    "v34_per_oracle_cnot_expected_max": 95650135,
+    "v34_per_oracle_cnot_expected_min": 92095707
+  },
+  "self_hash_contract": "SHA-256 over compact sorted UTF-8 JSON after removing v36_spec_sha and v36_spec_sha256",
+  "spec_version": "QUANTUM LAB V3.6 STRUCTURAL COST + ALGORITHMIC REWRITE ADMISSION · V1",
+  "v36_spec_sha": "C13750ACE7903D164DB6",
+  "v36_spec_sha256": "c13750ace7903d164db6ecef295414a3ad62e2e29d4c9f75b5d4a7be06c8cbdc"
+}

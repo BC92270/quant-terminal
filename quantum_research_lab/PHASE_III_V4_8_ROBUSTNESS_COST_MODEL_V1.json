@@ -1,0 +1,135 @@
+{
+  "architecture_evaluation_interface": {
+    "architecture_result_may_be_absent": true,
+    "candidate_selection_rule": "MINIMIZE_MAXIMUM_DIRECT_CX_THEN_TOTAL_DIRECT_CX_THEN_MAXIMUM_WIDTH_THEN_ARCHITECTURE_ID",
+    "interface_version": "PHASE III · V4.8 ARCHITECTURE EVALUATION INTERFACE · V1",
+    "required_claim_boundary": {
+      "hardware_executable": false,
+      "network_calls": 0,
+      "provider_calls": 0,
+      "qpu_jobs_submitted": 0,
+      "research_classification": "RESEARCH_ONLY"
+    },
+    "required_seed_architecture_fields": [
+      "seed",
+      "logical_qubits",
+      "direct_cx",
+      "stream_sha256",
+      "semantic_parity_status",
+      "clean_ancilla_status"
+    ],
+    "required_snapshot_seed_fields": [
+      "snapshot_id",
+      "seed",
+      "baseline_native_cz",
+      "candidate_native_cz",
+      "baseline_makespan_ticks",
+      "candidate_makespan_ticks",
+      "baseline_reported_gate_error_mass",
+      "candidate_reported_gate_error_mass",
+      "missing_property_occurrences",
+      "unit_error_gate_occurrences",
+      "isa_violations",
+      "coupling_violations"
+    ]
+  },
+  "architecture_reduction_gate": {
+    "candidate_architecture_id": "CONTROL_LOADED_CONSTANT_CUCCARO_V1",
+    "candidate_cx_per_add": "17*w-25+2*popcount(c_mod_2_pow_w)",
+    "candidate_is_not_evaluated_by_this_reference_bundle": true,
+    "direct_cx_ceiling_all_eight_seeds": 613392,
+    "direct_cx_must_be_strictly_below_v47_for_every_seed": true,
+    "legacy_cx_per_add": "68*w-102",
+    "maximum_logical_qubits": 156,
+    "production_meaning": "NONE_RESEARCH_RESOURCE_GATE_ONLY",
+    "required_construction": "CONTROL_LOAD_CLEAN_CONSTANT_EXACT_CUCCARO_CONTROL_UNLOAD",
+    "unchanged_scope": "V45_LAYOUT_COIN_SELECTOR_EXCEPT_ADDER_AND_CERTIFIED_BRIDGES"
+  },
+  "claim_boundary": {
+    "calibration_aware_circuit_fidelity": "NOT_CLAIMED",
+    "hardware_executable": false,
+    "hardware_timing_schedule": "NOT_RUN",
+    "network_calls": 0,
+    "provider_calls": 0,
+    "qpu_jobs_submitted": 0,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "snapshot_is_current_hardware_evidence": false
+  },
+  "created_utc": "2026-09-21T16:20:13Z",
+  "current_evaluation_state": {
+    "architecture_evaluation": "NOT_SUPPLIED",
+    "multi_snapshot_decision": "MULTI_SNAPSHOT_ROBUSTNESS_NOT_EVALUABLE_INSUFFICIENT_DISTINCT_AUTHENTIC_SNAPSHOT_IDENTITIES",
+    "production_admission": "RESEARCH_ONLY_HARDWARE_EXECUTION_REJECTED"
+  },
+  "known_snapshot_necessary_condition_context": {
+    "additive_error_mass_exclusive_limit": "1",
+    "direct_cx_ceiling_for_idealized_duration_screen": 613392,
+    "direct_cx_ceiling_for_strict_additive_error_mass_screen": 964,
+    "idealized_parallel_cz_capacity": 78,
+    "maximum_t2_seconds": "0.0005347869789391219",
+    "maximum_t2_ticks_floor": 133696,
+    "minimum_cz_duration_ticks": 17,
+    "minimum_cz_reported_error": "0.0010363120130211234",
+    "screen_is_necessary_not_sufficient": true,
+    "strict_additive_error_mass_is_not_fidelity_or_success_probability": true
+  },
+  "model_version": "PHASE III · V4.8 MULTI-SNAPSHOT ROBUSTNESS COST MODEL · V1",
+  "multi_snapshot_gate": {
+    "all_snapshot_seed_cells_required": true,
+    "averaging_cannot_rescue_a_failed_cell": true,
+    "candidate_makespan_ticks_lte_baseline_every_cell": true,
+    "candidate_native_cz_strictly_lt_baseline_every_cell": true,
+    "candidate_reported_error_mass_strictly_lt_baseline_every_cell": true,
+    "minimum_distinct_authentic_snapshot_identities": 3,
+    "missing_property_occurrences_required": 0,
+    "snapshot_specific_deterministic_route_required": true,
+    "unit_error_gate_occurrences_required": 0,
+    "zero_isa_and_coupling_violations_required": true
+  },
+  "normalized_snapshots_oracle_sha256": "8364f86f0360fff5938eed57d926a8c5d6a960bc8639300a7f366f46bf940da5",
+  "parent_v47_artifact_sha256": "fa1b8a2be1471080134f34ada7ba8cff488c87077a4e5f271fd29828f1fffbaf",
+  "parent_v47_direct_cx": [
+    {
+      "direct_translated_cx": 2405038,
+      "logical_qubits": 135,
+      "seed": 1103
+    },
+    {
+      "direct_translated_cx": 2408638,
+      "logical_qubits": 137,
+      "seed": 2207
+    },
+    {
+      "direct_translated_cx": 2361262,
+      "logical_qubits": 133,
+      "seed": 3301
+    },
+    {
+      "direct_translated_cx": 2361262,
+      "logical_qubits": 135,
+      "seed": 4409
+    },
+    {
+      "direct_translated_cx": 2361262,
+      "logical_qubits": 137,
+      "seed": 5501
+    },
+    {
+      "direct_translated_cx": 2405038,
+      "logical_qubits": 137,
+      "seed": 6607
+    },
+    {
+      "direct_translated_cx": 2499790,
+      "logical_qubits": 145,
+      "seed": 7703
+    },
+    {
+      "direct_translated_cx": 2448814,
+      "logical_qubits": 139,
+      "seed": 8807
+    }
+  ],
+  "robustness_cost_model_sha256": "58f7e2c84ecf138ed26912950055a083202ce4e7f7e4407eaf2898ae6f6ee1b6"
+}

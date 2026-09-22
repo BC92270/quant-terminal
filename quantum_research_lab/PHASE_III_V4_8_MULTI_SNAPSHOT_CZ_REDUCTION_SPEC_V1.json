@@ -1,0 +1,94 @@
+{
+  "acceptance_contract": {
+    "architecture_result_required_for_architecture_pass": true,
+    "fail_closed_if_any_seed_or_snapshot_cell_is_missing": true,
+    "minimum_distinct_authentic_snapshot_identities": 3,
+    "multi_snapshot_pass_requires_every_admitted_snapshot_and_every_seed": true,
+    "negative_or_not_evaluable_result_is_valid_scientific_output": true,
+    "production_admission_always_rejected_in_v48": true
+  },
+  "architecture_contract": {
+    "candidate_architecture_id": "CONTROL_LOADED_CONSTANT_CUCCARO_V1",
+    "candidate_selection_and_thresholds_fixed_before_any_new_snapshot_result": true,
+    "exact_modular_addition_only": true,
+    "frozen_v46_basic_swap_replay_required": true,
+    "only_controlled_constant_adder_primitive_may_change": true,
+    "semantic_parity_and_clean_ancilla_certificates_required": true,
+    "v47_development_snapshot_may_not_be_relabelled_as_holdout": true
+  },
+  "chronology": {
+    "known_v47_snapshot_inspected_before_v48_seal": true,
+    "new_snapshot_results_inspected_before_v48_seal": false,
+    "result_state_at_seal": "NOT_EVALUATED",
+    "sealed_utc": "2026-09-21T16:20:13Z"
+  },
+  "claim_boundary": {
+    "backend_run_calls": 0,
+    "credential_reads": 0,
+    "hardware_executable": false,
+    "local_simulator_jobs_submitted": 0,
+    "network_calls": 0,
+    "provider_calls": 0,
+    "provider_credentials_read": false,
+    "provider_sdk_imported": false,
+    "qpu_jobs_submitted": 0,
+    "quantum_advantage": "NOT_CLAIMED",
+    "research_classification": "RESEARCH_ONLY",
+    "snapshot_is_current_hardware_evidence": false
+  },
+  "decision_tree": {
+    "architecture_missing_or_invalid": "ARCHITECTURE_CZ_REDUCTION_NOT_EVALUATED_OR_REJECTED",
+    "fewer_than_three_distinct_authentic_snapshots": "MULTI_SNAPSHOT_ROBUSTNESS_NOT_EVALUABLE_INSUFFICIENT_DISTINCT_AUTHENTIC_SNAPSHOT_IDENTITIES",
+    "multi_snapshot_all_cells_dominate": "V48_MULTI_SNAPSHOT_MODEL_ROBUSTNESS_DEMONSTRATED_RESEARCH_ONLY",
+    "multi_snapshot_any_cell_fails": "V48_MULTI_SNAPSHOT_MODEL_ROBUSTNESS_NOT_DEMONSTRATED",
+    "next_falsifiable_gate_when_blocked": "ACQUIRE_AT_LEAST_TWO_ADDITIONAL_AUTHENTIC_OFFLINE_SNAPSHOT_EPOCHS_AND_REDUCE_DIRECT_CX_BELOW_BOTH_HISTORICAL_NECESSARY_THRESHOLDS",
+    "production_admission": "RESEARCH_ONLY_HARDWARE_EXECUTION_REJECTED"
+  },
+  "family": {
+    "K": 10,
+    "N": 40,
+    "logical_widths": [
+      135,
+      137,
+      133,
+      135,
+      137,
+      137,
+      145,
+      139
+    ],
+    "regime": "BANDS",
+    "seeds": [
+      1103,
+      2207,
+      3301,
+      4409,
+      5501,
+      6607,
+      7703,
+      8807
+    ]
+  },
+  "input_identities": {
+    "normalized_snapshots_oracle_raw_file_sha256": "54c5cf463ec0c2fa591864ed595fac26a7c0a9e279f47a41942ad4073da5af5e",
+    "normalized_snapshots_oracle_sha256": "8364f86f0360fff5938eed57d926a8c5d6a960bc8639300a7f366f46bf940da5",
+    "robustness_cost_model_raw_file_sha256": "a8fe16d0810aede0348bdb4010d9fbab5fa7736438df71782351436a54ad05cb",
+    "robustness_cost_model_sha256": "58f7e2c84ecf138ed26912950055a083202ce4e7f7e4407eaf2898ae6f6ee1b6",
+    "snapshot_catalog_raw_file_sha256": "7a5c8cf6a4a33f0f32ce5ea1ba0df7c45ee5c35d343eebc86ba174470a77be53",
+    "snapshot_catalog_sha256": "9a585764e2de35edcd66695da7abfea9726785c06065133170917d8587341ef6",
+    "v47_artifact_raw_file_sha256": "ddb8dae96c1d5fe1040f92731c995315e04232da645fed0b2d34cf7575a06185",
+    "v47_artifact_sha256": "fa1b8a2be1471080134f34ada7ba8cff488c87077a4e5f271fd29828f1fffbaf",
+    "v47_freeze_raw_file_sha256": "89dfc8f614955d4fe1c92cfd286ab04f4022d9eb69e566edf46a65e84aa81a3a",
+    "v47_freeze_sha256": "3f870a5ff89368d2000a58533fba395b0d077cc377cdc830fdc4b362f6465858"
+  },
+  "snapshot_admission_contract": {
+    "current_admitted_alias_count": 0,
+    "current_distinct_authentic_snapshot_count": 1,
+    "distinct_identity_requires_unique_raw_hash_property_vector_hash_and_epoch": true,
+    "minimum_distinct_authentic_snapshot_identities": 3,
+    "same_bytes_in_multiple_archives_count_once": true,
+    "synthetic_or_perturbed_inputs_never_count_as_authentic_snapshots": true
+  },
+  "spec_version": "PHASE III · V4.8 MULTI-SNAPSHOT ROBUSTNESS / ARCHITECTURE CZ REDUCTION SPEC · V1",
+  "v48_spec_sha256": "2f5874030f433d1bd542804a20208d42276127d5e79851daf00d6d1d39db46b2"
+}

@@ -1,0 +1,27 @@
+{
+  "candidate_selection_rule": "Among Phase-II families with Family gate = TRUE and Complete family = TRUE, choose the smallest N; tie-break by hardware encoding complexity BASE < PAIRWISE < BANDS. All 8 preregistered seeds remain in scope.",
+  "encoding_policy": {
+    "BANDS": "No executable hardware circuit is claimed until group-count and factor-exposure bands have a sealed reversible feasibility oracle or an auditable slack/fixed-point penalty encoding. Abstract resource envelopes are diagnostic only.",
+    "BASE": "Exact-K warm-start basis state + number-preserving XY ring mixer + economic QUBO cost Hamiltonian.",
+    "PAIRWISE": "Exact-K warm-start basis state + XY ring mixer + economic QUBO plus witness-safe pairwise-exclusion penalties."
+  },
+  "hardware_submission_policy": "V2.9 does not submit jobs. Hardware execution requires a later sealed Phase-III benchmark protocol.",
+  "phase2_parent_execution_spec_sha": "40D3225B0AFC86BC01DD",
+  "phase2_parent_protocol_sha": "8E5EF191FAE97A75",
+  "phase3_version": "PHASE III \u00b7 EQUAL-OBJECTIVE QPU PREPARATION \u00b7 V1",
+  "preparation_spec_sha": "CDC693C22A3838B0B3C1",
+  "preparation_spec_version": "QPU COMPILATION READINESS SPEC \u00b7 V1",
+  "provider_policy": {
+    "aws_braket": "SDK presence is inventoried only in V2.9; no task submission is implemented.",
+    "ibm_quantum_compute": "First-class readiness path via qiskit-ibm-runtime when installed and authenticated."
+  },
+  "sealing_requirements": [
+    "Phase-II QUBO run finalized 120/120 with integrity OK",
+    "Phase-II HARDNESS GATE PASSED",
+    "Selected family is one of the completed gate-passing families",
+    "All 8 sealed seeds included",
+    "Named hardware backend and calibration snapshot recorded",
+    "Equal-objective circuit/encoding blueprint marked executable for the selected regime",
+    "Resource/capacity check passes for the selected backend"
+  ]
+}
