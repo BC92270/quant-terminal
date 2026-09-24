@@ -25,6 +25,12 @@ SUCCESSOR_PARENT_HASHES = {
     "quantum_research_lab/README.md": V48_README_RAW,
     "quantum_research_lab/ui.py": V48_UI_RAW,
 }
+ACCEPTED_PREVIOUS_V49_HASHES = {
+    "quantum_research_lab/ui.py": "3515f038dd0025291c2f18327d8a4ead1f19f9bfb86ff54b4de4e8f99d529ad9",
+    "quantum_research_lab/v49/tests/test_ui.py": "b349b3eb3ecec77f391dbe5af21d5d4ef77dfec598d2152eb1307dfd48b23055",
+    "release/quantum_v49/freeze.json": "47709a799287bb320845a511eeca540218d0c343797de32621425f7575e69dd7",
+    "release/quantum_v49/install.py": "f51af71054e65a23335bdb39a880ab21ac6587b7e20f587d495126a44e6209bb",
+}
 
 
 def _raw(path: Path) -> str:
@@ -82,6 +88,8 @@ def _authenticate_target(target: Path, source: Path, transitions: tuple[str, ...
         allowed = {source_hash}
         if relative in SUCCESSOR_PARENT_HASHES:
             allowed.add(SUCCESSOR_PARENT_HASHES[relative])
+        if relative in ACCEPTED_PREVIOUS_V49_HASHES:
+            allowed.add(ACCEPTED_PREVIOUS_V49_HASHES[relative])
         if observed not in allowed:
             raise ValueError(f"Target path has an unrecognized state: {relative}")
 

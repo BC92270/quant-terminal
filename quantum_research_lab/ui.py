@@ -674,7 +674,7 @@ def _hero(ticker: str, snapshot: dict[str, Any]) -> None:
     st.markdown(
         f"""
         <div class="qrl-shell">
-            <div class="qrl-kicker">QUANTUM RESEARCH & COMPUTATION LAB · V4.8 · ARCHITECTURE REDUCTION & SNAPSHOT GOVERNANCE</div>
+            <div class="qrl-kicker">QUANTUM RESEARCH & COMPUTATION LAB · V4.9 · TERMINAL OFFLINE ADMISSION & EVIDENCE GOVERNANCE</div>
             <div class="qrl-title">Institutional Quantum Intelligence Workspace</div>
             <div class="qrl-sub">
                 Quantum regime inference, calibration diagnostics, density-matrix explainability, controlled OOS benchmarking, Monte Carlo / QAE resource benchmarking,
@@ -2317,9 +2317,9 @@ def _phase2_program(
 
 def _phase3_qpu_program() -> None:
     _section_header(
-        "Phase III · Architecture Reduction, Snapshot Governance & Zero-Job Control Room",
-        "CLASSICAL HARDNESS → PROOF-CARRYING WIDTH → EXACT ROUTES → CONTROL-LOADED ADDER → MULTI-SNAPSHOT GATE",
-        "The V4.8 surface materializes and routes eight exact reduced-CX streams, preserves the dated V4.7 diagnostics, and refuses multi-snapshot robustness because only one authentic epoch exists. Current calibration, provider discovery and execution remain blocked.",
+        "Phase III · Terminal Offline Admission, Evidence Governance & Zero-Job Control Room",
+        "AUTHENTIC V4.8 PARENT → DISTINCT EPOCH GATE → EXACT RESOURCE GATE → PROVIDER DISCOVERY DECISION",
+        "V4.9 authenticates the exact V4.8 architecture evidence, preserves the dated diagnostics and closes the offline V4 line with a fail-closed admission dossier. Only one of three required authentic epochs exists, the strict resource screens still fail, and provider discovery, V5 entry and execution remain blocked.",
     )
     st.markdown(
         '''<style>

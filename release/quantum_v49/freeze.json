@@ -10,7 +10,7 @@
     "research_classification": "RESEARCH_ONLY"
   },
   "created_date": "2026-09-24",
-  "freeze_contract_sha256": "5ead142649a4bd0ff18ea5ca609e8ec59762c97907d9e0fe837e8f5e5124f58d",
+  "freeze_contract_sha256": "f5168ff42d8a72111a0e740e8675203e1382c0bcb6a23d1d12b9e9c3c9d2f597",
   "freeze_contract_version": "QUANTUM LAB V4.9 FREEZE CONTRACT · V1",
   "frozen_file_count": 320,
   "frozen_files": {
@@ -263,7 +263,7 @@
     "quantum_research_lab/test_phase3_v47_release.py": "767ca3b16d964bdf74cf6463a3407ac6caee7cd64b9bfd939c90633b3ae7114d",
     "quantum_research_lab/test_phase3_v48.py": "7b764110fc99750038173b3724cee5193e5050a527ba1ce16fc600448fbc7204",
     "quantum_research_lab/test_phase3_v48_release.py": "b3a1eadbc9519eabdc8ba41e63f17a1653ed9f165ee9f79ce7489e4a33450e89",
-    "quantum_research_lab/ui.py": "3515f038dd0025291c2f18327d8a4ead1f19f9bfb86ff54b4de4e8f99d529ad9",
+    "quantum_research_lab/ui.py": "b366a9f22a8637ce2746d68e9e7ed85138b4750596a45b7b4a4905337ce5b334",
     "quantum_research_lab/v49/ARCHITECTURE.md": "dc8877164da782e2d2595e4ad3048be4aca0f45b7a9cebfd86fe3e67c145ad3a",
     "quantum_research_lab/v49/PROTOCOL.json": "1a695b518d2352ccc5d8733ef5253fc6a381917e0611751109ca7c6cf76fbb30",
     "quantum_research_lab/v49/__init__.py": "265c9bbacdfbf0a64948453a3e875b86ae77b160788d51de5423dbf8fdfe3293",
@@ -279,7 +279,7 @@
     "quantum_research_lab/v49/tests/test_app.py": "2f1f6fa0cbbfd8abf5edcc396268268c426643dbc75e1606570207d17589df17",
     "quantum_research_lab/v49/tests/test_release.py": "7cfa81976a1776b8b7ca92f9e5c6d028f4df217be0e6dc1844e94edf4deb0abd",
     "quantum_research_lab/v49/tests/test_science.py": "168e22e2ecd03b549ed9b5abfa820f33ec048715421981e96595e24cb30f61c2",
-    "quantum_research_lab/v49/tests/test_ui.py": "b349b3eb3ecec77f391dbe5af21d5d4ef77dfec598d2152eb1307dfd48b23055",
+    "quantum_research_lab/v49/tests/test_ui.py": "9f5c8ad09840cd9ad6bba5c48d8b41003d1bbc7736b5accc9251535bdcebcd62",
     "quantum_research_lab/v49/ui.py": "5b5c09e076f70d24b8dd67a8d313090580b7be02d7e4e1b8f698c52c1061c5ff",
     "quantum_research_lab/verify_freeze_contract_v33.py": "ae6923edf851cc64a099501b315c78f8e02878ed7c63216a608ac413ebeb0d99",
     "quantum_research_lab/verify_freeze_contract_v34.py": "6a456bf069ab8183073671887599dc1b4b4e69ef40ac8b1e39256a45c881ae88",
@@ -333,7 +333,7 @@
     "release/quantum_v49/DEPLOY.md": "041330cc51045e0d522a723f122587caeea05799932eefdd95a79bb12d3babb9",
     "release/quantum_v49/build.py": "7cad13113e4d5bd5c0bdee14a2d57a1c3305f702b86198893988a9ada393c366",
     "release/quantum_v49/harness.py": "a07556c5f2842b814f899a49ff7799ccb5c25153a56b483ca324ebeba7ea5bdb",
-    "release/quantum_v49/install.py": "f51af71054e65a23335bdb39a880ab21ac6587b7e20f587d495126a44e6209bb"
+    "release/quantum_v49/install.py": "f121f411dbddf62c90deb9941a90b052c7c58f41c24a4871c4f4aaa7169f16a6"
   },
   "frozen_paths_fingerprint_sha256": "05f0bae3aa135bf67c44ad89f38d0882c5bcbfc383259aa3400c9080266ff9a6",
   "parent": {

@@ -82,6 +82,11 @@ class QuantumLabV49UiTests(unittest.TestCase):
         self.assertIn("if v49_integrity:", source)
         self.assertIn("V4.9 is the terminal offline V4 admission dossier", source)
 
+    def test_11_workspace_and_phase_headers_promote_v49(self) -> None:
+        source = (ROOT / "quantum_research_lab/ui.py").read_text(encoding="utf-8")
+        self.assertIn("V4.9 · TERMINAL OFFLINE ADMISSION & EVIDENCE GOVERNANCE", source)
+        self.assertIn("Phase III · Terminal Offline Admission, Evidence Governance & Zero-Job Control Room", source)
+
 
 if __name__ == "__main__":
     unittest.main()
