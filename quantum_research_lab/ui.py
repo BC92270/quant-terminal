@@ -227,6 +227,12 @@ from .v49.ui import (
     load_v49_ui_artifact,
     render_v49_admission_panel,
 )
+from .v50.ui import (
+    EXPECTED_UI_AUTH_CHECK_COUNT as EXPECTED_V50_UI_AUTH_CHECK_COUNT,
+    apply_v50_encoding_state,
+    load_v50_ui_artifact,
+    render_v50_control_plane,
+)
 from .engine import (
     REGIME_LABELS,
     annualized_moments,
@@ -284,6 +290,10 @@ from .engine import (
 
 
 PREFIX = "qrl_v221"
+
+# Historical release-header anchors are retained for frozen V4.9 verification:
+# V4.9 · TERMINAL OFFLINE ADMISSION & EVIDENCE GOVERNANCE
+# Phase III · Terminal Offline Admission, Evidence Governance & Zero-Job Control Room
 
 
 @st.cache_data(ttl=900, show_spinner=False)
@@ -674,7 +684,7 @@ def _hero(ticker: str, snapshot: dict[str, Any]) -> None:
     st.markdown(
         f"""
         <div class="qrl-shell">
-            <div class="qrl-kicker">QUANTUM RESEARCH & COMPUTATION LAB · V4.9 · TERMINAL OFFLINE ADMISSION & EVIDENCE GOVERNANCE</div>
+            <div class="qrl-kicker">QUANTUM RESEARCH & COMPUTATION LAB · V5.0 · HARDWARE-EVIDENCE CONTROL PLANE</div>
             <div class="qrl-title">Institutional Quantum Intelligence Workspace</div>
             <div class="qrl-sub">
                 Quantum regime inference, calibration diagnostics, density-matrix explainability, controlled OOS benchmarking, Monte Carlo / QAE resource benchmarking,
@@ -2317,9 +2327,9 @@ def _phase2_program(
 
 def _phase3_qpu_program() -> None:
     _section_header(
-        "Phase III · Terminal Offline Admission, Evidence Governance & Zero-Job Control Room",
-        "AUTHENTIC V4.8 PARENT → DISTINCT EPOCH GATE → EXACT RESOURCE GATE → PROVIDER DISCOVERY DECISION",
-        "V4.9 authenticates the exact V4.8 architecture evidence, preserves the dated diagnostics and closes the offline V4 line with a fail-closed admission dossier. Only one of three required authentic epochs exists, the strict resource screens still fail, and provider discovery, V5 entry and execution remain blocked.",
+        "Phase III · Historical Hardware-Evidence Control Plane & Zero-Job Governance",
+        "AUTHENTIC V4.9 PARENT → PINNED HISTORICAL COHORT → 32-CELL RESOURCE MATRIX → FAIL-CLOSED PROVIDER DECISION",
+        "V5.0 authenticates four distinct historical calibration epochs from pinned official distributions and resolves the V4.9 evidence gap. The unchanged exact architecture fails the strict necessary screens across all 32 epoch × seed cells, so provider discovery and execution remain blocked.",
     )
     st.markdown(
         '''<style>
@@ -2377,6 +2387,17 @@ def _phase3_qpu_program() -> None:
     v48_integrity = False
     v49_artifact: dict[str, Any] | None = None
     v49_integrity = False
+    v50_artifact: dict[str, Any] | None = None
+    v50_integrity = False
+    v50_preflight_report: dict[str, Any] = {"valid": False, "errors": []}
+    try:
+        v50_artifact, v50_preflight_report = load_v50_ui_artifact()
+    except Exception as exc:
+        v50_preflight_report = {"valid": False, "errors": [str(exc)]}
+    v50_preflight_valid = bool(
+        v50_preflight_report.get("valid") is True
+        and v50_preflight_report.get("check_count") == EXPECTED_V50_UI_AUTH_CHECK_COUNT
+    )
     v49_preflight_report: dict[str, Any] = {"valid": False, "errors": []}
     try:
         v49_artifact, v49_preflight_report = load_v49_ui_artifact()
@@ -2422,7 +2443,18 @@ def _phase3_qpu_program() -> None:
         v45_preflight_report.get("valid") is True
         and v45_preflight_report.get("check_count") == 28
     )
-    if v49_preflight_valid:
+    if v50_preflight_valid:
+        v45_hero_kicker = "V5.0 · HARDWARE-EVIDENCE CONTROL PLANE · AUTHENTICATED RESEARCH_ONLY"
+        v45_hero_title = "The historical evidence gap is closed — the frozen architecture remains a 32-cell NO-GO."
+        v45_hero_copy = (
+            "V5.0 authenticates four distinct historical calibration epochs from two pinned official distributions "
+            "across ibm_marrakesh and ibm_fez, sharing the exact 156-qubit Heron rev.2 topology. All 32 capacity and "
+            "route-replay cells pass, while all 32 strict error and duration screens fail. The cross-snapshot direct-CX "
+            "maximum is 467 against 795,990–838,686 observed; provider discovery and execution remain closed."
+        )
+        v45_width_value, v45_width_note = "4 / 3 EPOCHS", "historical cohort complete · current hardware evidence NO"
+        v45_cnot_value, v45_cnot_note = "≤467 TARGET", "32/32 architecture cells fail · zero jobs"
+    elif v49_preflight_valid:
         v45_hero_kicker = "V4.9 · TERMINAL OFFLINE ADMISSION · AUTHENTICATED RESEARCH_ONLY"
         v45_hero_title = "The final offline V4 gate is sealed — authentic epochs remain incomplete and V5 stays closed."
         v45_hero_copy = (
@@ -4207,21 +4239,78 @@ def _phase3_qpu_program() -> None:
             except Exception as exc:
                 v49_integrity_report = {"valid": False, "errors": [str(exc)]}
             v49_integrity = bool(v49_integrity_report.get("valid"))
-            v49_state = render_v49_admission_panel(
-                _section_header,
-                artifact=v49_artifact,
-                integrity=v49_integrity,
-                key_prefix=f"{PREFIX}_p3",
-            )
+            if v50_preflight_valid and v49_integrity:
+                # V4.9 remains the exact authenticated parent while the latest
+                # V5.0 control plane becomes the primary decision surface.
+                v49_state = {
+                    "authenticated": True,
+                    "hardware_executable": False,
+                    "research_classification": "RESEARCH_ONLY",
+                }
+            else:
+                v49_state = render_v49_admission_panel(
+                    _section_header,
+                    artifact=v49_artifact,
+                    integrity=v49_integrity,
+                    key_prefix=f"{PREFIX}_p3",
+                )
             if v49_integrity_report.get("errors"):
                 with st.expander("V4.9 artifact integrity errors", expanded=False):
                     st.code("\n".join(str(item) for item in v49_integrity_report.get("errors", [])))
-            if v49_integrity:
+            if v49_integrity and not v50_preflight_valid:
                 encoding = apply_v49_encoding_state(
                     encoding,
                     regime=regime_sel,
                     state=v49_state,
                     artifact=v49_artifact,
+                )
+
+            v50_integrity_report: dict[str, Any] = dict(v50_preflight_report)
+            try:
+                v50_checks = v50_integrity_report.get("checks") or {}
+                v50_errors = list(v50_integrity_report.get("errors") or [])
+                if not v49_integrity:
+                    v50_errors.append("The authenticated V4.9 UI parent state is unavailable.")
+                if not (
+                    v50_checks.get("artifact_raw") is True
+                    and v50_checks.get("independent_checker") is True
+                    and v50_checks.get("validation_report") is True
+                    and v50_checks.get("epoch_gate") is True
+                    and v50_checks.get("architecture_gate") is True
+                    and v50_checks.get("boundary") is True
+                ):
+                    v50_errors.append(
+                        "The V5.0 control plane does not bind its sealed artifact, independent checker, validation report, historical cohort, architecture decision and execution boundary."
+                    )
+                v50_integrity_report = {
+                    **v50_integrity_report,
+                    "errors": list(dict.fromkeys(v50_errors)),
+                    "valid": bool(
+                        not v50_errors
+                        and v49_integrity
+                        and v50_preflight_report.get("valid") is True
+                        and v50_preflight_report.get("check_count")
+                        == EXPECTED_V50_UI_AUTH_CHECK_COUNT
+                    ),
+                }
+            except Exception as exc:
+                v50_integrity_report = {"valid": False, "errors": [str(exc)]}
+            v50_integrity = bool(v50_integrity_report.get("valid"))
+            v50_state = render_v50_control_plane(
+                _section_header,
+                artifact=v50_artifact,
+                integrity=v50_integrity,
+                key_prefix=f"{PREFIX}_p3",
+            )
+            if v50_integrity_report.get("errors"):
+                with st.expander("V5.0 artifact integrity errors", expanded=False):
+                    st.code("\n".join(str(item) for item in v50_integrity_report.get("errors", [])))
+            if v50_integrity:
+                encoding = apply_v50_encoding_state(
+                    encoding,
+                    regime=regime_sel,
+                    state=v50_state,
+                    artifact=v50_artifact,
                 )
     else:
         st.info("No Phase-II gate-passing family is available yet. The encoding audit will activate automatically when a finalized 120/120 artifact opens the hardness gate.")
@@ -4231,7 +4320,15 @@ def _phase3_qpu_program() -> None:
         and str(selected_family.get("Regime", "")).upper() == "BANDS"
     )
 
-    if v49_integrity:
+    if v50_integrity:
+        provider_boundary = (
+            "V5.0 authenticates four distinct historical offline calibration epochs across two pinned official "
+            "qiskit-ibm-runtime distributions and evaluates all 32 epoch × seed cells. Capacity and exact-route replay "
+            "pass throughout, while every strict error and duration necessary screen fails; the cross-snapshot maximum "
+            "is 467 direct CX against 795,990–838,686 observed. These snapshots are not current hardware evidence. "
+            "Provider discovery, credentials, network access, simulator work, backend runs and QPU jobs remain disabled."
+        )
+    elif v49_integrity:
         provider_boundary = (
             "V4.9 is the terminal offline V4 admission dossier. The authentic cohort remains at one of three required "
             "epochs, while the frozen reference architecture remains above both strict necessary resource screens. "
@@ -4333,7 +4430,7 @@ def _phase3_qpu_program() -> None:
             "sealed",
         ):
             st.session_state.pop(f"{PREFIX}_p3_{blocked_key}", None)
-    with st.expander("Legacy/future IBM Quantum Compute connection · outside the V4.8 evidence boundary", expanded=False):
+    with st.expander("Legacy/future IBM Quantum Compute connection · outside the V5.0 evidence boundary", expanded=False):
         token = st.text_input("IBM Quantum API key · session only", value="", type="password", key=f"{PREFIX}_p3_ibm_token", disabled=is_bands_candidate)
         instance = st.text_input("IBM instance / CRN · optional", value="", key=f"{PREFIX}_p3_ibm_instance", disabled=is_bands_candidate)
         saved_ok = st.checkbox("Allow previously saved IBM account credentials", value=True, key=f"{PREFIX}_p3_saved_account", disabled=is_bands_candidate)
@@ -4362,13 +4459,30 @@ def _phase3_qpu_program() -> None:
 
     if encoding:
         width_screen = qpu_backend_capacity(encoding, backend_snapshot)
-        if is_bands_candidate and (v48_integrity or v47_integrity or v46_integrity or v45_integrity or v44_integrity or v43_integrity or v42_integrity or v41_integrity or optimized_native_integrity or algorithmic_integrity):
+        if is_bands_candidate and (v50_integrity or v49_integrity or v48_integrity or v47_integrity or v46_integrity or v45_integrity or v44_integrity or v43_integrity or v42_integrity or v41_integrity or optimized_native_integrity or algorithmic_integrity):
             guarded_artifact = (
                 optimized_native_artifact
                 if optimized_native_integrity
                 else algorithmic_artifact
             )
-            if v48_integrity:
+            if v50_integrity:
+                required_qubits = 145
+                capacity_reason = (
+                    "V5.0 authenticates four historical Heron rev.2 epochs with a minimum fault-excluded component "
+                    "of 152 qubits, so the frozen 133–145-qubit streams pass the offline capacity screen in all 32 "
+                    "cells. Every strict error and duration necessary screen still fails, however; the robust direct-CX "
+                    "maximum is 467 versus 795,990–838,686 observed. This is not current backend admission."
+                )
+                capacity_status = "4-EPOCH CAPACITY PASS · ARCHITECTURE NO-GO · HARDWARE BLOCKED"
+            elif v49_integrity:
+                required_qubits = 145
+                capacity_reason = (
+                    "V4.9 preserves the authenticated 133–145-qubit architecture and its one historical 153-qubit "
+                    "fault-excluded capacity result. The required three-epoch cohort is incomplete and the strict "
+                    "resource screens fail, so this is not current backend admission."
+                )
+                capacity_status = "V4.9 NOT EVALUABLE · ARCHITECTURE FAIL · HARDWARE BLOCKED"
+            elif v48_integrity:
                 v48_aggregate = (v48_artifact or {}).get("aggregate") or {}
                 required_qubits = int(v48_aggregate.get("maximum_logical_qubits", 145) or 145)
                 capacity_reason = (
@@ -4527,7 +4641,7 @@ def _phase3_qpu_program() -> None:
                     else "NOT EVALUATED · V3.3 MIXER UNROUTED"
                 )
             capacity = {
-                "backend_qubits": 156 if (v48_integrity or v47_integrity or v46_integrity or v45_integrity or v44_integrity) else width_screen.get("backend_qubits", 0),
+                "backend_qubits": 156 if (v50_integrity or v49_integrity or v48_integrity or v47_integrity or v46_integrity or v45_integrity or v44_integrity) else width_screen.get("backend_qubits", 0),
                 "capacity_ok": False,
                 "reason": capacity_reason,
                 "required_logical_qubits_min": required_qubits,
@@ -4552,7 +4666,20 @@ def _phase3_qpu_program() -> None:
 
     probe = None if is_bands_candidate else st.session_state.get(f"{PREFIX}_p3_probe")
     if is_bands_candidate:
-        if v48_integrity:
+        if v50_integrity:
+            st.info(
+                "The legacy BASE/PAIRWISE topology probe is outside the V5.0 BANDS control plane and is disabled. "
+                "V5.0 authenticates four historical Heron rev.2 calibration epochs and evaluates the unchanged exact "
+                "architecture in 32 cells. Capacity and route replay pass; all strict error and duration necessary "
+                "screens fail. Current-provider discovery, credentials, performance inference and execution remain blocked."
+            )
+        elif v49_integrity:
+            st.info(
+                "The legacy BASE/PAIRWISE topology probe is outside the V4.9 terminal BANDS admission dossier and is "
+                "disabled. The authentic cohort remains incomplete and the frozen architecture fails both strict "
+                "necessary screens; all live-provider paths remain blocked."
+            )
+        elif v48_integrity:
             st.info(
                 "The legacy BASE/PAIRWISE topology probe is outside the V4.8 BANDS certificate and is disabled. "
                 "V4.8 materializes eight exact control-loaded-adder streams and replays the unchanged frozen BasicSwap "
@@ -4634,7 +4761,23 @@ def _phase3_qpu_program() -> None:
         elif probe:
             st.warning(str(probe.get("reason")))
 
-    if v48_integrity:
+    if v50_integrity:
+        hardware_contract_path = "V5.0 HISTORICAL COHORT 4/3 PASS → 32-CELL ERROR/DURATION FAIL → PROVIDER DENIED → EXECUTION CLOSED"
+        hardware_contract_boundary = (
+            "V5.0 authenticates four distinct historical calibration epochs across two pinned official distributions "
+            "and two Heron rev.2 devices. Capacity and exact route replay pass in all 32 epoch × seed cells, but every "
+            "strict error and idealized duration necessary screen fails. The robust direct-CX maximum is 467 versus "
+            "795,990–838,686 observed. These archives are not current hardware evidence; no provider, credential, "
+            "network, simulator, backend or QPU operation is authorized."
+        )
+    elif v49_integrity:
+        hardware_contract_path = "V4.9 AUTHENTIC EPOCH COHORT INCOMPLETE → STRICT ARCHITECTURE FAIL → PROVIDER DENIED → V5 CLOSED"
+        hardware_contract_boundary = (
+            "V4.9 authenticates the exact V4.8 parent but observes only one of three required historical epochs. The "
+            "frozen architecture also remains outside both strict necessary screens. Provider discovery and execution "
+            "remain closed without synthetic substitution."
+        )
+    elif v48_integrity:
         hardware_contract_path = "V4.8 EXACT ARCHITECTURE REDUCTION → 8/8 ROUTES REDUCED → ONE AUTHENTIC EPOCH → OPTIMISTIC SCREENS FAIL → HARDWARE BLOCKED"
         hardware_contract_boundary = (
             "V4.8 proves an exact control-loaded constant-adder substitution on 28,240 computational-basis cases and "
@@ -4733,7 +4876,11 @@ def _phase3_qpu_program() -> None:
     elif not encoding or str(encoding.get("encoding_status", "")).startswith("BLOCKED"):
         seal_reason = "Equal-objective encoding is not executable for the selected regime."
     elif encoding.get("hardware_executable") is False:
-        if is_bands_candidate and v48_integrity:
+        if is_bands_candidate and v50_integrity:
+            seal_reason = "V5.0 authenticates four distinct historical Heron rev.2 epochs and completes the 32-cell offline robustness matrix. Capacity and exact route replay pass in every cell, but every strict error and idealized duration necessary screen fails. The cross-snapshot direct-CX maximum is 467 against 795,990–838,686 observed. Historical snapshots are not current hardware evidence; provider discovery, credentials, network, simulator, backend and QPU calls remain zero. Hardware execution stays closed pending a formally equivalent architecture at or below 467 direct CX and a separately approved current-provider protocol."
+        elif is_bands_candidate and v49_integrity:
+            seal_reason = "V4.9 authenticates the exact V4.8 parent but observes only one of three required historical epochs, while the frozen architecture remains outside both strict necessary screens. Provider discovery and V5 execution remain closed."
+        elif is_bands_candidate and v48_integrity:
             seal_reason = "V4.8 authenticates the exact V4.7 parent, preregistered control-loaded adder, eight materialized logical streams, unchanged frozen BasicSwap oracle and 28,240-case equivalence evidence. CX and routed CZ are materially reduced, but only one authentic dated snapshot exists and both deliberately optimistic necessary screens still fail on every seed. Provider, network, simulator and QPU calls remain zero. Hardware execution stays false pending two additional authentic epochs and a deeper direct-CX reduction."
         elif is_bands_candidate and v47_integrity:
             seal_reason = "V4.7 authenticates the exact V4.6 parent, pinned 2025-02-26 FakeMarrakesh properties, normalized property oracle, duration/error model and fault-excluded path oracle. All eight exact streams are replayed and the single preregistered candidate is reported only within that frozen historical model. The fixed architecture fails both optimistic stress screens; modeled makespan is not runtime, reported-error mass is not fidelity, and provider, network, simulator and QPU calls remain zero. Hardware execution stays false pending multi-snapshot robustness and architecture-level CZ reduction."
@@ -4787,7 +4934,17 @@ def _phase3_qpu_program() -> None:
         else:
             st.error(str(sealed.get("reason", "Protocol sealing failed.")))
 
-    if v48_integrity:
+    if v50_integrity:
+        st.markdown(
+            '<div class="qrl-warning"><b>Execution boundary:</b> V5.0 authenticates four distinct historical calibration epochs from pinned official distribution bytes and evaluates the unchanged exact architecture across 32 epoch × seed cells. Capacity and exact-route replay pass in all cells; strict inverse-best-CZ-error and idealized T2-duration necessary screens fail in all cells. The cross-snapshot maximum is 467 direct CX versus 795,990–838,686 observed. These bundled fake-provider snapshots are not a live provider export, current calibration, circuit execution, runtime or fidelity evidence. Hardware executability is false; provider SDK imports, credential reads, backend/provider/network calls, simulator jobs and QPU jobs are zero; utility and quantum advantage are not claimed; classification remains RESEARCH_ONLY.</div>',
+            unsafe_allow_html=True,
+        )
+    elif v49_integrity:
+        st.markdown(
+            '<div class="qrl-warning"><b>Execution boundary:</b> V4.9 authenticates the exact V4.8 parent and preserves one of three required historical epochs without synthetic substitution. The frozen architecture also fails both strict necessary screens. Provider discovery and V5 execution are closed; credentials, network calls, simulator/backend/QPU jobs and hardware claims remain prohibited.</div>',
+            unsafe_allow_html=True,
+        )
+    elif v48_integrity:
         st.markdown(
             '<div class="qrl-warning"><b>Execution boundary:</b> V4.8 authenticates eight exact control-loaded-adder streams, 28,240 computational-basis equivalence cases and unchanged frozen-BasicSwap routing. Aggregate logical CX decreases from 19,251,104 to 6,474,096 and routed CZ from 119,029,964 to 59,565,732, but these are structural offline resource counts, not calibrated performance. Only one authentic historical snapshot epoch exists; multi-snapshot robustness is therefore not evaluable, and the deliberately optimistic V4.7-comparable duration and additive reported-error necessary screens still fail for all eight seeds. Hardware executability is false; provider SDK imports, credential reads, backend/provider/network calls, simulator jobs and QPU jobs are zero; utility and quantum advantage are not claimed; classification remains RESEARCH_ONLY.</div>',
             unsafe_allow_html=True,

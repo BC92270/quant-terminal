@@ -1,0 +1,79 @@
+{
+  "protocol_version": "QUANTUM LAB V5.0 HARDWARE-EVIDENCE CONTROL PLANE PROTOCOL · V1",
+  "sealed_date": "2026-09-24",
+  "research_question": "Does the frozen V4.8 BANDS N=40 K=10 architecture pass every strict necessary screen across at least three distinct, authentic, same-family historical calibration epochs before any current-provider discovery is considered?",
+  "parent_v49": {
+    "freeze_path": "release/quantum_v49/freeze.json",
+    "freeze_raw_sha256": "7c34668559955edde109820dc400f630621f18086ae47f4de8d2259ef6c97823",
+    "freeze_semantic_sha256": "f5168ff42d8a72111a0e740e8675203e1382c0bcb6a23d1d12b9e9c3c9d2f597",
+    "artifact_path": "outputs/quantum_phase3/v49_pre_hardware_admission/SEALED_V4_9_ADMISSION_ARTIFACT.json",
+    "artifact_raw_sha256": "1622e2ab0260ea12ef93685ddc75ca58254437b6c9b124c7fd35f8e012457e2b",
+    "artifact_semantic_sha256": "2ffc0c593ef070f1fccfd04a7dc6bf16e6d002a4210e87b3cc20f50f270e7299",
+    "validation_report_path": "outputs/quantum_phase3/v49_pre_hardware_admission/SEALED_V4_9_VALIDATION_REPORT.json",
+    "validation_report_raw_sha256": "13c6265f28d766b846c964943c110981a404bc6aabad577e50867bd6484b23ad"
+  },
+  "frozen_workload": {
+    "family": "BANDS",
+    "n": 40,
+    "k": 10,
+    "architecture_id": "CONTROL_LOADED_CONSTANT_CUCCARO_V1",
+    "ordered_seeds": [1103, 2207, 3301, 4409, 5501, 6607, 7703, 8807],
+    "candidate_is_unchanged_v48_reference": true,
+    "exact_route_replay_required": true,
+    "averaging_cannot_rescue_a_failed_cell": true
+  },
+  "historical_epoch_gate": {
+    "minimum_distinct_epochs": 3,
+    "same_processor_family_required": true,
+    "same_processor_revision_required": true,
+    "same_directed_topology_required": true,
+    "distinct_raw_properties_sha256_required": true,
+    "distinct_normalized_properties_sha256_required": true,
+    "distinct_source_epoch_required": true,
+    "official_distribution_archive_members_required": true,
+    "synthetic_jitter_bootstrap_resampling_allowed": false,
+    "copies_or_metadata_rewrites_count_as_epochs": false,
+    "historical_fake_backend_snapshot_counts_as_current_hardware_evidence": false
+  },
+  "per_cell_gates": {
+    "logical_qubits_must_fit_fault_excluded_largest_component": true,
+    "direct_cx_must_be_strictly_below_inverse_best_cz_error": true,
+    "direct_cx_must_be_strictly_below_idealized_t2_duration_envelope": true,
+    "zero_isa_violations_required": true,
+    "zero_coupling_violations_required": true,
+    "exact_route_replay_required": true,
+    "screen_is_necessary_not_sufficient": true,
+    "additive_reported_error_mass_is_not_fidelity": true,
+    "idealized_duration_is_not_runtime": true
+  },
+  "decision_precedence": [
+    "PARENT_AUTHENTICATION_FAILED",
+    "V50_NOT_EVALUABLE_INSUFFICIENT_AUTHENTIC_EPOCHS",
+    "V50_AUTHENTIC_EPOCH_GATE_PASSED_ARCHITECTURE_NO_GO",
+    "V50_PRE_ADMISSION_PASSED_HUMAN_REVIEW_REQUIRED"
+  ],
+  "provider_policy": {
+    "historical_archive_evaluation_is_offline": true,
+    "current_provider_discovery_requires_all_epoch_seed_cells_to_pass": true,
+    "current_provider_discovery_does_not_authorize_execution": true,
+    "credentials_must_never_be_persisted": true,
+    "backend_selection_must_be_explicit_and_allowlisted": true,
+    "sampler_estimator_session_and_backend_run_are_out_of_scope": true,
+    "human_approval_required_after_any_future_pass": true
+  },
+  "execution_boundary": {
+    "research_classification": "RESEARCH_ONLY",
+    "hardware_executable": false,
+    "current_hardware_evidence": false,
+    "provider_sdk_imported": false,
+    "provider_credentials_read": false,
+    "credential_reads": 0,
+    "provider_calls": 0,
+    "network_calls": 0,
+    "backend_run_calls": 0,
+    "local_simulator_jobs_submitted": 0,
+    "qpu_jobs_submitted": 0,
+    "quantum_advantage": "NOT_CLAIMED",
+    "hardware_readiness": "NOT_DEMONSTRATED"
+  }
+}

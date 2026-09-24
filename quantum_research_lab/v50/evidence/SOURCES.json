@@ -1,0 +1,108 @@
+{
+  "catalog_version": "QUANTUM LAB V5.0 PINNED OFFLINE SOURCE CATALOG · V1",
+  "catalog_date": "2026-09-24",
+  "qualification": {
+    "source_type": "HISTORICAL_CALIBRATION_SNAPSHOTS_BUNDLED_WITH_OFFICIAL_QISKIT_IBM_RUNTIME_DISTRIBUTIONS",
+    "distribution_channel": "PYPI",
+    "live_provider_export": false,
+    "current_hardware_evidence": false,
+    "provider_credentials_required": false,
+    "network_required_during_evaluation": false,
+    "qpu_job_evidence": false,
+    "intended_use": "OFFLINE_MULTI_EPOCH_NECESSARY_SCREEN_ONLY"
+  },
+  "distributions": [
+    {
+      "package": "qiskit-ibm-runtime",
+      "version": "0.37.0",
+      "filename": "qiskit_ibm_runtime-0.37.0-py3-none-any.whl",
+      "wheel_sha256": "d671cf398617e13844e8310187eb261636b1f82954edf0a060bfe37673065dac",
+      "wheel_url": "https://files.pythonhosted.org/packages/7f/eb/a2c5eb434851e63e1fd0085fe5cd027506392cf92442af990c960013c897/qiskit_ibm_runtime-0.37.0-py3-none-any.whl",
+      "pypi_metadata_url": "https://pypi.org/pypi/qiskit-ibm-runtime/0.37.0/json",
+      "uploaded_at": "2025-03-13T23:23:08.413058Z"
+    },
+    {
+      "package": "qiskit-ibm-runtime",
+      "version": "0.47.0",
+      "filename": "qiskit_ibm_runtime-0.47.0-py3-none-any.whl",
+      "wheel_sha256": "5115e5d2200cbbd1dd4d71cee473787632b46b14a933c75cd65115477fc6c93a",
+      "wheel_url": "https://files.pythonhosted.org/packages/cd/7e/1c816137b32f56013f889340c4777d4433f0568f01c0c537730bdf81288d/qiskit_ibm_runtime-0.47.0-py3-none-any.whl",
+      "pypi_metadata_url": "https://pypi.org/pypi/qiskit-ibm-runtime/0.47.0/json",
+      "uploaded_at": "2026-05-12T18:35:02.157329Z"
+    }
+  ],
+  "snapshots": [
+    {
+      "snapshot_id": "heron-r2-ibm-marrakesh-2025-01-22-30ecf00e",
+      "distribution_version": "0.37.0",
+      "backend_name": "ibm_marrakesh",
+      "backend_version": "1.0.5",
+      "source_epoch": "2025-01-22T15:45:54-05:00",
+      "configuration_path": "quantum_research_lab/v50/evidence/raw/qiskit_ibm_runtime_0_37_0/conf_marrakesh.json",
+      "configuration_archive_member": "qiskit_ibm_runtime/fake_provider/backends/marrakesh/conf_marrakesh.json",
+      "configuration_raw_sha256": "bda77680f85d1e32010c33359cc8a61199582c4bce60bc2d7173872a8b1a1815",
+      "configuration_record_sha256_urlsafe_b64": "vad2gPhdHjIBDDM1nMimEZlYLEvOYLwtcXOHKosaGBU",
+      "configuration_size": 85658,
+      "properties_path": "quantum_research_lab/v50/evidence/raw/qiskit_ibm_runtime_0_37_0/props_marrakesh.json",
+      "properties_archive_member": "qiskit_ibm_runtime/fake_provider/backends/marrakesh/props_marrakesh.json",
+      "properties_raw_sha256": "30ecf00ead2fe655ba415cb06289555e0622be032e07042bcce7168b3c804c34",
+      "properties_record_sha256_urlsafe_b64": "MOzwDq0v5lW6QVywYolVXgYivgMuBwQrzOcWizyATDQ",
+      "properties_size": 566409,
+      "current_hardware_evidence": false
+    },
+    {
+      "snapshot_id": "heron-r2-ibm-fez-2025-01-23-47fc88e5",
+      "distribution_version": "0.37.0",
+      "backend_name": "ibm_fez",
+      "backend_version": "1.2.7",
+      "source_epoch": "2025-01-23T11:35:51-05:00",
+      "configuration_path": "quantum_research_lab/v50/evidence/raw/qiskit_ibm_runtime_0_37_0/conf_fez.json",
+      "configuration_archive_member": "qiskit_ibm_runtime/fake_provider/backends/fez/conf_fez.json",
+      "configuration_raw_sha256": "ff75ffa02edd2a70224e376c038e1cacad190fdad060da404dfb947753686254",
+      "configuration_record_sha256_urlsafe_b64": "_3X_oC7dKnAiTjdsA44crK0ZD9rQYNpATfuUd1NoYlQ",
+      "configuration_size": 85406,
+      "properties_path": "quantum_research_lab/v50/evidence/raw/qiskit_ibm_runtime_0_37_0/props_fez.json",
+      "properties_archive_member": "qiskit_ibm_runtime/fake_provider/backends/fez/props_fez.json",
+      "properties_raw_sha256": "47fc88e5bb8430e316dcd85221b3629f4a0d1ac968ab7715108bf128327db085",
+      "properties_record_sha256_urlsafe_b64": "R_yI5buEMOMW3NhSIbNin0oNGsloq3cVEIvxKDJ9sIU",
+      "properties_size": 563789,
+      "current_hardware_evidence": false
+    },
+    {
+      "snapshot_id": "heron-r2-ibm-marrakesh-2025-02-26-d49d7ae0",
+      "distribution_version": "0.47.0",
+      "backend_name": "ibm_marrakesh",
+      "backend_version": "1.0.7",
+      "source_epoch": "2025-02-26T14:52:45-05:00",
+      "configuration_path": "quantum_research_lab/v50/evidence/raw/qiskit_ibm_runtime_0_47_0/conf_marrakesh.json",
+      "configuration_archive_member": "qiskit_ibm_runtime/fake_provider/backends/marrakesh/conf_marrakesh.json",
+      "configuration_raw_sha256": "5a9a7c14a0187a9ec8109e4e396f96f73cbb1e0c263a6d9d5912a9691ee24e5d",
+      "configuration_record_sha256_urlsafe_b64": "Wpp8FKAYep7IEJ5OOW-W9zy7HgwmOm2dWRKpaR7iTl0",
+      "configuration_size": 85672,
+      "properties_path": "quantum_research_lab/v50/evidence/raw/qiskit_ibm_runtime_0_47_0/props_marrakesh.json",
+      "properties_archive_member": "qiskit_ibm_runtime/fake_provider/backends/marrakesh/props_marrakesh.json",
+      "properties_raw_sha256": "d49d7ae07deb95947ea10e5b9b9c5cbab6df21f98610543817f35ade2b1aece6",
+      "properties_record_sha256_urlsafe_b64": "1J164H3rlZR-oQ5bm5xcurbfIfmGEFQ4F_Na3isa7OY",
+      "properties_size": 565487,
+      "current_hardware_evidence": false
+    },
+    {
+      "snapshot_id": "heron-r2-ibm-fez-2025-02-26-7657d388",
+      "distribution_version": "0.47.0",
+      "backend_name": "ibm_fez",
+      "backend_version": "1.2.8",
+      "source_epoch": "2025-02-26T15:16:25-05:00",
+      "configuration_path": "quantum_research_lab/v50/evidence/raw/qiskit_ibm_runtime_0_47_0/conf_fez.json",
+      "configuration_archive_member": "qiskit_ibm_runtime/fake_provider/backends/fez/conf_fez.json",
+      "configuration_raw_sha256": "74e356537d86a2d6ca057a954556e5d140f2aeeca6c447a71a5710af6d45093f",
+      "configuration_record_sha256_urlsafe_b64": "dONWU32GotbKBXqVRVbl0UDyruymxEenGlcQr21FCT8",
+      "configuration_size": 85420,
+      "properties_path": "quantum_research_lab/v50/evidence/raw/qiskit_ibm_runtime_0_47_0/props_fez.json",
+      "properties_archive_member": "qiskit_ibm_runtime/fake_provider/backends/fez/props_fez.json",
+      "properties_raw_sha256": "7657d388bba0530c0c3cb7ebbb55d4f66c7cf5d21f81e55b4f97aaaf804b8693",
+      "properties_record_sha256_urlsafe_b64": "dlfTiLugUwwMPLfru1XU9mx89dIfgeVbT5eqr4BLhpM",
+      "properties_size": 567654,
+      "current_hardware_evidence": false
+    }
+  ]
+}

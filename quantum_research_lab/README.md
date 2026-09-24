@@ -1,3 +1,48 @@
+# Quantum Research & Computation Lab V5.0 · Hardware-Evidence Control Plane
+
+V5.0 is the additive successor to the frozen V4.9 terminal offline admission
+dossier. It resolves the missing historical-epoch question without representing
+archive evidence as current hardware evidence and without opening a provider or
+execution path.
+
+## Authenticated historical cohort
+
+- Four distinct properties files, normalized property vectors, and source
+  epochs are admitted against the frozen minimum of three.
+- The cohort spans `ibm_marrakesh` and `ibm_fez` snapshots bundled with pinned
+  official `qiskit-ibm-runtime` 0.37.0 and 0.47.0 wheel distributions.
+- Every wheel URL and digest, archive member, RECORD digest, extracted-file
+  digest, byte size, backend identity, and calibration timestamp is recorded.
+- All four configurations share the exact 156-qubit Heron rev.2 directed
+  topology, 352 directed CZ couplings, five-gate basis, and 4 ns `dt`.
+- These are historical fake-provider snapshots, not live provider exports,
+  current calibration, executed circuits, job evidence, or proof of readiness.
+
+## 32-cell architecture decision
+
+The unchanged eight-seed V4.8 architecture is evaluated independently against
+all four epochs. Capacity and exact-route replay pass in all 32 cells. Strict
+inverse-best-CZ-error and idealized T2-duration necessary screens fail in all
+32 cells. The cross-snapshot maximum is 467 direct CX; the observed exact
+architecture spans 795,990–838,686 direct CX.
+
+The sealed decision is
+`V50_AUTHENTIC_EPOCH_GATE_PASSED_ARCHITECTURE_NO_GO`. It rejects the frozen
+architecture, not every possible equivalent architecture. The next admissible
+research step is a formally validated equivalent architecture with at most 467
+direct CX before current-provider discovery is reconsidered.
+
+## Hard boundary
+
+`RESEARCH_ONLY`; `current_hardware_evidence=false`;
+`hardware_executable=false`; provider SDK imports, credential reads, provider
+calls, network calls, backend runs, simulator jobs, and QPU jobs remain zero.
+The offline provider gate refuses access before any credential or SDK action.
+No fidelity, runtime, utility, hardware-readiness, or quantum-advantage claim
+is made.
+
+---
+
 # Quantum Research & Computation Lab V2.7.1 · Phase II
 
 V2.7.1 is a governance-only correction to V2.7. It does **not** reopen any frozen research engine.
