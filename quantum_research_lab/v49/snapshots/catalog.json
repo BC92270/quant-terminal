@@ -1,0 +1,35 @@
+{
+  "catalog_version": "PHASE III · V4.9 AUTHENTIC OFFLINE EPOCH REGISTRY · V1",
+  "minimum_distinct_epochs": 3,
+  "observed_distinct_epochs": 1,
+  "missing_distinct_epochs": 2,
+  "registry_complete": false,
+  "source_catalog_path": "quantum_research_lab/PHASE_III_V4_8_SNAPSHOT_CATALOG_V1.json",
+  "source_catalog_raw_sha256": "7a5c8cf6a4a33f0f32ce5ea1ba0df7c45ee5c35d343eebc86ba174470a77be53",
+  "source_catalog_semantic_sha256": "9a585764e2de35edcd66695da7abfea9726785c06065133170917d8587341ef6",
+  "observed": [
+    {
+      "snapshot_id": "fake_marrakesh-2025-02-26-d49d7ae07deb",
+      "backend_family": "Heron",
+      "source_backend_name": "ibm_marrakesh",
+      "source_epoch": "2025-02-26T14:52:45-05:00",
+      "raw_file_sha256": "d49d7ae07deb95947ea10e5b9b9c5cbab6df21f98610543817f35ade2b1aece6",
+      "normalized_property_sha256": "0e436981a23bd6e75679752f4c139658ef811acc94adc6758b0dc99075e75fe7",
+      "role": "DEVELOPMENT_SNAPSHOT_KNOWN_BEFORE_V4_8_PROTOCOL_SEAL",
+      "current_hardware_evidence": false
+    }
+  ],
+  "open_slots": [
+    {
+      "slot": "AUTHENTIC_EPOCH_2",
+      "status": "MISSING",
+      "synthetic_substitution_allowed": false
+    },
+    {
+      "slot": "AUTHENTIC_EPOCH_3",
+      "status": "MISSING",
+      "synthetic_substitution_allowed": false
+    }
+  ],
+  "decision": "V49_NOT_EVALUABLE_INSUFFICIENT_AUTHENTIC_EPOCHS"
+}

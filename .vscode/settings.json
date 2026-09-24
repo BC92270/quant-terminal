@@ -1,0 +1,52 @@
+{
+  "explorer.compactFolders": true,
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "QUANTUM_RELEASES.md": "DEPLOY_V*.md, FREEZE_CONTRACT_V*.json, NEXT_PHASE_V*.md, app_v*_harness.py, app_v*_offline_harness.py, build_quantum_lab_v*_release.py, install_quantum_lab_v*.py, SEALED_*.json, baseline_phase3_v31.png",
+    "requirements.txt": "requirements-*.txt",
+    "package.json": "package-lock.json"
+  },
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.py[cod]": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true,
+    "**/.mypy_cache": true,
+    "**/.quantum-lab-v*-backup*": true,
+    "**/.quantum-lab-v*-backups": true,
+    "**/.quantum-v*-source-*": true,
+    "**/.quantum-v*-transfer": true,
+    "**/.quant_cache": true,
+    "**/.quant_data": true,
+    "**/.quant_news_archive": true,
+    "**/.quant_terminal": true,
+    "**/.quant_ai": true,
+    "**/.quant_audit": true,
+    "**/.scientific_research_data": true,
+    "**/.company_intelligence_cache": true,
+    "**/.gem_event_cache": true,
+    "**/.industrialization": true,
+    "**/backups": true
+  },
+  "files.watcherExclude": {
+    "**/__pycache__/**": true,
+    "**/.pytest_cache/**": true,
+    "**/.quantum-lab-v*-backup*/**": true,
+    "**/.quantum-lab-v*-backups/**": true,
+    "**/.quant-v*-source-*/**": true,
+    "**/.quant-v*-transfer/**": true,
+    "**/.quant_cache/**": true,
+    "**/backups/**": true
+  },
+  "search.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.quantum-lab-v*-backup*": true,
+    "**/.quantum-lab-v*-backups": true,
+    "**/.quantum-v*-source-*": true,
+    "**/.quantum-v*-transfer": true,
+    "**/.quant_cache": true,
+    "**/backups": true
+  }
+}

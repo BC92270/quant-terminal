@@ -1,0 +1,73 @@
+{
+  "protocol_version": "PHASE III · V4.9 OFFLINE PRE-HARDWARE ADMISSION PROTOCOL · V1",
+  "sealed_date": "2026-09-24",
+  "research_question": "Is the exact BANDS N=40 K=10 workload admissible to controlled current-provider discovery after authentic multi-epoch and strict architecture gates?",
+  "terminal_scope": {
+    "v49_is_final_offline_v4_phase": true,
+    "negative_result_closes_v4_lineage": true,
+    "pass_only_opens_v5_hardware_protocol": true,
+    "pass_does_not_authorize_qpu_execution": true
+  },
+  "parent_v48": {
+    "freeze_path": "FREEZE_CONTRACT_V4_8.json",
+    "freeze_raw_sha256": "6d51bb5496bfdc412154ed84cf4e4a038b76d85b69ef3329f515db6cb969e5c8",
+    "freeze_semantic_sha256": "6f6639f5f8ac3965f49b1107996718c6d8819637e6a65986013d5304cea6f2fa",
+    "artifact_path": "outputs/quantum_phase3/v48_multi_snapshot_architecture/SEALED_V4_8_MULTI_SNAPSHOT_ARCHITECTURE_ARTIFACT.json",
+    "artifact_raw_sha256": "f6fcce00b9ce95cd9e30eeb938e243c308b5408255dc98556e8be45a36691f76",
+    "artifact_semantic_sha256": "6df8440320e38e0bb73674f3ceb0f4bc179385d0d344c9521fa35f197504c55f"
+  },
+  "frozen_semantics": {
+    "family": "BANDS",
+    "n": 40,
+    "k": 10,
+    "ordered_seeds": [1103, 2207, 3301, 4409, 5501, 6607, 7703, 8807],
+    "exact_promised_domain_required": true,
+    "amplitude_and_phase_equivalence_required": true,
+    "clean_ancilla_exit_required": true,
+    "off_promise_witness_preserved": true,
+    "averaging_cannot_rescue_failed_cell": true
+  },
+  "authentic_snapshot_gate": {
+    "minimum_distinct_epochs": 3,
+    "same_backend_family_required": true,
+    "distinct_raw_file_sha256_required": true,
+    "distinct_normalized_property_sha256_required": true,
+    "distinct_source_epoch_required": true,
+    "synthetic_jitter_bootstrap_resampling_allowed": false,
+    "copies_or_metadata_rewrites_count_as_epochs": false,
+    "all_snapshot_seed_cells_must_pass": true
+  },
+  "architecture_gate": {
+    "logical_qubits_must_fit_minimum_healthy_capacity": true,
+    "direct_cx_error_ceiling_exclusive": 964,
+    "direct_cx_duration_ceiling_exclusive": 613392,
+    "required_maximum_direct_cx": 963,
+    "zero_isa_violations_required": true,
+    "zero_coupling_violations_required": true,
+    "zero_missing_properties_required": true,
+    "zero_unit_error_sentinels_required": true,
+    "exact_route_required_for_every_cell": true,
+    "screen_is_necessary_not_sufficient": true,
+    "additive_error_mass_is_not_fidelity": true,
+    "structural_depth_is_not_runtime": true
+  },
+  "decision_precedence": [
+    "PARENT_AUTHENTICATION_FAILED",
+    "V49_NOT_EVALUABLE_INSUFFICIENT_AUTHENTIC_EPOCHS",
+    "V49_TERMINAL_EXACT_ARCHITECTURE_NO_GO",
+    "V49_OFFLINE_PRE_HARDWARE_ADMISSION_PASSED_PROVIDER_DISCOVERY_ONLY"
+  ],
+  "execution_boundary": {
+    "research_classification": "RESEARCH_ONLY",
+    "hardware_executable": false,
+    "provider_sdk_imported": false,
+    "provider_credentials_read": false,
+    "credential_reads": 0,
+    "provider_calls": 0,
+    "network_calls": 0,
+    "backend_run_calls": 0,
+    "local_simulator_jobs_submitted": 0,
+    "qpu_jobs_submitted": 0,
+    "quantum_advantage": "NOT_CLAIMED"
+  }
+}

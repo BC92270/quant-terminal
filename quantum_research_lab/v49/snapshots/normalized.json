@@ -1,0 +1,18 @@
+{
+  "cohort_version": "PHASE III · V4.9 NORMALIZED OFFLINE EPOCH COHORT · V1",
+  "observations": [
+    {
+      "snapshot_id": "fake_marrakesh-2025-02-26-d49d7ae07deb",
+      "normalized_property_sha256": "0e436981a23bd6e75679752f4c139658ef811acc94adc6758b0dc99075e75fe7",
+      "num_qubits": 156,
+      "basis_gates": ["cz", "id", "rz", "sx", "x"],
+      "minimum_cz_reported_error": "0.0010363120130211234",
+      "minimum_cz_duration_ticks": 17,
+      "maximum_t2_ticks_floor": 133696,
+      "idealized_parallel_cz_capacity": 78,
+      "current_hardware_evidence": false
+    }
+  ],
+  "cohort_complete": false,
+  "normalization_does_not_create_new_epoch": true
+}

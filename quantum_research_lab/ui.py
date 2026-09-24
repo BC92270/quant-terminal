@@ -221,6 +221,12 @@ from .phase3_v48_ui import (
     load_v48_ui_artifact,
     render_v48_multi_snapshot_architecture_panel,
 )
+from .v49.ui import (
+    EXPECTED_UI_AUTH_CHECK_COUNT as EXPECTED_V49_UI_AUTH_CHECK_COUNT,
+    apply_v49_encoding_state,
+    load_v49_ui_artifact,
+    render_v49_admission_panel,
+)
 from .engine import (
     REGIME_LABELS,
     annualized_moments,
@@ -2369,6 +2375,17 @@ def _phase3_qpu_program() -> None:
     v47_integrity = False
     v48_artifact: dict[str, Any] | None = None
     v48_integrity = False
+    v49_artifact: dict[str, Any] | None = None
+    v49_integrity = False
+    v49_preflight_report: dict[str, Any] = {"valid": False, "errors": []}
+    try:
+        v49_artifact, v49_preflight_report = load_v49_ui_artifact()
+    except Exception as exc:
+        v49_preflight_report = {"valid": False, "errors": [str(exc)]}
+    v49_preflight_valid = bool(
+        v49_preflight_report.get("valid") is True
+        and v49_preflight_report.get("check_count") == EXPECTED_V49_UI_AUTH_CHECK_COUNT
+    )
     v48_preflight_report: dict[str, Any] = {"valid": False, "errors": []}
     try:
         v48_artifact, v48_preflight_report = load_v48_ui_artifact()
@@ -2405,7 +2422,18 @@ def _phase3_qpu_program() -> None:
         v45_preflight_report.get("valid") is True
         and v45_preflight_report.get("check_count") == 28
     )
-    if v48_preflight_valid:
+    if v49_preflight_valid:
+        v45_hero_kicker = "V4.9 · TERMINAL OFFLINE ADMISSION · AUTHENTICATED RESEARCH_ONLY"
+        v45_hero_title = "The final offline V4 gate is sealed — authentic epochs remain incomplete and V5 stays closed."
+        v45_hero_copy = (
+            "V4.9 authenticates the exact V4.8 parent and evaluates a strict two-gate admission protocol. The cohort "
+            "contains one of three required authentic epochs. The frozen reference architecture spans 795,990–838,686 "
+            "direct CX against a required maximum of 963. Provider discovery is denied; no credential, network, backend, "
+            "simulator or QPU action is authorized."
+        )
+        v45_width_value, v45_width_note = "1 / 3 EPOCHS", "authentic cohort incomplete · no synthetic substitution"
+        v45_cnot_value, v45_cnot_note = "≤963 TARGET", "reference max 838,686 · V5 closed"
+    elif v48_preflight_valid:
         v45_hero_kicker = "V4.8 · EXACT ARCHITECTURE REDUCTION · AUTHENTICATED RESEARCH_ONLY"
         v45_hero_title = "CX and frozen-BasicSwap CZ fall materially — multi-snapshot robustness and hardware remain blocked."
         v45_hero_copy = (
@@ -4124,21 +4152,76 @@ def _phase3_qpu_program() -> None:
             except Exception as exc:
                 v48_integrity_report = {"valid": False, "errors": [str(exc)]}
             v48_integrity = bool(v48_integrity_report.get("valid"))
-            v48_state = render_v48_multi_snapshot_architecture_panel(
-                _section_header,
-                artifact=v48_artifact,
-                integrity=v48_integrity,
-                key_prefix=f"{PREFIX}_p3",
-            )
+            if v49_preflight_valid and v48_integrity:
+                # The authenticated V4.8 console yields to the compact terminal
+                # V4.9 admission dossier while remaining its exact parent.
+                v48_state = {
+                    "authenticated": True,
+                    "hardware_executable": False,
+                    "research_classification": "RESEARCH_ONLY",
+                }
+            else:
+                v48_state = render_v48_multi_snapshot_architecture_panel(
+                    _section_header,
+                    artifact=v48_artifact,
+                    integrity=v48_integrity,
+                    key_prefix=f"{PREFIX}_p3",
+                )
             if v48_integrity_report.get("errors"):
                 with st.expander("V4.8 artifact integrity errors", expanded=False):
                     st.code("\n".join(str(item) for item in v48_integrity_report.get("errors", [])))
-            if v48_integrity:
+            if v48_integrity and not v49_preflight_valid:
                 encoding = apply_v48_encoding_state(
                     encoding,
                     regime=regime_sel,
                     state=v48_state,
                     artifact=v48_artifact,
+                )
+
+            v49_integrity_report: dict[str, Any] = dict(v49_preflight_report)
+            try:
+                v49_checks = v49_integrity_report.get("checks") or {}
+                v49_errors = list(v49_integrity_report.get("errors") or [])
+                if not v48_integrity:
+                    v49_errors.append("The authenticated V4.8 UI parent state is unavailable.")
+                if not (
+                    v49_checks.get("artifact_raw") is True
+                    and v49_checks.get("independent_checker") is True
+                    and v49_checks.get("validation_report") is True
+                    and v49_checks.get("boundary") is True
+                ):
+                    v49_errors.append(
+                        "The V4.9 dossier does not bind its sealed artifact, independent checker, validation report and execution boundary."
+                    )
+                v49_integrity_report = {
+                    **v49_integrity_report,
+                    "errors": list(dict.fromkeys(v49_errors)),
+                    "valid": bool(
+                        not v49_errors
+                        and v48_integrity
+                        and v49_preflight_report.get("valid") is True
+                        and v49_preflight_report.get("check_count")
+                        == EXPECTED_V49_UI_AUTH_CHECK_COUNT
+                    ),
+                }
+            except Exception as exc:
+                v49_integrity_report = {"valid": False, "errors": [str(exc)]}
+            v49_integrity = bool(v49_integrity_report.get("valid"))
+            v49_state = render_v49_admission_panel(
+                _section_header,
+                artifact=v49_artifact,
+                integrity=v49_integrity,
+                key_prefix=f"{PREFIX}_p3",
+            )
+            if v49_integrity_report.get("errors"):
+                with st.expander("V4.9 artifact integrity errors", expanded=False):
+                    st.code("\n".join(str(item) for item in v49_integrity_report.get("errors", [])))
+            if v49_integrity:
+                encoding = apply_v49_encoding_state(
+                    encoding,
+                    regime=regime_sel,
+                    state=v49_state,
+                    artifact=v49_artifact,
                 )
     else:
         st.info("No Phase-II gate-passing family is available yet. The encoding audit will activate automatically when a finalized 120/120 artifact opens the hardness gate.")
@@ -4148,7 +4231,14 @@ def _phase3_qpu_program() -> None:
         and str(selected_family.get("Regime", "")).upper() == "BANDS"
     )
 
-    if v48_integrity:
+    if v49_integrity:
+        provider_boundary = (
+            "V4.9 is the terminal offline V4 admission dossier. The authentic cohort remains at one of three required "
+            "epochs, while the frozen reference architecture remains above both strict necessary resource screens. "
+            "Provider discovery is denied, V5 entry is closed, and credentials, network access, simulator work, backend "
+            "runs and QPU jobs remain disabled."
+        )
+    elif v48_integrity:
         provider_boundary = (
             "V4.8 authenticates eight exact reduced-CX streams and replays them through the unchanged frozen BasicSwap "
             "routing oracle. Logical CX and routed CZ fall materially, but only one authentic historical snapshot epoch "

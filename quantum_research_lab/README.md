@@ -1335,3 +1335,33 @@ See [`QUANTUM_LAB_V4_8_ARCHITECTURE.md`](QUANTUM_LAB_V4_8_ARCHITECTURE.md),
 the multi-snapshot/CZ-reduction specification, snapshot catalog, normalized
 cohort, architecture oracle, robustness cost model, independent checker,
 sealed artifact and validation report for the exact protocol and identities.
+
+---
+
+# Phase III V4.9 · Terminal Offline Admission Dossier
+
+V4.9 is the final offline decision phase of the V4 lineage. It authenticates
+the exact V4.8 parent, preserves every frozen predecessor path and evaluates
+two independent prerequisites before any current-provider discovery:
+
+1. at least three authentic same-family snapshot epochs with distinct raw,
+   normalized-property and source-time identities; and
+2. an exact architecture that passes every seed × snapshot capacity, routing,
+   ISA, coupling, property, duration and strict error-screen gate.
+
+The current cohort is `1 / 3`. The frozen V4.8 reference architecture remains
+at `795,990–838,686` direct CX against a strict admissible maximum of `963`.
+The sealed current decision is therefore
+`V49_NOT_EVALUABLE_INSUFFICIENT_AUTHENTIC_EPOCHS`; provider discovery is
+denied and V5 entry is closed.
+
+V4.9 is compact by construction:
+
+- protocol, engine, snapshot intake and tests live in [`v49/`](v49/);
+- sealed evidence lives in
+  `outputs/quantum_phase3/v49_pre_hardware_admission/`; and
+- release engineering lives in `release/quantum_v49/`.
+
+No provider SDK is imported, no credential is read and no provider, network,
+backend, simulator or QPU job is called. `hardware_executable=false`; no
+hardware readiness, fidelity, utility or quantum advantage is claimed.
