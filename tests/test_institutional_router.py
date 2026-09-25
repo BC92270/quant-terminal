@@ -113,6 +113,7 @@ def test_autonomous_workspaces_have_allowlisted_routes() -> None:
     assert _route_query(build_workspace_route("worldmonitor", instrument)) == {"workspace": ["worldmonitor"]}
     assert _route_query(build_workspace_route("psychology", instrument)) == {"workspace": ["market-psychology"]}
     assert _route_query(build_workspace_route("quant_ai", instrument)) == {"workspace": ["quant-ai"]}
+    assert _route_query(build_workspace_route("market_intelligence", instrument)) == {"workspace": ["market-intelligence"]}
 
 
 def test_client_profiles_reference_valid_bounded_workspaces() -> None:

@@ -135,6 +135,19 @@ except Exception as _exc:
 
 
 # ============================================================
+# MARKET INTELLIGENCE — SAFE AUTONOMOUS WORKSPACE IMPORT
+# ============================================================
+MARKET_INTELLIGENCE_IMPORT_ERROR = None
+render_market_intelligence_lab = None
+
+try:
+    from market_intelligence import render_market_intelligence_lab
+except Exception as _exc:
+    MARKET_INTELLIGENCE_IMPORT_ERROR = _exc
+    render_market_intelligence_lab = None
+
+
+# ============================================================
 # WORLDMONITOR — SAFE IMPORT
 # ============================================================
 # Important:
@@ -5078,7 +5091,7 @@ def _route_query_value(name: str, default: str = "") -> str:
 
 _route_workspace = _route_query_value("workspace")
 
-if _route_workspace in {"worldmonitor", "market-psychology", "quant-ai"}:
+if _route_workspace in {"worldmonitor", "market-psychology", "quant-ai", "market-intelligence"}:
     # Autonomous workspaces can be opened in independent browser tabs from the
     # institutional router.  Only a small allow-list of non-sensitive route
     # names is persisted in the URL.
@@ -5087,6 +5100,7 @@ if _route_workspace in {"worldmonitor", "market-psychology", "quant-ai"}:
     st.session_state["worldmonitor_v211_open"] = _route_workspace == "worldmonitor"
     st.session_state["market_psychology_lab_open"] = _route_workspace == "market-psychology"
     st.session_state["quant_ai_open"] = _route_workspace == "quant-ai"
+    st.session_state["market_intelligence_open"] = _route_workspace == "market-intelligence"
 
 elif _route_workspace == "terminal":
     try:
@@ -5167,6 +5181,47 @@ if st.session_state.get("worldmonitor_v211_open", False):
     else:
         st.error(f"WorldMonitor import error: {WM_V211_IMPORT_ERROR}")
         st.info("Expected file location: /workspaces/quant-terminal/worldmonitor_bridge_v211.py")
+
+    st.stop()
+
+# ============================================================
+# MARKET INTELLIGENCE — AUTONOMOUS DIRECT VIEW
+# ============================================================
+# The new package owns its compact research shell.  It renders before the
+# standard ticker header/sidebar so unrelated terminal content cannot leak into
+# the workspace and every panel can degrade independently.
+if st.session_state.get("market_intelligence_open", False):
+    apply_terminal_shell_theme()
+    top_cols = st.columns([1, 5])
+
+    with top_cols[0]:
+        if st.button(
+            "← Command Center",
+            use_container_width=True,
+            key="market_intelligence_back_to_command_center_v1",
+        ):
+            st.session_state["market_intelligence_open"] = False
+            st.session_state["asset_class_selected"] = False
+            st.query_params.clear()
+            st.rerun()
+
+    with top_cols[1]:
+        st.caption(
+            "MARKET INTELLIGENCE · CATALYST × MICROSTRUCTURE · POINT-IN-TIME PROBABILISTIC RESEARCH"
+        )
+
+    if callable(render_market_intelligence_lab):
+        render_market_intelligence_lab(
+            ticker=st.session_state.get("ticker") or "NVDA",
+            price_data=st.session_state.get("price_data"),
+            analysis=st.session_state.get("analysis"),
+        )
+    else:
+        st.error(
+            "Market Intelligence import error: "
+            f"{MARKET_INTELLIGENCE_IMPORT_ERROR}"
+        )
+        st.info("Expected package: market_intelligence/ at project root, beside app.py.")
 
     st.stop()
 

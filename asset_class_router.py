@@ -1652,6 +1652,7 @@ def _launch_workspace(asset_class: str, symbol: str, period: str, interval: str,
     st.session_state["quant_ai_open"] = False
     st.session_state["market_psychology_lab_open"] = False
     st.session_state["worldmonitor_v211_open"] = False
+    st.session_state["market_intelligence_open"] = False
 
     st.session_state["asset_class"] = asset_class
     st.session_state["asset_class_selected"] = True
@@ -1685,14 +1686,30 @@ def render_asset_control_sidebar() -> None:
         st.session_state["quant_ai_open"] = False
         st.session_state["market_psychology_lab_open"] = False
         st.session_state["worldmonitor_v211_open"] = False
+        st.session_state["market_intelligence_open"] = False
         st.session_state["asset_class_selected"] = False
         st.query_params.clear()
+        st.rerun()
+
+    if st.button(
+        "Market Intelligence",
+        use_container_width=True,
+        key="sidebar_open_market_intelligence_v1",
+    ):
+        st.session_state["market_intelligence_open"] = True
+        st.session_state["worldmonitor_v211_open"] = False
+        st.session_state["market_psychology_lab_open"] = False
+        st.session_state["quant_ai_open"] = False
+        st.session_state["asset_class_selected"] = True
+        st.query_params.clear()
+        st.query_params["workspace"] = "market-intelligence"
         st.rerun()
     
     if st.button("WorldMonitor", use_container_width=True, key="sidebar_open_worldmonitor_v211"):
         st.session_state["worldmonitor_v211_open"] = True
         st.session_state["market_psychology_lab_open"] = False
         st.session_state["quant_ai_open"] = False
+        st.session_state["market_intelligence_open"] = False
         st.session_state["asset_class_selected"] = True
         st.rerun()
 
@@ -1704,6 +1721,7 @@ def render_asset_control_sidebar() -> None:
         st.session_state["market_psychology_lab_open"] = True
         st.session_state["worldmonitor_v211_open"] = False
         st.session_state["quant_ai_open"] = False
+        st.session_state["market_intelligence_open"] = False
         st.session_state["asset_class_selected"] = True
         st.rerun()
 
@@ -1715,6 +1733,7 @@ def render_asset_control_sidebar() -> None:
         st.session_state["quant_ai_open"] = True
         st.session_state["market_psychology_lab_open"] = False
         st.session_state["worldmonitor_v211_open"] = False
+        st.session_state["market_intelligence_open"] = False
         st.session_state["asset_class_selected"] = True
         st.rerun()
 
