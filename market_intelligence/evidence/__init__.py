@@ -5,6 +5,7 @@ from .ledger import (
     EvidenceIntegrityError,
     EvidenceLedger,
     EvidenceRecord,
+    GENESIS_HASH,
     canonical_hash,
     canonical_json,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "EvidenceIntegrityError",
     "EvidenceLedger",
     "EvidenceRecord",
+    "GENESIS_HASH",
     "canonical_hash",
     "canonical_json",
 ]

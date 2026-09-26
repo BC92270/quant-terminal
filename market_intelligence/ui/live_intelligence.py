@@ -8,7 +8,9 @@ import streamlit as st
 
 from ..contracts import WorkspaceSnapshot
 from ..demo import forecasts_frame
+from ..governance import GovernanceAssessment
 from ..state import set_active_view
+from ..strategy import StrategicDecisionMemo
 from .common import (
     AMBER,
     CYAN,
@@ -24,23 +26,39 @@ from .common import (
     section_header,
     style_figure,
 )
-from .institutional_control import governance_assessment
+from .strategic_decision import render_strategic_decision_room
 
 
-def _institutional_brief(snapshot: WorkspaceSnapshot) -> None:
-    assessment = governance_assessment(snapshot)
-    decision = assessment.decision
+def _institutional_brief(
+    snapshot: WorkspaceSnapshot,
+    assessment: GovernanceAssessment | None,
+    strategic_memo: StrategicDecisionMemo | None,
+) -> None:
+    decision = assessment.decision if assessment is not None else None
     state = snapshot.interaction.state.replace("_", " ").upper()
     gap = snapshot.audit["information_gap"]
     context = snapshot.audit.get("context_integrity", {})
     context_state = str(context.get("state", "MATCHED"))
+    journal = [
+        record
+        for record in (st.session_state.get("mi_strategy_journal") or [])
+        if strategic_memo is not None and getattr(record, "memo_id", None) == strategic_memo.memo_id
+    ]
+    if journal:
+        latest = journal[-1]
+        change_note = (
+            f"Latest session disposition {latest.disposition.value}; no prior governed market snapshot exists, "
+            "so market-state change attribution remains withheld."
+        )
+    else:
+        change_note = "NO PRIOR SNAPSHOT · change attribution is withheld until an append-only prior state exists."
     st.markdown(
         f'''<div class="mi-brief-grid">
           <div class="mi-brief-card"><div>Current state</div><p>{esc(state)} · descriptive fixture assessment, not a trade signal.</p></div>
-          <div class="mi-brief-card"><div>What changed</div><p>NO PRIOR SNAPSHOT · change attribution is withheld until an append-only prior state exists.</p></div>
+          <div class="mi-brief-card"><div>What changed</div><p>{esc(change_note)}</p></div>
           <div class="mi-brief-card"><div>Contradiction</div><p>Collision {snapshot.interaction.collision_score:.0%}; opposing catalyst mass compresses the net directional interpretation.</p></div>
           <div class="mi-brief-card"><div>Unknown</div><p>Options unavailable; forecast calibration, live entitlement and historical PIT coverage absent.</p></div>
-          <div class="mi-brief-card"><div>Governance posture</div><p>{esc(decision.state.value)} · context {esc(context_state)} · execution disabled · packet {esc(decision.packet_id[-10:])}.</p></div>
+          <div class="mi-brief-card"><div>Governance posture</div><p>{esc(decision.state.value if decision else "UNAVAILABLE")} · context {esc(context_state)} · execution disabled · packet {esc(decision.packet_id[-10:] if decision else "NONE")}.</p></div>
         </div>''',
         unsafe_allow_html=True,
     )
@@ -59,7 +77,12 @@ def _institutional_brief(snapshot: WorkspaceSnapshot) -> None:
         )
     st.caption(
         "Next evidence required: licensed PIT event lineage · sequenced venue-authorized L2 · realized forecast outcomes · "
-        f"independent validation. Evidence root {decision.evidence_root[:16]}… · {len(assessment.ledger.records)} verified records."
+        "independent validation. "
+        + (
+            f"Evidence root {decision.evidence_root[:16]}… · {len(assessment.ledger.records)} verified records."
+            if decision is not None and assessment is not None
+            else "Evidence root unavailable after a fail-closed control incident."
+        )
     )
 
 
@@ -180,13 +203,24 @@ def _gap_gauge(snapshot: WorkspaceSnapshot) -> go.Figure:
     return style_figure(fig, height=260, hovermode="closest")
 
 
-def render_live_intelligence(snapshot: WorkspaceSnapshot) -> None:
+def render_live_intelligence(
+    snapshot: WorkspaceSnapshot,
+    *,
+    assessment: GovernanceAssessment | None = None,
+    strategic_memo: StrategicDecisionMemo | None = None,
+) -> None:
+    if assessment is not None and strategic_memo is not None:
+        render_strategic_decision_room(snapshot, assessment, strategic_memo)
+    else:
+        st.warning(
+            "Strategic decision synthesis is unavailable. The response is DEFER; capital and execution remain disabled."
+        )
     section_header(
-        "NOW DESK / 01",
-        "Live Intelligence",
-        "CATALYST ARRIVAL → MARKET ABSORPTION → DISTRIBUTION · FIXTURE",
+        "EVIDENCE DESK / CURRENT STATE",
+        "Live Intelligence & Research Evidence",
+        "CATALYST ARRIVAL → MARKET ABSORPTION → DISTRIBUTION · DECISION INPUTS · FIXTURE",
     )
-    _institutional_brief(snapshot)
+    _institutional_brief(snapshot, assessment, strategic_memo)
     left, right = st.columns([2.15, 1.0], gap="medium")
     with left:
         selection = st.plotly_chart(

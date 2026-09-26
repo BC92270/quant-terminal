@@ -1,4 +1,4 @@
-"""Persistent workspace shell and 13-view navigation rail."""
+"""Persistent strategic-research shell and 13-view navigation rail."""
 
 from __future__ import annotations
 
@@ -8,7 +8,9 @@ import streamlit as st
 
 from ..config import DESK_SEQUENCE, DESK_WORKFLOW, VIEW_BY_SLUG, VIEW_SPECS, WORKSPACE_VERSION
 from ..contracts import WorkspaceSnapshot
+from ..governance import GovernanceAssessment
 from ..state import set_active_view
+from ..strategy import StrategicDecisionMemo
 from .common import esc, fmt_number, fmt_pct
 
 
@@ -17,12 +19,22 @@ def render_shell_header(snapshot: WorkspaceSnapshot) -> None:
     regime_probability = "N/A · DESCRIPTIVE" if snapshot.regime_probability is None else f"{snapshot.regime_probability:.0%}"
     collision = float(snapshot.interaction.collision_score)
     conflict_label = "HIGH" if collision >= 0.70 else "MEDIUM" if collision >= 0.40 else "LOW"
+    forecast_state = (
+        "CALIBRATED CONTRACT"
+        if snapshot.forecasts
+        and all(
+            "UNCALIBRATED" not in forecast.uncertainty_flags
+            and "NOT CALIBRATED" not in forecast.calibration_status.upper()
+            for forecast in snapshot.forecasts
+        )
+        else "UNCALIBRATED"
+    )
     st.markdown(
         f"""
         <div class="mi-shell">
-          <div class="mi-eyebrow">Market Intelligence · Catalyst × Microstructure · Probabilistic Research</div>
-          <div class="mi-title">{esc(snapshot.symbol)} <span style="color:rgba(190,215,224,.45)">/</span> Information absorption control plane</div>
-          <div class="mi-subtitle">{esc(snapshot.instrument_name)} · {esc(WORKSPACE_VERSION)} · point-in-time contracts · panel-level failure isolation</div>
+          <div class="mi-eyebrow">Market Intelligence · Research → Strategic Decision · Human Governance</div>
+          <div class="mi-title">{esc(snapshot.symbol)} <span style="color:rgba(190,215,224,.45)">/</span> Strategic information & decision control plane</div>
+          <div class="mi-subtitle">{esc(snapshot.instrument_name)} · {esc(WORKSPACE_VERSION)} · point-in-time contracts · advisory-only decision lineage</div>
           <div class="mi-status-grid">
             <div class="mi-status-card"><div class="mi-label">Reference price</div><div class="mi-value mi-value-{price_tone}">{esc(fmt_number(snapshot.price, 2))} · {esc(fmt_pct(snapshot.price_change))}</div></div>
             <div class="mi-status-card"><div class="mi-label">Regime state</div><div class="mi-value mi-value-amber">{esc(snapshot.regime)}</div></div>
@@ -46,7 +58,8 @@ def render_shell_header(snapshot: WorkspaceSnapshot) -> None:
         '<div class="mi-alert"><b>RESEARCH ONLY · EXPLICIT MIXED-DATA MODE</b> — '
         f'Market layer: {esc(snapshot.market_status)}. Catalyst layer: {esc(snapshot.catalyst_status)}. '
         'L2, events, analogues and conditional interpretations are deterministic fixtures until licensed '
-        'point-in-time providers and shadow history are connected. No BUY/SELL instruction is produced.</div>',
+        'point-in-time providers and shadow history are connected. The system may prioritize research or monitoring, '
+        'but produces no capital instruction or order.</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -55,7 +68,8 @@ def render_shell_header(snapshot: WorkspaceSnapshot) -> None:
           <div><span>MARKET</span><b>{esc(snapshot.market_status)}</b></div>
           <div><span>EVENTS</span><b>{esc(snapshot.catalyst_status)}</b></div>
           <div><span>BOOK</span><b>{esc(snapshot.microstructure_level)}</b></div>
-          <div><span>FORECAST</span><b>UNCALIBRATED</b></div>
+          <div><span>FORECAST</span><b>{esc(forecast_state)}</b></div>
+          <div><span>STRATEGY</span><b>ADVISORY ONLY</b></div>
           <div><span>PROMOTION</span><b>CLOSED</b></div>
           <div><span>EXECUTION</span><b>DISABLED</b></div>
         </div>''',
@@ -68,21 +82,34 @@ def render_context_controls(snapshot: WorkspaceSnapshot) -> None:
     if st.session_state.get("mi_horizon") not in horizons:
         st.session_state["mi_horizon"] = horizons[0]
     with st.form("mi_context_form", border=False):
-        columns = st.columns([1.3, 1.15, 1.2, 1.25, 1.0], vertical_alignment="bottom")
-        with columns[0]:
+        primary = st.columns([1.15, 1.0, 1.35], vertical_alignment="bottom")
+        with primary[0]:
             symbol = st.text_input("INSTRUMENT", value=st.session_state.get("mi_selected_symbol", snapshot.symbol), max_chars=24)
-        with columns[1]:
+        with primary[1]:
             st.selectbox(
-                "FOCUS HORIZON · DISPLAY",
+                "DECISION HORIZON",
                 horizons,
                 key="mi_horizon",
-                help="Selects the highlighted forecast and risk horizon from the available snapshot contracts. It does not retrain or promote a model.",
+                help="Changes the strategic question, memo identity, review clock and highlighted evidence horizon. It does not retrain or promote a model.",
             )
-        with columns[2]:
+        with primary[2]:
+            st.selectbox(
+                "DECISION LENS",
+                ("RESEARCH_PRIORITIZATION", "MARKET_MONITORING", "RISK_POSTURE_REVIEW"),
+                key="mi_strategy_purpose",
+                format_func=lambda value: {
+                    "RESEARCH_PRIORITIZATION": "RESEARCH PRIORITY",
+                    "MARKET_MONITORING": "MARKET MONITORING",
+                    "RISK_POSTURE_REVIEW": "RISK POSTURE REVIEW",
+                }[value],
+                help="Changes the strategic question and memo identity. It never changes execution authority.",
+            )
+        secondary = st.columns([1.25, 1.0, .9], vertical_alignment="bottom")
+        with secondary[0]:
             st.selectbox("DATA POLICY", ("STRICT PIT · FAIL CLOSED",), disabled=True)
-        with columns[3]:
+        with secondary[1]:
             st.selectbox("REFRESH", ("MANUAL",), disabled=True)
-        with columns[4]:
+        with secondary[2]:
             apply_context = st.form_submit_button("APPLY CONTEXT", width="stretch", type="secondary")
     if apply_context:
         normalized = str(symbol or snapshot.symbol).upper().strip()[:24]
@@ -91,11 +118,15 @@ def render_context_controls(snapshot: WorkspaceSnapshot) -> None:
             st.rerun()
 
 
-def render_navigation() -> str:
+def render_navigation(
+    *,
+    assessment: GovernanceAssessment | None = None,
+    strategic_memo: StrategicDecisionMemo | None = None,
+) -> str:
     active = str(st.session_state.get("mi_active_view", "live"))
     active_desk = VIEW_BY_SLUG[active].desk
     st.session_state["mi_active_desk"] = active_desk
-    st.markdown('<div class="mi-workflow-label">INSTITUTIONAL RESEARCH WORKFLOW</div>', unsafe_allow_html=True)
+    st.markdown('<div class="mi-workflow-label">INSTITUTIONAL RESEARCH & STRATEGIC DECISION WORKFLOW</div>', unsafe_allow_html=True)
     desk_columns = st.columns(len(DESK_SEQUENCE))
     for column, desk in zip(desk_columns, DESK_SEQUENCE):
         stage, help_text = DESK_WORKFLOW[desk]
@@ -127,9 +158,18 @@ def render_navigation() -> str:
         if clicked and spec.slug != active:
             set_active_view(st.session_state, spec.slug)
             st.rerun()
-    st.markdown(
-        '<div class="mi-workflow-foot">Evidence posture: <b>WAITING_EVIDENCE</b> · '
-        'Human review: <b>NOT ELIGIBLE · PENDING EVIDENCE</b> · Execution path: <b>DISABLED</b></div>',
-        unsafe_allow_html=True,
-    )
+    if assessment is None or strategic_memo is None:
+        footer = "Research readiness: <b>UNAVAILABLE</b> · Strategic response: <b>DEFER</b> · Execution: <b>DISABLED</b>"
+    else:
+        review = (
+            "ELIGIBLE · NOT STARTED"
+            if assessment.decision.state.value == "ELIGIBLE_FOR_HUMAN_REVIEW"
+            else "NOT ELIGIBLE · PENDING EVIDENCE"
+        )
+        footer = (
+            f"Research readiness: <b>{esc(assessment.decision.state.value)}</b> · "
+            f"Strategic response: <b>{esc(strategic_memo.disposition.value)}</b> · "
+            f"Human review: <b>{review}</b> · Execution: <b>DISABLED</b>"
+        )
+    st.markdown(f'<div class="mi-workflow-foot">{footer}</div>', unsafe_allow_html=True)
     return active

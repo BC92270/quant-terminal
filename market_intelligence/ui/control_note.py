@@ -17,6 +17,7 @@ class ViewControlNote:
     evidence: str
     limitation: str
     next_control: str
+    decision_use: str = "Contributes bounded evidence to the strategic memo; it cannot authorize capital or execution."
 
 
 _NOTES: dict[str, ViewControlNote] = {
@@ -35,6 +36,23 @@ _NOTES: dict[str, ViewControlNote] = {
 }
 
 
+_DECISION_USE: dict[str, str] = {
+    "live": "Frames the current process decision, strategic alternatives and human disposition.",
+    "events": "Tests whether a catalyst is admissible enough to enter the decision basis.",
+    "catalyst-map": "Maps propagation hypotheses that may change monitoring priorities, not causal certainty.",
+    "narratives": "Surfaces narrative concentration and crowding for strategic challenge.",
+    "collision": "Constrains conviction when opposing catalyst mass is material.",
+    "analogues": "Defines precedent ranges while keeping synthetic outcomes out of capital decisions.",
+    "microstructure": "Monitors absorption and liquidity invalidation triggers.",
+    "information-gap": "Prioritizes missing modalities and residual investigation.",
+    "cross-asset": "Identifies spillover channels that require independent OOS validation.",
+    "forecast": "Bounds horizon uncertainty; uncalibrated distributions cannot select a portfolio action.",
+    "patterns": "Maintains the hypothesis backlog without converting discovery into recommendation.",
+    "models": "Determines model-risk readiness, rollback evidence and promotion constraints.",
+    "research": "Controls whether the dossier may advance to independent human review.",
+}
+
+
 def render_view_control_note(snapshot: WorkspaceSnapshot, view: str) -> None:
     note = _NOTES.get(
         view,
@@ -48,11 +66,12 @@ def render_view_control_note(snapshot: WorkspaceSnapshot, view: str) -> None:
     )
     section_header("CONTROL NOTE", "Claim boundary and next evidence", f"{note.claim_type} · {snapshot.as_of:%Y-%m-%d %H:%M UTC}")
     st.markdown(
-        f'''<div class="mi-brief-grid mi-brief-grid-four">
+        f'''<div class="mi-brief-grid">
           <div class="mi-brief-card"><div>Claim</div><p>{esc(note.claim)}</p></div>
           <div class="mi-brief-card"><div>Evidence</div><p>{esc(note.evidence)}</p></div>
           <div class="mi-brief-card"><div>Limit</div><p>{esc(note.limitation)}</p></div>
           <div class="mi-brief-card"><div>Next control</div><p>{esc(note.next_control)}</p></div>
+          <div class="mi-brief-card"><div>Decision consequence</div><p>{esc(_DECISION_USE.get(view, note.decision_use))}</p></div>
         </div>''',
         unsafe_allow_html=True,
     )

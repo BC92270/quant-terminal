@@ -85,7 +85,7 @@ class ModelRecord:
         if self.validation_evidence_root is not None:
             _validate_digest(self.validation_evidence_root, "validation_evidence_root")
         if self.research_boundary != "RESEARCH_ONLY":
-            raise ValueError("Market Intelligence V2 models must remain RESEARCH_ONLY")
+            raise ValueError("Market Intelligence strategic-research models must remain RESEARCH_ONLY")
         if self.lifecycle == ModelLifecycle.SHADOW and self.promotion_state != PromotionState.HUMAN_APPROVED_FOR_SHADOW:
             raise ValueError("SHADOW models require explicit human approval")
         if self.lifecycle in {

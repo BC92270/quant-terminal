@@ -37,7 +37,7 @@ def inject_market_intelligence_theme() -> None:
             padding: 9px 10px; background: rgba(4, 13, 24, .68); min-height: 58px;
         }
         .mi-label { color: rgba(198, 220, 228, .72); font-size: .66rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-        .mi-value { color: #edfaff; font-size: .86rem; font-weight: 760; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mi-value { color: #edfaff; font-size: .86rem; font-weight: 760; line-height: 1.28; margin-top: 5px; overflow-wrap: anywhere; }
         .mi-value-cyan { color: #59e5f2; }
         .mi-value-green { color: #5ce2b5; }
         .mi-value-red { color: #ff7288; }
@@ -49,20 +49,20 @@ def inject_market_intelligence_theme() -> None:
             font-size: .79rem; line-height: 1.5;
         }
         .mi-ops-strip {
-            display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px;
+            display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 1px;
             border: 1px solid rgba(96, 208, 224, .20); border-radius: 11px; overflow: hidden;
             margin: 0 0 14px; background: rgba(3, 14, 24, .90);
         }
         .mi-ops-strip > div { padding: 9px 10px; border-right: 1px solid rgba(96, 208, 224, .12); min-width: 0; }
         .mi-ops-strip > div:last-child { border-right: 0; }
         .mi-ops-strip span { display: block; color: rgba(185, 213, 223, .68); font-size: .64rem; font-weight: 850; letter-spacing: .13em; }
-        .mi-ops-strip b { display: block; color: #e8f8fb; font-size: .70rem; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mi-ops-strip b { display: block; color: #e8f8fb; font-size: .70rem; line-height: 1.28; margin-top: 4px; overflow-wrap: anywhere; }
         .mi-section {
             display: flex; align-items: end; justify-content: space-between; gap: 18px;
             border-bottom: 1px solid rgba(85, 216, 232, .16); padding: 4px 0 8px; margin: 8px 0 12px;
         }
         .mi-section-kicker { color: #67edf7; font-size: .68rem; letter-spacing: .14em; font-weight: 850; text-transform: uppercase; }
-        .mi-section-title { color: #f0f8fb; font-size: 1.03rem; font-weight: 760; margin-top: 2px; }
+        .mi-section-title { color: #f0f8fb; font-size: 1.03rem; line-height:1.25; font-weight: 760; margin: 2px 0 0; }
         .mi-section-meta { color: rgba(198,219,227,.68); font-size: .68rem; text-align: right; }
         .mi-card {
             border: 1px solid rgba(103, 185, 202, .15); border-radius: 13px;
@@ -94,6 +94,30 @@ def inject_market_intelligence_theme() -> None:
             border-left: 2px solid rgba(255, 201, 102, .72); margin: 8px 0 14px; padding: 6px 10px;
             color: rgba(217,232,236,.76); font-size: .72rem; background: rgba(40,31,12,.20);
         }
+        .mi-strategy-ribbon {
+            display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px;
+            border: 1px solid rgba(88, 223, 172, .24); border-left: 3px solid #58dfac;
+            border-radius: 11px; overflow: hidden; margin: 0 0 12px;
+            background: linear-gradient(135deg, rgba(5, 28, 31, .94), rgba(6, 17, 29, .94));
+        }
+        .mi-strategy-ribbon > div { padding: 10px 11px; min-width: 0; border-right: 1px solid rgba(91, 202, 211, .12); }
+        .mi-strategy-ribbon > div:last-child { border-right: 0; }
+        .mi-strategy-ribbon span { display:block; color:rgba(186,218,224,.67); font-size:.61rem; font-weight:850; letter-spacing:.12em; }
+        .mi-strategy-ribbon b { display:block; color:#e8faf5; font-size:.70rem; line-height:1.35; margin-top:4px; overflow-wrap:anywhere; }
+        .mi-strategy-ribbon-red { border-color: rgba(255,113,136,.30); border-left-color:#ff7188; }
+        .mi-strategy-ribbon-red b { color:#ff9aaa; }
+        .mi-decision-hero {
+            display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:10px; margin:0 0 12px;
+        }
+        .mi-decision-question, .mi-decision-answer {
+            border:1px solid rgba(95,205,218,.20); border-radius:14px; padding:16px 17px;
+            background:linear-gradient(145deg,rgba(6,25,39,.92),rgba(5,15,26,.82)); min-width:0;
+        }
+        .mi-decision-answer { border-color:rgba(88,223,172,.26); background:linear-gradient(145deg,rgba(8,43,40,.72),rgba(5,17,28,.88)); }
+        .mi-decision-hero span { color:#67edf7; font-size:.65rem; font-weight:850; letter-spacing:.13em; }
+        .mi-decision-hero h3 { color:#f2fbfd; font-size:1.05rem; line-height:1.35; margin:7px 0 0; }
+        .mi-decision-answer h3 { color:#6be5ba; }
+        .mi-decision-hero p { color:rgba(211,231,236,.72); font-size:.74rem; line-height:1.45; margin:8px 0 0; }
         .mi-brief-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 9px; margin-bottom: 12px; }
         .mi-brief-grid-four { grid-template-columns: repeat(4, minmax(0,1fr)); }
         .mi-brief-card { border: 1px solid rgba(100,190,207,.18); border-radius: 12px; padding: 12px; background: rgba(5,18,30,.76); min-height: 128px; }
@@ -112,6 +136,10 @@ def inject_market_intelligence_theme() -> None:
         .mi-status-badge-red b { color:#ff8ca0; } .mi-status-badge-amber b { color:#ffd47e; }
         .mi-status-badge-green b { color:#6be5ba; } .mi-status-badge-cyan b { color:#6eeaf5; }
         .mi-status-badge-muted b { color:rgba(218,232,236,.68); }
+        .mi-governance-grid, .mi-decision-summary, .mi-lineage-grid {
+            display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:9px; margin:0 0 11px;
+        }
+        .mi-lineage-grid { grid-template-columns:repeat(6,minmax(0,1fr)); }
         .mi-gate-pass { color: #58dfac; font-weight: 800; }
         .mi-gate-wait { color: #ffc96b; font-weight: 800; }
         .mi-gate-fail { color: #ff7288; font-weight: 800; }
@@ -131,7 +159,8 @@ def inject_market_intelligence_theme() -> None:
             opacity: 1 !important;
         }
         [class*="st-key-FormSubmitter-mi_context_form"] button,
-        [class*="st-key-FormSubmitter-mi_research_configuration"] button {
+        [class*="st-key-FormSubmitter-mi_research_configuration"] button,
+        [class*="st-key-FormSubmitter-mi_strategic_disposition_form"] button {
             border-color: rgba(85, 232, 245, .42) !important;
             background: linear-gradient(135deg, #0a7884, #0b586b) !important;
             color: #effdff !important;
@@ -146,15 +175,20 @@ def inject_market_intelligence_theme() -> None:
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
         }
-        @media (max-width: 1200px) {
+        @media (max-width: 1400px) {
             .mi-ops-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .mi-strategy-ribbon { grid-template-columns: repeat(3, minmax(0, 1fr)); }
             .mi-brief-grid, .mi-brief-grid-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .mi-decision-hero { grid-template-columns:1fr; }
+            .mi-governance-grid, .mi-decision-summary, .mi-lineage-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
         }
         @media (max-width: 1050px) {
             .mi-status-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         }
         @media (max-width: 760px) {
             .mi-status-grid, .mi-ops-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .mi-strategy-ribbon { grid-template-columns:1fr; }
+            .mi-governance-grid, .mi-decision-summary, .mi-lineage-grid { grid-template-columns:1fr; }
             .mi-brief-grid, .mi-brief-grid-four { grid-template-columns: 1fr; }
             .mi-section { align-items: start; flex-direction: column; gap: 5px; }
             .mi-section-meta { text-align: left; }

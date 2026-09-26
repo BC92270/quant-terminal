@@ -7,17 +7,23 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from ..contracts import WorkspaceSnapshot
+from ..governance import GovernanceAssessment
 from .common import AMBER, CYAN, GREEN, RED, bounded_table, card, provenance, section_header, style_figure, tone_for_status
 from .institutional_control import (
     gate_frame,
-    governance_assessment,
     model_registry_frame,
     quality_frame,
 )
 
 
-def render_model_observatory(snapshot: WorkspaceSnapshot) -> None:
-    assessment = governance_assessment(snapshot)
+def render_model_observatory(
+    snapshot: WorkspaceSnapshot,
+    *,
+    assessment: GovernanceAssessment | None = None,
+) -> None:
+    if assessment is None:
+        st.warning("Model governance unavailable · promotion and strategic escalation remain closed.")
+        return
     decision = assessment.decision
     records = assessment.model_registry.records
     blocking = len(decision.validation.blocking_results)

@@ -11,10 +11,12 @@ import streamlit as st
 
 from .demo import build_workspace_snapshot
 from .state import initialize_state
+from .strategy import DecisionPurpose, build_strategic_decision_memo
 from .ui.common import render_data_contract
 from .ui.control_note import render_view_control_note
 from .ui.institutional_control import governance_assessment, render_governance_bar
 from .ui.shell import render_context_controls, render_navigation, render_shell_header
+from .ui.strategic_decision import render_strategy_ribbon, render_strategy_unavailable
 from .ui.theme import inject_market_intelligence_theme
 
 
@@ -102,6 +104,8 @@ def render_market_intelligence_lab(
             return
     render_shell_header(snapshot)
     render_context_controls(snapshot)
+    assessment = None
+    strategic_memo = None
     try:
         assessment = governance_assessment(snapshot)
         render_governance_bar(assessment)
@@ -113,10 +117,38 @@ def render_market_intelligence_lab(
         LOGGER.exception("Market Intelligence governance incident %s", governance_id)
         _render_incident(governance_id, scope="Governance control plane")
         st.warning("Decision state unavailable · fail-closed posture enforced · human review ineligible.")
-    active_view = render_navigation()
+    if assessment is not None:
+        try:
+            purpose_value = str(st.session_state.get("mi_strategy_purpose", "RESEARCH_PRIORITIZATION"))
+            try:
+                purpose = DecisionPurpose(purpose_value)
+            except ValueError:
+                purpose = DecisionPurpose.RESEARCH_PRIORITIZATION
+                st.session_state["mi_strategy_purpose"] = purpose.value
+            strategic_memo = build_strategic_decision_memo(
+                snapshot,
+                assessment,
+                horizon=str(st.session_state.get("mi_horizon", snapshot.forecasts[0].horizon)),
+                purpose=purpose,
+            )
+            render_strategy_ribbon(strategic_memo, assessment)
+        except Exception as exc:
+            strategy_id = _incident_id("strategy", exc, snapshot.symbol, snapshot.as_of.isoformat())
+            _record_incident(strategy_id)
+            LOGGER.exception("Market Intelligence strategy incident %s", strategy_id)
+            _render_incident(strategy_id, scope="Strategic decision layer")
+            render_strategy_unavailable()
+    else:
+        render_strategy_unavailable()
+    active_view = render_navigation(assessment=assessment, strategic_memo=strategic_memo)
     renderer = _renderers().get(active_view, _renderers()["live"])
     try:
-        renderer(snapshot)
+        if active_view == "live":
+            renderer(snapshot, assessment=assessment, strategic_memo=strategic_memo)
+        elif active_view in {"models", "research"}:
+            renderer(snapshot, assessment=assessment)
+        else:
+            renderer(snapshot)
         render_view_control_note(snapshot, active_view)
     except Exception as exc:
         active_view = str(st.session_state.get("mi_active_view", "unknown"))

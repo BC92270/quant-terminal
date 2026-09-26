@@ -46,6 +46,8 @@ def test_control_room_exposes_decision_evidence_and_execution_boundaries() -> No
     assert not app.exception
     rendered = "\n".join(str(item.value) for item in app.markdown)
     assert "Current state" in rendered
+    assert "Strategic Decision Office" in rendered
+    assert "ACQUIRE_EVIDENCE" in rendered
     assert "What changed" in rendered
     assert "Contradiction" in rendered
     assert "WAITING_EVIDENCE" in rendered
@@ -59,6 +61,10 @@ def test_non_fixture_symbol_shows_context_isolation_warning() -> None:
     assert not app.exception
     assert any("Context isolation active" in str(item.value) for item in app.warning)
     assert any("requested AAPL" in str(item.value) for item in app.warning)
+    rendered = "\n".join(str(item.value) for item in app.markdown)
+    assert "BLOCKED_CONTEXT" in rendered
+    assert "Resolve instrument context" in rendered
+    assert "REJECTED" in rendered
 
 
 def test_navigation_moves_between_workflow_stages_without_removing_views() -> None:
@@ -114,6 +120,9 @@ def test_evidence_dossier_contains_replayable_source_contracts() -> None:
     assert len(payload["source_contracts"]["events"]) == len(snapshot.events)
     assert len(payload["source_contracts"]["forecasts"]) == len(snapshot.forecasts)
     assert payload["scenario_definitions"]
+    assert payload["strategic_decision_memo"]["authority"] == "ADVISORY_ONLY"
+    assert payload["strategic_decision_memo"]["execution_allowed"] is False
+    assert payload["authority_contract"]["capital_authority"] is False
 
 
 def test_focus_horizon_drives_forecast_cards_and_table_selection() -> None:
@@ -183,3 +192,33 @@ finally:
     assert app.button(key="mi_desk_govern")
     rendered = "\n".join(str(item.value) for item in app.markdown)
     assert "secret governance failure" not in rendered
+
+
+def test_strategy_failure_isolated_with_defer_ribbon_and_no_record_form() -> None:
+    app = AppTest.from_string(
+        """
+import streamlit as st
+import market_intelligence.controller as controller
+from market_intelligence import render_market_intelligence_lab
+
+def fail_strategy(*args, **kwargs):
+    raise RuntimeError("secret strategy failure")
+
+original_builder = controller.build_strategic_decision_memo
+controller.build_strategic_decision_memo = fail_strategy
+st.set_page_config(layout="wide")
+try:
+    render_market_intelligence_lab(ticker="NVDA")
+finally:
+    controller.build_strategic_decision_memo = original_builder
+"""
+    ).run(timeout=30)
+    assert not app.exception
+    assert any("Strategic decision layer isolated safely" in str(item.value) for item in app.error)
+    rendered = "\n".join(str(item.value) for item in app.markdown)
+    assert "DEFER · DECISION UNAVAILABLE" in rendered
+    assert "secret strategy failure" not in rendered
+    assert not any(
+        button.label == "RECORD NON-AUTHORIZING STRATEGIC DISPOSITION"
+        for button in app.button
+    )

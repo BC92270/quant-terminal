@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import pytest
 
 from market_intelligence.demo import build_workspace_snapshot
+from market_intelligence.evidence import canonical_hash
 from market_intelligence.governance import GateResult, GateStatus, ValidationRun
 from market_intelligence.models.registry import (
     HumanApproval,
@@ -16,12 +17,23 @@ from market_intelligence.models.registry import (
 
 
 def _validation() -> ValidationRun:
+    stamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    gates = (GateResult("TEST", "Test gate", GateStatus.PASS, True, "Typed test pass"),)
+    material = {
+        "engine": "test-governance-engine-v1",
+        "policy": "test-policy-v1",
+        "started_at": stamp,
+        "completed_at": stamp,
+        "gates": gates,
+        "evidence_root": "a" * 64,
+    }
     return ValidationRun(
-        run_id="validated-run",
+        run_id="MI-VAL-" + canonical_hash(material)[:20],
+        engine_version="test-governance-engine-v1",
         policy_version="test-policy-v1",
-        started_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
-        completed_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
-        gates=(GateResult("TEST", "Test gate", GateStatus.PASS, True, "Typed test pass"),),
+        started_at=stamp,
+        completed_at=stamp,
+        gates=gates,
         evidence_root="a" * 64,
     )
 

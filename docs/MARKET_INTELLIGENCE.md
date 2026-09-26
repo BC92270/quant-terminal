@@ -2,15 +2,18 @@
 
 ## Boundary
 
-This package is an institutional research workspace. It is not a live trading
-engine, an HFT execution stack, an LLM opinion generator, or a source of
-unqualified BUY/SELL labels.
+This package is an institutional research and strategic decision-support
+workspace. It is not a live trading engine, an HFT execution stack, an LLM
+opinion generator, a capital-approval system, or a source of unqualified
+directional labels.
 
-The V2 integrated release is an institutional control-plane release. It
+The V3 integrated release preserves the V2 institutional control plane and
+adds a separate, typed strategic-decision layer. It
 provides:
 
 - an autonomous `?workspace=market-intelligence` route;
-- thirteen connected research views;
+- thirteen connected research and decision views, with the first view acting
+  as the Strategic Decision Room;
 - point-in-time typed contracts and timestamp-chain validation;
 - transparent surprise, novelty, collision, OFI, queue-imbalance and
   microprice baselines;
@@ -27,19 +30,67 @@ provides:
   data hashes plus guarded lifecycle transitions and typed, attributable human
   approval records for any future shadow entry;
 - assumption-labelled risk envelopes and an immutable research decision packet;
+- a deterministic strategic memo that separates research readiness, process
+  action, portfolio review and execution authority;
+- an options matrix with process, review and prohibited-execution classes;
+- typed evidence-for/evidence-against claims, impact states, monitoring rules,
+  warning triggers, invalidation conditions, owner roles and review clocks;
+- an explicit portfolio state of `UNPRICED` whenever mandate, holdings,
+  constraints or exposure sensitivities are absent;
+- a hash-chained, session-scoped human disposition journal supporting
+  `RETURN_FOR_EVIDENCE`, `DEFER`, `REJECT_MEMO` and a gate-conditioned
+  `ADVANCE_TO_INDEPENDENT_REVIEW` without representing capital approval or a
+  durable system-of-record;
+- explicit memo validity: expired dossiers cannot be deferred or advanced and
+  any permitted retrospective record remains labelled `EXPIRED`;
+- a blocking `CONTEXT_INTEGRITY` gate, so an unsupported requested ticker can
+  never inherit the canonical NVDA strategic interpretation;
 - an exportable JSON evidence dossier containing the decision, ledger, model
   registry, risk envelope, canonical source contracts and scenario definitions
   required for deterministic replay;
-- a two-level institutional workflow (`OBSERVE → EXPLAIN → SYNTHESIZE → GOVERN`)
-  while preserving all thirteen views;
+- a two-level institutional workflow (`FRAME & OBSERVE → EXPLAIN → SYNTHESIZE
+  → DECIDE & GOVERN`) while preserving all thirteen views;
 - a lazy bridge preserving the historical root `market_intelligence.py`
   consumed by Macro / Central Banks.
 
 It does **not** provide live event/news coverage, licensed L2/L3 market data,
 historical point-in-time consensus, calibrated catalyst forecasts, proven alpha,
-shadow-live evidence, OMS/broker integration, or production promotion.
+shadow-live evidence, durable decision-journal storage, portfolio mandate or
+exposure integration, OMS/broker integration, or production promotion.
 
-## V2 decision contract
+## V3 strategic decision contract
+
+Research governance and strategic decision support are intentionally separate.
+The `ResearchDecisionPacket` answers whether evidence is admissible and
+reviewable. The `StrategicDecisionMemo` answers which research or monitoring
+process action is currently defensible, what alternatives exist, which impacts
+are priced or unpriced, what would invalidate the thesis, and who must review
+it.
+
+For the canonical fixture the valid process response is
+`ACQUIRE_EVIDENCE`: prioritize licensed point-in-time events, entitled L2,
+realized outcomes, chronological validation and shadow history. This is a real
+strategic process decision, but it is not a preferred portfolio action. The
+portfolio field remains `UNPRICED`, capital authority is absent,
+`execution_allowed=false`, and `order_payload=null`.
+
+Changing the decision lens or decision horizon creates a new deterministic memo
+identity while preserving the exact research packet and evidence root. A human
+may record a non-authorizing session disposition against an available process
+option. In the current fixture UI, actor and role are self-asserted and therefore
+stored as `SELF_ASSERTED_UNVERIFIED`; the records are hash chained but remain
+explicitly session-scoped until authenticated identity and durable audited
+storage are connected. Journal displays are partitioned by memo while the full
+session export preserves the multi-memo chain and each record's own basis.
+
+The governance V3 engine and policy have separate version identifiers. The
+validation-run ID hashes its complete gate set, clocks and evidence root; the
+decision-packet ID hashes the complete semantic packet. Strategic synthesis
+rejects missing or surplus primary evidence, a mutated workspace basis, a
+foreign governance assessment, or a memo that does not reproduce from the
+supplied snapshot and packet.
+
+## Research-readiness contract
 
 The workspace evaluates one deterministic governance packet per snapshot. The
 canonical fixture must resolve to `RESEARCH_ONLY`, `OBSERVE_ONLY` and
@@ -71,10 +122,10 @@ inherited Quant Terminal price frame, when present, is shown as terminal
 context only. It does not convert the catalyst, order-book, analogue or model
 layers into live data.
 
-The global focus-horizon control is limited to horizons actually present in
+The global decision-horizon control is limited to horizons actually present in
 the snapshot (`10m`, `30m`, `1h`, `2h` in the canonical fixture). It drives the
-selected forecast cards, table marker and scenario-risk marker; it does not
-retrain a model or imply promotion.
+strategic question, memo identity, review clock, selected forecast cards and
+scenario-risk marker; it does not retrain a model or imply promotion.
 
 ## Model ladder
 

@@ -36,11 +36,25 @@ def tone_for_status(status: str | None) -> str:
         return "muted"
     if normalized in {"NOT_ELIGIBLE", "PENDING_EVIDENCE", "NOT_STARTED"}:
         return "amber"
-    if any(token in normalized for token in ("FAIL", "INVALID", "BREACH", "BLOCKED", "DEGRADED", "ERROR", "DISABLED")):
+    if any(
+        token in normalized
+        for token in (
+            "FAIL",
+            "INVALID",
+            "BREACH",
+            "BLOCKED",
+            "DEGRADED",
+            "ERROR",
+            "DISABLED",
+            "REMEDIATE",
+            "EXPIRED",
+            "STALE",
+        )
+    ):
         return "red"
     if any(
         token in normalized
-        for token in ("WAIT", "CLOSED", "RESEARCH", "SIMULATED", "DELAYED", "UNCALIBRATED", "WARNING", "INVESTIGATE")
+        for token in ("WAIT", "CLOSED", "RESEARCH", "SIMULATED", "DELAYED", "UNCALIBRATED", "WARNING", "INVESTIGATE", "DEFER", "ACQUIRE_EVIDENCE")
     ):
         return "amber"
     if "ALARM" in normalized and "NO_ALARM" not in normalized:
@@ -69,7 +83,7 @@ def fmt_pct(value: float | None, digits: int = 2) -> str:
 def section_header(kicker: str, title: str, meta: str = "") -> None:
     st.markdown(
         f'<div class="mi-section"><div><div class="mi-section-kicker">{esc(kicker)}</div>'
-        f'<div class="mi-section-title">{esc(title)}</div></div>'
+        f'<h2 class="mi-section-title">{esc(title)}</h2></div>'
         f'<div class="mi-section-meta">{esc(meta)}</div></div>',
         unsafe_allow_html=True,
     )

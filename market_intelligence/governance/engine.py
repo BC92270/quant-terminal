@@ -32,6 +32,9 @@ from .contracts import (
 )
 
 
+GOVERNANCE_ENGINE_VERSION = "mi-governance-engine-3.0.0"
+
+
 def _input_ledger(snapshot: WorkspaceSnapshot, evaluated_at: Any) -> tuple[EvidenceLedger, dict[str, tuple[str, ...]]]:
     evaluation_time = as_utc(evaluated_at)
     if evaluation_time < snapshot.as_of:
@@ -47,12 +50,50 @@ def _input_ledger(snapshot: WorkspaceSnapshot, evaluated_at: Any) -> tuple[Evide
         recorded_at=evaluation_time,
         payload={
             "symbol": snapshot.symbol,
+            "instrument_name": snapshot.instrument_name,
             "as_of": snapshot.as_of,
+            "price": snapshot.price,
+            "price_change": snapshot.price_change,
+            "regime": snapshot.regime,
+            "regime_probability": snapshot.regime_probability,
             "overall_status": snapshot.overall_status,
             "market_status": snapshot.market_status,
             "catalyst_status": snapshot.catalyst_status,
             "microstructure_level": snapshot.microstructure_level,
         },
+    )
+    context_integrity = dict(snapshot.audit.get("context_integrity") or {})
+    requested_symbol = str(context_integrity.get("requested_symbol") or "").strip().upper()
+    fixture_symbol = str(context_integrity.get("fixture_symbol") or "").strip().upper()
+    context_state = str(context_integrity.get("state", "UNKNOWN")).strip().upper()
+    fusion_allowed = context_integrity.get("fusion_allowed") is True
+    context_reason = str(context_integrity.get("reason", "Context integrity was not declared"))
+    context_evidence = ledger.append(
+        evidence_id=f"context:{requested_symbol}:{snapshot.symbol}:{snapshot.as_of.isoformat()}",
+        kind="context_integrity",
+        source="market_intelligence_context_adapter",
+        observed_at=snapshot.as_of,
+        known_at=snapshot.as_of,
+        recorded_at=evaluation_time,
+        payload={
+            "requested_symbol": requested_symbol,
+            "fixture_symbol": fixture_symbol,
+            "state": context_state,
+            "fusion_allowed": fusion_allowed,
+            "reason": context_reason,
+        },
+        flags=(context_state,),
+    )
+    information_gap = dict(snapshot.audit.get("information_gap") or {})
+    gap_evidence = ledger.append(
+        evidence_id=f"information-gap:{snapshot.symbol}:{snapshot.as_of.isoformat()}",
+        kind="information_gap",
+        source="market_intelligence_information_gap",
+        observed_at=snapshot.as_of,
+        known_at=snapshot.as_of,
+        recorded_at=evaluation_time,
+        payload=information_gap,
+        flags=(str(information_gap.get("status", "UNKNOWN")),),
     )
     for index, provider in enumerate(sorted(snapshot.provider_health, key=lambda item: item.provider)):
         layer = provider_layer(provider.provider)
@@ -114,6 +155,8 @@ def _input_ledger(snapshot: WorkspaceSnapshot, evaluated_at: Any) -> tuple[Evide
         flags=snapshot.interaction.validation_flags,
     )
     references = {key: tuple(value) for key, value in provider_evidence.items()}
+    references["context"] = (context_evidence.evidence_id,)
+    references["information_gap"] = (gap_evidence.evidence_id,)
     references["microstructure"] = (micro_evidence.evidence_id,)
     references["forecasts"] = tuple(forecast_ids)
     return ledger, references
@@ -187,10 +230,30 @@ def assess_workspace(
         snapshot.forecasts,
         institutional_research_scenarios(),
         evidence_ids=evidence["forecasts"],
+        evidence_ids_by_horizon={
+            horizon: tuple(
+                identifier
+                for forecast in snapshot.forecasts
+                if forecast.horizon == horizon
+                for identifier in (
+                    f"forecast:{forecast.model_id}:{forecast.model_version}:{forecast.horizon}",
+                )
+            )
+            for horizon in {forecast.horizon for forecast in snapshot.forecasts}
+        },
+        evidence_ids_by_forecast={
+            (forecast.model_id, forecast.model_version, forecast.horizon): (
+                f"forecast:{forecast.model_id}:{forecast.model_version}:{forecast.horizon}",
+            )
+            for forecast in snapshot.forecasts
+        },
     )
     for assessment in risk_envelope.assessments:
         ledger.append(
-            evidence_id=f"scenario:{assessment.scenario_id}:{assessment.horizon}",
+            evidence_id=(
+                f"scenario:{assessment.scenario_id}:{assessment.model_id}:"
+                f"{assessment.model_version}:{assessment.horizon}"
+            ),
             kind="scenario_assessment",
             source=assessment.method,
             observed_at=assessment.as_of,
@@ -202,6 +265,29 @@ def assess_workspace(
     ledger.verify()
 
     gates: list[GateResult] = []
+    context_integrity = dict(snapshot.audit.get("context_integrity") or {})
+    requested_symbol = str(context_integrity.get("requested_symbol") or "").strip().upper()
+    fixture_symbol = str(context_integrity.get("fixture_symbol") or "").strip().upper()
+    context_state = str(context_integrity.get("state", "UNKNOWN")).strip().upper()
+    context_safe = (
+        context_state == "MATCHED"
+        and context_integrity.get("fusion_allowed") is True
+        and requested_symbol == snapshot.symbol.upper()
+        and fixture_symbol == snapshot.symbol.upper()
+    )
+    gates.append(
+        _gate(
+            "CONTEXT_INTEGRITY",
+            "Instrument context integrity",
+            GateStatus.PASS if context_safe else GateStatus.FAIL,
+            (
+                "Requested and governed instrument identities match"
+                if context_safe
+                else "Requested instrument does not match the governed fixture; cross-symbol inference is blocked"
+            ),
+            evidence_ids=evidence["context"],
+        )
+    )
     pit_safe = all(
         event.first_seen_time <= event.ingested_at <= event.tradable_at <= event.feature_computed_at <= snapshot.as_of
         and event.publication_time <= event.tradable_at
@@ -310,11 +396,18 @@ def assess_workspace(
     )
 
     evidence_root = ledger.root_hash
-    run_id = "MI-VAL-" + canonical_hash(
-        {"policy": active_policy.version, "as_of": evaluation_time, "evidence_root": evidence_root}
-    )[:20]
+    validation_material = {
+        "engine": GOVERNANCE_ENGINE_VERSION,
+        "policy": active_policy.version,
+        "started_at": evaluation_time,
+        "completed_at": evaluation_time,
+        "gates": tuple(gates),
+        "evidence_root": evidence_root,
+    }
+    run_id = "MI-VAL-" + canonical_hash(validation_material)[:20]
     validation = ValidationRun(
         run_id=run_id,
+        engine_version=GOVERNANCE_ENGINE_VERSION,
         policy_version=active_policy.version,
         started_at=evaluation_time,
         completed_at=evaluation_time,
@@ -344,13 +437,24 @@ def assess_workspace(
         risk_state = ScenarioState.WAITING_EVIDENCE.value
     else:
         risk_state = ScenarioState.EVALUATED.value
+    model_keys = tuple(f"{record.model_id}:{record.version}" for record in registry.records)
+    uncertainty_flags = tuple(sorted(flags))
     packet_material = {
         "symbol": snapshot.symbol,
         "as_of": snapshot.as_of,
         "boundary": ResearchBoundary.RESEARCH_ONLY,
         "state": state,
+        "posture": ResearchPosture.OBSERVE_ONLY,
+        "execution_allowed": False,
+        "human_review_required": True,
+        "quality": quality,
+        "validation": validation,
         "evidence_root": evidence_root,
-        "policy": active_policy.version,
+        "interaction_state": snapshot.interaction.state,
+        "model_keys": model_keys,
+        "risk_state": risk_state,
+        "blockers": blockers,
+        "uncertainty_flags": uncertainty_flags,
     }
     decision = ResearchDecisionPacket(
         packet_id="MI-DEC-" + canonical_hash(packet_material)[:20],
@@ -365,10 +469,10 @@ def assess_workspace(
         validation=validation,
         evidence_root=evidence_root,
         interaction_state=snapshot.interaction.state,
-        model_keys=tuple(f"{record.model_id}:{record.version}" for record in registry.records),
+        model_keys=model_keys,
         risk_state=risk_state,
         blockers=blockers,
-        uncertainty_flags=tuple(sorted(flags)),
+        uncertainty_flags=uncertainty_flags,
     )
     return GovernanceAssessment(decision, ledger, registry, risk_envelope)
 

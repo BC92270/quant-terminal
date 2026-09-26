@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 import math
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from ..contracts import AvailabilityStatus, ForecastDistribution, as_utc
 
@@ -42,6 +42,8 @@ class ScenarioDefinition:
 @dataclass(frozen=True, slots=True)
 class ScenarioAssessment:
     scenario_id: str
+    model_id: str
+    model_version: str
     horizon: str
     state: ScenarioState
     as_of: datetime
@@ -58,6 +60,8 @@ class ScenarioAssessment:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "as_of", as_utc(self.as_of))
+        if not all(str(value).strip() for value in (self.scenario_id, self.model_id, self.model_version, self.horizon)):
+            raise ValueError("Scenario, model and horizon identifiers cannot be empty")
         values = (
             self.base_q05,
             self.base_q50,
@@ -113,6 +117,8 @@ def evaluate_scenarios(
     scenarios: Iterable[ScenarioDefinition],
     *,
     evidence_ids: Iterable[str] = (),
+    evidence_ids_by_horizon: Mapping[str, Iterable[str]] | None = None,
+    evidence_ids_by_forecast: Mapping[tuple[str, str, str], Iterable[str]] | None = None,
 ) -> RiskEnvelope:
     forecasts_tuple = tuple(forecasts)
     scenarios_tuple = tuple(scenarios)
@@ -125,6 +131,14 @@ def evaluate_scenarios(
         raise ValueError("Risk envelope forecasts must share one symbol")
     as_of = max(forecast.as_of for forecast in forecasts_tuple)
     shared_evidence = tuple(str(item) for item in evidence_ids)
+    scoped_evidence = {
+        str(horizon): tuple(str(item) for item in identifiers)
+        for horizon, identifiers in (evidence_ids_by_horizon or {}).items()
+    }
+    forecast_evidence = {
+        (str(model_id), str(version), str(horizon)): tuple(str(item) for item in identifiers)
+        for (model_id, version, horizon), identifiers in (evidence_ids_by_forecast or {}).items()
+    }
     outputs: list[ScenarioAssessment] = []
     for scenario in scenarios_tuple:
         for forecast in forecasts_tuple:
@@ -153,6 +167,8 @@ def evaluate_scenarios(
             outputs.append(
                 ScenarioAssessment(
                     scenario_id=scenario.scenario_id,
+                    model_id=forecast.model_id,
+                    model_version=forecast.model_version,
                     horizon=forecast.horizon,
                     state=state,
                     as_of=forecast.as_of,
@@ -164,7 +180,13 @@ def evaluate_scenarios(
                     stressed_q95=stressed_q95,
                     stressed_expected_return=stressed_mean,
                     method=scenario.method,
-                    evidence_ids=(*shared_evidence, *scenario.evidence_ids),
+                    evidence_ids=(
+                        *forecast_evidence.get(
+                            (forecast.model_id, forecast.model_version, forecast.horizon),
+                            scoped_evidence.get(forecast.horizon, shared_evidence),
+                        ),
+                        *scenario.evidence_ids,
+                    ),
                     flags=tuple(flags),
                 )
             )

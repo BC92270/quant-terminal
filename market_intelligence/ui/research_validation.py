@@ -6,26 +6,43 @@ import pandas as pd
 import streamlit as st
 
 from ..contracts import WorkspaceSnapshot
+from ..governance import GovernanceAssessment
 from ..monitoring import run_fixture_integrity_audit
+from ..strategy import DecisionPurpose, build_strategic_decision_memo
 from .common import bounded_table, card, evidence_block, provenance, section_header, tone_for_status
 from .institutional_control import (
-    governance_assessment,
     render_control_tables,
     render_dossier_identity,
 )
 
 
-def render_research_validation(snapshot: WorkspaceSnapshot) -> None:
-    assessment = governance_assessment(snapshot)
+def render_research_validation(
+    snapshot: WorkspaceSnapshot,
+    *,
+    assessment: GovernanceAssessment | None = None,
+) -> None:
+    if assessment is None:
+        st.warning("Research governance unavailable · validation, human review and execution remain fail-closed.")
+        return
     decision = assessment.decision
     validation = decision.validation
+    try:
+        purpose = DecisionPurpose(str(st.session_state.get("mi_strategy_purpose", "RESEARCH_PRIORITIZATION")))
+    except ValueError:
+        purpose = DecisionPurpose.RESEARCH_PRIORITIZATION
+    strategic_memo = build_strategic_decision_memo(
+        snapshot,
+        assessment,
+        horizon=str(st.session_state.get("mi_horizon", snapshot.forecasts[0].horizon)),
+        purpose=purpose,
+    )
 
     section_header(
         "GOVERN DESK / 13",
         "Research & Validation",
         "EXECUTABLE GATES · HASH-CHAINED EVIDENCE · CHRONOLOGICAL · FAIL CLOSED",
     )
-    render_dossier_identity(assessment, snapshot)
+    render_dossier_identity(assessment, snapshot, strategic_memo)
 
     controls = st.columns(6)
     passed_gates = sum(gate.status.value == "PASS" for gate in validation.gates)
@@ -52,7 +69,7 @@ def render_research_validation(snapshot: WorkspaceSnapshot) -> None:
     )
 
     section_header("CONTROL EVIDENCE", "Institutional validation matrix", "QUALITY · GATES · SCENARIOS · LEDGER")
-    render_control_tables(assessment)
+    render_control_tables(assessment, strategic_memo)
 
     section_header("BOUNDED REPLAY", "Deterministic fixture integrity audit", "LOCAL STRUCTURAL CHECKS ONLY")
     with st.form("mi_research_configuration"):

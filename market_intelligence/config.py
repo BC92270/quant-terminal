@@ -10,8 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-SCHEMA_VERSION = "mi-2.0.0"
-WORKSPACE_VERSION = "Market Intelligence V2 · Institutional Control Plane"
+SCHEMA_VERSION = "mi-3.0.0"
+WORKSPACE_VERSION = "Market Intelligence V3 · Institutional Control Plane · Strategic Research & Decision"
 ROUTE_NAME = "market-intelligence"
 SESSION_FLAG = "market_intelligence_open"
 
@@ -25,7 +25,7 @@ class ViewSpec:
 
 
 VIEW_SPECS: tuple[ViewSpec, ...] = (
-    ViewSpec("live", "LIVE", "Live Intelligence", "NOW"),
+    ViewSpec("live", "STRATEGY", "Strategic Decision Room", "NOW"),
     ViewSpec("events", "EVENTS", "Event Explorer", "NOW"),
     ViewSpec("catalyst-map", "MAP", "Catalyst Map", "NOW"),
     ViewSpec("narratives", "NARRATIVE", "Narrative Monitor", "NOW"),
@@ -45,10 +45,10 @@ VIEW_SLUGS = tuple(VIEW_BY_SLUG)
 
 DESK_SEQUENCE: tuple[str, ...] = ("NOW", "STATE", "FUSION", "GOVERN")
 DESK_WORKFLOW: dict[str, tuple[str, str]] = {
-    "NOW": ("01 · OBSERVE", "What changed and what is directly observable?"),
+    "NOW": ("01 · FRAME & OBSERVE", "What is the decision, what changed, and what is directly observable?"),
     "STATE": ("02 · EXPLAIN", "Which mechanisms, conflicts and residuals fit the evidence?"),
     "FUSION": ("03 · SYNTHESIZE", "How do horizons, modalities and linked assets interact?"),
-    "GOVERN": ("04 · GOVERN", "Is the evidence reproducible, controlled and reviewable?"),
+    "GOVERN": ("04 · DECIDE & GOVERN", "What process decision is admissible, controlled and reviewable?"),
 }
 
 INTERACTION_STATES = frozenset(

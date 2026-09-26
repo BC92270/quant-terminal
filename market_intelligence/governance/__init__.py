@@ -11,12 +11,13 @@ from .contracts import (
     ResearchPosture,
     ValidationRun,
 )
-from .engine import assess_workspace, build_research_decision_packet
+from .engine import GOVERNANCE_ENGINE_VERSION, assess_workspace, build_research_decision_packet
 
 __all__ = [
     "DecisionState",
     "GateResult",
     "GateStatus",
+    "GOVERNANCE_ENGINE_VERSION",
     "GovernanceAssessment",
     "InstitutionalPolicy",
     "ResearchBoundary",
