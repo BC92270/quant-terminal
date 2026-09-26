@@ -20,6 +20,15 @@ def test_latest_consensus_never_selects_future_revision() -> None:
     assert selected["value"] == 100
 
 
+def test_same_time_revision_selection_is_numeric_safe_and_input_order_independent() -> None:
+    records = [
+        {"value": "second", "available_at": "2026-01-01T12:00:00Z", "revision_id": "r2"},
+        {"value": "tenth", "available_at": "2026-01-01T12:00:00Z", "revision_id": "r10"},
+    ]
+    assert latest_known_at(records, "2026-01-01T12:00:00Z")["value"] == "tenth"
+    assert latest_known_at(reversed(records), "2026-01-01T12:00:00Z")["value"] == "tenth"
+
+
 def test_cutoff_rejects_future_feature() -> None:
     with pytest.raises(ValueError, match="not point-in-time safe"):
         assert_cutoff("2026-01-01T12:01:00Z", "2026-01-01T12:00:00Z", label="consensus")

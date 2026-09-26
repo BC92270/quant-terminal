@@ -20,6 +20,36 @@ GRID = "rgba(142,185,196,.10)"
 PAPER = "rgba(0,0,0,0)"
 
 
+def tone_for_status(status: str | None) -> str:
+    """Map explicit institutional states to a visual tone without treating null as positive."""
+
+    normalized = str(status or "").strip().upper().replace("-", "_").replace(" ", "_")
+    if not normalized or normalized in {
+        "N/A",
+        "NONE",
+        "NULL",
+        "UNKNOWN",
+        "UNAVAILABLE",
+        "NOT_MEASURABLE",
+        "NOT_APPLICABLE",
+    }:
+        return "muted"
+    if normalized in {"NOT_ELIGIBLE", "PENDING_EVIDENCE", "NOT_STARTED"}:
+        return "amber"
+    if any(token in normalized for token in ("FAIL", "INVALID", "BREACH", "BLOCKED", "DEGRADED", "ERROR", "DISABLED")):
+        return "red"
+    if any(
+        token in normalized
+        for token in ("WAIT", "CLOSED", "RESEARCH", "SIMULATED", "DELAYED", "UNCALIBRATED", "WARNING", "INVESTIGATE")
+    ):
+        return "amber"
+    if "ALARM" in normalized and "NO_ALARM" not in normalized:
+        return "red"
+    if any(token in normalized for token in ("PASS", "VALID", "ELIGIBLE", "STABLE", "LIVE")):
+        return "green"
+    return "cyan"
+
+
 def esc(value: Any) -> str:
     return escape(str(value if value is not None else "—"))
 
@@ -51,6 +81,26 @@ def card(label: str, value: str, note: str = "", *, tone: str = "") -> None:
         f'<div class="mi-card"><div class="mi-card-title">{esc(label)}</div>'
         f'<div class="mi-card-value{tone_class}">{esc(value)}</div>'
         f'<div class="mi-card-note">{esc(note)}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def status_badge(label: str, status: str, *, detail: str = "") -> None:
+    tone = tone_for_status(status)
+    st.markdown(
+        f'<div class="mi-status-badge mi-status-badge-{esc(tone)}">'
+        f'<span>{esc(label)}</span><b>{esc(status)}</b>'
+        f'<small>{esc(detail)}</small></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def evidence_block(label: str, items: Iterable[str], *, tone: str = "cyan") -> None:
+    rendered = "".join(f"<li>{esc(item)}</li>" for item in items)
+    if not rendered:
+        rendered = "<li>No admissible evidence in the current snapshot.</li>"
+    st.markdown(
+        f'<div class="mi-evidence mi-evidence-{esc(tone)}"><div>{esc(label)}</div><ul>{rendered}</ul></div>',
         unsafe_allow_html=True,
     )
 
@@ -96,10 +146,13 @@ def status_pill(status: str) -> str:
 def render_data_contract(snapshot: WorkspaceSnapshot) -> None:
     contract = snapshot.audit.get("data_contract", {})
     with st.expander("DATA CONTRACT · provenance and current limitations", expanded=False):
-        rows = pd.DataFrame(
-            [{"Layer": key.replace("_", " ").title(), "Contract": str(value)} for key, value in contract.items()]
+        rows = "".join(
+            '<div class="mi-contract-row">'
+            f'<b>{esc(key.replace("_", " ").title())}</b><span>{esc(value)}</span>'
+            "</div>"
+            for key, value in contract.items()
         )
-        bounded_table(rows, height=245)
+        st.markdown(f'<div class="mi-contract-grid">{rows}</div>', unsafe_allow_html=True)
         st.caption(
             "This release validates architecture, deterministic calculations and UX on a canonical fixture. "
             "It does not establish live-provider coverage, alpha, calibration, promotion eligibility or execution readiness."

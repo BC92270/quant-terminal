@@ -60,6 +60,10 @@ class ProviderHealth:
     def __post_init__(self) -> None:
         object.__setattr__(self, "as_of", as_utc(self.as_of))
         object.__setattr__(self, "latency_ms", _finite_or_none(self.latency_ms, "latency_ms"))
+        if not str(self.provider).strip():
+            raise ValueError("provider cannot be empty")
+        if self.latency_ms is not None and self.latency_ms < 0.0:
+            raise ValueError("latency_ms cannot be negative")
         if self.status.value not in PROVIDER_STATUSES:
             raise ValueError(f"Unsupported provider status: {self.status}")
 
@@ -100,6 +104,9 @@ class StructuredEvent:
             "feature_computed_at",
         ):
             object.__setattr__(self, name, as_utc(getattr(self, name)))
+        for name in ("event_id", "title", "source", "entity", "event_class", "revision_id"):
+            if not str(getattr(self, name)).strip():
+                raise ValueError(f"{name} cannot be empty")
         if self.ingested_at < self.first_seen_time:
             raise ValueError("ingested_at cannot precede first_seen_time")
         if self.tradable_at < max(self.publication_time, self.first_seen_time):
@@ -183,8 +190,34 @@ class MicrostructureSnapshot:
         )
         for name in numeric_fields:
             object.__setattr__(self, name, _finite_or_none(getattr(self, name), name))
+        for name in ("best_bid", "best_ask"):
+            value = getattr(self, name)
+            if value is not None and value <= 0.0:
+                raise ValueError(f"{name} must be positive")
+        for name in (
+            "bid_size",
+            "ask_size",
+            "spread",
+            "cancel_intensity",
+            "add_intensity",
+            "bid_replenishment",
+            "ask_replenishment",
+        ):
+            value = getattr(self, name)
+            if value is not None and value < 0.0:
+                raise ValueError(f"{name} cannot be negative")
         if self.best_bid is not None and self.best_ask is not None and self.best_bid > self.best_ask:
             raise ValueError("best_bid cannot exceed best_ask")
+        if self.best_bid is not None and self.best_ask is not None:
+            expected_mid = (self.best_bid + self.best_ask) / 2.0
+            expected_spread = self.best_ask - self.best_bid
+            tolerance = max(1e-9, expected_spread * 1e-6)
+            if self.mid is not None and not math.isclose(self.mid, expected_mid, rel_tol=1e-9, abs_tol=tolerance):
+                raise ValueError("mid must equal the best-quote midpoint")
+            if self.spread is not None and not math.isclose(
+                self.spread, expected_spread, rel_tol=1e-9, abs_tol=tolerance
+            ):
+                raise ValueError("spread must equal best_ask minus best_bid")
         if self.queue_imbalance is not None and not -1.0 <= self.queue_imbalance <= 1.0:
             raise ValueError("queue_imbalance must be in [-1, 1]")
         if self.trade_imbalance is not None and not -1.0 <= self.trade_imbalance <= 1.0:
@@ -248,6 +281,11 @@ class ForecastDistribution:
             value = getattr(self, name)
             if value is not None and not 0.0 <= value <= 1.0:
                 raise ValueError(f"{name} must be in [0, 1]")
+        if self.expected_volatility is not None and self.expected_volatility < 0.0:
+            raise ValueError("expected_volatility cannot be negative")
+        for name in ("symbol", "horizon", "model_id", "model_version", "feature_set_version"):
+            if not str(getattr(self, name)).strip():
+                raise ValueError(f"{name} cannot be empty")
         quantiles = (self.q05, self.q25, self.q50, self.q75, self.q95)
         populated = [value is not None for value in quantiles]
         if any(populated) and not all(populated):
@@ -290,6 +328,7 @@ class InteractionAssessment:
     explanation: str
     evidence: tuple[str, ...]
     confidence: str
+    validation_flags: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.state not in INTERACTION_STATES:
@@ -300,6 +339,11 @@ class InteractionAssessment:
             raise ValueError("intensity cannot be negative")
         if self.confidence not in {"HIGH", "MEDIUM", "LOW", "INVALID"}:
             raise ValueError("Unsupported confidence label")
+        for name in ("catalyst_pressure", "microstructure_pressure", "collision_score", "intensity"):
+            if not math.isfinite(float(getattr(self, name))):
+                raise ValueError(f"{name} must be finite")
+        if self.confidence == "INVALID" and not self.validation_flags:
+            raise ValueError("INVALID interaction assessments require validation_flags")
 
 
 @dataclass(frozen=True, slots=True)
@@ -331,5 +375,20 @@ class WorkspaceSnapshot:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "as_of", as_utc(self.as_of))
+        if not str(self.symbol).strip():
+            raise ValueError("symbol cannot be empty")
         if self.regime_probability is not None and not 0.0 <= self.regime_probability <= 1.0:
             raise ValueError("regime_probability must be in [0, 1]")
+        normalized_symbol = str(self.symbol).upper()
+        if str(self.microstructure.symbol).upper() != normalized_symbol:
+            raise ValueError("microstructure symbol must match workspace symbol")
+        if self.microstructure.as_of > self.as_of:
+            raise ValueError("microstructure as_of cannot be after workspace as_of")
+        for event in self.events:
+            if event.feature_computed_at > self.as_of:
+                raise ValueError("event features cannot be computed after workspace as_of")
+        for forecast in self.forecasts:
+            if str(forecast.symbol).upper() != normalized_symbol:
+                raise ValueError("forecast symbol must match workspace symbol")
+            if forecast.as_of > self.as_of or forecast.data_cutoff > self.as_of:
+                raise ValueError("forecast timestamps cannot be after workspace as_of")

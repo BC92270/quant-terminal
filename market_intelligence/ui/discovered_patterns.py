@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from ..contracts import WorkspaceSnapshot
-from .common import bounded_table, card, provenance, section_header
+from .common import bounded_table, card, esc, provenance, section_header
 
 
 def render_discovered_patterns(snapshot: WorkspaceSnapshot) -> None:
@@ -22,7 +22,7 @@ def render_discovered_patterns(snapshot: WorkspaceSnapshot) -> None:
     with top[3]:
         card("Multiple-testing pass", "0", "Reality Check / SPA not run", tone="amber")
     with top[4]:
-        card("Production promoted", "0", "Fail-closed registry", tone="green")
+        card("Production promoted", "0", "Fail-closed registry", tone="amber")
     selection = st.dataframe(
         frame,
         width="stretch",
@@ -41,10 +41,10 @@ def render_discovered_patterns(snapshot: WorkspaceSnapshot) -> None:
         st.markdown(
             f"""
             <div class="mi-state">
-              <div class="mi-card-title">Selected pattern · {selected['Pattern ID']}</div>
-              <div class="mi-state-code">{selected['Status']}</div>
-              <div class="mi-state-copy">{selected['Signature']}</div>
-              <div class="mi-chip-row"><span class="mi-chip">{selected['Discovery']}</span><span class="mi-chip">{selected['Stability']}</span></div>
+              <div class="mi-card-title">Selected pattern · {esc(selected['Pattern ID'])}</div>
+              <div class="mi-state-code">{esc(selected['Status'])}</div>
+              <div class="mi-state-copy">{esc(selected['Signature'])}</div>
+              <div class="mi-chip-row"><span class="mi-chip">{esc(selected['Discovery'])}</span><span class="mi-chip">{esc(selected['Stability'])}</span></div>
             </div>
             """,
             unsafe_allow_html=True,

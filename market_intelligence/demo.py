@@ -91,15 +91,10 @@ def _terminal_price_context(price_data: Any, analysis: Any) -> dict[str, Any]:
     return output
 
 
-def _events(raw_events: list[dict[str, Any]], symbol: str) -> tuple[StructuredEvent, ...]:
+def _events(raw_events: list[dict[str, Any]]) -> tuple[StructuredEvent, ...]:
     events: list[StructuredEvent] = []
     for raw in raw_events:
         item = dict(raw)
-        if symbol != "NVDA":
-            item["title"] = str(item["title"]).replace("NVDA", symbol)
-            if item["entity"] == "NVIDIA":
-                item["entity"] = symbol
-            item["text"] = str(item.get("text", "")).replace("NVDA", symbol)
         item["validation_flags"] = tuple(item.get("validation_flags", ()))
         events.append(StructuredEvent(**item))
     return tuple(events)
@@ -199,15 +194,26 @@ def build_workspace_snapshot(
     analysis: Any = None,
 ) -> WorkspaceSnapshot:
     raw = load_canonical_fixture()
-    symbol = _normalized_symbol(ticker)
+    requested_symbol = _normalized_symbol(ticker)
+    symbol = "NVDA"
     as_of = as_utc(raw["as_of"])
-    terminal_context = _terminal_price_context(price_data, analysis)
+    context_matches_fixture = requested_symbol == symbol
+    terminal_context = (
+        _terminal_price_context(price_data, analysis)
+        if context_matches_fixture
+        else {
+            "available": False,
+            "price": None,
+            "change": None,
+            "as_of": None,
+            "rows": 0,
+            "source": f"Blocked: requested {requested_symbol} cannot be fused with the canonical {symbol} fixture",
+        }
+    )
     timeline = pd.DataFrame(raw["timeline"])
     timeline["timestamp"] = pd.to_datetime(timeline["timestamp"], utc=True)
-    events = _events(raw["events"], symbol)
+    events = _events(raw["events"])
     contributions = pd.DataFrame(raw["catalyst_contributions"])
-    if symbol != "NVDA":
-        contributions["catalyst"] = contributions["catalyst"].str.replace("NVDA", symbol, regex=False)
     quote_events = list(raw["quote_events"])
     last_quote = quote_events[-1]
     context = dict(raw["microstructure_context"])
@@ -264,6 +270,17 @@ def build_workspace_snapshot(
         "fixture_status": raw["fixture_status"],
         "fixture_description": raw["description"],
         "terminal_context": terminal_context,
+        "context_integrity": {
+            "requested_symbol": requested_symbol,
+            "fixture_symbol": symbol,
+            "state": "MATCHED" if context_matches_fixture else "MISMATCH_BLOCKED",
+            "fusion_allowed": bool(context_matches_fixture),
+            "reason": (
+                "Requested instrument matches the canonical fixture identity."
+                if context_matches_fixture
+                else f"The {symbol} fixture was not repainted or fused into requested instrument {requested_symbol}."
+            ),
+        },
         "quote_events": pd.DataFrame(quote_events),
         "depth_ladder": depth_ladder,
         "micro_context": context,
@@ -290,7 +307,7 @@ def build_workspace_snapshot(
     market_status = "TERMINAL CONTEXT" if terminal_context["available"] else "SIMULATED FIXTURE"
     return WorkspaceSnapshot(
         symbol=symbol,
-        instrument_name=(f"{symbol} · scenario-mapped research fixture" if symbol != "NVDA" else raw["instrument_name"]),
+        instrument_name=raw["instrument_name"],
         as_of=as_of,
         price=price,
         price_change=price_change,
@@ -312,7 +329,13 @@ def build_workspace_snapshot(
         patterns=_patterns(),
         model_registry=_model_registry(as_of),
         provider_health=(
-            ProviderHealth("Quant Terminal context", AvailabilityStatus.CACHED if terminal_context["available"] else AvailabilityStatus.UNAVAILABLE, as_of, "OHLCV", detail=terminal_context["source"]),
+            ProviderHealth(
+                "Quant Terminal context",
+                AvailabilityStatus.CACHED if terminal_context["available"] else AvailabilityStatus.UNAVAILABLE,
+                terminal_context.get("as_of") or as_of,
+                "OHLCV",
+                detail=terminal_context["source"],
+            ),
             ProviderHealth("Catalyst / news", AvailabilityStatus.SIMULATED, as_of, "EVENT", detail="Canonical deterministic fixture; no live provider connected"),
             ProviderHealth("Order book", AvailabilityStatus.SIMULATED, as_of, "L2", detail="Sequenced fixture messages; no venue entitlement asserted"),
             ProviderHealth("Forecast registry", AvailabilityStatus.RESEARCH_ONLY, as_of, "LEVEL 0", detail="Uncalibrated empirical baseline; not promotion-eligible"),

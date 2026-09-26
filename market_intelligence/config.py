@@ -10,8 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-SCHEMA_VERSION = "mi-1.0.0"
-WORKSPACE_VERSION = "Market Intelligence V1 · Foundation"
+SCHEMA_VERSION = "mi-2.0.0"
+WORKSPACE_VERSION = "Market Intelligence V2 · Institutional Control Plane"
 ROUTE_NAME = "market-intelligence"
 SESSION_FLAG = "market_intelligence_open"
 
@@ -42,6 +42,14 @@ VIEW_SPECS: tuple[ViewSpec, ...] = (
 
 VIEW_BY_SLUG = {view.slug: view for view in VIEW_SPECS}
 VIEW_SLUGS = tuple(VIEW_BY_SLUG)
+
+DESK_SEQUENCE: tuple[str, ...] = ("NOW", "STATE", "FUSION", "GOVERN")
+DESK_WORKFLOW: dict[str, tuple[str, str]] = {
+    "NOW": ("01 · OBSERVE", "What changed and what is directly observable?"),
+    "STATE": ("02 · EXPLAIN", "Which mechanisms, conflicts and residuals fit the evidence?"),
+    "FUSION": ("03 · SYNTHESIZE", "How do horizons, modalities and linked assets interact?"),
+    "GOVERN": ("04 · GOVERN", "Is the evidence reproducible, controlled and reviewable?"),
+}
 
 INTERACTION_STATES = frozenset(
     {

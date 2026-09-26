@@ -21,8 +21,13 @@ def test_fixture_integrity_audit_has_no_blocking_failures() -> None:
     assert (result["Result"] == "PASS").all()
 
 
-def test_non_nvda_context_is_explicitly_scenario_mapped() -> None:
+def test_non_fixture_symbol_is_not_repainted_or_fused() -> None:
     snapshot = build_workspace_snapshot("AAPL")
-    assert snapshot.symbol == "AAPL"
-    assert "scenario-mapped" in snapshot.instrument_name
-    assert all("NVDA" not in event.title for event in snapshot.events)
+    assert snapshot.symbol == "NVDA"
+    context = snapshot.audit["context_integrity"]
+    assert context["requested_symbol"] == "AAPL"
+    assert context["fixture_symbol"] == "NVDA"
+    assert context["state"] == "MISMATCH_BLOCKED"
+    assert context["fusion_allowed"] is False
+    assert snapshot.audit["terminal_context"]["available"] is False
+    assert any("NVDA" in event.title for event in snapshot.events)

@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from ..contracts import WorkspaceSnapshot
-from .common import AMBER, GREEN, RED, bounded_table, card, provenance, section_header, style_figure
+from .common import AMBER, GREEN, RED, bounded_table, card, esc, provenance, section_header, style_figure
 
 
 def render_catalyst_collision(snapshot: WorkspaceSnapshot) -> None:
@@ -44,15 +44,15 @@ def render_catalyst_collision(snapshot: WorkspaceSnapshot) -> None:
         state = snapshot.interaction
         st.markdown(
             f'<div class="mi-state"><div class="mi-card-title">Cross-layer assessment</div>'
-            f'<div class="mi-state-code">{state.state.replace("_", " ")}</div>'
-            f'<div class="mi-state-copy">{state.explanation}</div>'
-            f'<div class="mi-chip-row"><span class="mi-chip">{state.confidence}</span>'
+            f'<div class="mi-state-code">{esc(state.state.replace("_", " "))}</div>'
+            f'<div class="mi-state-copy">{esc(state.explanation)}</div>'
+            f'<div class="mi-chip-row"><span class="mi-chip">{esc(state.confidence)}</span>'
             f'<span class="mi-chip">RESEARCH ONLY</span></div></div>',
             unsafe_allow_html=True,
         )
         st.markdown("##### Evidence chain")
         for item in state.evidence:
-            st.markdown(f"- {item}")
+            st.markdown(f"- {esc(item)}")
         st.markdown("##### Persistence policy")
         st.info("Half-life is withheld: no validated decay model exists. The workspace shows an empirical persistence band only after historical provider data is available.")
 

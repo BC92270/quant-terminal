@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Iterable, Mapping
 
 from ..config import (
@@ -15,6 +16,8 @@ from ..contracts import InteractionAssessment
 
 def collision_metrics(contributions: Iterable[float]) -> dict[str, float]:
     values = [float(value) for value in contributions]
+    if any(not math.isfinite(value) for value in values):
+        raise ValueError("Catalyst contributions must be finite")
     positive_mass = sum(max(value, 0.0) for value in values)
     negative_mass = sum(abs(min(value, 0.0)) for value in values)
     intensity = positive_mass + negative_mass
@@ -32,14 +35,51 @@ def assess_interaction(
     contributions: Iterable[float],
     micro: Mapping[str, float | None],
 ) -> InteractionAssessment:
-    metrics = collision_metrics(contributions)
+    contribution_values = [float(value) for value in contributions]
+    metrics = collision_metrics(contribution_values)
     net = metrics["net_pressure"]
     collision = metrics["collision_score"]
-    sell_flow = float(micro.get("sell_flow_z") or 0.0)
-    replenishment = float(micro.get("bid_replenishment_z") or 0.0)
-    impact_trend = float(micro.get("sell_impact_trend") or 0.0)
-    spread_change = float(micro.get("spread_change_z") or 0.0)
-    micro_pressure = float(micro.get("microstructure_pressure") or 0.0)
+    required_micro = (
+        "sell_flow_z",
+        "bid_replenishment_z",
+        "sell_impact_trend",
+        "spread_change_z",
+        "microstructure_pressure",
+    )
+    missing = tuple(name for name in required_micro if micro.get(name) is None)
+    invalid = tuple(
+        name
+        for name in required_micro
+        if micro.get(name) is not None and not math.isfinite(float(micro[name]))
+    )
+    if not contribution_values or missing or invalid:
+        flags = []
+        if not contribution_values:
+            flags.append("NO_CATALYST_CONTRIBUTIONS")
+        if missing:
+            flags.append("MISSING_MICRO_INPUTS:" + ",".join(missing))
+        if invalid:
+            flags.append("INVALID_MICRO_INPUTS:" + ",".join(invalid))
+        return InteractionAssessment(
+            state="unexplained_information_flow",
+            catalyst_pressure=net,
+            microstructure_pressure=0.0,
+            collision_score=collision,
+            intensity=metrics["intensity"],
+            explanation=(
+                "The catalyst × microstructure state is invalid because required "
+                "point-in-time sensor inputs are missing or non-finite."
+            ),
+            evidence=tuple(flags),
+            confidence="INVALID",
+            validation_flags=tuple(flags),
+        )
+
+    sell_flow = float(micro["sell_flow_z"])
+    replenishment = float(micro["bid_replenishment_z"])
+    impact_trend = float(micro["sell_impact_trend"])
+    spread_change = float(micro["spread_change_z"])
+    micro_pressure = float(micro["microstructure_pressure"])
 
     absorption = (
         net < 0.0

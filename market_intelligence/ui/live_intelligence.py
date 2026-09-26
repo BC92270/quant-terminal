@@ -8,6 +8,7 @@ import streamlit as st
 
 from ..contracts import WorkspaceSnapshot
 from ..demo import forecasts_frame
+from ..state import set_active_view
 from .common import (
     AMBER,
     CYAN,
@@ -15,6 +16,7 @@ from .common import (
     RED,
     bounded_table,
     card,
+    evidence_block,
     esc,
     fmt_number,
     fmt_pct,
@@ -22,6 +24,43 @@ from .common import (
     section_header,
     style_figure,
 )
+from .institutional_control import governance_assessment
+
+
+def _institutional_brief(snapshot: WorkspaceSnapshot) -> None:
+    assessment = governance_assessment(snapshot)
+    decision = assessment.decision
+    state = snapshot.interaction.state.replace("_", " ").upper()
+    gap = snapshot.audit["information_gap"]
+    context = snapshot.audit.get("context_integrity", {})
+    context_state = str(context.get("state", "MATCHED"))
+    st.markdown(
+        f'''<div class="mi-brief-grid">
+          <div class="mi-brief-card"><div>Current state</div><p>{esc(state)} · descriptive fixture assessment, not a trade signal.</p></div>
+          <div class="mi-brief-card"><div>What changed</div><p>NO PRIOR SNAPSHOT · change attribution is withheld until an append-only prior state exists.</p></div>
+          <div class="mi-brief-card"><div>Contradiction</div><p>Collision {snapshot.interaction.collision_score:.0%}; opposing catalyst mass compresses the net directional interpretation.</p></div>
+          <div class="mi-brief-card"><div>Unknown</div><p>Options unavailable; forecast calibration, live entitlement and historical PIT coverage absent.</p></div>
+          <div class="mi-brief-card"><div>Governance posture</div><p>{esc(decision.state.value)} · context {esc(context_state)} · execution disabled · packet {esc(decision.packet_id[-10:])}.</p></div>
+        </div>''',
+        unsafe_allow_html=True,
+    )
+    left, right = st.columns(2, gap="medium")
+    with left:
+        evidence_block("Evidence supporting the descriptive state", snapshot.interaction.evidence, tone="green")
+    with right:
+        evidence_block(
+            "Contradictions and invalidation triggers",
+            (
+                "High opposing catalyst mass weakens one-sided interpretation.",
+                "Invalidate absorption if bid replenishment falls or sell impact rises.",
+                f"Escalate residual investigation at 70%; current fixture residual is {float(gap['unexplained_residual']):.0%}.",
+            ),
+            tone="amber",
+        )
+    st.caption(
+        "Next evidence required: licensed PIT event lineage · sequenced venue-authorized L2 · realized forecast outcomes · "
+        f"independent validation. Evidence root {decision.evidence_root[:16]}… · {len(assessment.ledger.records)} verified records."
+    )
 
 
 def _timeline(snapshot: WorkspaceSnapshot) -> go.Figure:
@@ -147,6 +186,7 @@ def render_live_intelligence(snapshot: WorkspaceSnapshot) -> None:
         "Live Intelligence",
         "CATALYST ARRIVAL → MARKET ABSORPTION → DISTRIBUTION · FIXTURE",
     )
+    _institutional_brief(snapshot)
     left, right = st.columns([2.15, 1.0], gap="medium")
     with left:
         selection = st.plotly_chart(
@@ -165,6 +205,15 @@ def render_live_intelligence(snapshot: WorkspaceSnapshot) -> None:
         except (AttributeError, IndexError, KeyError, TypeError):
             pass
         provenance("Observed shape: deterministic fixture. Event timestamps: UTC. Markers are selectable; selection is handed to Event Explorer.")
+        selected_event = str(st.session_state.get("mi_selected_event", snapshot.events[0].event_id))
+        if st.button(
+            f"INSPECT SELECTED EVENT → {selected_event}",
+            key="mi_live_open_selected_event",
+            width="stretch",
+            type="secondary",
+        ):
+            set_active_view(st.session_state, "events")
+            st.rerun()
     with right:
         interaction = snapshot.interaction
         st.markdown(
@@ -216,9 +265,16 @@ def render_live_intelligence(snapshot: WorkspaceSnapshot) -> None:
         )
         provenance("Analogue IDs and outcomes are synthetic fixture records. No historical sample or statistical confidence is claimed.")
     with bottom_right:
-        section_header("LEVEL-0 BENCHMARK", "Multi-horizon forecast distribution", "UNCALIBRATED · NOT CATALYST-CONDITIONED")
-        forecast = forecasts_frame(snapshot)[
-            ["Horizon", "P(up)", "Expected return", "Q05", "Q50", "Q95", "Expected volatility", "Calibration", "Sample"]
+        focus_horizon = str(st.session_state.get("mi_horizon", "30m"))
+        section_header(
+            "LEVEL-0 BENCHMARK",
+            "Multi-horizon forecast distribution",
+            f"FOCUS {focus_horizon.upper()} · UNCALIBRATED · NOT CATALYST-CONDITIONED",
+        )
+        forecast = forecasts_frame(snapshot).copy()
+        forecast.insert(0, "Focus", forecast["Horizon"].eq(focus_horizon).map({True: "● SELECTED", False: ""}))
+        forecast = forecast.sort_values("Focus", ascending=False)[
+            ["Focus", "Horizon", "P(up)", "Expected return", "Q05", "Q50", "Q95", "Expected volatility", "Calibration", "Sample"]
         ]
         bounded_table(
             forecast,

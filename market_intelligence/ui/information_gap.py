@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from ..contracts import WorkspaceSnapshot
-from .common import AMBER, CYAN, GREEN, RED, bounded_table, card, provenance, section_header, style_figure
+from .common import AMBER, CYAN, GREEN, RED, bounded_table, card, provenance, section_header, style_figure, tone_for_status
 
 
 def render_information_gap(snapshot: WorkspaceSnapshot) -> None:
@@ -23,7 +23,12 @@ def render_information_gap(snapshot: WorkspaceSnapshot) -> None:
     components = pd.DataFrame(component_rows)
     top = st.columns(4)
     with top[0]:
-        card("Current state", gap["status"], "Threshold is descriptive and fixture-only", tone="green")
+        card(
+            "Current state",
+            gap["status"],
+            "Threshold is descriptive and fixture-only",
+            tone=tone_for_status(str(gap["status"])),
+        )
     with top[1]:
         card("Known coverage", f"{gap['known_catalyst_intensity']:.0%}", "Fed, rates, earnings and guidance", tone="green")
     with top[2]:

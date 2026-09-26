@@ -19,10 +19,15 @@ def _prices(values: Any) -> pd.Series:
         series = values[column]
     else:
         series = pd.Series(values)
-    result = pd.to_numeric(series, errors="coerce").dropna().astype(float)
-    result = result[result > 0.0]
+    result = pd.to_numeric(series, errors="coerce").astype(float)
     if result.empty:
-        raise ValueError("No positive finite prices available")
+        raise ValueError("No prices available")
+    if result.isna().any():
+        raise ValueError("Price history contains missing or non-numeric observations")
+    if not np.isfinite(result.to_numpy(dtype=float)).all():
+        raise ValueError("Price history must contain only finite observations")
+    if (result <= 0.0).any():
+        raise ValueError("Price history must contain only positive observations")
     return result
 
 
@@ -33,6 +38,7 @@ def empirical_distribution_forecasts(
     as_of: Any,
     horizons: Sequence[tuple[str, int]],
     provider_status: AvailabilityStatus,
+    data_cutoff: Any | None = None,
     regime_state: str = "fixture_conflict",
     primary_drivers: Iterable[str] = (),
 ) -> tuple[ForecastDistribution, ...]:
@@ -43,14 +49,27 @@ def empirical_distribution_forecasts(
     """
 
     prices = _prices(price_values)
-    cutoff = as_utc(as_of)
+    prediction_time = as_utc(as_of)
+    cutoff = prediction_time if data_cutoff is None else as_utc(data_cutoff)
+    if cutoff > prediction_time:
+        raise ValueError("data_cutoff cannot be after as_of")
+    cutoff_assumed = data_cutoff is None
     outputs: list[ForecastDistribution] = []
+    seen_labels: set[str] = set()
     for label, steps in horizons:
-        if int(steps) <= 0:
+        horizon_label = str(label).strip()
+        if not horizon_label:
+            raise ValueError("Forecast horizon label cannot be empty")
+        if horizon_label in seen_labels:
+            raise ValueError(f"Duplicate forecast horizon: {horizon_label}")
+        seen_labels.add(horizon_label)
+        if isinstance(steps, bool) or int(steps) != steps or int(steps) <= 0:
             raise ValueError("Forecast horizon steps must be positive")
         returns = prices.pct_change(int(steps)).replace([np.inf, -np.inf], np.nan).dropna()
         sample_size = int(len(returns))
         flags = ["RESEARCH_ONLY", "UNCALIBRATED", "NOT_CATALYST_CONDITIONED"]
+        if cutoff_assumed:
+            flags.append("CUTOFF_ASSUMED_AS_OF")
         if provider_status == AvailabilityStatus.SIMULATED:
             flags.append("SIMULATED_INPUT")
         if sample_size < 12:
@@ -80,8 +99,8 @@ def empirical_distribution_forecasts(
         outputs.append(
             ForecastDistribution(
                 symbol=str(symbol).upper(),
-                as_of=cutoff,
-                horizon=label,
+                as_of=prediction_time,
+                horizon=horizon_label,
                 calibration_status="RESEARCH_ONLY · NOT CALIBRATED",
                 model_id="EMPIRICAL_DISTRIBUTION_BASELINE",
                 model_version="1.0.0",
