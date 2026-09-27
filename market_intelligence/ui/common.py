@@ -32,6 +32,7 @@ def tone_for_status(status: str | None) -> str:
         "UNAVAILABLE",
         "NOT_MEASURABLE",
         "NOT_APPLICABLE",
+        "NOT_RUN",
     }:
         return "muted"
     if normalized in {"NOT_ELIGIBLE", "PENDING_EVIDENCE", "NOT_STARTED"}:
@@ -49,6 +50,8 @@ def tone_for_status(status: str | None) -> str:
             "REMEDIATE",
             "EXPIRED",
             "STALE",
+            "MISMATCH",
+            "QUARANTINE",
         )
     ):
         return "red"

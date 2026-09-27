@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 
 SCHEMA_VERSION = "mi-3.0.0"
-WORKSPACE_VERSION = "Market Intelligence V3 · Institutional Control Plane · Strategic Research & Decision"
+WORKSPACE_VERSION = "Market Intelligence V4 · Institutional Control Plane · ML Research & Strategic Decision"
 ROUTE_NAME = "market-intelligence"
 SESSION_FLAG = "market_intelligence_open"
 

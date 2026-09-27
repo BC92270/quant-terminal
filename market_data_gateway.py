@@ -87,11 +87,12 @@ def _normalize_history(frame: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
     data = frame.copy()
     if isinstance(data.columns, pd.MultiIndex):
-        data.columns = [str(column[0]).strip().lower() for column in data.columns]
+        data.columns = [str(column[0]).strip().lower().replace(" ", "_") for column in data.columns]
     else:
         data.columns = [str(column).strip().lower().replace(" ", "_") for column in data.columns]
     aliases = {"datetime": "date", "timestamp": "date", "adj_close": "adj_close"}
     data = data.rename(columns={key: value for key, value in aliases.items() if key in data.columns})
+    supplied_columns = set(data.columns)
     if "date" not in data.columns:
         data = data.reset_index()
         data.columns = [str(column).strip().lower().replace(" ", "_") for column in data.columns]
@@ -103,16 +104,34 @@ def _normalize_history(frame: pd.DataFrame) -> pd.DataFrame:
         if column not in data.columns:
             data[column] = np.nan
         data[column] = pd.to_numeric(data[column], errors="coerce")
+    eligible_rows = data["date"].notna() & data["close"].notna()
+    field_provenance: dict[str, bool] = {}
+    for column in ("open", "high", "low", "close", "adj_close", "volume"):
+        observed = pd.to_numeric(data[column], errors="coerce").loc[eligible_rows].notna()
+        observed_any = bool(len(observed) and observed.any() and column in supplied_columns)
+        observed_complete = bool(
+            len(observed) and observed.all() and column in supplied_columns
+        )
+        field_provenance[f"{column}_observed_any"] = observed_any
+        field_provenance[f"{column}_complete"] = observed_complete
+        # ``observed`` is retained as the strict compatibility key: every
+        # retained row must have come from the provider, not from a fill.
+        field_provenance[f"{column}_observed"] = observed_complete
+        field_provenance[f"{column}_synthesized"] = bool(
+            column in {"open", "high", "low", "adj_close"} and not observed_complete
+        )
     data["adj_close"] = data["adj_close"].where(data["adj_close"].notna(), data["close"])
     for column in ("open", "high", "low"):
         data[column] = data[column].where(data[column].notna(), data["close"])
-    return (
+    output = (
         data[["date", "open", "high", "low", "close", "adj_close", "volume"]]
         .dropna(subset=["date", "close"])
         .sort_values("date")
         .drop_duplicates("date", keep="last")
         .reset_index(drop=True)
     )
+    output.attrs["market_field_provenance"] = field_provenance
+    return output
 
 
 def _period_days(period: str) -> int:
@@ -259,7 +278,9 @@ def _resample_reference(frame: pd.DataFrame, interval: str) -> pd.DataFrame:
     rule = "W-FRI" if interval == "1wk" else "ME"
     indexed = frame.set_index("date")
     output = indexed.resample(rule).agg({"open": "first", "high": "max", "low": "min", "close": "last", "adj_close": "last", "volume": "sum"})
-    return output.dropna(subset=["close"]).reset_index()
+    result = output.dropna(subset=["close"]).reset_index()
+    result.attrs.update(frame.attrs)
+    return result
 
 
 def fetch_frankfurter_history(
@@ -441,6 +462,21 @@ def fetch_price_history(
             message=message,
             attempted=tuple(attempted),
         )
-        frame.attrs["data_context"] = context.to_dict()
+        provenance = dict(frame.attrs.get("market_field_provenance") or {})
+        adjustment_policy = (
+            "PROVIDER_ADJUSTED_CLOSE"
+            if provenance.get("adj_close_observed") is True
+            else (
+                "NATIVE_NON_CORPORATE_ACTION_SERIES"
+                if kind in {"fx", "crypto"}
+                else "UNVERIFIED_RAW_CLOSE"
+            )
+        )
+        frame.attrs["data_context"] = {
+            **context.to_dict(),
+            "symbol": symbol,
+            "market_field_provenance": provenance,
+            "price_adjustment_policy": adjustment_policy,
+        }
         return frame, context
     raise MarketDataProviderError("No historical market-data provider returned a usable series.")

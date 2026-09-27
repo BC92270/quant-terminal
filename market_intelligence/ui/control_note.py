@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import streamlit as st
 
 from ..contracts import WorkspaceSnapshot
+from ..patterns.contracts import PatternDiscoveryReport, PatternRunState
 from .common import esc, section_header
 
 
@@ -53,17 +54,65 @@ _DECISION_USE: dict[str, str] = {
 }
 
 
-def render_view_control_note(snapshot: WorkspaceSnapshot, view: str) -> None:
-    note = _NOTES.get(
-        view,
-        ViewControlNote(
-            "DESCRIPTIVE / FIXTURE",
-            f"{snapshot.interaction.state.replace('_', ' ').title()} is the current deterministic scenario state.",
-            "Structured catalysts, sequenced L2 fixture and explicit timestamp contracts.",
-            "No live provider, calibration, shadow history or execution path.",
-            "Review the selected event, missing layers and promotion blockers.",
-        ),
+def _verified_pattern_note(
+    snapshot: WorkspaceSnapshot,
+    pattern_report: PatternDiscoveryReport | None,
+) -> ViewControlNote | None:
+    if pattern_report is None:
+        return None
+    try:
+        valid = pattern_report.verify_hash()
+    except Exception:
+        valid = False
+    if (
+        not valid
+        or pattern_report.state != PatternRunState.COMPLETED_RESEARCH_ONLY
+        or pattern_report.symbol != snapshot.symbol.upper()
+    ):
+        return None
+    screened = sum(
+        candidate.state.value == "RUN_LOCAL_SCREENED_HYPOTHESIS"
+        for candidate in pattern_report.candidates
     )
+    pit_status = (
+        "declared PIT contract internally checked"
+        if pattern_report.input_audit.pit_lineage_complete
+        else "PIT contract unverified"
+    )
+    return ViewControlNote(
+        "RESEARCH HYPOTHESIS / RUN-SCREENED",
+        f"{screened} of {len(pattern_report.candidates)} discovered states pass the conservative run-local diagnostic screen; none is statistically validated or an alpha certificate.",
+        (
+            f"Immutable report {pattern_report.report_id}; train-only discovery; purged run-locked terminal OOS; "
+            f"declared {pattern_report.config.transaction_cost_bps:.1f} bps cost; circular-shift/BY diagnostic; "
+            f"non-overlap DSR; {pit_status}."
+        ),
+        (
+            "Circular-shift invariance and calibrated novelty are not established; this single run also does not "
+            "close global experiment-family correction, forward shadow history, independent review or execution readiness."
+        ),
+        "Register the full experiment history, accumulate untouched forward evidence and submit an immutable packet for independent review.",
+    )
+
+
+def render_view_control_note(
+    snapshot: WorkspaceSnapshot,
+    view: str,
+    *,
+    pattern_report: PatternDiscoveryReport | None = None,
+) -> None:
+    note = _verified_pattern_note(snapshot, pattern_report) if view == "patterns" else None
+    if note is None:
+        note = _NOTES.get(
+            view,
+            ViewControlNote(
+                "DESCRIPTIVE / FIXTURE",
+                f"{snapshot.interaction.state.replace('_', ' ').title()} is the current deterministic scenario state.",
+                "Structured catalysts, sequenced L2 fixture and explicit timestamp contracts.",
+                "No live provider, calibration, shadow history or execution path.",
+                "Review the selected event, missing layers and promotion blockers.",
+            ),
+        )
     section_header("CONTROL NOTE", "Claim boundary and next evidence", f"{note.claim_type} · {snapshot.as_of:%Y-%m-%d %H:%M UTC}")
     st.markdown(
         f'''<div class="mi-brief-grid">

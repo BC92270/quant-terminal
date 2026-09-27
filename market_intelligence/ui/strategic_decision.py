@@ -10,6 +10,7 @@ import streamlit as st
 from ..contracts import WorkspaceSnapshot
 from ..evidence import canonical_json
 from ..governance import GovernanceAssessment
+from ..patterns.contracts import PatternStrategyBridge
 from ..state import set_active_view
 from ..strategy import (
     HumanDisposition,
@@ -93,6 +94,8 @@ def render_strategy_unavailable() -> None:
 def render_strategy_ribbon(
     memo: StrategicDecisionMemo,
     assessment: GovernanceAssessment,
+    *,
+    pattern_bridge: PatternStrategyBridge | None = None,
 ) -> None:
     selected = next(
         option for option in memo.options if option.option_id == memo.recommended_process_option_id
@@ -103,6 +106,7 @@ def render_strategy_ribbon(
     )
     memo_validity = "EXPIRED" if datetime.now(timezone.utc) > memo.expires_at else "ACTIVE"
     record_state = "NOT RECORDED" if review_count == 0 else esc(str(review_count) + " SESSION RECORD(S)")
+    pattern_status = pattern_bridge.status_label if pattern_bridge is not None else "NOT RUN"
     st.markdown(
         f'''<div class="mi-strategy-ribbon">
           <div><span>STRATEGIC RESPONSE</span><b>{esc(memo.disposition.value)}</b></div>
@@ -110,6 +114,7 @@ def render_strategy_ribbon(
           <div><span>RESEARCH READINESS</span><b>{esc(assessment.decision.state.value)}</b></div>
           <div><span>FOCUS HORIZON</span><b>{esc(memo.context.horizon.upper())}</b></div>
           <div><span>MEMO / HUMAN RECORD</span><b>{esc(memo_validity)} · {record_state}</b></div>
+          <div><span>ML PATTERN ADDENDUM</span><b>{esc(pattern_status)} · NOT ADMITTED</b></div>
           <div><span>CAPITAL / EXECUTION</span><b>UNPRICED · DISABLED</b></div>
         </div>''',
         unsafe_allow_html=True,
@@ -283,6 +288,8 @@ def render_strategic_decision_room(
     snapshot: WorkspaceSnapshot,
     assessment: GovernanceAssessment,
     memo: StrategicDecisionMemo,
+    *,
+    pattern_bridge: PatternStrategyBridge | None = None,
 ) -> None:
     selected = next(
         option for option in memo.options if option.option_id == memo.recommended_process_option_id
@@ -308,6 +315,12 @@ def render_strategic_decision_room(
         ("Portfolio impact", "UNPRICED", "Mandate and exposure absent", "amber"),
         ("Research readiness", memo.research_state, f"{len(memo.blockers)} blocker(s)", tone_for_status(memo.research_state)),
         ("Memo validity", memo_validity, f"Expires {memo.expires_at:%Y-%m-%d %H:%M UTC}", tone_for_status(memo_validity)),
+        (
+            "ML pattern addendum",
+            pattern_bridge.status_label if pattern_bridge is not None else "NOT RUN",
+            "Separate session evidence · memo unchanged",
+            tone_for_status(pattern_bridge.state.value if pattern_bridge is not None else "NOT_RUN"),
+        ),
         ("Execution", "DISABLED", memo.authority, "red"),
     )
     summary_html = "".join(
@@ -320,8 +333,15 @@ def render_strategic_decision_room(
 
     supporting = [claim.statement for claim in memo.claims if claim.kind.value in {"OBSERVED", "DERIVED"}]
     challenging = [claim.statement for claim in memo.claims if claim.kind.value in {"COUNTEREVIDENCE", "UNKNOWN", "ASSUMPTION"}]
-    brief_tab, options_tab, monitoring_tab, evidence_tab, journal_tab = st.tabs(
-        ("DECISION BRIEF", "OPTIONS", "MONITOR / INVALIDATE", "EVIDENCE & LINEAGE", "HUMAN JOURNAL")
+    brief_tab, options_tab, monitoring_tab, pattern_tab, evidence_tab, journal_tab = st.tabs(
+        (
+            "DECISION BRIEF",
+            "OPTIONS",
+            "MONITOR / INVALIDATE",
+            "ML PATTERN ADDENDUM",
+            "EVIDENCE & LINEAGE",
+            "HUMAN JOURNAL",
+        )
     )
     with brief_tab:
         a, b = st.columns(2, gap="medium")
@@ -343,6 +363,50 @@ def render_strategic_decision_room(
     with monitoring_tab:
         section_header("MONITOR / INVALIDATE", "Strategic monitoring plan", "TRIGGERS · OWNERS · SOURCE VIEWS")
         bounded_table(monitoring_frame(memo), height=330)
+
+    with pattern_tab:
+        section_header(
+            "SESSION ADDENDUM",
+            "ML pattern evidence bridge",
+            "SEPARATE ARTIFACT · CURRENT MEMO IMMUTABLE · NO CAPITAL AUTHORITY",
+        )
+        if pattern_bridge is None:
+            st.info(
+                "No governed pattern discovery report is attached to this session. Run the ML Pattern Discovery "
+                "workspace to create a dataset-bound research addendum."
+            )
+        else:
+            bridge_tone = tone_for_status(pattern_bridge.state.value)
+            st.markdown(
+                f'''<div class="mi-decision-hero"><div class="mi-decision-question"><span>BRIDGE STATE</span>
+                <h3>{esc(pattern_bridge.status_label)}</h3><p>{esc(pattern_bridge.reason)}</p></div>
+                <div class="mi-decision-answer mi-decision-answer-{esc(bridge_tone)}"><span>BOUNDED STRATEGIC ACTION</span>
+                <h3>{esc(pattern_bridge.state.value.replace("_", " "))}</h3>
+                <p>{esc(pattern_bridge.strategic_action)}</p></div></div>''',
+                unsafe_allow_html=True,
+            )
+            bridge_frame = pd.DataFrame(
+                [
+                    {"Control": "Pattern report", "State": pattern_bridge.report_id or "NOT RUN"},
+                    {"Control": "Current strategic memo", "State": pattern_bridge.memo_id or memo.memo_id},
+                    {"Control": "Admitted to current memo", "State": "NO — evidence root immutable"},
+                    {
+                        "Control": "Eligible for governed rebuild",
+                        "State": "YES" if pattern_bridge.admissible_for_governed_rebuild else "NO",
+                    },
+                    {"Control": "Capital authority", "State": "NONE"},
+                    {"Control": "Execution", "State": "DISABLED"},
+                ]
+            )
+            bounded_table(bridge_frame, height=250)
+        if st.button(
+            "OPEN ML PATTERN DISCOVERY",
+            key="mi_strategy_open_patterns_addendum",
+            width="stretch",
+            type="secondary",
+        ):
+            set_active_view(st.session_state, "patterns")
+            st.rerun()
 
     with evidence_tab:
         lineage_items = (
@@ -372,11 +436,17 @@ def render_strategic_decision_room(
             type="secondary",
             key="mi_export_strategic_memo",
         )
-        links = st.columns(4)
+        links = st.columns(5)
         for column, view, label in zip(
             links,
-            ("research", "information-gap", "forecast", "models"),
-            ("OPEN VALIDATION GATES", "OPEN INFORMATION GAPS", "OPEN FORECAST EVIDENCE", "OPEN MODEL RISK"),
+            ("research", "information-gap", "forecast", "patterns", "models"),
+            (
+                "OPEN VALIDATION GATES",
+                "OPEN INFORMATION GAPS",
+                "OPEN FORECAST EVIDENCE",
+                "OPEN PATTERN ML",
+                "OPEN MODEL RISK",
+            ),
         ):
             with column:
                 if st.button(label, key=f"mi_strategy_open_{view}", width="stretch", type="secondary"):

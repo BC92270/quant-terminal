@@ -7,8 +7,9 @@ workspace. It is not a live trading engine, an HFT execution stack, an LLM
 opinion generator, a capital-approval system, or a source of unqualified
 directional labels.
 
-The V3 integrated release preserves the V2 institutional control plane and
-adds a separate, typed strategic-decision layer. It
+The V4 integrated release preserves the V2 institutional control plane and V3
+strategic-decision layer, then adds a real, governed ML pattern-discovery
+engine. It
 provides:
 
 - an autonomous `?workspace=market-intelligence` route;
@@ -50,6 +51,32 @@ provides:
   required for deterministic replay;
 - a two-level institutional workflow (`FRAME & OBSERVE → EXPLAIN → SYNTHESIZE
   → DECIDE & GOVERN`) while preserving all thirteen views;
+- deterministic causal OHLCV features, train-only robust scaling, return-blind
+  cluster-count selection, fitted k-means market states, a horizon-sized purge
+  and a run-locked terminal OOS segment;
+- an admissibility contract requiring a complete provider-observed next open
+  and either provider-observed adjusted close or a declared native
+  non-corporate-action series; synthesized or partial required price fields
+  block fitting rather than being promoted as economic evidence;
+- split-consistent price geometry, one-bar next-open entry, a feature manifest
+  selected on training data only, and train-fit OOD heuristics;
+- train-fixed conditional direction, after-cost OOS outcomes, matched-rest
+  conditional uplift, subperiod stability, full-chronology block-bootstrap
+  Sharpe lower bounds, Deflated Sharpe diagnostics on greedily selected
+  non-overlapping OOS occurrences, and a run-local Benjamini-Yekutieli screen
+  over the complete disclosed cluster family, including under-powered
+  hypotheses;
+- reuse of the ML Lab's actual prior, logistic, histogram-gradient-boosting and
+  Extra Trees estimators on purged expanding folds as a separate supervised
+  falsification layer;
+- a content-hashed `PatternDiscoveryReport` bound to the exact dataset,
+  configuration, feature manifest, split, candidates, gates, runtime versions,
+  model scores and exact learned imputer/scaler/centroid/OOD fit state;
+- a fail-closed pattern-to-strategy bridge that verifies report integrity,
+  subject identity, current dataset identity, snapshot clock, provider lineage,
+  gate vocabulary and absence of execution-authority mutations, while leaving
+  full-experiment correction, calibrated novelty, shadow history and
+  independent review open before any future governed memo rebuild;
 - a lazy bridge preserving the historical root `market_intelligence.py`
   consumed by Macro / Central Banks.
 
@@ -57,6 +84,113 @@ It does **not** provide live event/news coverage, licensed L2/L3 market data,
 historical point-in-time consensus, calibrated catalyst forecasts, proven alpha,
 shadow-live evidence, durable decision-journal storage, portfolio mandate or
 exposure integration, OMS/broker integration, or production promotion.
+
+## V4 ML pattern-discovery contract
+
+The Patterns view now runs estimators rather than presenting a cosmetic ML
+label. It consumes only the inherited terminal OHLCV frame; the canonical
+event/L2 fixture is never used as training history. With fewer than 180 usable
+rows after feature warm-up and forward-label construction, it fits nothing and
+returns `WAITING_DATA`.
+
+Before feature construction, the engine verifies that the required entry and
+adjustment fields are economically observable rather than merely present as
+columns. Every eligible observation must have a complete provider-observed next
+open. The price-adjustment contract must supply a provider-observed adjusted
+close, a separately declared adjusted-close series, or a declared native
+non-corporate-action series. A gateway-filled open, a close copied into
+`adj_close`, an unverified raw close, or partial coverage of either required
+field blocks the economic run. Observed high/low and volume extend the feature
+set only when their coverage permits; they are not silently represented as
+observed when a provider synthesized them.
+
+Each row's `known_at` must be no later than the next observed open at which the
+row could first influence a position. Revision identity remains part of the
+dataset hash. An explicitly late row or a source/evaluation clock in the future
+blocks the fit. Missing row-level known-at or revision metadata may still permit
+a quarantined exploratory run, but can never pass PIT lineage or the strategic
+bridge. This is a mechanical point-in-time eligibility check over the supplied
+metadata, not independent verification of the provider's historical archive.
+
+For a frame that passes those checks, the engine builds contemporaneous and
+backward-looking return-shape, momentum, volatility, downside-risk,
+trend-distance, drawdown, range, close-location, gap and, when coverage permits,
+volume/liquidity features. Price geometry is put on the admissible adjustment
+basis before fitting. Forward returns exist only in the label/outcome frame: a
+close-of-bar observation enters at the next observed open and exits after the
+declared horizon. The final chronological segment is run-locked as terminal OOS
+and separated from selection by the complete entry-to-exit label span. Feature
+eligibility, imputation, scaling, cluster-count selection, centroids, novelty
+thresholds and conditional direction are fitted only before that purge.
+
+Cluster count is chosen from a bounded range using training silhouette, which
+does not inspect returns. Each discovered state fixes its UP/DOWN/NEUTRAL
+direction from training outcomes, then receives a run-locked terminal-OOS
+after-cost test. Evidence must be positive both absolutely and relative to the
+same-direction matched-rest baseline. The displayed Sharpe interval is computed
+on the complete chronological, zero-padded OOS strategy series with a
+horizon-sized block bootstrap; its lower 95% bound remains a conservative
+descriptive stability measure. Deflated Sharpe is computed separately on a
+greedy sequence of OOS occurrences spaced by at least the forward horizon, so
+overlapping labels are not counted as independent bets in that diagnostic.
+
+One-sided p-values come from circularly shifting the fixed cluster mask across
+the complete chronological OOS outcome series. Benjamini-Yekutieli adjustment
+is then applied across every disclosed cluster, with an under-powered cluster
+retained in the family as p=1. Both operations are explicitly **run-local
+diagnostics**: cyclic invariance, stationarity and an independent global
+experiment registry have not been established. Consequently, the FDR gate
+remains `WAITING_EVIDENCE`; a qualifying cluster can be labelled only as a
+run-local screened hypothesis. This release never emits an
+`OOS_SUPPORTED_HYPOTHESIS` claim. White Reality Check, Hansen SPA, PBO or an
+equivalent independently governed full-experiment analysis remains future
+evidence, not an implied property of the local screen.
+
+The current point is left `UNASSIGNED_OOD` when it breaches a q99 distance
+boundary fitted on the training partition. That boundary and the displayed
+proximity are train-fit novelty heuristics, not calibrated tail probabilities
+or validated distribution-shift controls. The corresponding strategic OOD
+gate therefore remains `WAITING_EVIDENCE` even when the point is assigned to a
+cluster.
+
+The separate supervised challenge invokes the existing ML Lab on the same
+causal matrix with purged expanding folds, temporal calibration, drift checks
+and baseline-versus-nonlinear comparison. In this integration it is explicitly
+`CLASSIFICATION_DIAGNOSTIC_ONLY`: the legacy ML Lab economic screen uses a
+synthetic class-return proxy, so its selected classification challenger cannot claim
+economic promotion or shadow eligibility. Its leaderboard cannot override the
+terminal OOS pattern test, promote itself or trade.
+
+The session report never mutates the current `StrategicDecisionMemo`. The
+Strategic Decision Office displays it as a separate addendum. Dataset subject,
+provider/source symbol, per-row known-at and revision IDs are bound into the
+dataset identity. A PIT gate marked pass means the supplied contract is
+internally consistent, not that an external party verified the provider. A
+report newer than the immutable snapshot is placed in `CLOCK_MISMATCH`; a
+changed terminal frame is `STALE_DATASET`; incomplete known-at/revision
+metadata is `WAITING_LINEAGE`; missing global experiment correction,
+append-only shadow history or independent review is `WAITING_VALIDATION`.
+
+The fail-closed bridge does not trust the report's headline eligibility alone.
+It independently rejects any mutation granting autonomous trading or execution,
+any order payload, removal of mandatory human review, or execution permission
+on a candidate. Under the active policy it also rejects any injected
+`OOS_SUPPORTED_HYPOTHESIS` state, unknown gates and any additional
+strategic-admission gate that is not `PASS`, rather than allowing a legacy or
+surplus gate to evade the current policy. Only a future enlarged governance
+packet may produce a new memo identity and evidence root.
+
+The content hash proves deterministic self-consistency and detects accidental
+or post-run mutation inside the session; it is not an external signature,
+provider attestation or authenticity proof. A production evidence passport
+still requires authenticated identity, append-only durable storage and an
+independently controlled signing key.
+
+Deflated Sharpe, the block-bootstrap interval, the circular-shift result and the
+BY-adjusted value are diagnostics, not proof of economic value. The
+implementation deliberately keeps global multiple-testing, calibrated OOD,
+forward shadow history and independent review gates open until their evidence
+exists.
 
 ## V3 strategic decision contract
 
@@ -184,6 +318,12 @@ assessed as compliant with any regulatory or supervisory standard.
 - M. D. Gould and J. Bonart, “Queue Imbalance as a One-Tick-Ahead Price
   Predictor in a Limit Order Book,” *Market Microstructure and Liquidity* (2016).
 - Z. Zhang, S. Zohren and S. Roberts, “DeepLOB,” *IEEE TSP* (2019).
+- D. H. Bailey et al., “The Probability of Backtest Overfitting,” *Journal of
+  Computational Finance* (2017), with the [author manuscript](https://escholarship.org/uc/item/4w1110bb).
+- D. H. Bailey and M. López de Prado, “The Deflated Sharpe Ratio,” *Journal of
+  Portfolio Management* (2014), [working-paper record](https://doi.org/10.2139/ssrn.2460551).
+- P. R. Hansen, “A Test for Superior Predictive Ability,” *Journal of Business
+  & Economic Statistics* (2005), [bibliographic record](https://ideas.repec.org/a/bes/jnlbes/v23y2005p365-380.html).
 
 These papers motivate baselines and research questions. They do not establish
 that this implementation generates alpha on Quant Terminal data.

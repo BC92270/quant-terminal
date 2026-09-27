@@ -9,6 +9,7 @@ import streamlit as st
 from ..contracts import WorkspaceSnapshot
 from ..demo import forecasts_frame
 from ..governance import GovernanceAssessment
+from ..patterns.contracts import PatternStrategyBridge
 from ..state import set_active_view
 from ..strategy import StrategicDecisionMemo
 from .common import (
@@ -208,9 +209,15 @@ def render_live_intelligence(
     *,
     assessment: GovernanceAssessment | None = None,
     strategic_memo: StrategicDecisionMemo | None = None,
+    pattern_bridge: PatternStrategyBridge | None = None,
 ) -> None:
     if assessment is not None and strategic_memo is not None:
-        render_strategic_decision_room(snapshot, assessment, strategic_memo)
+        render_strategic_decision_room(
+            snapshot,
+            assessment,
+            strategic_memo,
+            pattern_bridge=pattern_bridge,
+        )
     else:
         st.warning(
             "Strategic decision synthesis is unavailable. The response is DEFER; capital and execution remain disabled."

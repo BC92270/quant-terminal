@@ -5,6 +5,11 @@ from market_data_gateway import (
     fetch_price_history,
     fetch_twelve_data_history,
 )
+from market_intelligence.patterns import (
+    PatternDiscoveryConfig,
+    PatternRunState,
+    discover_market_patterns,
+)
 from provider_config import configured_provider_keys, provider_matrix, resolve_secret
 
 
@@ -85,6 +90,93 @@ def test_gateway_falls_back_without_exposing_key(monkeypatch):
     assert context.attempted == ("Twelve Data", "Yahoo Finance")
     assert "secret-token-must-not-appear" not in context.message
     assert frame.attrs["data_context"]["provider"] == "Yahoo Finance"
+
+
+def test_close_only_gateway_marks_synthesized_execution_fields_and_patterns_block():
+    def failing_request(*args, **kwargs):
+        raise TimeoutError("unavailable")
+
+    yahoo = pd.DataFrame(
+        {"Close": [100.0, 101.0, 102.0]},
+        index=pd.date_range("2026-08-18", periods=3, freq="D"),
+    )
+    yahoo.index.name = "Date"
+    frame, _ = fetch_price_history(
+        "SPY",
+        secrets={"TWELVE_DATA_API_KEY": "configured"},
+        request_get=failing_request,
+        yahoo_download=lambda *args, **kwargs: yahoo,
+    )
+
+    provenance = frame.attrs["data_context"]["market_field_provenance"]
+    assert provenance["open_complete"] is False
+    assert provenance["open_synthesized"] is True
+    assert provenance["adj_close_complete"] is False
+    assert provenance["adj_close_synthesized"] is True
+    assert frame.attrs["data_context"]["price_adjustment_policy"] == "UNVERIFIED_RAW_CLOSE"
+    report = discover_market_patterns(frame, "SPY", PatternDiscoveryConfig())
+    assert report.state == PatternRunState.BLOCKED_DATA_QUALITY
+    assert "OPEN_PRICE_NOT_OBSERVED" in report.input_audit.quality_flags
+
+
+def test_gateway_requires_complete_open_and_adjusted_close_provenance():
+    def failing_request(*args, **kwargs):
+        raise TimeoutError("unavailable")
+
+    yahoo = pd.DataFrame(
+        {
+            "Open": [100.0, None, 102.0],
+            "High": [102.0, 103.0, 104.0],
+            "Low": [99.0, 100.0, 101.0],
+            "Close": [101.0, 102.0, 103.0],
+            "Adj Close": [100.5, None, 102.5],
+            "Volume": [10, 11, 12],
+        },
+        index=pd.date_range("2026-08-18", periods=3, freq="D"),
+    )
+    yahoo.index.name = "Date"
+    frame, _ = fetch_price_history(
+        "SPY",
+        secrets={"TWELVE_DATA_API_KEY": "configured"},
+        request_get=failing_request,
+        yahoo_download=lambda *args, **kwargs: yahoo,
+    )
+
+    provenance = frame.attrs["data_context"]["market_field_provenance"]
+    assert provenance["open_observed_any"] is True
+    assert provenance["open_complete"] is False
+    assert provenance["adj_close_observed_any"] is True
+    assert provenance["adj_close_complete"] is False
+    assert frame.attrs["data_context"]["price_adjustment_policy"] == "UNVERIFIED_RAW_CLOSE"
+
+
+def test_gateway_preserves_complete_provider_adjusted_close_contract():
+    def failing_request(*args, **kwargs):
+        raise TimeoutError("unavailable")
+
+    yahoo = pd.DataFrame(
+        {
+            "Open": [100.0, 101.0],
+            "High": [102.0, 103.0],
+            "Low": [99.0, 100.0],
+            "Close": [101.0, 102.0],
+            "Adj Close": [100.8, 101.8],
+            "Volume": [10, 11],
+        },
+        index=pd.date_range("2026-08-19", periods=2, freq="D"),
+    )
+    yahoo.index.name = "Date"
+    frame, _ = fetch_price_history(
+        "SPY",
+        secrets={"TWELVE_DATA_API_KEY": "configured"},
+        request_get=failing_request,
+        yahoo_download=lambda *args, **kwargs: yahoo,
+    )
+
+    provenance = frame.attrs["data_context"]["market_field_provenance"]
+    assert provenance["open_complete"] is True
+    assert provenance["adj_close_complete"] is True
+    assert frame.attrs["data_context"]["price_adjustment_policy"] == "PROVIDER_ADJUSTED_CLOSE"
 
 
 def test_frankfurter_reference_series_is_explicitly_synthetic_ohlc():

@@ -21,6 +21,7 @@ DEFAULTS: dict[str, Any] = {
     "mi_context_mode": "FIXTURE_SCENARIO",
     "mi_strategy_purpose": "RESEARCH_PRIORITIZATION",
     "mi_strategy_journal": [],
+    "mi_pattern_discovery_report": None,
 }
 
 
