@@ -1,16 +1,187 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from datetime import datetime, timedelta, timezone
+import hashlib
 from math import erf, sqrt
 from typing import Any
 from io import StringIO, BytesIO
 import json
 import zipfile
+import traceback
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+
+
+def _backtest_certificate_state(state=None):
+    return st.session_state if state is None else state
+
+
+def publish_backtest_failure_certificate_v1(
+    ticker: str,
+    reason: str,
+    *,
+    state=None,
+    data_as_of: Any = None,
+) -> dict[str, Any]:
+    """Publish a fail-closed backtest certificate for early-return paths."""
+
+    from momentum_trend.certificates import issue_certificate, publish_certificate
+
+    symbol = str(ticker).upper().strip()
+    payload = {"reason": str(reason), "data_as_of": str(data_as_of or "")}
+    evidence_id = "BT-FAIL-" + hashlib.sha256(
+        json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()[:20]
+    certificate = issue_certificate(
+        domain="backtest",
+        owner="Backtest Lab",
+        ticker=symbol,
+        status="VETO",
+        detail=f"Backtest evidence unavailable or unsafe: {reason}",
+        impact="Shadow promotion is blocked until a complete research run replaces this certificate.",
+        source="backtest_lab.render_backtest_lab_mode",
+        evidence_id=evidence_id,
+        size_multiplier=0.0,
+        payload=payload,
+        ttl=timedelta(hours=24),
+    )
+    target = _backtest_certificate_state(state)
+    publish_certificate(target, certificate)
+    target[f"momentum_owner_backtest_{symbol}"] = certificate.as_mapping()
+    return certificate.as_mapping()
+
+
+def publish_backtest_owner_certificate_v1(
+    ticker: str,
+    *,
+    cfg: Any,
+    metrics: dict[str, Any],
+    integrity: int,
+    diagnostics: dict[str, Any],
+    verdict: str,
+    research_label: str,
+    data_as_of: Any = None,
+    state=None,
+) -> dict[str, Any]:
+    """Publish the Backtest Lab-owned promotion evidence, never trading approval."""
+
+    from momentum_trend.certificates import issue_certificate, publish_certificate
+
+    symbol = str(ticker).upper().strip()
+    oos = diagnostics.get("oos_v2") if isinstance(diagnostics.get("oos_v2"), dict) else {}
+    oos_level = str(oos.get("level") or "Unavailable")
+    oos_score = _safe_float(oos.get("score"), 0.0)
+    pbo = _safe_float(diagnostics.get("pbo_proxy"), 1.0)
+    dsr = _safe_float(diagnostics.get("dsr_proxy"), 0.0)
+    trades = int(metrics.get("Trades", 0) or 0)
+    verdict_upper = str(verdict).upper()
+    label_upper = str(research_label).upper()
+    safety = diagnostics.get("custom_signal_safety_v26", {})
+    safety_text = json.dumps(safety, sort_keys=True, default=str).upper()
+    institutional = (
+        diagnostics.get("institutional_v7")
+        if isinstance(diagnostics.get("institutional_v7"), dict)
+        else {}
+    )
+    institutional_decision = str(institutional.get("decision") or "HOLD — DATA REQUIRED")
+    institutional_source = str(institutional.get("authoritative_source") or "UNAVAILABLE")
+    institutional_blockers = list(institutional.get("blocking_gates") or [])
+    canonical_pbo = _safe_float(institutional.get("pbo"), 1.0)
+    canonical_dsr = _safe_float(institutional.get("dsr"), 0.0)
+    is_custom_signal = str(getattr(cfg, "strategy", "")) == "Custom Signal Import"
+    safety_decision = str(safety.get("decision_gate") or "UNAVAILABLE").upper()
+    signal_provenance_ready = (not is_custom_signal) or safety_decision == "PASS"
+    institutional_ready = bool(
+        institutional_decision == "RESEARCH APPROVED"
+        and institutional_source == "execution_ledger"
+        and institutional.get("fail_closed") is True
+        and institutional.get("production_authorized") is False
+        and not institutional_blockers
+    )
+    strict_pass = bool(
+        verdict_upper == "VALIDATED"
+        and label_upper == "PAPER-TEST READY"
+        and "ROBUST" in oos_level.upper()
+        and oos_score >= 70.0
+        and int(integrity) >= 75
+        and trades >= 30
+        and canonical_pbo < 0.45
+        and canonical_dsr >= 0.50
+        and institutional_ready
+        and signal_provenance_ready
+    )
+    unsafe = bool(
+        verdict_upper == "REJECTED"
+        or label_upper.startswith("REJECTED")
+        or "FAILED" in oos_level.upper()
+        or institutional_decision == "REJECT / REDESIGN"
+        or (is_custom_signal and not signal_provenance_ready)
+        or any(token in safety_text for token in ('"STATUS": "FAIL', '"LEVEL": "FAIL', '"BLOCKED": TRUE'))
+    )
+    if strict_pass:
+        status, multiplier = "PASS", 1.0
+    elif unsafe:
+        status, multiplier = "VETO", 0.0
+    else:
+        # A warning is research information, never position-sizing authority.
+        # Only a fully approved canonical run may publish a non-zero multiplier.
+        status, multiplier = "WARN", 0.0
+
+    strategy = str(getattr(cfg, "strategy", "Unknown"))
+    payload = {
+        "strategy": strategy,
+        "verdict": verdict_upper,
+        "research_label": str(research_label),
+        "integrity": int(integrity),
+        "trades": trades,
+        "oos_level": oos_level,
+        "oos_score": oos_score,
+        "pbo_proxy": pbo,
+        "dsr_proxy": dsr,
+        "institutional_decision": institutional_decision,
+        "institutional_run_id": str(institutional.get("run_id") or ""),
+        "institutional_authoritative_source": institutional_source,
+        "institutional_blocking_gates": institutional_blockers,
+        "institutional_pbo": canonical_pbo,
+        "institutional_dsr": canonical_dsr,
+        "custom_signal_safety_decision": safety_decision,
+        "data_as_of": str(data_as_of or ""),
+        "research_only": True,
+    }
+    evidence_id = "BT-" + hashlib.sha256(
+        json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()[:24]
+    certificate = issue_certificate(
+        domain="backtest",
+        owner="Backtest Lab",
+        ticker=symbol,
+        status=status,
+        detail=(
+            f"{strategy} · {verdict_upper} / {research_label} · OOS {oos_level} "
+            f"{oos_score:.0f}/100 · V7 {institutional_decision} · "
+            f"integrity {int(integrity)} · {trades} trades."
+        ),
+        impact=(
+            "Research evidence qualifies for shadow review; no live-trading authority."
+            if status == "PASS"
+            else "Backtest evidence blocks promotion." if status == "VETO"
+            else "More robust OOS evidence is required before promotion."
+        ),
+        source="backtest_lab.render_backtest_lab_mode",
+        evidence_id=evidence_id,
+        size_multiplier=multiplier,
+        payload=payload,
+        issued_at=datetime.now(timezone.utc),
+        ttl=timedelta(hours=24),
+    )
+    target = _backtest_certificate_state(state)
+    publish_certificate(target, certificate)
+    target[f"momentum_owner_backtest_{symbol}"] = certificate.as_mapping()
+    return certificate.as_mapping()
 
 
 # ============================================================
@@ -180,6 +351,8 @@ class BacktestConfig:
     margin_force_deleveraging: bool = True
     margin_force_delever_drawdown_pct: float = 25.0
     margin_forced_delever_to_multiple: float = 1.0
+    periods_per_year: int = 252
+    interval_label: str = "1d"
 
 
 # ============================================================
@@ -193,6 +366,46 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
         return float(value)
     except Exception:
         return default
+
+
+def _infer_periods_per_year(index: Any) -> tuple[int, str]:
+    """Infer an explicit annualisation contract from the observed timestamps."""
+    try:
+        values = pd.DatetimeIndex(pd.to_datetime(index, errors="coerce")).dropna().sort_values().unique()
+        if len(values) < 3:
+            return 252, "1d"
+        deltas = pd.Series(values[1:] - values[:-1]).dt.total_seconds() / 86400.0
+        median_days = float(deltas[deltas > 0].median())
+        weekend_share = float(pd.Series(values.dayofweek).isin([5, 6]).mean())
+        if median_days <= 0.08:
+            # Count actually observed bars per active session.  Inferring
+            # ``1 / delta`` would incorrectly assume a 24-hour equity session
+            # (e.g. 288 five-minute bars instead of the observed ~78).
+            per_session = pd.Series(1, index=values).groupby(values.normalize()).sum()
+            bars_per_day = max(1, int(round(float(per_session.median()))))
+            return (365 if weekend_share >= 0.10 else 252) * bars_per_day, "intraday"
+        if median_days <= 1.75:
+            return (365, "1d-24x7") if weekend_share >= 0.10 else (252, "1d")
+        if median_days <= 10.0:
+            return 52, "1wk"
+        if median_days <= 45.0:
+            return 12, "1mo"
+        if median_days <= 120.0:
+            return 4, "1q"
+        return 1, "1y"
+    except Exception:
+        return 252, "1d"
+
+
+def _annualization_for_frame(frame: pd.DataFrame | pd.Series | None, cfg: BacktestConfig | None = None) -> int:
+    configured = int(getattr(cfg, "periods_per_year", 0) or 0) if cfg is not None else 0
+    if configured > 0:
+        return configured
+    attrs = getattr(frame, "attrs", {}) if frame is not None else {}
+    attr_value = int(attrs.get("periods_per_year", 0) or 0) if isinstance(attrs, dict) else 0
+    if attr_value > 0:
+        return attr_value
+    return _infer_periods_per_year(getattr(frame, "index", []))[0]
 
 
 def _clip(value: Any, low: float = 0.0, high: float = 1.0) -> float:
@@ -304,6 +517,11 @@ def _extract_ohlc(price_data: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     df = price_data.copy()
+    source_attrs = dict(getattr(price_data, "attrs", {}) or {})
+    inherited_issues = source_attrs.get("data_quality_issues", ())
+    if isinstance(inherited_issues, str):
+        inherited_issues = (inherited_issues,)
+    quality_issues: list[str] = [str(item) for item in inherited_issues if str(item).strip()]
 
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = ["_".join([str(x) for x in col if str(x) != ""]) for col in df.columns]
@@ -324,7 +542,9 @@ def _extract_ohlc(price_data: pd.DataFrame) -> pd.DataFrame:
             df = df.copy()
             df.index = parsed_dates
 
-    close_col = pick(["close", "adjclose", "adj close"])
+    raw_close_col = pick(["close"])
+    adjusted_close_col = pick(["adjclose", "adj close", "adjustedclose", "adjusted close"])
+    close_col = adjusted_close_col or raw_close_col
     open_col = pick(["open"])
     high_col = pick(["high"])
     low_col = pick(["low"])
@@ -337,14 +557,82 @@ def _extract_ohlc(price_data: pd.DataFrame) -> pd.DataFrame:
         close_col = numeric_cols[0]
 
     out = pd.DataFrame(index=df.index)
-    out["close"] = pd.to_numeric(df[close_col], errors="coerce")
-    out["open"] = pd.to_numeric(df[open_col], errors="coerce") if open_col is not None else out["close"]
-    out["high"] = pd.to_numeric(df[high_col], errors="coerce") if high_col is not None else out[["open", "close"]].max(axis=1)
-    out["low"] = pd.to_numeric(df[low_col], errors="coerce") if low_col is not None else out[["open", "close"]].min(axis=1)
+    raw_close = pd.to_numeric(df[raw_close_col], errors="coerce") if raw_close_col is not None else pd.to_numeric(df[close_col], errors="coerce")
+    adjusted_close = pd.to_numeric(df[adjusted_close_col], errors="coerce") if adjusted_close_col is not None else None
+    adjustment = pd.Series(1.0, index=df.index, dtype=float)
+    if adjusted_close is not None:
+        if raw_close_col is not None:
+            adjustment = (adjusted_close / raw_close.replace(0.0, np.nan)).replace([np.inf, -np.inf], np.nan).ffill().bfill().fillna(1.0)
+            out["raw_close"] = raw_close
+        out["adj_close"] = adjusted_close
+        out["close"] = adjusted_close
+        price_basis = "adjusted_total_return"
+    else:
+        out["close"] = raw_close
+        price_basis = str(source_attrs.get("price_basis", "raw"))
+
+    if open_col is not None:
+        out["open"] = pd.to_numeric(df[open_col], errors="coerce") * adjustment
+    else:
+        out["open"] = out["close"]
+        quality_issues.append("open synthesized from close")
+    if high_col is not None:
+        out["high"] = pd.to_numeric(df[high_col], errors="coerce") * adjustment
+    else:
+        out["high"] = out[["open", "close"]].max(axis=1)
+        quality_issues.append("high synthesized from open/close")
+    if low_col is not None:
+        out["low"] = pd.to_numeric(df[low_col], errors="coerce") * adjustment
+    else:
+        out["low"] = out[["open", "close"]].min(axis=1)
+        quality_issues.append("low synthesized from open/close")
     out["volume"] = pd.to_numeric(df[volume_col], errors="coerce") if volume_col is not None else np.nan
 
+    optional_columns = {
+        "dividend": ["dividend", "dividends"],
+        "split": ["split", "splits", "stocksplit", "stock splits"],
+        "delisting_return": ["delistingreturn", "delisting return"],
+        "universe_membership": ["universemembership", "universe membership", "member"],
+        "shortable": ["shortable", "is shortable"],
+        "locate_available": ["locateavailable", "locate available", "locate"],
+        "borrow_rate": ["borrowrate", "borrow rate", "borrowbps", "borrow bps"],
+        "rebate_rate": ["rebaterate", "rebate rate"],
+        "shares_outstanding": ["sharesoutstanding", "shares outstanding"],
+        "spread_bps": ["spreadbps", "spread bps"],
+    }
+    for output_name, candidates in optional_columns.items():
+        source_col = pick(candidates)
+        if source_col is not None:
+            if output_name in {"shortable", "locate_available", "universe_membership"}:
+                values = df[source_col]
+                if not pd.api.types.is_bool_dtype(values):
+                    values = values.map({
+                        True: True, False: False, 1: True, 0: False,
+                        "1": True, "0": False, "true": True, "false": False,
+                        "TRUE": True, "FALSE": False, "yes": True, "no": False,
+                        "YES": True, "NO": False,
+                    })
+                out[output_name] = values.astype("boolean")
+            else:
+                out[output_name] = pd.to_numeric(df[source_col], errors="coerce")
+
     out = out.replace([np.inf, -np.inf], np.nan).dropna(subset=["close"])
-    out = out.loc[~out.index.duplicated(keep="last")]
+    if out.index.has_duplicates:
+        quality_issues.append(f"duplicate timestamps removed: {int(out.index.duplicated(keep='last').sum())}")
+        out = out.loc[~out.index.duplicated(keep="last")]
+    if not out.index.is_monotonic_increasing:
+        quality_issues.append("input index was not chronological")
+        out = out.sort_index()
+
+    periods_per_year, interval_label = _infer_periods_per_year(out.index)
+    out.attrs.update(source_attrs)
+    out.attrs.update({
+        "price_basis": price_basis,
+        "periods_per_year": periods_per_year,
+        "interval_label": interval_label,
+        "data_quality_issues": quality_issues,
+        "corporate_actions_embedded": price_basis in {"adjusted", "adjusted_total_return", "total_return"},
+    })
 
     return out
 
@@ -530,7 +818,7 @@ def _benchmark_relative_trend_signal_v35(df: pd.DataFrame, cfg: BacktestConfig) 
         vol_window = max(int(getattr(cfg, "brt_vol_window", 20)), 5)
         vol_pct = max(5.0, min(99.0, float(getattr(cfg, "brt_vol_percentile", 80.0)))) / 100.0
 
-        realized_vol = close.pct_change().rolling(vol_window).std() * np.sqrt(252)
+        realized_vol = close.pct_change().rolling(vol_window).std() * np.sqrt(_annualization_for_frame(df, cfg))
         hist_window = max(126, vol_window * 5)
         vol_cap = realized_vol.rolling(hist_window, min_periods=vol_window).quantile(vol_pct)
 
@@ -688,7 +976,7 @@ def _benchmark_relative_trend_diagnostics_v35b_pack(df: pd.DataFrame, cfg: Backt
             vol_window = max(int(getattr(cfg, "brt_vol_window", 20)), 5)
             vol_pct = max(5.0, min(99.0, float(getattr(cfg, "brt_vol_percentile", 80.0)))) / 100.0
 
-            realized_vol = close.pct_change().rolling(vol_window).std() * np.sqrt(252)
+            realized_vol = close.pct_change().rolling(vol_window).std() * np.sqrt(_annualization_for_frame(df, cfg))
             hist_window = max(126, vol_window * 5)
             vol_cap = realized_vol.rolling(hist_window, min_periods=vol_window).quantile(vol_pct)
             vol_gate = (realized_vol <= vol_cap) | vol_cap.isna()
@@ -1081,9 +1369,9 @@ def _parse_custom_signal_input(uploaded_file: Any = None, pasted_text: str = "")
     """
     Parse un signal externe sans exécuter de code utilisateur.
     Formats supportés :
-    - date,exposure
-    - date,signal,size
-    - date,position_pct
+    - date,available_at,exposure
+    - date,available_at,signal,size
+    - date,available_at,position_pct
     Le signal sera ensuite aligné sur les prix et décalé d'un bar dans _build_signal.
     """
     raw: pd.DataFrame | None = None
@@ -1159,20 +1447,35 @@ def _parse_custom_signal_input(uploaded_file: Any = None, pasted_text: str = "")
     if out.empty:
         return None, "Signal custom vide après nettoyage."
 
-    if out["date"].notna().any():
-        out = out.dropna(subset=["date"])
-        out = out.sort_values("date").drop_duplicates("date", keep="last")
+    timeline_column = (
+        "available_at"
+        if "available_at" in out.columns and out["available_at"].notna().any()
+        else "date"
+    )
+    if timeline_column in out.columns and out[timeline_column].notna().any():
+        out = out.dropna(subset=[timeline_column])
+        out = out.sort_values(timeline_column).drop_duplicates(timeline_column, keep="last")
         if out.empty:
-            return None, "Dates invalides dans le signal custom."
-        status = f"Signal custom chargé : {len(out)} lignes datées."
+            return None, "Timestamps invalides dans le signal custom."
+        status = (
+            f"Signal custom chargé : {len(out)} lignes horodatées sur {timeline_column}."
+        )
     else:
         out = out.reset_index(drop=True)
         status = f"Signal custom chargé : {len(out)} lignes séquentielles."
 
     try:
         raw_date_series = pd.to_datetime(df[date_col], errors="coerce") if date_col is not None else pd.Series(dtype="datetime64[ns]")
+        raw_available_series = (
+            pd.to_datetime(df[available_col], errors="coerce", utc=True)
+            if available_col is not None
+            else pd.Series(dtype="datetime64[ns, UTC]")
+        )
         raw_duplicate_dates = int(raw_date_series.dropna().duplicated().sum()) if date_col is not None else 0
         raw_invalid_dates = int(raw_date_series.isna().sum()) if date_col is not None else 0
+        raw_invalid_available_at = (
+            int(raw_available_series.isna().sum()) if available_col is not None else raw_rows
+        )
         raw_signal_abs_max = float(pd.to_numeric(base_signal, errors="coerce").abs().max()) if len(base_signal) else np.nan
 
         out.attrs.update(
@@ -1185,6 +1488,7 @@ def _parse_custom_signal_input(uploaded_file: Any = None, pasted_text: str = "")
                 "available_at_col": str(available_col or ""),
                 "raw_duplicate_dates": raw_duplicate_dates,
                 "raw_invalid_dates": raw_invalid_dates,
+                "raw_invalid_available_at": raw_invalid_available_at,
                 "raw_signal_abs_max": raw_signal_abs_max,
                 "parser_status": status,
                 "parser_version": "Custom Signal Import parser + Safety metadata V2.6",
@@ -1223,7 +1527,13 @@ def _make_custom_signal_sample(price_index: pd.Index) -> str:
         start, end = _price_index_bounds(price_index)
 
         if start is None or end is None:
-            return "date,exposure\n2025-01-02,0\n2025-01-03,1\n2025-01-10,0\n2025-01-15,-1"
+            return (
+                "date,available_at,exposure\n"
+                "2025-01-02,2025-01-02 21:00:00+00:00,0\n"
+                "2025-01-03,2025-01-03 21:00:00+00:00,1\n"
+                "2025-01-10,2025-01-10 21:00:00+00:00,0\n"
+                "2025-01-15,2025-01-15 21:00:00+00:00,-1"
+            )
 
         idx = pd.to_datetime(pd.Index(price_index), errors="coerce")
         idx = pd.Series(idx).dropna().drop_duplicates().sort_values()
@@ -1236,15 +1546,22 @@ def _make_custom_signal_sample(price_index: pd.Index) -> str:
             dates = idx.iloc[positions].tolist()
 
         exposures = [0, 1, 1, 0, -1, 0]
-        rows = ["date,exposure"]
+        rows = ["date,available_at,exposure"]
 
         for i, dt in enumerate(dates):
-            rows.append(f"{pd.Timestamp(dt).strftime('%Y-%m-%d')},{exposures[i % len(exposures)]}")
+            day = pd.Timestamp(dt).strftime("%Y-%m-%d")
+            rows.append(f"{day},{day} 21:00:00+00:00,{exposures[i % len(exposures)]}")
 
         return "\n".join(rows)
 
     except Exception:
-        return "date,exposure\n2025-01-02,0\n2025-01-03,1\n2025-01-10,0\n2025-01-15,-1"
+        return (
+            "date,available_at,exposure\n"
+            "2025-01-02,2025-01-02 21:00:00+00:00,0\n"
+            "2025-01-03,2025-01-03 21:00:00+00:00,1\n"
+            "2025-01-10,2025-01-10 21:00:00+00:00,0\n"
+            "2025-01-15,2025-01-15 21:00:00+00:00,-1"
+        )
 
 
 def _custom_signal_overlap_diagnostics(signal_df: Any, price_index: pd.Index) -> tuple[bool, str, dict[str, Any]]:
@@ -1272,16 +1589,21 @@ def _custom_signal_overlap_diagnostics(signal_df: Any, price_index: pd.Index) ->
     if "signal" not in signal_df.columns:
         return False, "Signal custom invalide : colonne signal/exposure introuvable après parsing.", diagnostics
 
-    has_dates = "date" in signal_df.columns and signal_df["date"].notna().any()
+    effective_column = (
+        "available_at"
+        if "available_at" in signal_df.columns and signal_df["available_at"].notna().any()
+        else "date"
+    )
+    has_dates = effective_column in signal_df.columns and signal_df[effective_column].notna().any()
 
     if has_dates and price_start is not None and price_end is not None:
-        sig_dates = pd.to_datetime(signal_df["date"], errors="coerce").dropna()
+        sig_dates = pd.to_datetime(signal_df[effective_column], errors="coerce", utc=True).dropna()
 
         if sig_dates.empty:
             return False, "Signal custom invalide : dates non lisibles.", diagnostics
 
-        signal_start = pd.Timestamp(sig_dates.min()).normalize()
-        signal_end = pd.Timestamp(sig_dates.max()).normalize()
+        signal_start = pd.Timestamp(sig_dates.min()).tz_convert(None).normalize()
+        signal_end = pd.Timestamp(sig_dates.max()).tz_convert(None).normalize()
 
         diagnostics["signal_start"] = signal_start
         diagnostics["signal_end"] = signal_end
@@ -1340,7 +1662,14 @@ def _custom_signal_overlap_diagnostics(signal_df: Any, price_index: pd.Index) ->
 
 
 def _align_custom_signal_to_prices(signal_df: Any, price_index: pd.Index) -> pd.Series:
-    """Aligne un signal importé sur l'index prix. Sortie non shiftée, _build_signal applique le t+1."""
+    """Align imported evidence on its actual availability clock.
+
+    The value is anchored to the most recent observable market bar at or before
+    ``available_at`` (falling back to the event date for legacy diagnostics).
+    ``_build_signal`` then shifts one bar, so execution is strictly after the
+    information became available.  Non-exact intraday timestamps are never
+    discarded by a plain ``reindex``.
+    """
     empty = pd.Series(0.0, index=price_index)
     if signal_df is None or not isinstance(signal_df, pd.DataFrame) or signal_df.empty:
         return empty
@@ -1350,13 +1679,39 @@ def _align_custom_signal_to_prices(signal_df: Any, price_index: pd.Index) -> pd.
         if "signal" not in sig.columns:
             return empty
 
-        if "date" in sig.columns and sig["date"].notna().any() and _is_datetime_like_index(price_index):
-            indexed = sig.dropna(subset=["date"]).copy()
-            indexed.index = pd.to_datetime(indexed["date"])
-            indexed = indexed.sort_index()
-            series = pd.to_numeric(indexed["signal"], errors="coerce").dropna()
-            series = series.loc[~series.index.duplicated(keep="last")]
-            aligned = series.reindex(pd.to_datetime(price_index)).ffill().fillna(0.0)
+        timestamp_column = (
+            "available_at"
+            if "available_at" in sig.columns and sig["available_at"].notna().any()
+            else "date"
+        )
+        if (
+            timestamp_column in sig.columns
+            and sig[timestamp_column].notna().any()
+            and _is_datetime_like_index(price_index)
+        ):
+            effective_at = pd.to_datetime(sig[timestamp_column], errors="coerce", utc=True)
+            values = pd.to_numeric(sig["signal"], errors="coerce")
+            valid = effective_at.notna() & values.notna()
+            effective_at = effective_at.loc[valid].dt.tz_convert(None)
+            values = values.loc[valid]
+            target_index = pd.DatetimeIndex(pd.to_datetime(price_index, errors="coerce", utc=True)).tz_convert(None)
+            if target_index.isna().any() or not target_index.is_monotonic_increasing:
+                return empty
+            anchors = target_index.searchsorted(
+                pd.DatetimeIndex(effective_at),
+                side="right",
+            ) - 1
+            usable = anchors >= 0
+            if not bool(np.any(usable)):
+                return empty
+            events = pd.DataFrame({
+                "anchor": target_index[anchors[usable]],
+                "signal": values.to_numpy(dtype=float)[usable],
+                "effective_at": effective_at.to_numpy()[usable],
+            }).sort_values(["anchor", "effective_at"])
+            events = events.drop_duplicates("anchor", keep="last")
+            series = pd.Series(events["signal"].to_numpy(), index=pd.DatetimeIndex(events["anchor"]))
+            aligned = series.reindex(target_index).ffill().fillna(0.0)
             aligned.index = price_index
             return aligned.clip(-1.0, 1.0)
 
@@ -1817,6 +2172,7 @@ def _custom_signal_safety_gate_v26_pack(
     available_at_col = str(attrs.get("available_at_col", "") or "")
     raw_duplicate_dates = int(attrs.get("raw_duplicate_dates", 0) or 0)
     raw_invalid_dates = int(attrs.get("raw_invalid_dates", 0) or 0)
+    raw_invalid_available_at = int(attrs.get("raw_invalid_available_at", 0) or 0)
     raw_signal_abs_max = _safe_float(attrs.get("raw_signal_abs_max"), np.nan)
     parser_status = str(attrs.get("parser_status", "") or "")
 
@@ -1865,12 +2221,17 @@ def _custom_signal_safety_gate_v26_pack(
     signal_end = None
 
     try:
-        if "date" in sig.columns and sig["date"].notna().any():
-            sig_dates = pd.to_datetime(sig["date"], errors="coerce").dropna()
+        timeline_column = (
+            "available_at"
+            if "available_at" in sig.columns and sig["available_at"].notna().any()
+            else "date"
+        )
+        if timeline_column in sig.columns and sig[timeline_column].notna().any():
+            sig_dates = pd.to_datetime(sig[timeline_column], errors="coerce", utc=True).dropna()
             if not sig_dates.empty:
                 signal_mode = "dated"
-                signal_start = pd.Timestamp(sig_dates.min()).normalize()
-                signal_end = pd.Timestamp(sig_dates.max()).normalize()
+                signal_start = pd.Timestamp(sig_dates.min()).tz_convert(None).normalize()
+                signal_end = pd.Timestamp(sig_dates.max()).tz_convert(None).normalize()
     except Exception:
         pass
 
@@ -1887,7 +2248,7 @@ def _custom_signal_safety_gate_v26_pack(
     if signal_mode == "dated":
         rows.append(_row("Timestamp column", "PASS", "None", date_col or "date", "Signal daté : alignement temporel auditable."))
     else:
-        rows.append(_row("Timestamp column", "WARN", "High", "sequential fallback", "Signal sans date exploitable : risque d'alignement ou de sélection de fenêtre."))
+        rows.append(_row("Timestamp column", "FAIL", "Critical", "sequential fallback", "Signal sans timestamp exploitable : diagnostic seulement, validation institutionnelle interdite."))
 
     rows.append(_row("Invalid raw dates", "WARN" if raw_invalid_dates > 0 else ("PASS" if signal_mode == "dated" else "SKIP"), "Medium" if raw_invalid_dates > 0 else ("None" if signal_mode == "dated" else "Low"), raw_invalid_dates, "Dates invalides avant nettoyage."))
     rows.append(_row("Duplicate raw dates", "WARN" if raw_duplicate_dates > 0 else ("PASS" if signal_mode == "dated" else "SKIP"), "Medium" if raw_duplicate_dates > 0 else ("None" if signal_mode == "dated" else "Low"), raw_duplicate_dates, "Doublons de date source avant nettoyage."))
@@ -1905,24 +2266,36 @@ def _custom_signal_safety_gate_v26_pack(
 
     if "available_at" in sig.columns:
         try:
-            available_at = pd.to_datetime(sig["available_at"], errors="coerce")
-            invalid_available = int(available_at.isna().sum())
+            available_at = pd.to_datetime(sig["available_at"], errors="coerce", utc=True)
+            invalid_available = max(int(available_at.isna().sum()), raw_invalid_available_at)
         except Exception:
-            available_at = pd.Series(dtype="datetime64[ns]")
+            available_at = pd.Series(dtype="datetime64[ns, UTC]")
             invalid_available = len(sig)
 
-        rows.append(_row("available_at present", "PASS" if invalid_available == 0 else "WARN", "None" if invalid_available == 0 else "Medium", available_at_col or "available_at", "Colonne de disponibilité détectée."))
+        rows.append(_row(
+            "available_at present",
+            "PASS" if invalid_available == 0 else "FAIL",
+            "None" if invalid_available == 0 else "Critical",
+            available_at_col or "available_at",
+            "Horloge de disponibilité exigée pour toute décision institutionnelle.",
+        ))
 
         if "date" in sig.columns:
             try:
-                d = pd.to_datetime(sig["date"], errors="coerce")
-                future_available = int((available_at.dt.normalize() > d.dt.normalize()).fillna(False).sum())
+                d = pd.to_datetime(sig["date"], errors="coerce", utc=True)
+                future_available = int((available_at > d).fillna(False).sum())
             except Exception:
                 future_available = 0
 
-            rows.append(_row("available_at after decision date", "WARN" if future_available > 0 else "PASS", "High" if future_available > 0 else "None", future_available, "Si available_at est après date, aligner sur available_at ou imposer un lag."))
+            rows.append(_row(
+                "available_at execution clock",
+                "PASS" if invalid_available == 0 else "FAIL",
+                "None" if invalid_available == 0 else "Critical",
+                future_available,
+                "Le moteur aligne sur available_at puis exécute strictement à la barre suivante, même si la date économique est antérieure.",
+            ))
     else:
-        rows.append(_row("available_at present", "SKIP", "Low", "missing", "Optionnel mais recommandé pour distinguer event_date et disponibilité réelle."))
+        rows.append(_row("available_at present", "FAIL", "Critical", "missing", "DATA REQUIRED : event_date ne prouve pas quand l'information était réellement tradable."))
 
     rows.append(_row("Engine t+1 shift enforced", "PASS", "None", "shift(1)", "Le moteur utilise l'exposition décalée d'une barre."))
     rows.append(_row("First engine exposure zero", "PASS" if abs(first_engine_exposure) <= 1e-12 else "FAIL", "None" if abs(first_engine_exposure) <= 1e-12 else "Critical", _format_num(first_engine_exposure), "La première barre moteur doit rester neutre après t+1."))
@@ -2476,6 +2849,7 @@ def _render_custom_signal_validator_v2(
 def _build_signal(df: pd.DataFrame, cfg: BacktestConfig) -> pd.Series:
     close = df["close"]
     signal = pd.Series(0.0, index=df.index)
+    periods_per_year = _annualization_for_frame(df, cfg)
 
     if cfg.strategy == "SMA Trend":
         fast = close.rolling(cfg.fast_ma).mean()
@@ -2512,7 +2886,7 @@ def _build_signal(df: pd.DataFrame, cfg: BacktestConfig) -> pd.Series:
     elif cfg.strategy == "Volatility Filter Trend":
         fast = close.rolling(cfg.fast_ma).mean()
         slow = close.rolling(cfg.slow_ma).mean()
-        vol = close.pct_change().rolling(cfg.vol_window).std() * np.sqrt(252)
+        vol = close.pct_change().rolling(cfg.vol_window).std() * np.sqrt(periods_per_year)
 
         raw = np.where((fast > slow) & (vol < cfg.vol_threshold), 1.0, 0.0)
         if cfg.allow_short:
@@ -2524,7 +2898,7 @@ def _build_signal(df: pd.DataFrame, cfg: BacktestConfig) -> pd.Series:
         fast = close.rolling(cfg.fast_ma).mean()
         slow = close.rolling(cfg.slow_ma).mean()
         mom = close.pct_change(20)
-        vol = close.pct_change().rolling(cfg.vol_window).std() * np.sqrt(252)
+        vol = close.pct_change().rolling(cfg.vol_window).std() * np.sqrt(periods_per_year)
 
         raw_score = (
             (fast > slow).astype(float) * 40
@@ -2633,7 +3007,7 @@ def _apply_position_sizing_layer(
     active = magnitude > 0
 
     realized_vol = (
-        returns.rolling(vol_window).std().shift(1) * np.sqrt(252)
+        returns.rolling(vol_window).std().shift(1) * np.sqrt(_annualization_for_frame(df, cfg))
     ).replace([np.inf, -np.inf], np.nan)
 
     realized_vol = realized_vol.ffill()
@@ -2798,12 +3172,7 @@ def _apply_risk_specification_layer(
 
             if side > 0:
                 return entry * (1.0 + ret)
-
-            denom = 1.0 + ret
-            if denom <= 1e-9:
-                return np.nan
-
-            return entry / denom
+            return entry * (1.0 - ret)
         except Exception:
             return np.nan
 
@@ -2817,8 +3186,7 @@ def _apply_risk_specification_layer(
 
             if side > 0:
                 return fill_price / prev_close - 1.0
-
-            return prev_close / fill_price - 1.0
+            return 1.0 - fill_price / prev_close
         except Exception:
             return 0.0
 
@@ -2853,10 +3221,10 @@ def _apply_risk_specification_layer(
             }
 
         return {
-            "open": entry / o - 1.0,
-            "best": entry / l - 1.0,
-            "worst": entry / h - 1.0,
-            "close": entry / c - 1.0,
+            "open": 1.0 - o / entry,
+            "best": 1.0 - l / entry,
+            "worst": 1.0 - h / entry,
+            "close": 1.0 - c / entry,
             "open_price": o,
             "high_price": h,
             "low_price": l,
@@ -2950,7 +3318,10 @@ def _apply_risk_specification_layer(
         worst_bar_ret = _safe_float(path.get("worst"), 0.0)
         close_ret = _safe_float(path.get("close"), 0.0)
 
-        best_return = max(best_return, best_bar_ret)
+        # A trailing threshold for the current OHLC bar may only use the best
+        # price observed before that bar.  Updating it with the same bar's high
+        # before inspecting the low would assume an unknowable intrabar path.
+        prior_best_return = best_return
 
         trigger = ""
         trigger_type = ""
@@ -2986,8 +3357,8 @@ def _apply_risk_specification_layer(
                 fill_price = _price_from_trade_return(entry_price, fill_trade_return, side)
                 execution_assumption += " · threshold-capped"
 
-        if not trigger and use_trailing and best_return > 0:
-            trail_floor = best_return - trailing_stop
+        if not trigger and use_trailing and prior_best_return > 0:
+            trail_floor = prior_best_return - trailing_stop
 
             if respect_open_gaps and open_ret <= trail_floor:
                 trigger = f"Risk trailing stop hit ({_format_pct(trailing_stop)})"
@@ -3066,6 +3437,7 @@ def _apply_risk_specification_layer(
 
             continue
 
+        best_return = max(prior_best_return, best_bar_ret)
         adjusted.iloc[i] = desired
 
     risk_events = pd.DataFrame(events)
@@ -3081,6 +3453,20 @@ def _apply_risk_specification_layer(
 def _run_backtest(df: pd.DataFrame, cfg: BacktestConfig) -> dict[str, Any]:
     if df.empty or len(df) < 60:
         return {"error": "Données insuffisantes pour un backtest robuste."}
+
+    risk_budget_requested = bool(getattr(cfg, "sizing_use_trade_risk_budget", False)) or (
+        "Risk Budget" in str(getattr(cfg, "sizing_mode", ""))
+    )
+    executable_stop = bool(getattr(cfg, "risk_layer_enabled", False)) and bool(
+        getattr(cfg, "risk_use_stop_loss", False)
+    ) and float(getattr(cfg, "risk_stop_loss_pct", 0.0) or 0.0) > 0.0
+    if risk_budget_requested and not executable_stop:
+        return {
+            "error": (
+                "Trade Risk Budget requires an enabled, positive stop loss in the executable Risk Layer; "
+                "a notional stop cannot be presented as controlled risk."
+            )
+        }
 
     close = df["close"]
     returns = close.pct_change().fillna(0.0)
@@ -3161,6 +3547,9 @@ def _run_backtest(df: pd.DataFrame, cfg: BacktestConfig) -> dict[str, Any]:
             "benchmark": benchmark,
         }
     )
+    bt.attrs.update(dict(getattr(df, "attrs", {}) or {}))
+    bt.attrs["periods_per_year"] = int(getattr(cfg, "periods_per_year", _infer_periods_per_year(bt.index)[0]))
+    bt.attrs["interval_label"] = str(getattr(cfg, "interval_label", _infer_periods_per_year(bt.index)[1]))
 
     bt = bt.replace([np.inf, -np.inf], np.nan)
 
@@ -3249,6 +3638,10 @@ def _run_backtest(df: pd.DataFrame, cfg: BacktestConfig) -> dict[str, Any]:
             metrics["BRT V3.5b Eligible Bars"] = int(brt_v35b_pack.get("eligible_bars", 0) or 0)
 
     trades = _extract_trades(bt, cfg)
+    if isinstance(trades, pd.DataFrame) and not trades.empty and "Status" in trades:
+        metrics["Trades"] = int(trades["Status"].astype(str).eq("CLOSED").sum())
+        metrics["Open Trades"] = int(trades["Status"].astype(str).eq("OPEN").sum())
+        metrics["Trade Ledger Rows"] = int(len(trades))
 
     return {
         "data": bt,
@@ -3271,7 +3664,8 @@ def _compute_metrics(bt: pd.DataFrame, cfg: BacktestConfig | None = None) -> dic
     if daily.empty:
         return {}
 
-    years = max(len(daily) / 252.0, 1 / 252)
+    periods_per_year = _annualization_for_frame(bt, cfg)
+    years = max(len(daily) / float(periods_per_year), 1 / float(periods_per_year))
 
     total_return = bt["equity"].iloc[-1] / bt["equity"].iloc[0] - 1
     benchmark_return = bt["benchmark"].iloc[-1] / bt["benchmark"].iloc[0] - 1
@@ -3279,11 +3673,11 @@ def _compute_metrics(bt: pd.DataFrame, cfg: BacktestConfig | None = None) -> dic
     cagr = (1 + total_return) ** (1 / years) - 1 if total_return > -1 else -1
     bench_cagr = (1 + benchmark_return) ** (1 / years) - 1 if benchmark_return > -1 else -1
 
-    vol = daily.std() * np.sqrt(252)
-    sharpe = daily.mean() / daily.std() * np.sqrt(252) if daily.std() > 0 else np.nan
+    vol = daily.std() * np.sqrt(periods_per_year)
+    sharpe = daily.mean() / daily.std() * np.sqrt(periods_per_year) if daily.std() > 0 else np.nan
 
     downside = daily[daily < 0]
-    sortino = daily.mean() / downside.std() * np.sqrt(252) if len(downside) > 1 and downside.std() > 0 else np.nan
+    sortino = daily.mean() / downside.std() * np.sqrt(periods_per_year) if len(downside) > 1 and downside.std() > 0 else np.nan
 
     dd = bt["equity"] / bt["equity"].cummax() - 1
     max_dd = dd.min()
@@ -3297,10 +3691,14 @@ def _compute_metrics(bt: pd.DataFrame, cfg: BacktestConfig | None = None) -> dic
     loss_sum = daily[daily < 0].sum()
     profit_factor = daily[daily > 0].sum() / abs(loss_sum) if loss_sum < 0 else np.nan
 
-    active_changes = bt["exposure"].diff().abs().fillna(bt["exposure"].abs())
-    trades_count = int((active_changes > 0).sum())
+    exposure = pd.to_numeric(bt["exposure"], errors="coerce").fillna(0.0)
+    prior = exposure.shift(1).fillna(0.0)
+    entries = (prior.eq(0.0) & exposure.ne(0.0)) | (prior.mul(exposure) < 0.0)
+    exits = (prior.ne(0.0) & exposure.eq(0.0)) | (prior.mul(exposure) < 0.0)
+    same_side_rebalances = prior.ne(0.0) & exposure.ne(0.0) & (np.sign(prior) == np.sign(exposure)) & exposure.ne(prior)
+    trades_count = int(exits.sum())
 
-    bench_sharpe = bench_daily.mean() / bench_daily.std() * np.sqrt(252) if bench_daily.std() > 0 else np.nan
+    bench_sharpe = bench_daily.mean() / bench_daily.std() * np.sqrt(periods_per_year) if bench_daily.std() > 0 else np.nan
 
     prev_equity = bt["equity"].shift(1).fillna(bt["equity"].iloc[0])
     cost_dollars = (bt["costs"].abs() * prev_equity).sum()
@@ -3331,6 +3729,9 @@ def _compute_metrics(bt: pd.DataFrame, cfg: BacktestConfig | None = None) -> dic
         "Exposure": (bt["exposure"].abs() > 0).mean(),
         "Turnover": bt["turnover"].sum(),
         "Trades": trades_count,
+        "Open Entries": int(entries.sum()),
+        "Rebalances": int(same_side_rebalances.sum()),
+        "Periods / Year": int(periods_per_year),
         "Final Equity": bt["equity"].iloc[-1],
         "Cost Drag": bt["costs"].sum(),
         "Cost Paid $": cost_dollars,
@@ -3345,7 +3746,7 @@ def _trade_excursion(bt: pd.DataFrame, start: Any, end: Any, entry_price: float,
         if side >= 0:
             path = segment["close"] / entry_price - 1.0
         else:
-            path = entry_price / segment["close"] - 1.0
+            path = 1.0 - segment["close"] / entry_price
         return float(path.max()), float(path.min())
     except Exception:
         return np.nan, np.nan
@@ -3355,89 +3756,86 @@ def _extract_trades(bt: pd.DataFrame, cfg: BacktestConfig) -> pd.DataFrame:
     if bt.empty:
         return pd.DataFrame()
 
-    exposure = bt["exposure"].fillna(0)
-    changes = exposure.diff().fillna(exposure)
-    points = changes[changes != 0]
-
-    rows = []
-    open_trade = None
+    exposure = pd.to_numeric(bt["exposure"], errors="coerce").fillna(0.0)
+    equity = pd.to_numeric(bt["equity"], errors="coerce")
+    close = pd.to_numeric(bt["close"], errors="coerce")
+    rows: list[dict[str, Any]] = []
+    open_trade: dict[str, Any] | None = None
     idx_is_dt = _is_datetime_like_index(bt.index)
 
-    for bar_no, (dt, _) in enumerate(points.items()):
-        current_exp = exposure.loc[dt]
+    def _open(bar_no: int, dt: Any, current_exp: float) -> dict[str, Any]:
+        prior_bar = max(bar_no - 1, 0)
+        entry_equity = float(getattr(cfg, "capital", 1.0)) if bar_no == 0 else _safe_float(equity.iloc[prior_bar], 1.0)
+        entry_price = _safe_float(close.iloc[prior_bar], _safe_float(close.iloc[bar_no], np.nan))
+        return {
+            "entry_date": dt,
+            "entry_bar": bar_no,
+            "entry_price": entry_price,
+            "entry_equity": entry_equity,
+            "side": float(np.sign(current_exp)),
+            "entry_exposure": float(current_exp),
+            "rebalances": 0,
+            "entry_reason": _entry_reason(cfg.strategy, current_exp),
+        }
 
-        if open_trade is not None and (current_exp == 0 or np.sign(current_exp) != np.sign(open_trade["side"])):
-            exit_price = bt.loc[dt, "close"]
+    def _close(trade: dict[str, Any], transition_bar: int, transition_date: Any, *, final: bool = False) -> None:
+        risk_reason = ""
+        risk_price = np.nan
+        if "risk_exit_reason" in bt.columns and transition_date in bt.index:
+            risk_reason = str(bt.loc[transition_date, "risk_exit_reason"] or "").strip()
+        if "risk_exit_price" in bt.columns and transition_date in bt.index:
+            risk_price = _safe_float(bt.loc[transition_date, "risk_exit_price"], np.nan)
 
-            try:
-                if "risk_exit_price" in bt.columns:
-                    risk_px = _safe_float(bt.loc[dt, "risk_exit_price"], np.nan)
-                    if pd.notna(risk_px) and risk_px > 0:
-                        exit_price = risk_px
-            except Exception:
-                pass
+        if final or risk_reason:
+            exit_bar = min(transition_bar, len(bt) - 1)
+        else:
+            exit_bar = max(transition_bar - 1, trade["entry_bar"])
+        exit_date = bt.index[exit_bar]
+        exit_price = risk_price if pd.notna(risk_price) and risk_price > 0 else _safe_float(close.iloc[exit_bar], np.nan)
+        exit_equity = _safe_float(equity.iloc[exit_bar], trade["entry_equity"])
+        ret = exit_equity / max(float(trade["entry_equity"]), 1e-12) - 1.0
+        mfe, mae = _trade_excursion(bt, trade["entry_date"], exit_date, trade["entry_price"], trade["side"])
+        rows.append({
+            "Entry Date": _format_dt(trade["entry_date"]) if idx_is_dt else str(trade["entry_date"]),
+            "Exit Date": _format_dt(exit_date) if idx_is_dt else str(exit_date),
+            "Entry Bar": int(trade["entry_bar"]),
+            "Exit Bar": int(exit_bar),
+            "Side": "LONG" if trade["side"] > 0 else "SHORT",
+            "Status": "OPEN" if final else "CLOSED",
+            "Entry Exposure": float(trade["entry_exposure"]),
+            "Exit Exposure": float(exposure.iloc[exit_bar]),
+            "Rebalances": int(trade["rebalances"]),
+            "Entry Price": trade["entry_price"],
+            "Exit Price": exit_price,
+            "Return": ret,
+            "MFE": mfe,
+            "MAE": mae,
+            "Bars": int(exit_bar - trade["entry_bar"] + 1),
+            "Entry Reason": trade["entry_reason"],
+            "Exit Reason": risk_reason or _exit_reason(cfg.strategy, final_exit=final),
+        })
 
-            ret = bt.loc[dt, "equity"] / open_trade["entry_equity"] - 1
-            mfe, mae = _trade_excursion(bt, open_trade["entry_date"], dt, open_trade["entry_price"], open_trade["side"])
+    previous_exp = 0.0
+    for bar_no, dt in enumerate(bt.index):
+        current_exp = float(exposure.iloc[bar_no])
+        previous_side = float(np.sign(previous_exp))
+        current_side = float(np.sign(current_exp))
 
-            risk_exit_reason = ""
-            try:
-                if "risk_exit_reason" in bt.columns:
-                    risk_exit_reason = str(bt.loc[dt, "risk_exit_reason"] or "").strip()
-            except Exception:
-                risk_exit_reason = ""
+        if open_trade is not None and current_side == previous_side and current_side != 0.0 and current_exp != previous_exp:
+            open_trade["rebalances"] += 1
 
-            exit_reason = risk_exit_reason if risk_exit_reason else _exit_reason(cfg.strategy, final_exit=False)
-
-            rows.append(
-                {
-                    "Entry Date": _format_dt(open_trade["entry_date"]) if idx_is_dt else str(open_trade["entry_date"]),
-                    "Exit Date": _format_dt(dt) if idx_is_dt else str(dt),
-                    "Entry Bar": open_trade["entry_bar"],
-                    "Exit Bar": int(bt.index.get_loc(dt)) if dt in bt.index else bar_no,
-                    "Side": "LONG" if open_trade["side"] > 0 else "SHORT",
-                    "Entry Price": open_trade["entry_price"],
-                    "Exit Price": exit_price,
-                    "Return": ret,
-                    "MFE": mfe,
-                    "MAE": mae,
-                    "Bars": len(bt.loc[open_trade["entry_date"]:dt]),
-                    "Entry Reason": open_trade["entry_reason"],
-                    "Exit Reason": exit_reason,
-                }
-            )
+        side_changed = current_side != previous_side
+        if open_trade is not None and side_changed:
+            _close(open_trade, bar_no, dt)
             open_trade = None
 
-        if current_exp != 0:
-            open_trade = {
-                "entry_date": dt,
-                "entry_bar": int(bt.index.get_loc(dt)) if dt in bt.index else bar_no,
-                "entry_price": bt.loc[dt, "close"],
-                "entry_equity": bt.loc[dt, "equity"],
-                "side": current_exp,
-                "entry_reason": _entry_reason(cfg.strategy, current_exp),
-            }
+        if current_side != 0.0 and (open_trade is None) and side_changed:
+            open_trade = _open(bar_no, dt, current_exp)
+
+        previous_exp = current_exp
 
     if open_trade is not None:
-        dt = bt.index[-1]
-        mfe, mae = _trade_excursion(bt, open_trade["entry_date"], dt, open_trade["entry_price"], open_trade["side"])
-        rows.append(
-            {
-                "Entry Date": _format_dt(open_trade["entry_date"]) if idx_is_dt else str(open_trade["entry_date"]),
-                "Exit Date": _format_dt(dt) if idx_is_dt else str(dt),
-                "Entry Bar": open_trade["entry_bar"],
-                "Exit Bar": len(bt) - 1,
-                "Side": "LONG" if open_trade["side"] > 0 else "SHORT",
-                "Entry Price": open_trade["entry_price"],
-                "Exit Price": bt.loc[dt, "close"],
-                "Return": bt.loc[dt, "equity"] / open_trade["entry_equity"] - 1,
-                "MFE": mfe,
-                "MAE": mae,
-                "Bars": len(bt.loc[open_trade["entry_date"]:dt]),
-                "Entry Reason": open_trade["entry_reason"],
-                "Exit Reason": _exit_reason(cfg.strategy, final_exit=True),
-            }
-        )
+        _close(open_trade, len(bt) - 1, bt.index[-1], final=True)
 
     return pd.DataFrame(rows)
 
@@ -4844,9 +5242,10 @@ def _integrity_score(metrics: dict[str, Any], bt: pd.DataFrame, cfg: BacktestCon
     score = 100
     notes = []
 
-    if len(bt) < 252:
+    periods_per_year = _annualization_for_frame(bt, cfg)
+    if len(bt) < periods_per_year:
         score -= 15
-        notes.append("Historique inférieur à 1 an.")
+        notes.append(f"Historique inférieur à 1 an ({periods_per_year} périodes requises).")
 
     trades = int(metrics.get("Trades", 0) or 0)
     if trades < 5:
@@ -5189,12 +5588,13 @@ def _bootstrap_summary(bt: pd.DataFrame, capital: float, n_sims: int = 750, seed
     max_drawdowns = []
     sharpes = []
 
+    periods_per_year = _annualization_for_frame(bt)
     for _ in range(n_sims):
         sample = rng.choice(returns, size=horizon, replace=True)
         equity = capital * np.cumprod(1 + sample)
         total_return = equity[-1] / equity[0] - 1
         dd = equity / np.maximum.accumulate(equity) - 1
-        sharpe = np.mean(sample) / np.std(sample) * np.sqrt(252) if np.std(sample) > 0 else np.nan
+        sharpe = np.mean(sample) / np.std(sample) * np.sqrt(periods_per_year) if np.std(sample) > 0 else np.nan
         final_returns.append(total_return)
         max_drawdowns.append(np.min(dd))
         sharpes.append(sharpe)
@@ -5243,9 +5643,10 @@ def _probabilistic_sharpe(bt: pd.DataFrame, benchmark_sr: float = 0.0) -> dict[s
     if len(r) < 30 or r.std() <= 0:
         return {"psr": np.nan, "sr": np.nan, "skew": np.nan, "kurtosis": np.nan}
 
+    periods_per_year = _annualization_for_frame(bt)
     sr_daily = r.mean() / r.std()
-    sr_ann = sr_daily * np.sqrt(252)
-    target_daily = benchmark_sr / np.sqrt(252)
+    sr_ann = sr_daily * np.sqrt(periods_per_year)
+    target_daily = benchmark_sr / np.sqrt(periods_per_year)
 
     skew = float(r.skew())
     kurt = float(r.kurtosis() + 3.0)
@@ -5268,8 +5669,9 @@ def _minimum_track_record_days(bt: pd.DataFrame, sr_threshold: float = 0.0, conf
     if len(r) < 30 or r.std() <= 0:
         return np.nan
 
+    periods_per_year = _annualization_for_frame(bt)
     sr_daily = r.mean() / r.std()
-    target_daily = sr_threshold / np.sqrt(252)
+    target_daily = sr_threshold / np.sqrt(periods_per_year)
     if sr_daily <= target_daily:
         return np.inf
 
@@ -5277,7 +5679,9 @@ def _minimum_track_record_days(bt: pd.DataFrame, sr_threshold: float = 0.0, conf
     kurt = float(r.kurtosis() + 3.0)
     denom = np.sqrt(max(1e-9, 1.0 - skew * sr_daily + ((kurt - 1.0) / 4.0) * sr_daily**2))
     z = 1.645 if confidence >= 0.95 else 1.282
-    return float(1.0 + (z * denom / (sr_daily - target_daily)) ** 2)
+    required_periods = float(1.0 + (z * denom / (sr_daily - target_daily)) ** 2)
+    # Preserve the public "days" contract while supporting weekly/monthly bars.
+    return required_periods * (252.0 / float(periods_per_year))
 
 
 def _cost_breakeven(cost_matrix: pd.DataFrame) -> dict[str, Any]:
@@ -7244,7 +7648,7 @@ def _regime_attribution(bt: pd.DataFrame) -> pd.DataFrame:
 
     close = bt["close"]
     sma = close.rolling(200, min_periods=min(60, len(close))).mean()
-    vol = bt["returns"].rolling(20, min_periods=10).std() * np.sqrt(252)
+    vol = bt["returns"].rolling(20, min_periods=10).std() * np.sqrt(_annualization_for_frame(bt))
     vol_med = vol.rolling(126, min_periods=20).median().fillna(vol.median())
 
     trend_bucket = np.where(close >= sma, "Above trend", "Below trend")
@@ -7320,7 +7724,7 @@ def _regime_tail_diagnostics(bt: pd.DataFrame) -> pd.DataFrame:
         roll_5d = _rolling_compound_return(r, 5)
         worst_5d = float(roll_5d.min()) if not roll_5d.dropna().empty else np.nan
 
-        sharpe = float(r.mean() / r.std() * np.sqrt(252)) if r.std() > 0 else np.nan
+        sharpe = float(r.mean() / r.std() * np.sqrt(_annualization_for_frame(bt))) if r.std() > 0 else np.nan
 
         # Hit rate brut : tous les jours du régime
         hit_rate = float((r > 0).mean())
@@ -7439,7 +7843,7 @@ def _regime_v2_daily_map(bt: pd.DataFrame) -> pd.DataFrame:
     ma200 = close.rolling(200, min_periods=min(60, len(close))).mean()
     ma60 = close.rolling(60, min_periods=min(30, len(close))).mean()
 
-    vol20 = asset_ret.rolling(20, min_periods=10).std() * np.sqrt(252)
+    vol20 = asset_ret.rolling(20, min_periods=10).std() * np.sqrt(_annualization_for_frame(bt))
     vol_median = vol20.rolling(126, min_periods=30).median().fillna(vol20.median())
 
     bench_mom20 = bench_ret.rolling(20, min_periods=10).sum()
@@ -7494,7 +7898,9 @@ def _regime_v2_daily_map(bt: pd.DataFrame) -> pd.DataFrame:
         index=df.index,
     )
 
-    return out.replace([np.inf, -np.inf], np.nan)
+    out = out.replace([np.inf, -np.inf], np.nan)
+    out.attrs.update(dict(getattr(bt, "attrs", {}) or {}))
+    return out
 
 
 def _regime_metric_row_v2(
@@ -7534,7 +7940,8 @@ def _regime_metric_row_v2(
         return {}
 
     obs = int(len(r))
-    years = max(obs / 252.0, 1.0 / 252.0)
+    periods_per_year = _annualization_for_frame(sub)
+    years = max(obs / float(periods_per_year), 1.0 / float(periods_per_year))
 
     strategy_return = _compound_return_safe(r)
     benchmark_return = _compound_return_safe(b)
@@ -7542,11 +7949,11 @@ def _regime_metric_row_v2(
 
     cagr = (1.0 + strategy_return) ** (1.0 / years) - 1.0 if pd.notna(strategy_return) and strategy_return > -1 else np.nan
 
-    vol = float(r.std() * np.sqrt(252)) if len(r) > 2 else np.nan
-    sharpe = float(r.mean() / r.std() * np.sqrt(252)) if len(r) > 2 and r.std() > 0 else np.nan
+    vol = float(r.std() * np.sqrt(periods_per_year)) if len(r) > 2 else np.nan
+    sharpe = float(r.mean() / r.std() * np.sqrt(periods_per_year)) if len(r) > 2 and r.std() > 0 else np.nan
 
     downside = r[r < 0]
-    sortino = float(r.mean() / downside.std() * np.sqrt(252)) if len(downside) > 2 and downside.std() > 0 else np.nan
+    sortino = float(r.mean() / downside.std() * np.sqrt(periods_per_year)) if len(downside) > 2 and downside.std() > 0 else np.nan
 
     var95 = float(r.quantile(0.05)) if len(r) >= 20 else np.nan
     cvar95 = float(r[r <= var95].mean()) if len(r) >= 20 and (r <= var95).any() else np.nan
@@ -8288,7 +8695,8 @@ def _event_stress_table(bt: pd.DataFrame, cfg: BacktestConfig) -> pd.DataFrame:
 
         # Borrow fee : uniquement short.
         if borrow_fee_ann > 0 and borrow_days > 0:
-            impact = impact - short_notional * borrow_fee_ann * (borrow_days / 252.0)
+            # ``borrow_days`` is a calendar-day scenario input, not a bar count.
+            impact = impact - short_notional * borrow_fee_ann * (borrow_days / 365.0)
 
         return impact.replace([np.inf, -np.inf], np.nan).fillna(0.0)
 
@@ -8421,6 +8829,40 @@ def _drawdown_fig(bt: pd.DataFrame, benchmark_label: str = "Benchmark") -> go.Fi
 # RENDER HELPERS
 # ============================================================
 
+def _render_institutional_gate_banner(summary: dict[str, Any]) -> None:
+    decision = str(summary.get("decision") or "HOLD — DATA REQUIRED")
+    blockers = [str(item) for item in summary.get("blocking_gates", []) if str(item).strip()]
+    message = (
+        f"Institutional V7 · {decision} · authoritative source: "
+        f"{summary.get('authoritative_source', 'UNAVAILABLE')} · production authorization: NEVER AUTOMATIC"
+    )
+    if decision == "RESEARCH APPROVED":
+        st.success(message + " · eligible for governed shadow review only")
+    elif decision == "REJECT / REDESIGN":
+        st.error(message)
+    else:
+        st.warning(message)
+
+    # Six large Streamlit metrics in a single row wrap identifiers/statuses at
+    # the normal terminal width (especially with the workspace rail open).
+    # Two semantic rows keep the canonical evidence legible without hiding any
+    # field: operational identity first, statistical gates second.
+    c1, c2, c3 = st.columns(3)
+    c4, c5, c6 = st.columns(3)
+    c1.metric("Canonical run", str(summary.get("run_id") or "DATA REQUIRED")[-12:])
+    c2.metric("Data contract", str(summary.get("data_verdict") or "UNAVAILABLE"))
+    c3.metric("Execution", str(summary.get("execution_status") or "UNAVAILABLE"))
+    c4.metric("PSR", _format_pct(summary.get("psr"), 0))
+    c5.metric("DSR", _format_pct(summary.get("dsr"), 0))
+    c6.metric("PBO", _format_pct(summary.get("pbo"), 0))
+    if blockers:
+        st.caption("Blocking gates · " + " · ".join(blockers))
+    if summary.get("candidate_error"):
+        st.error("Candidate evidence rejected · " + str(summary["candidate_error"]))
+    if summary.get("engine_error"):
+        st.caption("Engine evidence · " + str(summary["engine_error"]))
+
+
 def _render_backtest_header(ticker: str, cfg: BacktestConfig, metrics: dict[str, Any], integrity: int, diagnostics: dict[str, Any], research_label: str) -> None:
     edge_score = diagnostics.get("edge_score", np.nan)
     pbo = diagnostics.get("pbo_proxy", np.nan)
@@ -8430,15 +8872,15 @@ def _render_backtest_header(ticker: str, cfg: BacktestConfig, metrics: dict[str,
         f"""
 <div class="qt-status-strip">
   <div>
-    <div class="qt-kicker">BACKTEST RESEARCH LAB</div>
+    <div class="qt-kicker">LEGACY RESEARCH SCREEN · NON-AUTHORITATIVE</div>
     <div class="qt-strip-title">{ticker} · {cfg.strategy}</div>
     <div class="qt-muted">Benchmark: {metrics.get("Benchmark Label", "Benchmark")} · signal t+1 · costs/slippage included</div>
   </div>
-  <div class="qt-stat"><span>Verdict</span><b>{research_label}</b></div>
+  <div class="qt-stat"><span>Legacy screen</span><b>{research_label}</b></div>
   <div class="qt-stat"><span>Edge</span><b>{_format_num(edge_score, 0)}/100</b></div>
   <div class="qt-stat"><span>Alpha</span><b>{_format_pct(metrics.get("Relative Alpha"))}</b></div>
-  <div class="qt-stat"><span>DSR proxy</span><b>{_format_pct(dsr, 0)}</b></div>
-  <div class="qt-stat"><span>PBO proxy</span><b>{_format_pct(pbo, 0)}</b></div>
+  <div class="qt-stat"><span>Legacy DSR proxy</span><b>{_format_pct(dsr, 0)}</b></div>
+  <div class="qt-stat"><span>Legacy PBO proxy</span><b>{_format_pct(pbo, 0)}</b></div>
   <div class="qt-stat"><span>Integrity</span><b>{integrity}/100</b></div>
 </div>
         """,
@@ -8462,8 +8904,8 @@ def _render_verdict_banner(metrics: dict[str, Any], integrity: int, notes: list[
     verdict, level, reasons = _verdict(metrics, integrity, notes)
     research_label = _research_verdict(diagnostics.get("edge_score", 0), verdict, diagnostics)
     msg = (
-        f"Research Verdict: {research_label} · "
-        f"Backtest Verdict: {verdict} · "
+        f"Indicative legacy screen (non-authoritative): {research_label} · "
+        f"Legacy vector verdict: {verdict} · "
         f"Alpha: {_format_pct(metrics.get('Relative Alpha'))} · "
         f"CAGR gap: {_format_pct(metrics.get('CAGR Gap'))} · "
         f"Cost breakeven: {diagnostics.get('cost', {}).get('label', 'N/A')} · "
@@ -11494,7 +11936,7 @@ def _tail_risk_diagnostics(bt: pd.DataFrame) -> dict[str, Any]:
     active_worst_day = float(active_r.min()) if len(active_r) else np.nan
 
     downside = r[r < 0]
-    downside_deviation = float(np.sqrt(np.mean(np.minimum(r, 0.0) ** 2)) * np.sqrt(252)) if len(r) else np.nan
+    downside_deviation = float(np.sqrt(np.mean(np.minimum(r, 0.0) ** 2)) * np.sqrt(_annualization_for_frame(bt))) if len(r) else np.nan
 
     skew = float(r.skew()) if len(r) >= 30 else np.nan
     excess_kurtosis = float(r.kurtosis()) if len(r) >= 30 else np.nan
@@ -12166,7 +12608,11 @@ def _econometric_diagnostics(bt: pd.DataFrame) -> dict[str, Any]:
             "read": "Colonnes strategy_return / benchmark_return manquantes.",
         }
 
-    pack = _ols_alpha_beta_pack(bt["strategy_return"], bt["benchmark_return"])
+    pack = _ols_alpha_beta_pack(
+        bt["strategy_return"],
+        bt["benchmark_return"],
+        annualization=_annualization_for_frame(bt),
+    )
 
     if not pack:
         return {
@@ -12230,7 +12676,11 @@ def _econometric_diagnostics(bt: pd.DataFrame) -> dict[str, Any]:
         columns=["Metric", "Value", "Read"],
     )
 
-    rolling = _rolling_econometric_table(bt, window=60)
+    rolling = _rolling_econometric_table(
+        bt,
+        window=60,
+        annualization=_annualization_for_frame(bt),
+    )
 
     rolling_summary = pd.DataFrame()
 
@@ -12396,8 +12846,9 @@ def _factor_regression_core(strategy_returns: pd.Series, benchmark_returns: pd.S
         corr = float(np.corrcoef(x, y)[0, 1]) if len(x) > 2 else np.nan
 
         active = frame["strategy"] - frame["benchmark"]
-        tracking_error = float(active.std() * np.sqrt(252)) if active.std() > 0 else np.nan
-        active_premium = float(active.mean() * 252)
+        periods_per_year = _annualization_for_frame(frame)
+        tracking_error = float(active.std() * np.sqrt(periods_per_year)) if active.std() > 0 else np.nan
+        active_premium = float(active.mean() * periods_per_year)
         information_ratio = active_premium / tracking_error if pd.notna(tracking_error) and tracking_error > 0 else np.nan
 
         up_mask = frame["benchmark"] > 0
@@ -12418,7 +12869,7 @@ def _factor_regression_core(strategy_returns: pd.Series, benchmark_returns: pd.S
         return {
             "n": int(len(frame)),
             "alpha_daily": alpha_daily,
-            "alpha_ann": alpha_daily * 252.0,
+            "alpha_ann": alpha_daily * periods_per_year,
             "beta": beta,
             "t_alpha": t_alpha,
             "t_beta": t_beta,
@@ -14037,7 +14488,7 @@ def _test_harness_causality_guard_v13(
         elif strategy == "Volatility Filter Trend":
             fast = close.rolling(int(local_cfg.fast_ma)).mean()
             slow = close.rolling(int(local_cfg.slow_ma)).mean()
-            vol = close.pct_change().rolling(int(local_cfg.vol_window)).std() * np.sqrt(252.0)
+            vol = close.pct_change().rolling(int(local_cfg.vol_window)).std() * np.sqrt(_annualization_for_frame(price_df, local_cfg))
 
             tmp = np.where((fast > slow) & (vol < float(local_cfg.vol_threshold)), 1.0, 0.0)
 
@@ -14050,7 +14501,7 @@ def _test_harness_causality_guard_v13(
             fast = close.rolling(int(local_cfg.fast_ma)).mean()
             slow = close.rolling(int(local_cfg.slow_ma)).mean()
             mom = close.pct_change(20)
-            vol = close.pct_change().rolling(int(local_cfg.vol_window)).std() * np.sqrt(252.0)
+            vol = close.pct_change().rolling(int(local_cfg.vol_window)).std() * np.sqrt(_annualization_for_frame(price_df, local_cfg))
 
             raw_score = (
                 (fast > slow).astype(float) * 40.0
@@ -15718,7 +16169,7 @@ def _execution_realism_layer_v28_pack(
             max_dd = np.nan
         else:
             total = float(eq.iloc[-1] - 1.0)
-            sharpe = float(stressed.mean() / stressed.std() * np.sqrt(252)) if stressed.std() > 0 else np.nan
+            sharpe = float(stressed.mean() / stressed.std() * np.sqrt(_annualization_for_frame(local, cfg))) if stressed.std() > 0 else np.nan
             dd = eq / eq.cummax().replace(0, np.nan) - 1.0
             max_dd = float(dd.min()) if not dd.dropna().empty else np.nan
 
@@ -16399,7 +16850,7 @@ def _liquidity_capacity_layer_v29_pack(
         else:
             total_return = float(equity.iloc[-1] - 1.0)
             sharpe = (
-                float(stressed_returns.mean() / stressed_returns.std() * np.sqrt(252))
+                float(stressed_returns.mean() / stressed_returns.std() * np.sqrt(_annualization_for_frame(local, cfg)))
                 if stressed_returns.std() > 0
                 else np.nan
             )
@@ -18455,8 +18906,9 @@ def _failure_attribution_redesign_map_v32_pack(
     elif trades_count < 30:
         _add("Sample size", "WARN", "Low", str(trades_count), "Échantillon encore fin.", "Traiter comme préliminaire.", "Renforcer paper/sample requirement.", "Validation", ">= 30 trades.")
 
-    if bt_rows < 252:
-        _add("History length", "WARN", "Medium", f"{bt_rows} bars", "Historique inférieur à un an.", "Ne pas promouvoir sur fenêtre courte.", "Charger plus d'historique ou instruments comparables.", "Data Window", ">= 252 bars.")
+    required_year = _annualization_for_frame(bt, cfg)
+    if bt_rows < required_year:
+        _add("History length", "WARN", "Medium", f"{bt_rows} bars", "Historique inférieur à un an.", "Ne pas promouvoir sur fenêtre courte.", "Charger plus d'historique ou instruments comparables.", "Data Window", f">= {required_year} bars.")
 
     if oos_failed:
         _add(
@@ -21486,7 +21938,7 @@ def _margin_stress_single_path(
         leverage = max(float(leverage), 1.0)
 
         financing_rate = max(float(getattr(cfg, "margin_financing_rate_pct", 8.0)), 0.0) / 100.0
-        financing_daily = financing_rate / 252.0
+        financing_daily = financing_rate / float(_annualization_for_frame(bt, cfg))
 
         maintenance_margin = max(
             min(float(getattr(cfg, "margin_maintenance_margin_pct", 25.0)) / 100.0, 1.0),
@@ -25067,7 +25519,7 @@ def _signal_candidate_factory_v37_candidate_signals(
     high20 = close.shift(1).rolling(20).max()
     high55 = close.shift(1).rolling(55).max()
 
-    realized_vol = close.pct_change().rolling(20).std() * np.sqrt(252)
+    realized_vol = close.pct_change().rolling(20).std() * np.sqrt(_annualization_for_frame(df, cfg))
     vol_q40 = realized_vol.rolling(126, min_periods=20).quantile(0.40)
     vol_q80 = realized_vol.rolling(126, min_periods=20).quantile(0.80)
 
@@ -25695,7 +26147,7 @@ def _strategy_source_archetype_signal_v38(df: pd.DataFrame, cfg: BacktestConfig,
     benchmark_uptrend = benchmark_nav > bench_sma_100
     rsi_14 = _rsi(close, 14)
     prior_high_55 = close.shift(1).rolling(55).max()
-    realized_vol_20 = close.pct_change().rolling(20).std() * np.sqrt(252)
+    realized_vol_20 = close.pct_change().rolling(20).std() * np.sqrt(_annualization_for_frame(df, cfg))
     vol_p40 = realized_vol_20.rolling(126, min_periods=30).quantile(0.40)
     vol_median = realized_vol_20.rolling(126, min_periods=30).median()
 
@@ -26789,7 +27241,7 @@ def _source_candidate_runner_v40_build_signals(
     benchmark_ma100 = benchmark_nav.rolling(100).mean()
     benchmark_uptrend = benchmark_nav > benchmark_ma100
 
-    realized_vol = close.pct_change().rolling(20).std() * np.sqrt(252.0)
+    realized_vol = close.pct_change().rolling(20).std() * np.sqrt(_annualization_for_frame(df, cfg))
     vol_rank = realized_vol.rolling(126, min_periods=40).rank(pct=True)
 
     active_mean = active_20.rolling(126, min_periods=40).mean()
@@ -27413,7 +27865,7 @@ def _source_failure_forensics_v41_pack(
         bench_ma = bench_nav.rolling(100, min_periods=20).mean()
         work["Benchmark Uptrend"] = (bench_nav > bench_ma).fillna(False)
 
-        asset_vol = work["Asset Return"].rolling(20, min_periods=10).std() * np.sqrt(252)
+        asset_vol = work["Asset Return"].rolling(20, min_periods=10).std() * np.sqrt(_annualization_for_frame(bt))
         vol_rank = asset_vol.rolling(126, min_periods=30).rank(pct=True)
         work["High Vol"] = (vol_rank >= 0.80).fillna(False)
 
@@ -27445,7 +27897,7 @@ def _source_failure_forensics_v41_pack(
             exposure_change = work["Exposure"].diff().abs().fillna(work["Abs Exposure"])
             trade_count = int(((exposure_change > 1e-9) & active_mask).sum())
 
-        data_years = n / 252.0
+        data_years = n / float(_annualization_for_frame(bt))
 
         # Entry timing: forward 5-bar active performance after exposure turns on.
         entry_rows = []
@@ -28141,8 +28593,8 @@ def _signal_activity_repair_v42_pack(
             {
                 "Stage": "Trades",
                 "Active Bars": trade_count,
-                "Coverage": trade_count / max(n / 252.0, 1e-9),
-                "Read": "Nombre de trades annualisé approximatif si l'index est daily.",
+                "Coverage": trade_count / max(n / float(_annualization_for_frame(bt)), 1e-9),
+                "Read": "Nombre de trades annualisé selon le contrat de fréquence observé.",
             },
         ]
 
@@ -29909,6 +30361,15 @@ def _render_institutional_scenario_lab_v60(
         "Path-dependent simulations · reproducible seeds · regime conditioning · "
         "historical shock overlays · liquidity freeze. Results are risk diagnostics, not forecasts."
     )
+    periods_per_year = _annualization_for_frame(bt, cfg)
+    horizon_options = sorted({
+        max(4, int(round(periods_per_year / 4))),
+        max(8, int(round(periods_per_year / 2))),
+        periods_per_year,
+        periods_per_year * 2,
+    })
+    if st.session_state.get("bt_v60_horizon") not in horizon_options:
+        st.session_state["bt_v60_horizon"] = periods_per_year
     c1, c2, c3, c4 = st.columns(4)
     n_paths = c1.select_slider(
         "Simulation paths",
@@ -29917,9 +30378,9 @@ def _render_institutional_scenario_lab_v60(
         key="bt_v60_paths",
     )
     horizon = c2.select_slider(
-        "Horizon (sessions)",
-        options=[63, 126, 252, 504],
-        value=252,
+        "Horizon (periods)",
+        options=horizon_options,
+        value=periods_per_year,
         key="bt_v60_horizon",
     )
     block_size = c3.slider(
@@ -30035,6 +30496,11 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
     df = _extract_ohlc(price_data)
 
     if df.empty or len(df) < 60:
+        publish_backtest_failure_certificate_v1(
+            ticker,
+            "insufficient price history",
+            data_as_of=df.index[-1] if isinstance(df, pd.DataFrame) and not df.empty else None,
+        )
         st.error("Données insuffisantes pour lancer le Backtest Lab.")
         return
 
@@ -30330,13 +30796,13 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             price_start, price_end = _price_index_bounds(df.index)
             if price_start is not None and price_end is not None:
                 st.caption(
-                    "Format conseillé : `date,exposure` avec exposure dans [-1, 1]. "
+                    "Format institutionnel : `date,available_at,exposure` avec exposure dans [-1, 1]. "
                     f"Fenêtre prix chargée : {price_start.strftime('%Y-%m-%d')} → {price_end.strftime('%Y-%m-%d')}. "
                     "Aucun code utilisateur n'est exécuté."
                 )
             else:
                 st.caption(
-                    "Format conseillé : `date,exposure` avec exposure dans [-1, 1]. "
+                    "Format institutionnel : `date,available_at,exposure` avec exposure dans [-1, 1]. "
                     "Aucun code utilisateur n'est exécuté."
                 )
 
@@ -30365,7 +30831,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
 
             pasted_signal = c_paste.text_area(
                 "Ou coller un signal CSV",
-                placeholder="Colle ici un CSV réel : date,exposure",
+                placeholder="Colle ici un CSV réel : date,available_at,exposure",
                 height=120,
                 key=paste_key,
             )
@@ -30472,8 +30938,8 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
                 custom_signal_df = None
                 st.error(overlap_msg)
                 st.info(
-                    "Colle un signal avec des dates comprises dans la fenêtre affichée ci-dessus, "
-                    "ou utilise un signal séquentiel de même longueur que l'historique."
+                    "Colle un signal avec date et available_at dans la fenêtre affichée. "
+                    "Le mode séquentiel reste diagnostic uniquement et ne peut pas franchir le gate V7."
                 )
 
             else:
@@ -30906,10 +31372,17 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
         margin_force_deleveraging=bool(margin_force_deleveraging),
         margin_force_delever_drawdown_pct=float(margin_force_delever_drawdown_pct),
         margin_forced_delever_to_multiple=float(margin_forced_delever_to_multiple),
+        periods_per_year=int(df.attrs.get("periods_per_year", _infer_periods_per_year(df.index)[0])),
+        interval_label=str(df.attrs.get("interval_label", _infer_periods_per_year(df.index)[1])),
     )
     
 
     if cfg.strategy == "Custom Signal Import" and not custom_signal_ready:
+        publish_backtest_failure_certificate_v1(
+            ticker,
+            "custom signal is absent or invalid",
+            data_as_of=df.index[-1] if not df.empty else None,
+        )
         st.info(
             "Charge ou colle un signal custom valide pour lancer le backtest. "
             "Le moteur ne lance pas de backtest flat par défaut, afin d'éviter un faux verdict."
@@ -30918,6 +31391,11 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
 
     result = _run_backtest(df, cfg)
     if "error" in result:
+        publish_backtest_failure_certificate_v1(
+            ticker,
+            str(result["error"]),
+            data_as_of=df.index[-1] if not df.empty else None,
+        )
         st.error(result["error"])
         return
 
@@ -30957,15 +31435,83 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             allow_short=cfg.allow_short,
         )
 
-    diagnostics["custom_signal_safety_v26"] = _custom_signal_safety_gate_v26_pack(
+    custom_signal_safety = _custom_signal_safety_gate_v26_pack(
         cfg.custom_signal_df,
         df.index,
         allow_short=cfg.allow_short,
     )
+    diagnostics["custom_signal_safety_v26"] = custom_signal_safety
+    # The V7 stack is built below from ``cfg``.  Persist only the explicit gate
+    # result (never the uploaded frame) so the canonical engine can reject a
+    # custom signal whose availability/provenance is not a clean PASS.
+    setattr(
+        cfg,
+        "custom_signal_safety_decision",
+        str(custom_signal_safety.get("decision_gate", "UNAVAILABLE")),
+    )
+
+    # Build the institutional source of truth before issuing any certificate.
+    # The tab below renders this exact same object; it never computes a competing
+    # run with different assumptions after the promotion evidence was published.
+    institutional_run = None
+    institutional_context: dict[str, Any] = {}
+    institutional_engine_error = ""
+    try:
+        from backtest_institutional.dashboard import (
+            build_institutional_v70_run,
+            institutional_gate_summary,
+        )
+
+        institutional_run, institutional_context = build_institutional_v70_run(
+            bars=df,
+            result=result,
+            cfg=cfg,
+            symbol=ticker,
+        )
+        diagnostics["institutional_v7"] = institutional_gate_summary(
+            institutional_run,
+            context=institutional_context,
+        )
+    except Exception as exc:
+        trace = traceback.extract_tb(exc.__traceback__)
+        origin = ""
+        if trace:
+            last = trace[-1]
+            origin = f" @ {last.filename.rsplit('/', 1)[-1]}:{last.lineno}"
+        institutional_engine_error = f"{type(exc).__name__}: {exc}{origin}"
+        try:
+            from backtest_institutional.dashboard import institutional_gate_summary
+
+            diagnostics["institutional_v7"] = institutional_gate_summary(
+                None,
+                error=institutional_engine_error,
+                context=institutional_context,
+            )
+        except Exception:
+            diagnostics["institutional_v7"] = {
+                "decision": "HOLD — DATA REQUIRED",
+                "authoritative_source": "UNAVAILABLE",
+                "fail_closed": True,
+                "production_authorized": False,
+                "blocking_gates": ["Institutional V7 engine"],
+                "engine_error": institutional_engine_error,
+            }
 
     verdict, _, reasons = _verdict(metrics, integrity, notes)
     research_label = _research_verdict(diagnostics.get("edge_score", 0), verdict, diagnostics)
 
+    publish_backtest_owner_certificate_v1(
+        ticker,
+        cfg=cfg,
+        metrics=metrics,
+        integrity=integrity,
+        diagnostics=diagnostics,
+        verdict=verdict,
+        research_label=research_label,
+        data_as_of=bt.index[-1] if isinstance(bt, pd.DataFrame) and not bt.empty else None,
+    )
+
+    _render_institutional_gate_banner(diagnostics["institutional_v7"])
     _render_backtest_header(ticker, cfg, metrics, integrity, diagnostics, research_label)
     _render_metric_cards(metrics, integrity, diagnostics)
     _render_verdict_banner(metrics, integrity, notes, diagnostics)
@@ -31169,14 +31715,14 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             rolling_sharpe = (
                 bt["strategy_return"].rolling(60).mean()
                 / bt["strategy_return"].rolling(60).std()
-                * np.sqrt(252)
+                * np.sqrt(_annualization_for_frame(bt, cfg))
             ).replace([np.inf, -np.inf], np.nan).dropna()
 
             if not rolling_sharpe.empty:
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(x=rolling_sharpe.index, y=rolling_sharpe, mode="lines", name="Rolling Sharpe"))
                 fig.update_layout(height=280, margin=dict(l=15, r=15, t=35, b=15), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#EAF6FF"))
-                st.subheader("Rolling Sharpe 60D")
+                st.subheader("Rolling Sharpe · 60 periods")
                 st.plotly_chart(fig, use_container_width=True, config=_plotly_config())
 
             _render_position_sizing_block(bt, cfg, metrics)
@@ -31732,6 +32278,9 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
                 result=result,
                 cfg=cfg,
                 symbol=ticker,
+                institutional=institutional_run,
+                context=institutional_context,
+                engine_error=institutional_engine_error,
             )
 
 
@@ -32590,7 +33139,7 @@ def _v45_brt_filter_frame(df: pd.DataFrame, cfg: BacktestConfig) -> dict[str, An
 
         after_benchmark = core_pass & benchmark_gate.fillna(False)
 
-        realized_vol = close.pct_change().rolling(max(int(getattr(cfg, "brt_vol_window", 20)), 5)).std() * np.sqrt(252)
+        realized_vol = close.pct_change().rolling(max(int(getattr(cfg, "brt_vol_window", 20)), 5)).std() * np.sqrt(_annualization_for_frame(df, cfg))
         vol_gate = pd.Series(True, index=close.index)
         vol_cap = pd.Series(np.nan, index=close.index)
         vol_margin = pd.Series(np.nan, index=close.index)
@@ -32598,7 +33147,7 @@ def _v45_brt_filter_frame(df: pd.DataFrame, cfg: BacktestConfig) -> dict[str, An
         if use_vol_cap:
             vol_window = max(int(getattr(cfg, "brt_vol_window", 20)), 5)
             vol_pct = max(5.0, min(99.0, float(getattr(cfg, "brt_vol_percentile", 80.0)))) / 100.0
-            realized_vol = close.pct_change().rolling(vol_window).std() * np.sqrt(252)
+            realized_vol = close.pct_change().rolling(vol_window).std() * np.sqrt(_annualization_for_frame(df, cfg))
             hist_window = max(126, vol_window * 5)
             vol_cap = realized_vol.rolling(hist_window, min_periods=vol_window).quantile(vol_pct)
             vol_gate = (realized_vol <= vol_cap) | vol_cap.isna()
@@ -33559,7 +34108,7 @@ def _v46_market_source_frame(df: pd.DataFrame, cfg: BacktestConfig, ticker: str 
         frame["benchmark_trend_50"] = benchmark_nav > frame["bench_ma_50"]
         frame["benchmark_trend_100"] = benchmark_nav > frame["bench_ma_100"]
 
-        frame["realized_vol_20"] = asset_returns.rolling(20).std() * np.sqrt(252)
+        frame["realized_vol_20"] = asset_returns.rolling(20).std() * np.sqrt(_annualization_for_frame(df, cfg))
 
         try:
             frame["vol_rank_126"] = frame["realized_vol_20"].rolling(126, min_periods=30).apply(
@@ -34377,9 +34926,10 @@ def _v47_enrich_market_frame(df: pd.DataFrame, cfg: BacktestConfig, ticker: str 
             min_periods=30,
         ).apply(_v47_last_rank_pct, raw=False)
 
-        frame["realized_vol_10"] = asset_ret.rolling(10).std() * np.sqrt(252)
-        frame["realized_vol_20"] = asset_ret.rolling(20).std() * np.sqrt(252)
-        frame["realized_vol_60"] = asset_ret.rolling(60).std() * np.sqrt(252)
+        periods_per_year = _annualization_for_frame(df, cfg)
+        frame["realized_vol_10"] = asset_ret.rolling(10).std() * np.sqrt(periods_per_year)
+        frame["realized_vol_20"] = asset_ret.rolling(20).std() * np.sqrt(periods_per_year)
+        frame["realized_vol_60"] = asset_ret.rolling(60).std() * np.sqrt(periods_per_year)
 
         frame["vol_rank_126"] = frame["realized_vol_20"].rolling(
             126,
@@ -35331,7 +35881,7 @@ def _v48_data_availability_map(df: pd.DataFrame, cfg: BacktestConfig, ticker: st
             start_txt = _format_dt(start)
             end_txt = _format_dt(end)
         else:
-            sample_years = n / 252.0
+            sample_years = n / float(_annualization_for_frame(work, cfg))
             start_txt = "N/A"
             end_txt = "N/A"
 
@@ -55628,11 +56178,13 @@ def _source_only_strategy_sandbox_v55_pack(ctx: dict[str, Any] | None, v54_pack:
             strat_ret = engine_signal * returns - costs
             equity = (1.0 + strat_ret).cumprod()
             sandbox = pd.DataFrame({"close": close, "raw_signal": raw_signal, "engine_signal_t1": engine_signal, "returns": returns, "turnover": turnover, "costs": costs, "strategy_return": strat_ret, "sandbox_equity": equity})
+            sandbox.attrs.update(dict(getattr(price_df, "attrs", {}) or {}))
             obs = int(len(sandbox))
             active = int((engine_signal.abs() > 0).sum())
             total = float(equity.iloc[-1] / equity.iloc[0] - 1.0) if len(equity) > 1 else 0.0
-            vol = float(strat_ret.std() * np.sqrt(252)) if strat_ret.std() > 0 else np.nan
-            sharpe = float(strat_ret.mean() / strat_ret.std() * np.sqrt(252)) if strat_ret.std() > 0 else np.nan
+            periods_per_year = _annualization_for_frame(sandbox, ctx.get("cfg"))
+            vol = float(strat_ret.std() * np.sqrt(periods_per_year)) if strat_ret.std() > 0 else np.nan
+            sharpe = float(strat_ret.mean() / strat_ret.std() * np.sqrt(periods_per_year)) if strat_ret.std() > 0 else np.nan
             dd = equity / equity.cummax() - 1.0
             maxdd = float(dd.min()) if not dd.empty else np.nan
             hit = float((strat_ret[strat_ret != 0] > 0).mean()) if (strat_ret != 0).any() else np.nan
@@ -55682,6 +56234,7 @@ def _oos_robustness_gate_v56_pack(ctx: dict[str, Any] | None, v55_pack: dict[str
             boot = pd.DataFrame()
         else:
             r = pd.to_numeric(sandbox["strategy_return"], errors="coerce").replace([np.inf, -np.inf], np.nan).fillna(0.0)
+            periods_per_year = _annualization_for_frame(sandbox, (ctx or {}).get("cfg") if isinstance(ctx, dict) else None)
             n = len(r)
             split_pos = int(n * 0.60)
             parts = {"IS 60%": r.iloc[:split_pos], "OOS 40%": r.iloc[split_pos:], "Full": r}
@@ -55689,7 +56242,7 @@ def _oos_robustness_gate_v56_pack(ctx: dict[str, Any] | None, v55_pack: dict[str
             for name, s in parts.items():
                 eq = (1.0 + s).cumprod()
                 dd = eq / eq.cummax() - 1.0
-                rows.append({"Segment": name, "Obs": int(len(s)), "Return": float(eq.iloc[-1] / eq.iloc[0] - 1.0) if len(eq) > 1 else 0.0, "Sharpe": float(s.mean() / s.std() * np.sqrt(252)) if s.std() > 0 else np.nan, "Max DD": float(dd.min()) if not dd.empty else np.nan, "Hit": float((s > 0).mean()) if len(s) else np.nan})
+                rows.append({"Segment": name, "Obs": int(len(s)), "Return": float(eq.iloc[-1] / eq.iloc[0] - 1.0) if len(eq) > 1 else 0.0, "Sharpe": float(s.mean() / s.std() * np.sqrt(periods_per_year)) if s.std() > 0 else np.nan, "Max DD": float(dd.min()) if not dd.empty else np.nan, "Hit": float((s > 0).mean()) if len(s) else np.nan})
             split = pd.DataFrame(rows)
             wf_rows = []
             segments = 5
@@ -55697,7 +56250,7 @@ def _oos_robustness_gate_v56_pack(ctx: dict[str, Any] | None, v55_pack: dict[str
                 if len(chunk) < 5:
                     continue
                 eq = (1.0 + pd.Series(chunk)).cumprod()
-                wf_rows.append({"Window": f"WF {i+1}", "Obs": int(len(chunk)), "Return": float(eq.iloc[-1] / eq.iloc[0] - 1.0) if len(eq) > 1 else 0.0, "Sharpe": float(pd.Series(chunk).mean() / pd.Series(chunk).std() * np.sqrt(252)) if pd.Series(chunk).std() > 0 else np.nan})
+                wf_rows.append({"Window": f"WF {i+1}", "Obs": int(len(chunk)), "Return": float(eq.iloc[-1] / eq.iloc[0] - 1.0) if len(eq) > 1 else 0.0, "Sharpe": float(pd.Series(chunk).mean() / pd.Series(chunk).std() * np.sqrt(periods_per_year)) if pd.Series(chunk).std() > 0 else np.nan})
             wf = pd.DataFrame(wf_rows)
             rng = np.random.default_rng(42)
             boot_returns = []
@@ -55750,6 +56303,7 @@ def _source_strategy_stress_lab_v57_pack(ctx: dict[str, Any] | None, v55_pack: d
         else:
             base = pd.to_numeric(sandbox["strategy_return"], errors="coerce").fillna(0.0)
             turnover = pd.to_numeric(sandbox.get("turnover", pd.Series(0.0, index=sandbox.index)), errors="coerce").fillna(0.0)
+            periods_per_year = _annualization_for_frame(sandbox, (ctx or {}).get("cfg") if isinstance(ctx, dict) else None)
             rows = []
             for slip in [0, 5, 10, 20, 35]:
                 for gap in [0, 25, 50, 100]:
@@ -55760,7 +56314,7 @@ def _source_strategy_stress_lab_v57_pack(ctx: dict[str, Any] | None, v55_pack: d
                         stressed = stressed + adverse
                     eq = (1.0 + stressed).cumprod()
                     dd = eq / eq.cummax() - 1.0
-                    rows.append({"Slippage bps": slip, "Gap haircut bps": gap, "Return": float(eq.iloc[-1] / eq.iloc[0] - 1.0) if len(eq) > 1 else 0.0, "Sharpe": float(stressed.mean() / stressed.std() * np.sqrt(252)) if stressed.std() > 0 else np.nan, "Max DD": float(dd.min()) if not dd.empty else np.nan})
+                    rows.append({"Slippage bps": slip, "Gap haircut bps": gap, "Return": float(eq.iloc[-1] / eq.iloc[0] - 1.0) if len(eq) > 1 else 0.0, "Sharpe": float(stressed.mean() / stressed.std() * np.sqrt(periods_per_year)) if stressed.std() > 0 else np.nan, "Max DD": float(dd.min()) if not dd.empty else np.nan})
             stress = pd.DataFrame(rows)
             severe = stress[(stress["Slippage bps"] >= 20) & (stress["Gap haircut bps"] >= 50)]
             severe_positive = float((severe["Return"] > 0).mean()) if not severe.empty else 0.0
@@ -56246,7 +56800,7 @@ def _source_attribution_explainability_v58_pack(ctx: dict[str, Any] | None, v52_
             r = pd.to_numeric(sandbox["strategy_return"], errors="coerce").replace([np.inf, -np.inf], np.nan).fillna(0.0)
             pos = float(r[r > 0].sum()) if (r > 0).any() else 0.0
             neg = float(r[r < 0].sum()) if (r < 0).any() else 0.0
-            sharpe = float(r.mean() / r.std() * np.sqrt(252)) if r.std() > 0 else np.nan
+            sharpe = float(r.mean() / r.std() * np.sqrt(_annualization_for_frame(sandbox, (ctx or {}).get("cfg") if isinstance(ctx, dict) else None))) if r.std() > 0 else np.nan
             sandbox_stats = pd.DataFrame(
                 [
                     ["Gross positive contribution", _format_pct(pos), "Somme des jours positifs sandbox."],
