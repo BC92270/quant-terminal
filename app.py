@@ -135,6 +135,26 @@ except Exception as _exc:
 
 
 # ============================================================
+# CONTEXTUAL SECTION ASSISTANTS — SAFE IMPORT
+# ============================================================
+# The assistant is an additive shell.  Every existing workspace must remain
+# usable if its optional UI/backend cannot be imported or a provider is down.
+SECTION_ASSISTANT_IMPORT_ERROR = None
+render_section_assistant = None
+resolve_section_id = None
+
+try:
+    from quant_ai.ui_components.section_assistant import (
+        render_section_assistant,
+        resolve_section_id,
+    )
+except Exception as _exc:
+    SECTION_ASSISTANT_IMPORT_ERROR = _exc
+    render_section_assistant = None
+    resolve_section_id = None
+
+
+# ============================================================
 # MARKET INTELLIGENCE — SAFE AUTONOMOUS WORKSPACE IMPORT
 # ============================================================
 MARKET_INTELLIGENCE_IMPORT_ERROR = None
@@ -5089,6 +5109,132 @@ def _route_query_value(name: str, default: str = "") -> str:
     return str(value or default).strip()
 
 
+def _assistant_session_value(prefix: str):
+    """Return the latest allowlisted Navigator value for a dynamic state key."""
+
+    matches = [
+        value
+        for key, value in st.session_state.items()
+        if str(key).startswith(prefix)
+    ]
+    return matches[-1] if matches else None
+
+
+def _render_contextual_section_assistant(
+    section_id: str | None = None,
+    *,
+    mode_or_route: str | None = None,
+    section_label: str | None = None,
+    security: str | None = None,
+    primary_function: str | None = None,
+    expanded: bool = False,
+) -> None:
+    """Mount one fail-soft, read-only assistant with a bounded context.
+
+    This compose-layer helper intentionally exposes only navigation metadata,
+    small scalar summaries and freshness information.  It never forwards the
+    full Streamlit session, credentials, raw portfolio holdings or dataframes.
+    """
+
+    if not callable(render_section_assistant):
+        return
+
+    resolved_section = str(section_id or "").strip()
+    if not resolved_section and callable(resolve_section_id):
+        resolved_section = str(resolve_section_id(str(mode_or_route or "")) or "")
+    if not resolved_section:
+        return
+
+    last_params = st.session_state.get("last_params") or {}
+    if not isinstance(last_params, dict):
+        last_params = {}
+
+    selected_instrument = _assistant_session_value("router_instrument_")
+    navigator_security = getattr(selected_instrument, "symbol", selected_instrument)
+    selected_security = (
+        security
+        or (navigator_security if resolved_section == "navigator" else None)
+        or st.session_state.get("ticker")
+        or last_params.get("ticker")
+        or ""
+    )
+    selected_security = str(selected_security or "").strip().upper()
+
+    navigator_function = _assistant_session_value("router_primary_workspace_")
+    selected_function = str(
+        primary_function
+        or (navigator_function if resolved_section == "navigator" else None)
+        or mode_or_route
+        or st.session_state.get("mode_input")
+        or resolved_section
+    ).strip()
+
+    analysis = st.session_state.get("analysis")
+    scalar_analysis: dict[str, object] = {}
+    if isinstance(analysis, dict):
+        for key, value in analysis.items():
+            if len(scalar_analysis) >= 24:
+                break
+            if isinstance(value, (str, int, float, bool)) or value is None:
+                scalar_analysis[str(key)[:80]] = value
+
+    price_data = st.session_state.get("price_data")
+    observation_count = 0
+    data_as_of = ""
+    if isinstance(price_data, pd.DataFrame):
+        observation_count = int(len(price_data.index))
+        if observation_count:
+            try:
+                latest_index = price_data.index[-1]
+                data_as_of = (
+                    latest_index.isoformat()
+                    if hasattr(latest_index, "isoformat")
+                    else str(latest_index)
+                )
+            except Exception:
+                data_as_of = ""
+
+    bounded_context = {
+        "route": _route_query_value("workspace", "terminal"),
+        "active_view": str(mode_or_route or selected_function),
+        "security": selected_security,
+        "primary_function": selected_function,
+        "asset_type": str(st.session_state.get("asset_class") or last_params.get("asset_class") or ""),
+        "symbols": (selected_security,) if selected_security else (),
+        "date_range": {
+            "period": str(last_params.get("period") or ""),
+            "interval": str(last_params.get("interval") or ""),
+        },
+        "filters": {
+            "router_period": str(st.session_state.get("router_period") or ""),
+            "router_interval": str(st.session_state.get("router_interval") or ""),
+        },
+        "section_state": {
+            "analysis_available": isinstance(analysis, dict) and bool(analysis),
+            "price_observations": observation_count,
+            "analysis_summary": scalar_analysis,
+        },
+        "data_as_of": data_as_of,
+        "permissions": ("read", "navigate", "prepare_research"),
+    }
+
+    try:
+        render_section_assistant(
+            resolved_section,
+            section_label=section_label,
+            security=selected_security or None,
+            primary_function=selected_function or None,
+            raw_context=bounded_context,
+            expanded=expanded,
+            locale="fr-FR",
+        )
+    except Exception as exc:
+        # The assistant must never take a workspace down.  The short trace id
+        # gives operators a useful correlation hint without leaking context.
+        trace_hint = f"{type(exc).__name__}:{abs(hash(str(exc))) % 100000:05d}"
+        st.caption(f"Assistant de section temporairement indisponible · trace {trace_hint}")
+
+
 _route_workspace = _route_query_value("workspace")
 
 if _route_workspace in {"worldmonitor", "market-psychology", "quant-ai", "market-intelligence"}:
@@ -5155,6 +5301,12 @@ if not st.session_state.get("terminal_entered", False):
 if not st.session_state.get("asset_class_selected", False):
     apply_terminal_shell_theme()
     render_asset_class_home()
+    _render_contextual_section_assistant(
+        "navigator",
+        mode_or_route="navigator",
+        section_label="Institutional Navigator",
+        expanded=True,
+    )
     st.stop()
 
 # ============================================================
@@ -5175,6 +5327,12 @@ if st.session_state.get("worldmonitor_v211_open", False):
 
     with top_cols[1]:
         st.caption("WORLDMONITOR · JARVIS GEOPOLITICAL + QUANT INTELLIGENCE")
+
+    _render_contextual_section_assistant(
+        "worldmonitor",
+        mode_or_route="worldmonitor",
+        section_label="WorldMonitor",
+    )
 
     if callable(render_worldmonitor_bridge_v211):
         render_worldmonitor_bridge_v211()
@@ -5209,6 +5367,12 @@ if st.session_state.get("market_intelligence_open", False):
         st.caption(
             "MARKET INTELLIGENCE · CATALYST × MICROSTRUCTURE · POINT-IN-TIME PROBABILISTIC RESEARCH"
         )
+
+    _render_contextual_section_assistant(
+        "market_intelligence",
+        mode_or_route="market-intelligence",
+        section_label="Market Intelligence",
+    )
 
     if callable(render_market_intelligence_lab):
         render_market_intelligence_lab(
@@ -5275,6 +5439,12 @@ if st.session_state.get("market_psychology_lab_open", False):
         st.caption(
             "MARKET PSYCHOLOGY LAB · EXPERIMENTAL BEHAVIORAL STATE / BELIEFS / REFLEXIVITY"
         )
+
+    _render_contextual_section_assistant(
+        "psychology",
+        mode_or_route="market-psychology",
+        section_label="Market Psychology",
+    )
 
     if callable(render_market_psychology_lab):
         render_market_psychology_lab(
@@ -5355,6 +5525,13 @@ if st.session_state.get("quant_ai_open", False):
             )
             _qai_analysis = _qai_analysis if isinstance(_qai_analysis, dict) else {}
 
+    _render_contextual_section_assistant(
+        "quant_ai",
+        mode_or_route="quant-ai",
+        section_label="Quant AI · CIO",
+        security=_qai_ticker,
+    )
+
     if callable(render_quant_ai_terminal):
         render_quant_ai_terminal(
             ticker=_qai_ticker,
@@ -5409,6 +5586,12 @@ asset_class, ticker_input, mode_input = resolve_asset_symbol_and_mode(
 
 st.session_state["asset_class"] = asset_class
 st.session_state["mode_input"] = mode_input
+
+_render_contextual_section_assistant(
+    mode_or_route=mode_input,
+    security=ticker_input,
+    primary_function=mode_input,
+)
 
 # ============================================================
 # FIXED INCOME & CREDIT ANALYTICS — AUTONOMOUS ROUTE
