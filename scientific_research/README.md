@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.4.2
+# Scientific Research Brain v0.6.6.1
 
 Scientific Research Brain (SRB) is the terminal's provenance-first research operating system. It turns a research question into an auditable chain of source understanding, competing hypotheses, explicit measurement choices, causal data contracts, retained experiment attempts and reproducible out-of-sample results.
 
@@ -22,6 +22,32 @@ It is not an autonomous trading engine. Every artifact is `RESEARCH_ONLY`; produ
 14. Budgets and stop rules are explicit; merely viewing a screen does not consume or reconcile them.
 15. A computational Validation Council dossier is never represented as a human-panel attestation.
 16. Replication must be frozen before retrieval, retain outcome sign, expose its independence dimensions and use point-in-time evidence.
+17. Cross-runtime agreement is accepted only from a frozen, hashed challenge executed by a separately authored implementation; agreement proves reproducibility of the declared contract, not scientific truth.
+18. Current revised history may reconcile source provenance and revisions, but it never becomes point-in-time evidence; prospective vintages begin only when actually observed.
+
+## What v0.6.6.1 adds
+
+- **Rendered release parity:** the live hero now identifies Phase 6.6 and v0.6.6.1, matching the direct-source functionality, release manifest and runtime evidence.
+- **Provider identity parity:** every public-data User-Agent now reports the same patch release without changing any frozen scientific protocol or persisted artifact identity.
+
+## What v0.6.6.0 adds
+
+- **Direct official BIS route:** an explicit, free, keyless bulk download reads the official `WS_EER` monthly broad-index file without relying on ALFRED as the delivery channel.
+- **Persist-before-network protocol:** the reference replication, exact six-series matrix, source contract, archive limits, overlap requirements and non-point-in-time boundary are fingerprinted and stored before acquisition.
+- **Bounded immutable intake:** the compressed ZIP, provider response metadata, six filtered canonical series and content-addressed manifest are retained; archive paths, CRC, schema, dataset identity, status, collection semantics, positivity and duplicate months fail closed. The persisted raw and canonical bytes are reloaded, re-parsed and re-fingerprinted before reconciliation continues.
+- **Initial-versus-revised ledger:** every overlapping observation retains the ALFRED initial release, current BIS value, signed/absolute/percentage revision and exact comparison fingerprint. Revisions are evidence to measure, not errors to hide.
+- **Honest independence accounting:** the source host and distribution channel are independent from ALFRED; BIS methodology and underlying data lineage, the investigator and point-in-time status are explicitly not independent.
+- **Prospective vintage observatory:** content-distinct snapshots and distinct latest months accumulate from real observation time only. Readiness requires 12 distinct snapshots, 12 distinct latest months and at least 300 observed days; historical backfill is forbidden.
+- **Fail-closed provenance gate:** `DIRECT_SOURCE_RECONCILIATION` requires complete six-series coverage, raw/snapshot/comparison fingerprints, explicit revised-history semantics and intact `RESEARCH_ONLY` locks. Its forward ledger may remain `WARMING_UP` without pretending that a historical vintage study exists.
+
+## What v0.6.5.0 adds
+
+- **Independent implementation axis:** a separately authored TypeScript/Node engine reads the sealed canonical ALFRED CSV files directly and shares no Python numerical functions.
+- **Full nine-screen reconstruction:** the second engine independently rebuilds causal release-event support, fits every AR(1)/OU model, recomputes baselines, forecast traces, Diebold–Mariano diagnostics and the Holm family.
+- **Frozen cross-runtime challenge:** protocol identity, canonical file hashes and row counts, snapshot manifest, engine sources, source replication and tolerance are sealed before execution.
+- **Field-level parity ledger:** every structural field and numerical trace is compared at a declared `1e-6` tolerance; discrepancies are retained rather than rounded away or silently overwritten.
+- **Fail-closed Mission Control gate:** `CROSS_RUNTIME_REPRODUCIBILITY` is satisfied only when every declared result matches, no discrepancy remains and the research-only promotion lock is intact.
+- **Honest independence accounting:** implementation independence is `true`; investigator independence remains `false`. This is internal reproduction, not third-party peer review.
 
 ## What v0.6.4.2 adds
 
@@ -105,6 +131,8 @@ Question + explicit null
   → frozen independent-market replication protocol
   → ALFRED/BIS initial-release snapshot
   → 9 chronological OOS screens + Holm ledger
+  → frozen TypeScript/Node challenge
+  → independent 9-screen reconstruction + field-level parity ledger
 ```
 
 Mission Control derives this state. It does not mutate it.
@@ -144,6 +172,14 @@ The replication layer prefers the public ALFRED download form in `Observations, 
 
 The protocol is persisted before retrieval. For each observation month, `realtime_start_date` records when the first release became available; real and nominal observations are aligned only after both were public. When several reference periods first appear together, forecasting support keeps the latest period for that event so one co-released value cannot leak into another; non-advancing backfills are also excluded. The untouched raw rows and every exclusion remain auditable. ALFRED coverage starts at the first vintage retained by ALFRED rather than at the beginning of each underlying BIS history. Raw downloads and canonical rows are stored with FRED/ALFRED and BIS attribution and terms links.
 
+Phase 6.5 then gives those sealed local artifacts to a pinned Node.js runtime. The TypeScript verifier performs no network request, checks every source and canonical-file digest before execution, and writes a content-addressed result beside the immutable challenge. A `PASS` requires equality of structure and verdicts plus numerical agreement within the frozen tolerance.
+
+### BIS direct · revised-history reconciliation and forward ledger
+
+Phase 6.6 freezes a separate observation contract before contacting the official BIS bulk endpoint. The bounded parser reads only monthly real/nominal broad indices for the same United States, United Kingdom and Japan series, seals the raw ZIP and six canonical histories, then aligns them with the already sealed ALFRED initial-release rows. The complete comparison table preserves every revision delta and fingerprint.
+
+This route supplies an independent host and distribution path, not an independent underlying provider or methodology: both paths ultimately describe BIS EER data. The bulk file is the current revised history and is permanently marked `NOT_POINT_IN_TIME`; it cannot replace or improve the sign of the historical OOS replication. Each later explicit acquisition becomes an as-observed ledger entry. Identical bytes are retained but cannot increase the distinct-snapshot count, and no vintage before the ledger existed is inferred.
+
 ## Verification
 
 From the repository root:
@@ -154,7 +190,7 @@ python3 -m unittest discover -s scientific_research/tests_python -p 'test_*.py' 
 python3 -m unittest discover -s tests -p 'test_scientific*.py' -v
 ```
 
-The original standalone TypeScript foundation remains separately verifiable through the pinned lockfile:
+The TypeScript foundation and independent replication engine are separately verifiable through the pinned lockfile:
 
 ```bash
 pnpm --dir scientific_research install --frozen-lockfile
@@ -170,6 +206,8 @@ pnpm --dir scientific_research run verify
 - The built-in audited historical executor currently supports the OU/AR(1) surrogate at a one-period horizon.
 - CUSUM can flag forecast-loss instability; it does not identify a causal regime.
 - A completed Council dossier is a system-generated workflow decision, not human peer review or scientific acceptance.
-- ALFRED/BIS replication supplies independent markets and data lineage, but it is executed by the same SRB implementation and investigator; those axes remain explicitly non-independent.
+- Phase 6.4 ALFRED/BIS replication supplies independent markets and data lineage. Phase 6.5 adds an independent TypeScript/Node implementation, while the investigator, question, protocol and source snapshot remain shared.
+- Cross-runtime parity establishes reproducibility of the frozen implementation contract. It is not an external audit, peer review, causal proof or evidence that the chosen measurement is scientifically valid.
+- Phase 6.6 direct BIS acquisition proves a separate delivery path and measures revisions only. The underlying BIS lineage is shared, the bulk history is revised, and the first forward snapshot is merely the start of a future vintage ledger.
 - A completed independent-market replication closes an execution gate regardless of sign. It does not by itself justify generalization, causality, trading use or production promotion.
 - There is no automatic background research loop, arbitrary code execution, belief update or production route.

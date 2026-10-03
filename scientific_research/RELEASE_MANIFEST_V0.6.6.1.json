@@ -1,0 +1,58 @@
+{
+  "product": "Scientific Research Brain",
+  "version": "0.6.6.1",
+  "phase": "6.6",
+  "route": "scientific-research",
+  "entrypoint": "scientific_research_lab.render_scientific_research_brain",
+  "python_package": "scientific_research",
+  "independent_engine": "scientific_research/src/replication/cross-runtime-engine.ts",
+  "independent_cli": "scientific_research/bin/cross-runtime-verify.mjs",
+  "direct_source": "https://data.bis.org/static/bulk/WS_EER_csv_flat.zip",
+  "direct_source_access": "PUBLIC_BIS_BULK_CSV_FLAT_ZIP",
+  "direct_source_cost": "FREE",
+  "direct_source_credentials_required": false,
+  "direct_history_semantics": "CURRENT_REVISED_HISTORY_NOT_A_VINTAGE_ARCHIVE",
+  "direct_historical_evidence_eligible": false,
+  "production_status": "RESEARCH_ONLY",
+  "automatic_promotion_authorized": false,
+  "independence_dimensions": {
+    "implementation": true,
+    "direct_distribution_channel": true,
+    "direct_source_host": true,
+    "direct_underlying_data_lineage": false,
+    "direct_point_in_time": false,
+    "investigator": false
+  },
+  "prospective_vintage_readiness": {
+    "required_distinct_snapshots": 12,
+    "required_distinct_latest_periods": 12,
+    "required_observed_span_days": 300,
+    "historical_backfill_permitted": false
+  },
+  "runtime_state": {
+    "environment_variable": "SRB_MEMORY_DIR",
+    "default": ".scientific_research_data",
+    "included_in_git": false
+  },
+  "required_python_dependency": "httpx[http2]>=0.28,<0.29",
+  "pinned_javascript_toolchain": {
+    "package_manager": "pnpm@11.25.0",
+    "typescript": "5.9.3"
+  },
+  "verification": [
+    "python -m compileall -q scientific_research scientific_research_lab.py",
+    "python -m unittest discover -s scientific_research/tests_python -p test_*.py -q",
+    "python -m unittest discover -s tests -p test_scientific*.py -q",
+    "python -m pytest -q tests/test_scientific_route_smoke.py",
+    "pnpm --dir scientific_research install --frozen-lockfile",
+    "pnpm --dir scientific_research run verify"
+  ],
+  "verified_suite_counts": {
+    "python_internal": 63,
+    "python_integration": 54,
+    "python_route": 1,
+    "typescript_node": 11
+  },
+  "patch_scope": "Release-display and provider User-Agent alignment for the fully verified Phase 6.6 direct BIS reconciliation implementation.",
+  "scientific_boundary": "The direct BIS route independently verifies distribution and provenance but shares the underlying BIS methodology and data lineage. Current bulk history is not point-in-time; prospective vintages begin only when observed. Nothing authorizes scientific truth, investigator independence, production or automatic promotion."
+}

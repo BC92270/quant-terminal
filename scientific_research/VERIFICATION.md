@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.4.2 — verification
+# Scientific Research Brain v0.6.6.1 — verification
 
 ## Required commands
 
@@ -17,7 +17,7 @@ pnpm --dir scientific_research run verify
 
 ## Python coverage
 
-The v0.6.4.2 suite covers:
+The v0.6.6.1 suite covers:
 
 - complete point-in-time contract validation and revised-history warnings;
 - measurement-lineage and observable-lifecycle conflicts;
@@ -53,6 +53,18 @@ The v0.6.4.2 suite covers:
 - paired horizon-one forecast comparisons and nine-test Holm-Bonferroni adjustment;
 - explicit market/data-lineage independence with implementation/investigator non-independence.
 - replacement of stale persisted plan instructions when every Mission Control gate is satisfied and the mission is ready for final review.
+- deterministic challenge identity from the governed replication, sealed snapshot, canonical CSV hashes and TypeScript source hashes;
+- independent TypeScript reconstruction of all nine causal OOS screens without importing Python numerical code;
+- field-level cross-runtime comparison of support exclusions, splits, metrics, parameters, traces, forecast tests, multiplicity adjustment and verdicts;
+- append-only `FROZEN → COMPLETE` verification lifecycle, retained disagreement and a fail-closed Mission Control gate;
+- exact UTC timestamp serialization across Python and TypeScript, with a declared numerical tolerance of `1e-6`;
+- explicit implementation independence, explicit investigator non-independence and unbroken `RESEARCH_ONLY` locks.
+- persist-before-network direct BIS observation protocols and append-only `FROZEN → COMPLETE` lifecycle;
+- bounded ZIP/CSV validation, exact six-series filtering, source schema/status/collection checks, content-addressed raw/canonical persistence and fail-closed restart/tamper revalidation;
+- field-level reconciliation of ALFRED initial releases against current BIS revised history without classifying legitimate revisions as transport failures;
+- explicit independent distribution path with shared underlying BIS lineage and permanently non-point-in-time historical eligibility;
+- prospective forward-vintage readiness that deduplicates identical content and requires 12 distinct snapshots, 12 distinct latest months and 300 observed days;
+- fail-closed `DIRECT_SOURCE_RECONCILIATION` Mission Control behavior for coverage, fingerprints, provenance overclaims and promotion locks.
 
 ## Acceptance criteria
 
@@ -71,10 +83,15 @@ The v0.6.4.2 suite covers:
 13. Replication completion requires point-in-time initial releases, an independent axis, raw/canonical snapshot evidence and execution fingerprints.
 14. A legacy replication without the frozen co-release/backfill event-time policy cannot execute or satisfy Mission Control.
 15. Concurrent registry writers cannot silently overwrite one another; lock timeout fails closed and preserves prior bytes.
+16. A cross-runtime challenge must be persisted frozen before Node execution and must bind exact source, build, snapshot and result fingerprints.
+17. `CROSS_RUNTIME_REPRODUCIBILITY` cannot pass unless every persisted Python result has one matching TypeScript result, with zero retained discrepancy.
+18. A direct BIS acquisition must be persisted frozen before network access and must retain the exact raw archive, six canonical series and complete comparison fingerprints.
+19. Current revised BIS history must remain `NOT_POINT_IN_TIME` and `historical_evidence_eligible=false`; violating either boundary is a Mission Control conflict.
+20. A prospective vintage count increases only for a content-distinct snapshot actually observed by the ledger; no historical vintage may be inferred or fabricated.
 
 ## Current scientific acceptance boundary
 
-Passing the software suite proves implementation behavior only. Scientific gates close only from persisted live artifacts satisfying their narrow contracts. A Council dossier is computational, and an ALFRED/BIS replication is independent on market/data lineage but not investigator/implementation. Neither is peer review, causal proof, production authorization or scientific truth.
+Passing the software suite proves implementation behavior only. Scientific gates close only from persisted live artifacts satisfying their narrow contracts. A Council dossier is computational; ALFRED/BIS supplies independent market/data lineage; TypeScript/Node supplies an independent implementation. Direct BIS supplies an independent distribution route but shares the underlying BIS lineage and exposes revised history. The investigator and governed workflow remain shared. None of these is peer review, causal proof, production authorization or scientific truth.
 
 ## Release boundary
 

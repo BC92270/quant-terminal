@@ -4,8 +4,11 @@ The package preserves source-grounded understanding, cross-domain transfer gates
 guarded experimentation and explicit measurement uncertainty. Phase 6.3 adds strict
 historical data contracts, append-only attempts, forecast traces, reproducibility
 capsules and a derived Mission Control. Phase 6.4 adds a transparent computational
-Council dossier and frozen, point-in-time independent-market replication. Every object
-remains RESEARCH_ONLY.
+Council dossier and frozen, point-in-time independent-market replication. Phase 6.5
+adds a separately authored TypeScript/Node cross-runtime reproduction of the sealed
+replication artifacts. Every object remains RESEARCH_ONLY.
+Phase 6.6 adds an explicit direct-BIS revised-history reconciliation and a
+prospective as-observed snapshot ledger without backfilling vintages.
 """
 
 from .phase2_models import (
@@ -99,6 +102,37 @@ from .replication_engine import (
     fetch_alfred_initial_release_series,
     load_persisted_alfred_snapshot_bundle,
 )
+from .phase65_models import CrossRuntimeVerificationRecord
+from .phase65_registry import Phase65Registry
+from .cross_runtime_verification import (
+    CROSS_RUNTIME_ENGINE_PROTOCOL,
+    CROSS_RUNTIME_PROTOCOL_VERSION,
+    CROSS_RUNTIME_TOLERANCE,
+    CrossRuntimeVerificationError,
+    compare_cross_runtime_results,
+    cross_runtime_runtime_status,
+    execute_cross_runtime_verification,
+    freeze_cross_runtime_verification,
+)
+from .phase66_models import DirectSourceReconciliationRecord
+from .phase66_registry import Phase66Registry
+from .direct_bis_reconciliation import (
+    BisArchivePayload,
+    DIRECT_BIS_ACCESS_MODE,
+    DIRECT_BIS_EXPORT_HELP_URL,
+    DIRECT_BIS_HISTORY_SEMANTICS,
+    DIRECT_BIS_PROTOCOL_VERSION,
+    DIRECT_BIS_SOURCE_URL,
+    DIRECT_BIS_TERMS_URL,
+    DIRECT_BIS_TOPIC_URL,
+    DirectBisDataError,
+    build_prospective_vintage_summary,
+    download_bis_eer_archive,
+    execute_direct_bis_reconciliation,
+    freeze_direct_bis_reconciliation,
+    load_persisted_direct_bis_snapshot,
+    parse_bis_eer_archive,
+)
 
 __all__ = [
     "AssumptionRecord", "ClaimRecord", "EquationStructure", "KnowledgeEdge", "KnowledgeNode",
@@ -125,6 +159,17 @@ __all__ = [
     "IndependentReplicationRecord", "ReplicationDataError", "build_alfred_bis_replication_protocol",
     "execute_alfred_bis_replication", "fetch_alfred_graph_initial_release_series", "fetch_alfred_initial_release_series",
     "load_persisted_alfred_snapshot_bundle",
+    "CrossRuntimeVerificationRecord", "Phase65Registry",
+    "CROSS_RUNTIME_ENGINE_PROTOCOL", "CROSS_RUNTIME_PROTOCOL_VERSION", "CROSS_RUNTIME_TOLERANCE",
+    "CrossRuntimeVerificationError", "compare_cross_runtime_results", "cross_runtime_runtime_status",
+    "execute_cross_runtime_verification", "freeze_cross_runtime_verification",
+    "DirectSourceReconciliationRecord", "Phase66Registry", "BisArchivePayload",
+    "DIRECT_BIS_ACCESS_MODE", "DIRECT_BIS_EXPORT_HELP_URL", "DIRECT_BIS_HISTORY_SEMANTICS",
+    "DIRECT_BIS_PROTOCOL_VERSION", "DIRECT_BIS_SOURCE_URL", "DIRECT_BIS_TERMS_URL",
+    "DIRECT_BIS_TOPIC_URL", "DirectBisDataError", "build_prospective_vintage_summary",
+    "download_bis_eer_archive", "execute_direct_bis_reconciliation",
+    "freeze_direct_bis_reconciliation", "load_persisted_direct_bis_snapshot",
+    "parse_bis_eer_archive",
 ]
 
 from .phase6_models import (

@@ -23,6 +23,8 @@ from scientific_research import (
     ClosedLoopRegistry,
     Phase62Registry,
     Phase63Registry,
+    Phase65Registry,
+    Phase66Registry,
     RegistryCorruptionError,
     ResearchBudget,
     build_scout_record,
@@ -66,6 +68,16 @@ from scientific_research import (
     build_replication_plan,
     build_alfred_bis_replication_protocol,
     execute_alfred_bis_replication,
+    freeze_cross_runtime_verification,
+    execute_cross_runtime_verification,
+    cross_runtime_runtime_status,
+    build_prospective_vintage_summary,
+    execute_direct_bis_reconciliation,
+    freeze_direct_bis_reconciliation,
+    DIRECT_BIS_EXPORT_HELP_URL,
+    DIRECT_BIS_SOURCE_URL,
+    DIRECT_BIS_TERMS_URL,
+    DIRECT_BIS_TOPIC_URL,
     ALFRED_BIS_MARKETS,
     ALFRED_FORM_ACCESS_MODE,
     ALFRED_GRAPH_ACCESS_MODE,
@@ -119,7 +131,7 @@ except Exception:  # pragma: no cover - allows core unit tests without Streamlit
 # No financial engine is imported or mutated from this module.
 # ============================================================
 
-SRB_VERSION = "0.6.4.2"
+SRB_VERSION = "0.6.6.1"
 SRB_WORKSPACE_SLUG = "scientific-research"
 DEFAULT_MEMORY_DIR = ".scientific_research_data"
 
@@ -447,6 +459,8 @@ class ScientificResearchMemory:
         self.phase61 = ClosedLoopRegistry(base)
         self.phase62 = Phase62Registry(base)
         self.phase63 = Phase63Registry(base)
+        self.phase65 = Phase65Registry(base)
+        self.phase66 = Phase66Registry(base)
 
     @staticmethod
     def _load_json(path: Path) -> list[dict[str, Any]]:
@@ -3574,6 +3588,339 @@ def _render_validation_review(review: dict[str, Any]) -> None:
         st.caption(item)
 
 
+def _render_cross_runtime_verification(memory: ScientificResearchMemory, replication: dict[str, Any]) -> None:
+    st.divider()
+    st.markdown("#### Cross-Runtime Verification · Phase 6.5")
+    st.caption(
+        "A separately authored TypeScript/Node engine reads the sealed canonical ALFRED files directly, "
+        "reconstructs causal release-event support, refits every AR(1)/OU screen and recomputes metrics, "
+        "Diebold–Mariano diagnostics and Holm correction. It shares no Python numerical functions. "
+        "This establishes an independent implementation axis only; the investigator and protocol remain non-independent."
+    )
+    records = [
+        row for row in memory.phase65.list_verifications()
+        if str(row.get("replication_id") or "") == str(replication.get("replication_id") or "")
+    ]
+    current = max(records, key=lambda row: str(row.get("created_at") or ""), default=None)
+    try:
+        runtime = cross_runtime_runtime_status()
+    except Exception as exc:
+        runtime = {"ready": False, "node_executable": "", "build_exists": False, "error": str(exc)}
+
+    if current is None:
+        st.warning(
+            "No TypeScript challenge has been frozen for this completed replication. Freezing records exact source-file hashes, "
+            "canonical CSV hashes, protocol, snapshot and tolerances before the second implementation runs."
+        )
+        if st.button(
+            "Freeze independent TypeScript challenge",
+            use_container_width=True,
+            key="srb_p65_freeze_cross_runtime",
+        ):
+            try:
+                frozen = freeze_cross_runtime_verification(replication, data_root=memory.root)
+                memory.phase65.save_verification(frozen)
+                memory.audit("PHASE65_CROSS_RUNTIME_CHALLENGE_FROZEN", {
+                    "verification_id": frozen.verification_id,
+                    "replication_id": frozen.replication_id,
+                    "challenge_fingerprint": frozen.challenge_fingerprint,
+                    "engine_source_fingerprint": frozen.engine_source_fingerprint,
+                    "source_snapshot_fingerprint": frozen.source_snapshot_fingerprint,
+                    "implementation_independent": frozen.independence_dimensions.get("implementation"),
+                    "investigator_independent": frozen.independence_dimensions.get("investigator"),
+                    "automatic_promotion_authorized": frozen.automatic_promotion_authorized,
+                    "production_status": frozen.production_status,
+                })
+                st.session_state["srb_p5_flash"] = (
+                    f"Cross-runtime challenge frozen: {frozen.verification_id}. "
+                    "The TypeScript engine has not executed yet."
+                )
+                st.rerun()
+            except Exception as exc:
+                st.error(str(exc))
+        return
+
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Challenge", current.get("verification_id", "N/A"))
+    c2.metric("Lifecycle", current.get("execution_status", "N/A"))
+    c3.metric("Parity", current.get("parity_status", "N/A"))
+    c4.metric("Matched", f"{current.get('matched_result_count', 0)}/{current.get('result_count', 0)}")
+    c5.metric("Production", current.get("production_status", "RESEARCH_ONLY"))
+    st.caption(
+        f"Challenge {current.get('challenge_fingerprint')} · source {current.get('engine_source_fingerprint')} · "
+        f"tolerance {float(current.get('numerical_tolerance') or 0.0):.1e}"
+    )
+    dimensions = current.get("independence_dimensions") or {}
+    st.dataframe(pd.DataFrame([{
+        "Axis": key.replace("_", " ").title(),
+        "Independent": bool(value),
+        "Scope": (
+            "Separate TypeScript/Node numerical code path" if key == "implementation" and value else
+            "Same investigator and governed workflow" if key == "investigator" and not value else
+            "Inherited from the frozen Phase 6.4 replication"
+        ),
+    } for key, value in dimensions.items()]), use_container_width=True, hide_index=True)
+
+    if str(current.get("execution_status") or "") == "NOT_RUN":
+        if runtime.get("ready"):
+            st.success(
+                "Pinned TypeScript build and Node runtime are available. Execution is local, deterministic and makes no network request."
+            )
+        else:
+            st.error(
+                "The independent runtime is unavailable. Build the pinned TypeScript package before execution; "
+                f"Node={bool(runtime.get('node_executable'))}, build={bool(runtime.get('build_exists'))}."
+            )
+        if st.button(
+            "Execute sealed TypeScript verification",
+            use_container_width=True,
+            key="srb_p65_execute_cross_runtime",
+            disabled=not bool(runtime.get("ready")),
+        ):
+            try:
+                with st.spinner("Recomputing all nine screens in the independent TypeScript/Node code path..."):
+                    completed = execute_cross_runtime_verification(
+                        current,
+                        replication,
+                        data_root=memory.root,
+                    )
+                    memory.phase65.save_verification(completed)
+                    memory.audit("PHASE65_CROSS_RUNTIME_VERIFICATION_COMPLETE", {
+                        "verification_id": completed.verification_id,
+                        "replication_id": completed.replication_id,
+                        "parity_status": completed.parity_status,
+                        "matched_result_count": completed.matched_result_count,
+                        "result_count": completed.result_count,
+                        "discrepancy_count": completed.discrepancy_count,
+                        "engine_build_fingerprint": completed.engine_build_fingerprint,
+                        "result_fingerprint": completed.result_fingerprint,
+                        "runtime_version": completed.runtime_version,
+                        "automatic_promotion_authorized": completed.automatic_promotion_authorized,
+                        "production_status": completed.production_status,
+                    })
+                st.session_state["srb_p5_flash"] = (
+                    f"Cross-runtime verification {completed.parity_status}: "
+                    f"{completed.matched_result_count}/{completed.result_count} screens matched."
+                )
+                st.rerun()
+            except Exception as exc:
+                memory.audit("PHASE65_CROSS_RUNTIME_VERIFICATION_FAILED", {
+                    "verification_id": current.get("verification_id"),
+                    "replication_id": replication.get("replication_id"),
+                    "error_type": type(exc).__name__,
+                    "error": str(exc)[:700],
+                    "production_status": "RESEARCH_ONLY",
+                })
+                st.error(str(exc))
+        return
+
+    if str(current.get("parity_status") or "") == "PASS":
+        st.success(
+            f"Independent implementation parity passed: {current.get('matched_result_count', 0)}/"
+            f"{current.get('result_count', 0)} screens matched within the frozen tolerance."
+        )
+    else:
+        st.error(
+            "Independent implementation parity failed. The mismatch is retained as first-class evidence; "
+            "neither implementation is silently changed or preferred."
+        )
+    st.warning(
+        "Cross-runtime agreement supports computational reproducibility only. It is not independent-investigator replication, "
+        "peer review, causal proof, scientific truth or production authorization."
+    )
+    result_cols = st.columns(4)
+    result_cols[0].metric("Node runtime", current.get("runtime_version") or "N/A")
+    result_cols[1].metric("Discrepancies", int(current.get("discrepancy_count") or 0))
+    result_cols[2].metric("Implementation gate", current.get("implementation_gate_status") or "N/A")
+    result_cols[3].metric("Auto-promotion", "DISABLED")
+    st.caption(
+        f"Build {current.get('engine_build_fingerprint')} · result {current.get('result_fingerprint')} · "
+        f"artifact {current.get('result_path')}"
+    )
+    discrepancies = list(current.get("discrepancies") or ())
+    if discrepancies:
+        with st.expander("Retained cross-runtime discrepancies", expanded=True):
+            for item in discrepancies:
+                st.code(str(item))
+    with st.expander("Full cross-runtime verification record", expanded=False):
+        st.json(current)
+
+
+def _render_direct_source_reconciliation(memory: ScientificResearchMemory, replication: dict[str, Any]) -> None:
+    st.divider()
+    st.markdown("#### Direct BIS Source Observatory · Phase 6.6")
+    st.caption(
+        "This explicit, keyless acquisition reads the official BIS EER bulk file directly and reconciles its current "
+        "revised values against the sealed ALFRED initial-release snapshot. It validates source routing, coverage and "
+        "revision accounting. It is not a vintage archive, an independent underlying data lineage or a replacement for "
+        "the point-in-time replication."
+    )
+    st.markdown(
+        f"[Official bulk file]({DIRECT_BIS_SOURCE_URL}) · "
+        f"[export documentation]({DIRECT_BIS_EXPORT_HELP_URL}) · "
+        f"[EER methodology]({DIRECT_BIS_TOPIC_URL}) · "
+        f"[terms]({DIRECT_BIS_TERMS_URL})"
+    )
+    records = [
+        row for row in memory.phase66.list_reconciliations()
+        if str(row.get("replication_id") or "") == str(replication.get("replication_id") or "")
+    ]
+    current = max(records, key=lambda row: str(row.get("created_at") or ""), default=None)
+    completed_records = [row for row in records if str(row.get("execution_status") or "") == "COMPLETE"]
+    prospective = build_prospective_vintage_summary(
+        completed_records,
+        replication_id=str(replication.get("replication_id") or ""),
+        min_distinct_snapshots=int((current or {}).get("prospective_min_distinct_snapshots") or 12),
+        min_distinct_latest_periods=int((current or {}).get("prospective_min_distinct_latest_periods") or 12),
+        min_span_days=int((current or {}).get("prospective_min_span_days") or 300),
+    )
+
+    if completed_records:
+        latest_complete = max(completed_records, key=lambda row: str(row.get("retrieved_at") or ""))
+        c1, c2, c3, c4, c5 = st.columns(5)
+        c1.metric("Direct series", f"{latest_complete.get('series_count', 0)}/{latest_complete.get('expected_series_count', 0)}")
+        c2.metric("Overlap rows", int(latest_complete.get("total_overlap_rows") or 0))
+        c3.metric("Revised rows", int(latest_complete.get("total_revised_rows") or 0))
+        c4.metric("Latest BIS month", latest_complete.get("latest_period") or "N/A")
+        c5.metric("Point-in-time", latest_complete.get("point_in_time_status") or "NOT_POINT_IN_TIME")
+        st.success(
+            f"Direct-source reconciliation complete: {latest_complete.get('reconciliation_status')} · "
+            f"snapshot {latest_complete.get('direct_snapshot_id')} · source integrity PASS."
+        )
+        summary_rows = []
+        for item in latest_complete.get("series_results") or ():
+            summary_rows.append({
+                "Market": item.get("market_label"),
+                "Measurement": item.get("measurement"),
+                "Series": item.get("series_id"),
+                "Initial rows": item.get("initial_release_row_count"),
+                "Current revised rows": item.get("current_revised_row_count"),
+                "Overlap": item.get("overlap_row_count"),
+                "Changed": item.get("revised_row_count"),
+                "Exact %": round(float(item.get("exact_match_rate") or 0.0) * 100.0, 3),
+                "Mean abs revision": item.get("mean_absolute_revision"),
+                "Max abs revision": item.get("max_absolute_revision"),
+                "Latest delta": item.get("latest_overlap_revision_delta"),
+            })
+        if summary_rows:
+            st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
+        st.caption(
+            f"Raw {latest_complete.get('raw_archive_sha256')} · direct snapshot "
+            f"{latest_complete.get('direct_snapshot_fingerprint')} · reconciliation "
+            f"{latest_complete.get('reconciliation_fingerprint')} · artifact "
+            f"{latest_complete.get('direct_snapshot_path')}"
+        )
+        p1, p2, p3, p4 = st.columns(4)
+        p1.metric("Forward ledger", prospective.get("status", "WARMING_UP"))
+        p2.metric(
+            "Distinct snapshots",
+            f"{prospective.get('distinct_snapshots', 0)}/{prospective.get('required_distinct_snapshots', 12)}",
+        )
+        p3.metric(
+            "Distinct latest months",
+            f"{prospective.get('distinct_latest_periods', 0)}/{prospective.get('required_distinct_latest_periods', 12)}",
+        )
+        p4.metric(
+            "Observed span",
+            f"{prospective.get('span_days', 0)}/{prospective.get('required_span_days', 300)} days",
+        )
+        st.warning(
+            "Prospective vintages start only when this ledger observes them. Earlier BIS vintages are never reconstructed "
+            "or fabricated. WARMING_UP does not block the provenance gate and does not authorize a historical OOS claim."
+        )
+        st.download_button(
+            "Export full reconciliation dossier (JSON)",
+            data=json.dumps(latest_complete, ensure_ascii=False, indent=2, sort_keys=True, default=str),
+            file_name=f"{latest_complete.get('reconciliation_id', 'direct-bis-reconciliation')}.json",
+            mime="application/json",
+            use_container_width=True,
+            key=f"srb_p66_export_{latest_complete.get('reconciliation_id')}",
+        )
+        with st.expander("Full direct-source record", expanded=False):
+            st.json(latest_complete)
+
+    if current is not None and str(current.get("execution_status") or "") == "NOT_RUN":
+        st.info(
+            f"Frozen before network access: {current.get('reconciliation_id')} · protocol "
+            f"{current.get('protocol_fingerprint')}. Acquisition remains explicit and user-triggered."
+        )
+        if st.button(
+            "Acquire official BIS snapshot and reconcile",
+            use_container_width=True,
+            key=f"srb_p66_execute_{current.get('reconciliation_id')}",
+        ):
+            try:
+                with st.spinner("Streaming the official BIS bulk archive, sealing six series and measuring revisions..."):
+                    completed = execute_direct_bis_reconciliation(
+                        current,
+                        data_root=memory.root,
+                        prior_records=records,
+                    )
+                    memory.phase66.save_reconciliation(completed)
+                    memory.audit("PHASE66_DIRECT_BIS_RECONCILIATION_COMPLETE", {
+                        "reconciliation_id": completed.reconciliation_id,
+                        "replication_id": completed.replication_id,
+                        "direct_snapshot_id": completed.direct_snapshot_id,
+                        "direct_snapshot_fingerprint": completed.direct_snapshot_fingerprint,
+                        "raw_archive_sha256": completed.raw_archive_sha256,
+                        "series_count": completed.series_count,
+                        "total_overlap_rows": completed.total_overlap_rows,
+                        "total_revised_rows": completed.total_revised_rows,
+                        "reconciliation_status": completed.reconciliation_status,
+                        "point_in_time_status": completed.point_in_time_status,
+                        "historical_evidence_eligible": completed.historical_evidence_eligible,
+                        "prospective_vintage_status": completed.prospective_vintage_status,
+                        "automatic_promotion_authorized": completed.automatic_promotion_authorized,
+                        "production_status": completed.production_status,
+                    })
+                st.session_state["srb_p5_flash"] = (
+                    f"Direct BIS reconciliation complete: {completed.series_count} series · "
+                    f"{completed.total_revised_rows} revised overlap rows retained."
+                )
+                st.rerun()
+            except Exception as exc:
+                memory.audit("PHASE66_DIRECT_BIS_RECONCILIATION_FAILED", {
+                    "reconciliation_id": current.get("reconciliation_id"),
+                    "replication_id": current.get("replication_id"),
+                    "error_type": type(exc).__name__,
+                    "error": str(exc)[:700],
+                    "historical_evidence_eligible": False,
+                    "production_status": "RESEARCH_ONLY",
+                })
+                st.error(str(exc))
+        return
+
+    st.info(
+        "A new cycle creates a separate frozen record before the next download. Repeating identical bytes is retained as "
+        "an observation but cannot increase the content-distinct forward-vintage count."
+    )
+    if st.button(
+        "Freeze next direct BIS observation",
+        use_container_width=True,
+        key="srb_p66_freeze_next_observation",
+    ):
+        try:
+            frozen = freeze_direct_bis_reconciliation(replication)
+            memory.phase66.save_reconciliation(frozen)
+            memory.audit("PHASE66_DIRECT_BIS_PROTOCOL_FROZEN", {
+                "reconciliation_id": frozen.reconciliation_id,
+                "replication_id": frozen.replication_id,
+                "protocol_fingerprint": frozen.protocol_fingerprint,
+                "reference_snapshot_id": frozen.reference_snapshot_id,
+                "history_semantics": frozen.history_semantics,
+                "point_in_time_status": frozen.point_in_time_status,
+                "historical_evidence_eligible": frozen.historical_evidence_eligible,
+                "automatic_promotion_authorized": frozen.automatic_promotion_authorized,
+                "production_status": frozen.production_status,
+            })
+            st.session_state["srb_p5_flash"] = (
+                f"Direct BIS observation frozen: {frozen.reconciliation_id}. No network request has run yet."
+            )
+            st.rerun()
+        except Exception as exc:
+            st.error(str(exc))
+
+
 def _render_validation_learning(memory: ScientificResearchMemory) -> None:
     st.markdown("### Scientific Validation & Learning · Phase 5.1")
     st.caption(
@@ -4187,6 +4534,8 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                     )
                     with st.expander("Full replication record", expanded=False):
                         st.json(replication)
+                    _render_cross_runtime_verification(memory, replication)
+                    _render_direct_source_reconciliation(memory, replication)
 
 
 
@@ -5051,11 +5400,11 @@ def render_scientific_research_brain(
     st.markdown(
         f"""
         <div class="srb-hero">
-            <div class="srb-kicker">SCIENTIFIC RESEARCH BRAIN · PHASE 6.4 · V{SRB_VERSION}</div>
+            <div class="srb-kicker">SCIENTIFIC RESEARCH BRAIN · PHASE 6.6 · V{SRB_VERSION}</div>
             <div class="srb-title">Evidence-to-Experiment Research Mission Control</div>
             <div class="srb-sub">
                 Source-grounded scientific understanding, competing measurement hypotheses, causal historical-data contracts, append-only experiment attempts,
-                timestamped OOS forecast traces and reproducibility capsules in one auditable research loop. Mission gates expose contradictions and missing evidence;
+                timestamped OOS forecast traces, reproducibility capsules, an independent TypeScript/Node reproduction and direct BIS revision provenance in one auditable research loop. Mission gates expose contradictions and missing evidence;
                 no synthesis updates beliefs automatically and production promotion remains locked.
             </div>
         </div>
