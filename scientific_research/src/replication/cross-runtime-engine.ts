@@ -83,6 +83,11 @@ function assertIsoDate(value: string, label: string): void {
   }
 }
 
+function pythonUtcMidnight(value: string): string {
+  assertIsoDate(value, 'release timestamp');
+  return `${value}T00:00:00+00:00`;
+}
+
 function mean(values: number[]): number {
   if (values.length === 0) throw new Error('Cannot compute a mean over an empty array.');
   return values.reduce((total, value) => total + value, 0) / values.length;
@@ -383,6 +388,7 @@ export function executeCrossRuntimeChallenge(
     for (const variant of challenge.measurement_variants) {
       const values = valuesForVariant(variant.variant_id, realValues, nominalValues);
       const scored = scoreSeries(values, challenge.train_fraction);
+      const splitDate = releaseDates[scored.split];
       const randomWalkErrors = roundedArray(scored.baseline_errors['Random Walk / Last Observation'] ?? []);
       const candidateErrors = roundedArray(scored.candidate_errors);
       const randomWalkDelta = scored.deltas['Random Walk / Last Observation']?.RMSE_IMPROVEMENT_PCT ?? 0;
@@ -405,13 +411,13 @@ export function executeCrossRuntimeChallenge(
         verdict,
         train_size: scored.split,
         test_size: scored.test.length,
-        split_timestamp: releaseDates[scored.split] ?? '',
+        split_timestamp: splitDate === undefined ? '' : pythonUtcMidnight(splitDate),
         candidate_metrics: scored.candidate_metrics,
         baseline_metrics: scored.baseline_metrics,
         deltas_vs_baseline: scored.deltas,
         fitted_parameters: roundedFitted(scored.fitted),
-        forecast_origin_timestamps: releaseDates.slice(scored.split - 1, -1),
-        forecast_timestamps: releaseDates.slice(scored.split),
+        forecast_origin_timestamps: releaseDates.slice(scored.split - 1, -1).map(pythonUtcMidnight),
+        forecast_timestamps: releaseDates.slice(scored.split).map(pythonUtcMidnight),
         actual_values: roundedArray(scored.test),
         candidate_predictions: roundedArray(scored.candidate_predictions),
         candidate_errors: candidateErrors,

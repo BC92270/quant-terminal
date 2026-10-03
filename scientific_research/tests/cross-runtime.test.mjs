@@ -65,6 +65,9 @@ test('independent TypeScript engine executes nine causal OOS screens without pro
   assert.equal(result.implementation_separation, 'SEPARATE_TYPESCRIPT_NODE_CODEPATH');
   assert.equal(result.results.every((row) => row.test_size > 9), true);
   assert.equal(result.results.every((row) => row.forecast_comparison.holm_family_size === 9), true);
+  assert.equal(result.results.every((row) => /^\d{4}-\d{2}-\d{2}T00:00:00\+00:00$/.test(row.split_timestamp)), true);
+  assert.equal(result.results.every((row) => row.forecast_origin_timestamps.every((value) => /^\d{4}-\d{2}-\d{2}T00:00:00\+00:00$/.test(value))), true);
+  assert.equal(result.results.every((row) => row.forecast_timestamps.every((value) => /^\d{4}-\d{2}-\d{2}T00:00:00\+00:00$/.test(value))), true);
 });
 
 test('independent engine rejects production promotion', () => {
