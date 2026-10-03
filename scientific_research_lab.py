@@ -25,6 +25,7 @@ from scientific_research import (
     Phase63Registry,
     Phase65Registry,
     Phase66Registry,
+    Phase67Registry,
     RegistryCorruptionError,
     ResearchBudget,
     build_scout_record,
@@ -78,6 +79,12 @@ from scientific_research import (
     DIRECT_BIS_SOURCE_URL,
     DIRECT_BIS_TERMS_URL,
     DIRECT_BIS_TOPIC_URL,
+    execute_cross_provider_triangulation,
+    freeze_cross_provider_triangulation,
+    OECD_API_DOCUMENTATION_URL,
+    OECD_SOURCE_URL,
+    OECD_STRUCTURE_URL,
+    OECD_TERMS_URL,
     ALFRED_BIS_MARKETS,
     ALFRED_FORM_ACCESS_MODE,
     ALFRED_GRAPH_ACCESS_MODE,
@@ -131,7 +138,7 @@ except Exception:  # pragma: no cover - allows core unit tests without Streamlit
 # No financial engine is imported or mutated from this module.
 # ============================================================
 
-SRB_VERSION = "0.6.6.1"
+SRB_VERSION = "0.6.7.0"
 SRB_WORKSPACE_SLUG = "scientific-research"
 DEFAULT_MEMORY_DIR = ".scientific_research_data"
 
@@ -461,6 +468,7 @@ class ScientificResearchMemory:
         self.phase63 = Phase63Registry(base)
         self.phase65 = Phase65Registry(base)
         self.phase66 = Phase66Registry(base)
+        self.phase67 = Phase67Registry(base)
 
     @staticmethod
     def _load_json(path: Path) -> list[dict[str, Any]]:
@@ -3921,6 +3929,237 @@ def _render_direct_source_reconciliation(memory: ScientificResearchMemory, repli
             st.error(str(exc))
 
 
+def _render_cross_provider_triangulation(memory: ScientificResearchMemory, replication: dict[str, Any]) -> None:
+    st.divider()
+    st.markdown("#### Measurement Triangulation Observatory · Phase 6.7")
+    st.caption(
+        "This frozen-before-network protocol compares three official OECD CPI-based real effective exchange-rate "
+        "series with the sealed direct BIS histories for the United States, United Kingdom and Japan. Because index "
+        "bases, baskets and revisions can differ, the primary estimands are monthly log changes—not raw levels. "
+        "CONCORDANT and MEASUREMENT_DIVERGENCE are both admissible scientific outcomes."
+    )
+    st.markdown(
+        f"[Exact keyless SDMX query]({OECD_SOURCE_URL}) · "
+        f"[API documentation]({OECD_API_DOCUMENTATION_URL}) · "
+        f"[dataflow structure]({OECD_STRUCTURE_URL}) · "
+        f"[terms]({OECD_TERMS_URL})"
+    )
+    st.warning(
+        "A distinct OECD provider and host do not prove an independent underlying lineage. The feed labels its "
+        "calculation methodology as ‘National’; this observatory therefore keeps methodology and underlying-data "
+        "independence false until country-level provenance is independently resolved. Current histories also remain "
+        "NOT_POINT_IN_TIME and RESEARCH_ONLY."
+    )
+
+    direct_records = [
+        row for row in memory.phase66.list_reconciliations()
+        if str(row.get("replication_id") or "") == str(replication.get("replication_id") or "")
+        and str(row.get("execution_status") or "") == "COMPLETE"
+    ]
+    if not direct_records:
+        st.info("Complete the direct BIS reconciliation before freezing the cross-provider protocol.")
+        return
+    direct = max(direct_records, key=lambda row: str(row.get("retrieved_at") or ""))
+    records = [
+        row for row in memory.phase67.list_triangulations()
+        if str(row.get("replication_id") or "") == str(replication.get("replication_id") or "")
+    ]
+    current = max(records, key=lambda row: str(row.get("created_at") or ""), default=None)
+    completed = [row for row in records if str(row.get("execution_status") or "") == "COMPLETE"]
+
+    if completed:
+        latest = max(completed, key=lambda row: str(row.get("retrieved_at") or ""))
+        outcome = str(latest.get("triangulation_outcome") or "NOT_RUN")
+        # Keep the evidence summary legible in narrower Codespace previews.
+        # Six fixed columns compressed the long, governance-critical status
+        # tokens into near-vertical text; two balanced rows preserve the full
+        # information hierarchy without hiding any field.
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Outcome", outcome)
+        c2.metric(
+            "Comparable",
+            f"{latest.get('comparable_series_count', 0)}/{latest.get('expected_series_count', 3)}",
+        )
+        c3.metric("Concordant", int(latest.get("concordant_series_count") or 0))
+        c4, c5, c6 = st.columns(3)
+        c4.metric("Divergent", int(latest.get("divergent_series_count") or 0))
+        c5.metric("Latest OECD month", latest.get("latest_period") or "N/A")
+        c6.metric(
+            "Point-in-time",
+            str(latest.get("point_in_time_status") or "NOT_POINT_IN_TIME").replace("_", " "),
+        )
+        st.caption(
+            f"Status token · {latest.get('point_in_time_status') or 'NOT_POINT_IN_TIME'} · "
+            f"production · {latest.get('production_status') or 'RESEARCH_ONLY'}"
+        )
+        if outcome == "CONCORDANT":
+            st.success(
+                "All three countries pass the frozen monthly-change correlation, directional-agreement and mean-gap "
+                "thresholds. This is measurement concordance—not proof that either provider is correct or independent."
+            )
+        elif outcome == "MEASUREMENT_DIVERGENCE":
+            st.warning(
+                "At least one country fails a frozen concordance threshold. The disagreement is retained as evidence; "
+                "the system does not choose a provider after observing the result."
+            )
+        else:
+            st.error(
+                "At least one country is not structurally comparable under the frozen protocol. No concordance claim "
+                "is permitted."
+            )
+
+        summary_rows = []
+        chart_rows = []
+        for item in latest.get("series_results") or ():
+            summary_rows.append({
+                "Country": item.get("market_label"),
+                "Status": item.get("status"),
+                "BIS series": item.get("bis_series_id"),
+                "OECD area": item.get("oecd_ref_area"),
+                "Overlap": item.get("overlap_row_count"),
+                "Monthly changes": item.get("monthly_change_count"),
+                "Change corr.": item.get("change_correlation"),
+                "Direction %": (
+                    round(float(item.get("sign_agreement") or 0.0) * 100.0, 2)
+                    if item.get("sign_agreement") is not None else None
+                ),
+                "Mean abs gap (pp)": item.get("mean_absolute_change_gap_pp"),
+                "Median abs gap (pp)": item.get("median_absolute_change_gap_pp"),
+                "Rolling corr. median": item.get("rolling_correlation_median"),
+                "Lineage": item.get("lineage_assessment"),
+            })
+            for change in item.get("change_rows") or ():
+                chart_rows.append({
+                    "Period": change.get("period_start_date"),
+                    "Country": item.get("market_label"),
+                    "Absolute monthly change gap (pp)": change.get("absolute_change_gap_pp"),
+                })
+        if summary_rows:
+            st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
+        if chart_rows:
+            chart = pd.DataFrame(chart_rows)
+            chart["Period"] = pd.to_datetime(chart["Period"], errors="coerce")
+            chart = chart.dropna(subset=["Period"]).pivot(
+                index="Period",
+                columns="Country",
+                values="Absolute monthly change gap (pp)",
+            )
+            st.markdown("##### Time-localized measurement distance")
+            st.line_chart(chart, use_container_width=True)
+            st.caption(
+                "Absolute gap between OECD and BIS monthly log changes. Spikes are measurement differences to "
+                "investigate, not errors to erase."
+            )
+        st.caption(
+            f"Raw {latest.get('raw_csv_sha256')} · OECD snapshot "
+            f"{latest.get('oecd_snapshot_fingerprint')} · triangulation "
+            f"{latest.get('triangulation_fingerprint')} · artifact {latest.get('oecd_snapshot_path')}"
+        )
+        st.download_button(
+            "Export full triangulation dossier (JSON)",
+            data=json.dumps(latest, ensure_ascii=False, indent=2, sort_keys=True, default=str),
+            file_name=f"{latest.get('triangulation_id', 'cross-provider-triangulation')}.json",
+            mime="application/json",
+            use_container_width=True,
+            key=f"srb_p67_export_{latest.get('triangulation_id')}",
+        )
+        with st.expander("Frozen thresholds, lineage boundaries and full record", expanded=False):
+            st.json(latest)
+
+    if current is not None and str(current.get("execution_status") or "") == "NOT_RUN":
+        st.info(
+            f"Frozen before OECD access: {current.get('triangulation_id')} · protocol "
+            f"{current.get('protocol_fingerprint')}. No OECD request has run yet."
+        )
+        t1, t2, t3 = st.columns(3)
+        t1.metric("Min change correlation", current.get("min_change_correlation"))
+        t2.metric("Min direction agreement", current.get("min_sign_agreement"))
+        t3.metric("Max mean gap (pp)", current.get("max_mean_absolute_change_gap_pp"))
+        if st.button(
+            "Acquire OECD snapshot and triangulate",
+            use_container_width=True,
+            key=f"srb_p67_execute_{current.get('triangulation_id')}",
+        ):
+            try:
+                with st.spinner("Sealing three OECD histories and executing the frozen BIS/OECD diagnostics..."):
+                    result = execute_cross_provider_triangulation(current, data_root=memory.root)
+                    memory.phase67.save_triangulation(result)
+                    memory.audit("PHASE67_CROSS_PROVIDER_TRIANGULATION_COMPLETE", {
+                        "triangulation_id": result.triangulation_id,
+                        "replication_id": result.replication_id,
+                        "direct_reconciliation_id": result.direct_reconciliation_id,
+                        "oecd_snapshot_id": result.oecd_snapshot_id,
+                        "oecd_snapshot_fingerprint": result.oecd_snapshot_fingerprint,
+                        "triangulation_outcome": result.triangulation_outcome,
+                        "source_series_count": result.source_series_count,
+                        "comparable_series_count": result.comparable_series_count,
+                        "concordant_series_count": result.concordant_series_count,
+                        "divergent_series_count": result.divergent_series_count,
+                        "point_in_time_status": result.point_in_time_status,
+                        "historical_evidence_eligible": result.historical_evidence_eligible,
+                        "automatic_promotion_authorized": result.automatic_promotion_authorized,
+                        "production_status": result.production_status,
+                    })
+                st.session_state["srb_p5_flash"] = (
+                    f"Cross-provider triangulation complete: {result.triangulation_outcome} · "
+                    f"{result.comparable_series_count}/{result.expected_series_count} comparable countries."
+                )
+                st.rerun()
+            except Exception as exc:
+                memory.audit("PHASE67_CROSS_PROVIDER_TRIANGULATION_FAILED", {
+                    "triangulation_id": current.get("triangulation_id"),
+                    "direct_reconciliation_id": current.get("direct_reconciliation_id"),
+                    "error_type": type(exc).__name__,
+                    "error": str(exc)[:700],
+                    "historical_evidence_eligible": False,
+                    "production_status": "RESEARCH_ONLY",
+                })
+                st.error(str(exc))
+        return
+
+    already_for_latest_direct = any(
+        str(row.get("direct_reconciliation_id") or "") == str(direct.get("reconciliation_id") or "")
+        for row in records
+    )
+    if already_for_latest_direct:
+        st.info(
+            "This direct BIS snapshot already has a frozen triangulation record. A new protocol should be anchored to "
+            "a genuinely new direct observation; repeating identical inputs does not create an independence axis."
+        )
+        return
+    st.info(
+        "The next action persists thresholds, country mappings and inference boundaries before the first OECD byte is read."
+    )
+    if st.button(
+        "Freeze OECD/BIS triangulation protocol",
+        use_container_width=True,
+        key="srb_p67_freeze_protocol",
+    ):
+        try:
+            frozen = freeze_cross_provider_triangulation(direct)
+            memory.phase67.save_triangulation(frozen)
+            memory.audit("PHASE67_CROSS_PROVIDER_PROTOCOL_FROZEN", {
+                "triangulation_id": frozen.triangulation_id,
+                "replication_id": frozen.replication_id,
+                "direct_reconciliation_id": frozen.direct_reconciliation_id,
+                "direct_snapshot_id": frozen.direct_snapshot_id,
+                "protocol_fingerprint": frozen.protocol_fingerprint,
+                "min_change_correlation": frozen.min_change_correlation,
+                "min_sign_agreement": frozen.min_sign_agreement,
+                "max_mean_absolute_change_gap_pp": frozen.max_mean_absolute_change_gap_pp,
+                "point_in_time_status": frozen.point_in_time_status,
+                "historical_evidence_eligible": frozen.historical_evidence_eligible,
+                "automatic_promotion_authorized": frozen.automatic_promotion_authorized,
+                "production_status": frozen.production_status,
+            })
+            st.session_state["srb_p5_flash"] = (
+                f"Cross-provider protocol frozen: {frozen.triangulation_id}. No OECD request has run yet."
+            )
+            st.rerun()
+        except Exception as exc:
+            st.error(str(exc))
+
+
 def _render_validation_learning(memory: ScientificResearchMemory) -> None:
     st.markdown("### Scientific Validation & Learning · Phase 5.1")
     st.caption(
@@ -4536,6 +4775,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                         st.json(replication)
                     _render_cross_runtime_verification(memory, replication)
                     _render_direct_source_reconciliation(memory, replication)
+                    _render_cross_provider_triangulation(memory, replication)
 
 
 
@@ -5400,11 +5640,11 @@ def render_scientific_research_brain(
     st.markdown(
         f"""
         <div class="srb-hero">
-            <div class="srb-kicker">SCIENTIFIC RESEARCH BRAIN · PHASE 6.6 · V{SRB_VERSION}</div>
+            <div class="srb-kicker">SCIENTIFIC RESEARCH BRAIN · PHASE 6.7 · V{SRB_VERSION}</div>
             <div class="srb-title">Evidence-to-Experiment Research Mission Control</div>
             <div class="srb-sub">
                 Source-grounded scientific understanding, competing measurement hypotheses, causal historical-data contracts, append-only experiment attempts,
-                timestamped OOS forecast traces, reproducibility capsules, an independent TypeScript/Node reproduction and direct BIS revision provenance in one auditable research loop. Mission gates expose contradictions and missing evidence;
+                timestamped OOS forecast traces, reproducibility capsules, an independent TypeScript/Node reproduction, direct BIS revision provenance and OECD/BIS measurement triangulation in one auditable research loop. Mission gates expose contradictions and missing evidence;
                 no synthesis updates beliefs automatically and production promotion remains locked.
             </div>
         </div>
@@ -5458,7 +5698,7 @@ def render_scientific_research_brain(
 
     st.caption(
         f"Scientific Research Brain v{SRB_VERSION} · Mission Control / Measurement Arena / Evidence Microscope / Historical Data Contracts / "
-        "Append-only Attempts / OOS Forecast Traces / Reproducibility Capsules / Council v2 / ALFRED-BIS Replication active. "
+        "Append-only Attempts / OOS Forecast Traces / Reproducibility Capsules / Council v2 / ALFRED-BIS Replication / OECD-BIS Triangulation active. "
         "External searches, evidence promotion, measurement decisions and experiment execution are explicit; production promotion remains disabled."
     )
 

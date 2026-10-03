@@ -1,0 +1,75 @@
+{
+  "product": "Scientific Research Brain",
+  "version": "0.6.7.0",
+  "phase": "6.7",
+  "route": "scientific-research",
+  "entrypoint": "scientific_research_lab.render_scientific_research_brain",
+  "python_package": "scientific_research",
+  "independent_engine": "scientific_research/src/replication/cross-runtime-engine.ts",
+  "independent_cli": "scientific_research/bin/cross-runtime-verify.mjs",
+  "direct_bis_source": "https://data.bis.org/static/bulk/WS_EER_csv_flat.zip",
+  "triangulation_source": "https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_FINMARK,4.0/USA+GBR+JPN.M.CCRE......?startPeriod=1994-01&dimensionAtObservation=AllDimensions&format=csvfilewithlabels",
+  "triangulation_source_access": "PUBLIC_OECD_SDMX_CSV_WITH_LABELS",
+  "triangulation_source_cost": "FREE",
+  "triangulation_source_credentials_required": false,
+  "triangulation_measure": "REAL_EFFECTIVE_EXCHANGE_RATE_CPI_BASED",
+  "triangulation_countries": [
+    "United States",
+    "United Kingdom",
+    "Japan"
+  ],
+  "history_semantics": "CURRENT_REVISED_HISTORY_NOT_A_VINTAGE_ARCHIVE",
+  "historical_evidence_eligible": false,
+  "production_status": "RESEARCH_ONLY",
+  "automatic_promotion_authorized": false,
+  "frozen_thresholds": {
+    "minimum_overlap_monthly_levels": 120,
+    "minimum_monthly_change_correlation": 0.9,
+    "minimum_direction_agreement": 0.8,
+    "maximum_mean_absolute_monthly_change_gap_percentage_points": 0.5,
+    "rolling_window_months": 36
+  },
+  "admissible_outcomes": [
+    "CONCORDANT",
+    "MEASUREMENT_DIVERGENCE",
+    "NOT_COMPARABLE"
+  ],
+  "independence_dimensions": {
+    "implementation": true,
+    "direct_distribution_channel": true,
+    "direct_source_host": true,
+    "oecd_distribution_channel": true,
+    "oecd_source_host": true,
+    "oecd_provider_organization": true,
+    "cross_provider_underlying_data_lineage": false,
+    "cross_provider_methodology": false,
+    "cross_provider_point_in_time": false,
+    "investigator": false
+  },
+  "runtime_state": {
+    "environment_variable": "SRB_MEMORY_DIR",
+    "default": ".scientific_research_data",
+    "included_in_git": false
+  },
+  "required_python_dependency": "httpx[http2]>=0.28,<0.29",
+  "pinned_javascript_toolchain": {
+    "package_manager": "pnpm@11.25.0",
+    "typescript": "5.9.3"
+  },
+  "verification": [
+    "python -m compileall -q scientific_research scientific_research_lab.py",
+    "python -m unittest discover -s scientific_research/tests_python -p test_*.py -q",
+    "python -m unittest discover -s tests -p test_scientific*.py -q",
+    "python -m pytest -q tests/test_scientific_route_smoke.py",
+    "pnpm --dir scientific_research install --frozen-lockfile",
+    "pnpm --dir scientific_research run verify"
+  ],
+  "verified_suite_counts": {
+    "python_internal": 63,
+    "python_integration": 62,
+    "python_route": 1,
+    "typescript_node": 11
+  },
+  "scope": "Frozen OECD/BIS three-country measurement triangulation with bounded keyless acquisition, tamper-evident persistence, base-invariant monthly-change diagnostics, retained disagreement and fail-closed Mission Control governance.",
+  "scientific_boundary": "OECD is a distinct official provider and host, but its National methodology label does not prove an underlying data lineage independent from BIS. Both histories are current revised views, not point-in-time vintages. Concordance is not truth; divergence is retained; nothing authorizes peer review, investigator independence, production or automatic promotion."
+}

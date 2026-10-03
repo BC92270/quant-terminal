@@ -314,6 +314,57 @@ def _complete_snapshot(
             "automatic_promotion_authorized": False,
             "production_status": "RESEARCH_ONLY",
         }],
+        "cross_provider_triangulations": [{
+            "triangulation_id": "CPT-1",
+            "replication_id": "REPLICATION-1",
+            "direct_reconciliation_id": "DBR-1",
+            "protocol_version": "SRB_CROSS_PROVIDER_TRIANGULATION_V1",
+            "execution_status": "COMPLETE",
+            "source_integrity_status": "PASS",
+            "coverage_status": "PASS",
+            "comparability_status": "PASS",
+            "triangulation_outcome": "CONCORDANT",
+            "oecd_snapshot_id": "OECDCCRE-1",
+            "oecd_snapshot_fingerprint": "sha256:oecd-snapshot",
+            "raw_csv_sha256": "sha256:oecd-raw",
+            "triangulation_fingerprint": "sha256:triangulation",
+            "history_semantics": "CURRENT_REVISED_HISTORY_NOT_A_VINTAGE_ARCHIVE",
+            "point_in_time_status": "NOT_POINT_IN_TIME",
+            "historical_evidence_eligible": False,
+            "expected_series_count": 3,
+            "source_series_count": 3,
+            "comparable_series_count": 3,
+            "concordant_series_count": 3,
+            "divergent_series_count": 0,
+            "min_overlap_rows": 120,
+            "retrieved_at": "2026-01-04T01:00:00+00:00",
+            "series_results": [
+                {
+                    "market": market,
+                    "status": "CONCORDANT",
+                    "overlap_row_count": 392,
+                    "comparison_fingerprint": f"sha256:comparison-{market}",
+                    "historical_evidence_eligible": False,
+                    "threshold_checks": {
+                        "change_correlation": True,
+                        "sign_agreement": True,
+                        "mean_absolute_change_gap": True,
+                    },
+                }
+                for market in ("GB", "JP", "US")
+            ],
+            "independence_dimensions": {
+                "distribution_channel": True,
+                "source_host": True,
+                "provider_organization": True,
+                "underlying_data_lineage": False,
+                "methodology": False,
+                "point_in_time": False,
+                "investigator": False,
+            },
+            "automatic_promotion_authorized": False,
+            "production_status": "RESEARCH_ONLY",
+        }],
         "failures": [],
         "surprises": [],
         "budgets": [],
@@ -414,6 +465,64 @@ class PublicDataMissionGateTests(unittest.TestCase):
 
         mission = build_mission_snapshot(snapshot, "QUESTION-1")
         gate = next(gate for gate in mission.gates if gate.gate_id == "DIRECT_SOURCE_RECONCILIATION")
+
+        self.assertEqual(gate.status, "NOT_EVALUATED")
+        self.assertEqual(mission.overall_status, "WAITING_EVIDENCE")
+
+    def test_cross_provider_concordance_closes_only_the_measurement_gate(self) -> None:
+        mission = build_mission_snapshot(_complete_snapshot(), "QUESTION-1")
+        gate = next(
+            gate for gate in mission.gates
+            if gate.gate_id == "CROSS_PROVIDER_MEASUREMENT_TRIANGULATION"
+        )
+
+        self.assertEqual(gate.status, "SATISFIED")
+        self.assertIn("CONCORDANT", gate.summary)
+        self.assertIn("neither source is ground truth", gate.summary)
+        self.assertEqual(mission.overall_status, "READY_FOR_REVIEW")
+
+    def test_cross_provider_divergence_is_retained_without_blocking_execution_quality(self) -> None:
+        snapshot = _complete_snapshot()
+        record = snapshot["cross_provider_triangulations"][0]
+        record["triangulation_outcome"] = "MEASUREMENT_DIVERGENCE"
+        record["concordant_series_count"] = 2
+        record["divergent_series_count"] = 1
+        record["series_results"][1]["status"] = "MEASUREMENT_DIVERGENCE"
+        record["series_results"][1]["threshold_checks"]["change_correlation"] = False
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(
+            gate for gate in mission.gates
+            if gate.gate_id == "CROSS_PROVIDER_MEASUREMENT_TRIANGULATION"
+        )
+
+        self.assertEqual(gate.status, "SATISFIED")
+        self.assertIn("MEASUREMENT_DIVERGENCE", gate.summary)
+        self.assertEqual(mission.overall_status, "READY_FOR_REVIEW")
+
+    def test_cross_provider_independence_overclaim_blocks_mission(self) -> None:
+        snapshot = _complete_snapshot()
+        snapshot["cross_provider_triangulations"][0]["independence_dimensions"]["methodology"] = True
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(
+            gate for gate in mission.gates
+            if gate.gate_id == "CROSS_PROVIDER_MEASUREMENT_TRIANGULATION"
+        )
+
+        self.assertEqual(gate.status, "CONFLICT")
+        self.assertIn("overstated as independent", " ".join(gate.blockers))
+        self.assertEqual(mission.overall_status, "BLOCKED")
+
+    def test_missing_cross_provider_triangulation_remains_waiting(self) -> None:
+        snapshot = _complete_snapshot()
+        snapshot["cross_provider_triangulations"] = []
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(
+            gate for gate in mission.gates
+            if gate.gate_id == "CROSS_PROVIDER_MEASUREMENT_TRIANGULATION"
+        )
 
         self.assertEqual(gate.status, "NOT_EVALUATED")
         self.assertEqual(mission.overall_status, "WAITING_EVIDENCE")

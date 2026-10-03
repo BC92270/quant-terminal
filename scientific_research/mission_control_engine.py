@@ -15,6 +15,10 @@ from .direct_bis_reconciliation import (
     DIRECT_BIS_PROTOCOL_VERSION,
     build_prospective_vintage_summary,
 )
+from .cross_provider_triangulation import (
+    CROSS_PROVIDER_PROTOCOL_VERSION,
+    OECD_HISTORY_SEMANTICS,
+)
 
 
 def _now_iso() -> str:
@@ -131,6 +135,7 @@ def capture_registry_snapshot(memory: Any, audit_limit: int = 250) -> dict[str, 
         ("measurement_reports", memory.phase63.list_measurement_reports, memory.phase63.paths["measurement_reports"]),
         ("cross_runtime_verifications", memory.phase65.list_verifications, memory.phase65.paths["verifications"]),
         ("direct_source_reconciliations", memory.phase66.list_reconciliations, memory.phase66.paths["reconciliations"]),
+        ("cross_provider_triangulations", memory.phase67.list_triangulations, memory.phase67.paths["triangulations"]),
     )
     # Every mutable registry uses the same root-level lock. Holding it for the
     # complete read prevents Mission Control from mixing pre- and post-write
@@ -756,6 +761,132 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
             "Freeze one explicit direct BIS observation, then acquire and reconcile the six declared series."
         ) if not direct_ok else "",
     ))
+
+    eligible_direct_ids = {
+        _text(row.get("reconciliation_id")) for row in eligible_direct
+        if _text(row.get("reconciliation_id"))
+    }
+    triangulation_rows = [
+        dict(row) for row in (snapshot.get("cross_provider_triangulations") or ())
+        if _text(row.get("replication_id")) in eligible_replication_ids
+        and _text(row.get("direct_reconciliation_id")) in eligible_direct_ids
+    ]
+    eligible_triangulations: list[dict[str, Any]] = []
+    non_comparable_triangulations: list[dict[str, Any]] = []
+    triangulation_defects: list[str] = []
+    for row in triangulation_rows:
+        if _text(row.get("execution_status")) != "COMPLETE":
+            continue
+        defects: list[str] = []
+        dimensions = row.get("independence_dimensions") or {}
+        results = [dict(item) for item in (row.get("series_results") or ()) if isinstance(item, Mapping)]
+        if _text(row.get("protocol_version")) != CROSS_PROVIDER_PROTOCOL_VERSION:
+            defects.append("missing governed cross-provider protocol")
+        if _text(row.get("source_integrity_status")) != "PASS":
+            defects.append("OECD source integrity is not PASS")
+        if _text(row.get("coverage_status")) != "PASS":
+            defects.append("declared OECD series coverage is not PASS")
+        outcome = _text(row.get("triangulation_outcome"))
+        if outcome not in {"CONCORDANT", "MEASUREMENT_DIVERGENCE", "NOT_COMPARABLE"}:
+            defects.append("triangulation outcome is missing or unsupported")
+        expected_count = int(row.get("expected_series_count") or 0)
+        source_count = int(row.get("source_series_count") or 0)
+        if expected_count != 3 or source_count != expected_count or len(results) != expected_count:
+            defects.append("the frozen GB/JP/US comparison matrix is incomplete")
+        if not _text(row.get("oecd_snapshot_id")) or not _text(row.get("oecd_snapshot_fingerprint")):
+            defects.append("OECD snapshot identity or fingerprint is missing")
+        if not _text(row.get("raw_csv_sha256")) or not _text(row.get("triangulation_fingerprint")):
+            defects.append("raw OECD CSV or triangulation fingerprint is missing")
+        if _text(row.get("history_semantics")) != OECD_HISTORY_SEMANTICS:
+            defects.append("current revised-history semantics are not explicit")
+        if _text(row.get("point_in_time_status")) != "NOT_POINT_IN_TIME":
+            defects.append("cross-provider revised history is being overstated as point-in-time")
+        if row.get("historical_evidence_eligible") is not False:
+            defects.append("cross-provider revised history is incorrectly eligible as historical evidence")
+        if not isinstance(dimensions, Mapping):
+            defects.append("cross-provider independence dimensions are missing")
+        else:
+            if (
+                dimensions.get("distribution_channel") is not True
+                or dimensions.get("source_host") is not True
+                or dimensions.get("provider_organization") is not True
+            ):
+                defects.append("distinct provider/distribution axes are not declared")
+            if dimensions.get("underlying_data_lineage") is not False or dimensions.get("methodology") is not False:
+                defects.append("unresolved underlying lineage or methodology is overstated as independent")
+            if dimensions.get("point_in_time") is not False or dimensions.get("investigator") is not False:
+                defects.append("point-in-time or investigator independence is overstated")
+        minimum_overlap = int(row.get("min_overlap_rows") or 0)
+        for result in results:
+            result_status = _text(result.get("status"))
+            if result_status not in {"CONCORDANT", "MEASUREMENT_DIVERGENCE", "NOT_COMPARABLE"}:
+                defects.append("a country result has no governed status")
+                continue
+            if not _text(result.get("comparison_fingerprint")):
+                defects.append("a country comparison fingerprint is missing")
+            if result.get("historical_evidence_eligible") is not False:
+                defects.append("a country comparison is incorrectly eligible as historical evidence")
+            if result_status != "NOT_COMPARABLE":
+                checks = result.get("threshold_checks")
+                if int(result.get("overlap_row_count") or 0) < minimum_overlap:
+                    defects.append("a comparable country result lacks governed overlap")
+                if not isinstance(checks, Mapping) or set(checks) != {
+                    "change_correlation", "sign_agreement", "mean_absolute_change_gap"
+                }:
+                    defects.append("a comparable country result lacks the frozen threshold audit")
+        if _text(row.get("production_status")) != "RESEARCH_ONLY" or row.get("automatic_promotion_authorized") is not False:
+            defects.append("research-only promotion lock is absent")
+        if defects:
+            triangulation_defects.append(
+                f"{_text(row.get('triangulation_id')) or 'triangulation'}: {', '.join(dict.fromkeys(defects))}."
+            )
+        elif outcome == "NOT_COMPARABLE" or _text(row.get("comparability_status")) != "PASS":
+            non_comparable_triangulations.append(row)
+        else:
+            eligible_triangulations.append(row)
+
+    triangulation_conflict = bool(triangulation_defects)
+    triangulation_ok = bool(eligible_triangulations) and not triangulation_conflict
+    triangulation_warning = bool(non_comparable_triangulations) and not triangulation_conflict and not triangulation_ok
+    triangulation_status = (
+        "CONFLICT" if triangulation_conflict else
+        "SATISFIED" if triangulation_ok else
+        "WARNING" if triangulation_warning else
+        "NOT_EVALUATED"
+    )
+    latest_triangulation = max(
+        eligible_triangulations or non_comparable_triangulations,
+        key=lambda item: _text(item.get("retrieved_at")),
+        default={},
+    )
+    latest_outcome = _text(latest_triangulation.get("triangulation_outcome")) or "NOT_RUN"
+    gates.append(_gate(
+        "CROSS_PROVIDER_MEASUREMENT_TRIANGULATION",
+        "Cross-provider measurement triangulation",
+        triangulation_status,
+        (
+            f"OECD/BIS monthly-change triangulation is complete across GB, JP and US: {latest_outcome}. "
+            "The outcome is retained as a measurement diagnostic; neither source is ground truth and underlying-lineage independence remains unresolved."
+            if triangulation_ok else
+            "A completed OECD/BIS triangulation violates its frozen provenance, comparability or inference boundary."
+            if triangulation_conflict else
+            "The OECD/BIS protocol executed, but at least one country is not structurally comparable under the frozen contract."
+            if triangulation_warning else
+            "No complete OECD/BIS cross-provider triangulation is tied to the governed direct-source snapshot."
+        ),
+        refs=[row.get("triangulation_id") for row in triangulation_rows],
+        blockers=triangulation_defects + [
+            f"{_text(row.get('triangulation_id'))}: retained NOT_COMPARABLE outcome."
+            for row in non_comparable_triangulations
+        ],
+        next_action=(
+            "Inspect and retain the cross-provider conflict; do not select a preferred provider after seeing the result."
+            if triangulation_conflict else
+            "Audit the comparability failure and freeze a new protocol only if the source definition changes."
+            if triangulation_warning else
+            "Freeze the OECD/BIS thresholds before network access, then acquire the three monthly CPI-based REER series."
+        ) if not triangulation_ok else "",
+    ))
     unauthorized_belief = any(bool(row.get("belief_update_authorized")) for row in syntheses)
     bad_production = []
     for key, rows in snapshot.items():
@@ -806,6 +937,7 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         "measurement_reports": len(measurement_reports),
         "cross_runtime_verifications": len(cross_runtime_rows),
         "direct_source_reconciliations": len(direct_rows),
+        "cross_provider_triangulations": len(triangulation_rows),
         "diagnostics": len([row for row in (snapshot.get("break_diagnostics") or ()) if _text(row.get("run_id")) == _text(latest_historical.get("run_id"))]),
         "inconsistencies": len(inconsistencies),
     }

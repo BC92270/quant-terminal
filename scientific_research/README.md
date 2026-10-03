@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.6.1
+# Scientific Research Brain v0.6.7.0
 
 Scientific Research Brain (SRB) is the terminal's provenance-first research operating system. It turns a research question into an auditable chain of source understanding, competing hypotheses, explicit measurement choices, causal data contracts, retained experiment attempts and reproducible out-of-sample results.
 
@@ -24,6 +24,18 @@ It is not an autonomous trading engine. Every artifact is `RESEARCH_ONLY`; produ
 16. Replication must be frozen before retrieval, retain outcome sign, expose its independence dimensions and use point-in-time evidence.
 17. Cross-runtime agreement is accepted only from a frozen, hashed challenge executed by a separately authored implementation; agreement proves reproducibility of the declared contract, not scientific truth.
 18. Current revised history may reconcile source provenance and revisions, but it never becomes point-in-time evidence; prospective vintages begin only when actually observed.
+19. Cross-provider agreement is evaluated on predeclared comparable transformations, never raw index bases; provider, host, methodology, underlying lineage, point-in-time and investigator independence are separate claims.
+
+## What v0.6.7.0 adds
+
+- **Free official OECD axis:** one exact, keyless SDMX query retrieves monthly CPI-based real effective exchange-rate indices for the United States, United Kingdom and Japan from the OECD `DF_FINMARK 4.0` dataflow.
+- **Frozen-before-network comparability contract:** country mappings, the sealed direct-BIS snapshot, minimum support and three decision thresholds are fingerprinted and persisted before OECD access.
+- **No naive level comparison:** base-period differences are neutralized by comparing consecutive monthly log changes. Rebased levels and rolling correlations remain diagnostics only.
+- **Outcome-neutral measurement logic:** each country is `CONCORDANT`, `MEASUREMENT_DIVERGENCE` or `NOT_COMPARABLE`; disagreement is retained and the engine never selects a preferred provider after observing the result.
+- **Tamper-evident OECD capsule:** raw response bytes, provider metadata, three canonical histories, base period, content-addressed manifest and all comparison rows are reloaded and verified before completion.
+- **Honest independence matrix:** OECD provider, host and delivery route are distinct; methodology, underlying lineage, point-in-time status and investigator independence remain false because the feed's `National` label alone cannot prove them.
+- **Fail-closed Mission Control gate:** `CROSS_PROVIDER_MEASUREMENT_TRIANGULATION` accepts either concordance or retained divergence when the frozen contract is complete, but blocks provenance overclaims and leaves structural non-comparability visible.
+- **Triangulation observatory:** the Research Lab exposes thresholds, country diagnostics, time-localized absolute change gaps, lineage warnings and an exportable full dossier.
 
 ## What v0.6.6.1 adds
 
@@ -133,6 +145,10 @@ Question + explicit null
   → 9 chronological OOS screens + Holm ledger
   → frozen TypeScript/Node challenge
   → independent 9-screen reconstruction + field-level parity ledger
+  → frozen direct-BIS observation
+  → initial-release versus current-revised reconciliation
+  → frozen OECD/BIS comparability contract
+  → 3-country monthly-change triangulation + retained concordance/divergence
 ```
 
 Mission Control derives this state. It does not mutate it.
@@ -179,6 +195,14 @@ Phase 6.5 then gives those sealed local artifacts to a pinned Node.js runtime. T
 Phase 6.6 freezes a separate observation contract before contacting the official BIS bulk endpoint. The bounded parser reads only monthly real/nominal broad indices for the same United States, United Kingdom and Japan series, seals the raw ZIP and six canonical histories, then aligns them with the already sealed ALFRED initial-release rows. The complete comparison table preserves every revision delta and fingerprint.
 
 This route supplies an independent host and distribution path, not an independent underlying provider or methodology: both paths ultimately describe BIS EER data. The bulk file is the current revised history and is permanently marked `NOT_POINT_IN_TIME`; it cannot replace or improve the sign of the historical OOS replication. Each later explicit acquisition becomes an as-observed ledger entry. Identical bytes are retained but cannot increase the distinct-snapshot count, and no vintage before the ledger existed is inferred.
+
+### OECD/BIS · cross-provider measurement triangulation
+
+Phase 6.7 freezes the completed direct-BIS snapshot, the exact OECD SDMX query and the comparison thresholds before contacting the OECD. The bounded response must contain exactly the monthly `CCRE` CPI-based real effective exchange-rate histories for `USA`, `GBR` and `JPN`, with normal observation status, index units, national-methodology code and one explicit base period. Raw and canonical bytes are content-addressed and revalidated after persistence.
+
+The comparison never expects raw index levels to match. For each country it aligns common months, computes consecutive monthly log changes, then applies the predeclared correlation, sign-agreement and mean-absolute-gap thresholds. Rolling correlations and rebased-level distance are descriptive diagnostics. A divergence is a valid retained result; `NOT_COMPARABLE` prevents a concordance claim.
+
+OECD is an official, free, keyless provider distinct from the BIS host, but the SDMX `National` methodology code does not by itself establish a separate underlying data lineage. The record therefore keeps `underlying_data_lineage=false`, `methodology=false`, `point_in_time=false` and `investigator=false`. This layer measures robustness to another official representation; it is not a second causal OOS study, a historical vintage archive or peer review.
 
 ## Verification
 

@@ -9,6 +9,8 @@ adds a separately authored TypeScript/Node cross-runtime reproduction of the sea
 replication artifacts. Every object remains RESEARCH_ONLY.
 Phase 6.6 adds an explicit direct-BIS revised-history reconciliation and a
 prospective as-observed snapshot ledger without backfilling vintages.
+Phase 6.7 adds a frozen OECD/BIS cross-provider measurement triangulation that
+compares monthly changes without treating raw index levels or either provider as truth.
 """
 
 from .phase2_models import (
@@ -133,6 +135,24 @@ from .direct_bis_reconciliation import (
     load_persisted_direct_bis_snapshot,
     parse_bis_eer_archive,
 )
+from .phase67_models import CrossProviderTriangulationRecord
+from .phase67_registry import Phase67Registry
+from .cross_provider_triangulation import (
+    CROSS_PROVIDER_PROTOCOL_VERSION,
+    CrossProviderDataError,
+    OECD_API_DOCUMENTATION_URL,
+    OECD_BIS_REAL_MATRIX,
+    OECD_HISTORY_SEMANTICS,
+    OECD_SOURCE_URL,
+    OECD_STRUCTURE_URL,
+    OECD_TERMS_URL,
+    OecdCsvPayload,
+    download_oecd_reer_csv,
+    execute_cross_provider_triangulation,
+    freeze_cross_provider_triangulation,
+    load_persisted_oecd_snapshot,
+    parse_oecd_reer_csv,
+)
 
 __all__ = [
     "AssumptionRecord", "ClaimRecord", "EquationStructure", "KnowledgeEdge", "KnowledgeNode",
@@ -170,6 +190,13 @@ __all__ = [
     "download_bis_eer_archive", "execute_direct_bis_reconciliation",
     "freeze_direct_bis_reconciliation", "load_persisted_direct_bis_snapshot",
     "parse_bis_eer_archive",
+    "CrossProviderTriangulationRecord", "Phase67Registry",
+    "CROSS_PROVIDER_PROTOCOL_VERSION", "CrossProviderDataError",
+    "OECD_API_DOCUMENTATION_URL", "OECD_BIS_REAL_MATRIX", "OECD_HISTORY_SEMANTICS",
+    "OECD_SOURCE_URL", "OECD_STRUCTURE_URL", "OECD_TERMS_URL", "OecdCsvPayload",
+    "download_oecd_reer_csv", "execute_cross_provider_triangulation",
+    "freeze_cross_provider_triangulation", "load_persisted_oecd_snapshot",
+    "parse_oecd_reer_csv",
 ]
 
 from .phase6_models import (

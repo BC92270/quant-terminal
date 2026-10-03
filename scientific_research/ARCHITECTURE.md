@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.6.1 — architecture contract
+# Scientific Research Brain v0.6.7.0 — architecture contract
 
 ## Design rule
 
@@ -44,6 +44,10 @@ Cross-runtime verification record
 Official BIS current revised-history snapshot
   ↓ six-series initial-versus-revised comparison
 Direct-source reconciliation + prospective as-observed ledger
+  ↓ frozen cross-provider comparability contract
+Official OECD monthly CPI-based REER snapshot
+  ↓ monthly-log-change diagnostics; raw levels never equated
+Cross-provider triangulation + retained concordance/divergence
 ```
 
 ## Registry ownership
@@ -59,6 +63,7 @@ Direct-source reconciliation + prospective as-observed ledger
 - Phase 6.4 uses the Phase-4 replication registry for an immutable frozen protocol followed by one guarded completion transition; it owns ALFRED initial-release snapshots, cross-market OOS traces and multiplicity-adjusted forecast comparisons.
 - Phase 6.5 owns append-only cross-runtime verification records and content-addressed challenge/result artifacts. The independent Node process reads only the sealed canonical source files and cannot authorize production.
 - Phase 6.6 owns append-only direct-source reconciliation records, content-addressed BIS revised-history snapshots and the derived forward-vintage readiness ledger. It can validate provenance and revision accounting only; it cannot rewrite Phase-6.4 point-in-time evidence.
+- Phase 6.7 owns append-only cross-provider triangulation records and content-addressed OECD revised-history snapshots. It separates provider/host independence from unresolved methodology and underlying lineage, and it cannot rewrite Phase-6.4 point-in-time evidence or select a preferred source after observing disagreement.
 
 All mutable registries under one state root share a bounded POSIX inter-process lock. Each JSON read-modify-write transaction is serialized, fsynced and published with atomic replacement; the audit JSONL file is validated, locked and fsynced before append. A missing file is valid empty state. Invalid JSON, a non-array root or a non-object row raises `RegistryCorruptionError` and blocks mutation. A lock timeout also fails closed instead of risking a lost scientific record.
 
@@ -85,7 +90,8 @@ The derived gate order is:
 17. `INDEPENDENT_REPLICATION`
 18. `CROSS_RUNTIME_REPRODUCIBILITY`
 19. `DIRECT_SOURCE_RECONCILIATION`
-20. `PRODUCTION_PROMOTION_LOCK`
+20. `CROSS_PROVIDER_MEASUREMENT_TRIANGULATION`
+21. `PRODUCTION_PROMOTION_LOCK`
 
 `SATISFIED` means that the required artifact exists and passes that gate's narrow policy. It never implies scientific truth. `BLOCKED` and `CONFLICT` dominate the mission state. `NOT_EVALUATED` is not a pass.
 
@@ -98,6 +104,8 @@ The derived gate order is:
 `CROSS_RUNTIME_REPRODUCIBILITY` requires a completed `SRB_CROSS_RUNTIME_VERIFICATION_V1` challenge tied to an eligible independent replication. The challenge binds the sealed source snapshot and TypeScript source hashes before execution. Every declared result must match, retained discrepancy count must be zero, implementation independence must be explicit, investigator independence must remain false, and production/automatic-promotion locks must remain intact.
 
 `DIRECT_SOURCE_RECONCILIATION` requires a completed `SRB_DIRECT_BIS_RECONCILIATION_V1` observation tied to an eligible replication. Every frozen series must pass archive/schema/coverage gates and have a comparison fingerprint. The record must say `CURRENT_REVISED_HISTORY_NOT_A_VINTAGE_ARCHIVE`, `NOT_POINT_IN_TIME`, `historical_evidence_eligible=false`, shared underlying lineage, non-independent investigator and intact promotion locks. Revision differences are admissible; boundary overclaims are conflicts. Prospective readiness is reported separately and never backfilled.
+
+`CROSS_PROVIDER_MEASUREMENT_TRIANGULATION` requires a completed `SRB_CROSS_PROVIDER_TRIANGULATION_V1` record tied to an eligible direct-BIS observation. The raw OECD CSV, three canonical series and every country comparison must be fingerprinted. Comparable countries must expose the exact frozen correlation, directional-agreement and mean-gap checks. `CONCORDANT` and `MEASUREMENT_DIVERGENCE` both satisfy execution quality because disagreement is an admissible result; `NOT_COMPARABLE` remains `WARNING`. Provider and host independence must be true while methodology, underlying lineage, point-in-time and investigator independence remain false. Any overclaim is a `CONFLICT`.
 
 ## Identity model
 
@@ -119,6 +127,9 @@ The derived gate order is:
 - `reconciliation_id`: unique frozen observation-cycle identity derived from its replication, reference snapshot, freeze time and protocol fingerprint.
 - `direct_snapshot_fingerprint`: digest over the official BIS raw archive identity, six canonical series inventories and revised-history semantics.
 - `reconciliation_fingerprint`: digest over the frozen protocol, sealed ALFRED/BIS snapshots and all initial-versus-revised comparison rows.
+- `triangulation_id`: unique frozen comparison identity derived from replication, direct snapshot, freeze time and protocol fingerprint.
+- `oecd_snapshot_fingerprint`: digest over the exact raw OECD response, three canonical inventories and revised-history semantics.
+- `triangulation_fingerprint`: digest over the frozen protocol, sealed BIS/OECD snapshots, every monthly-change row and the retained outcome.
 
 Selection pressure counts every attempt. Theory weights and independent-failure stop rules deduplicate by `evidence_unit_id`, falling back to legacy `run_id` only when necessary.
 
