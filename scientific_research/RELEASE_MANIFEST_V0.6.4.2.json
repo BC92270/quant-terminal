@@ -1,0 +1,24 @@
+{
+  "product": "Scientific Research Brain",
+  "version": "0.6.4.2",
+  "route": "scientific-research",
+  "entrypoint": "scientific_research_lab.render_scientific_research_brain",
+  "python_package": "scientific_research",
+  "production_status": "RESEARCH_ONLY",
+  "automatic_promotion_authorized": false,
+  "runtime_state": {
+    "environment_variable": "SRB_MEMORY_DIR",
+    "default": ".scientific_research_data",
+    "included_in_git": false
+  },
+  "required_python_dependency": "httpx[http2]>=0.28,<0.29",
+  "verification": [
+    "python -m compileall -q scientific_research scientific_research_lab.py",
+    "python -m unittest discover -s scientific_research/tests_python -p test_*.py -q",
+    "python -m unittest discover -s tests -p test_scientific*.py -q",
+    "pnpm --dir scientific_research install --frozen-lockfile",
+    "pnpm --dir scientific_research run verify"
+  ],
+  "patch_scope": "Mission Control replaces stale persisted plan actions with final Validation Council review when every governed gate is satisfied.",
+  "scientific_boundary": "Workflow completion is not scientific truth, human peer review, causal proof or production authorization."
+}

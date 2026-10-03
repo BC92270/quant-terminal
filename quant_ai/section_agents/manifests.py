@@ -211,6 +211,20 @@ WORKSPACE_MANIFEST_SEQUENCE: tuple[SectionManifest, ...] = (
         actions=("Explain the macro regime", "Review central-bank evidence", "Check data vintages"),
     ),
     _manifest(
+        "scientific_research", "SRB", "Scientific Research Brain",
+        "Evidence, experiments, causal data contracts and independent replication.",
+        None, "Equity", "SPY", ("multi_asset", "equity", "macro", "risk", "cio", "wealth"),
+        special_route="scientific-research",
+        mandate=(
+            "Guide source-grounded scientific research, falsification, chronological OOS testing and "
+            "replication while preserving RESEARCH_ONLY and every human validation boundary."
+        ),
+        knowledge=("scientific_method", "measurement_governance", "replication_governance"),
+        context=("scientific_research", "protocol", "evidence", "measurement", "oos", "replication", "gates"),
+        tools=("section_inventory", "market_snapshot", "macro_context"),
+        actions=("Explain the active research protocol", "Review falsification criteria", "Check evidence and OOS status"),
+    ),
+    _manifest(
         "market_intelligence", "MINT", "Market Intelligence",
         "Catalysts, information absorption, microstructure and probabilistic forecasts.",
         None, "Equity", "NVDA", ("multi_asset", "equity", "macro", "risk", "cio"),

@@ -39,6 +39,7 @@ métier nouvelle doit vivre dans les packages de domaine :
 | Monte Carlo et dérivés | `monte_carlo/` |
 | Contrôle des risques | `risk_control/` |
 | Comité Quant AI | `quant_ai/` |
+| Scientific Research Brain | `scientific_research/` + `scientific_research_lab.py` |
 | Intelligence géopolitique | `worldmonitor/` |
 
 Le routeur multi-actifs s'appuie sur `security_master.py` pour fusionner le
@@ -59,6 +60,10 @@ python -m compileall -q .
 pytest --collect-only -q
 pytest -q --disable-warnings
 python scripts/validate_fixed_income.py
+python -m unittest discover -s scientific_research/tests_python -p 'test_*.py' -q
+python -m unittest discover -s tests -p 'test_scientific*.py' -q
+pnpm --dir scientific_research install --frozen-lockfile
+pnpm --dir scientific_research run verify
 ```
 
 La CI exécute ces contrôles sur chaque pull request et sur `main`. Les tests des
@@ -70,6 +75,9 @@ pas installé.
 - Les caches d'exécution vivent dans les répertoires cachés `.quant_*` ou dans
   les emplacements définis par variables d'environnement ; ils ne sont jamais
   versionnés.
+- L'état append-only du Scientific Research Brain vit dans
+  `SRB_MEMORY_DIR` ou, par défaut, `.scientific_research_data/`. Il doit être
+  sauvegardé séparément du code et n'est jamais inclus dans une release Git.
 - Les secrets restent dans l'environnement ou `.streamlit/secrets.toml`.
 - Les sauvegardes, archives, patchs, bytecodes et bases locales sont ignorés.
 - Les snapshots de référence versionnés doivent vivre sous le package qui les
@@ -92,3 +100,5 @@ une passerelle explicite Twelve Data → Alpha Vantage → source publique adapt
 - `docs/SECURITY_MASTER.md` : identités, fournisseurs et synchronisation du catalogue.
 - `docs/DATA_PROVIDERS.md` : matrice par section, clés optionnelles, fallbacks et provenance.
 - `docs/RISK_MONITOR.md` : modèles, contrôles, validation, liquidité et limites du Risk Monitor.
+- `scientific_research/README.md` : constitution, flux et limites du Scientific Research Brain.
+- `scientific_research/VERIFICATION.md` : contrôles de release SRB reproductibles.

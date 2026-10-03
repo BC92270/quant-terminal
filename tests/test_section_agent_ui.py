@@ -8,6 +8,7 @@ from quant_ai.ui_components.section_assistant import resolve_section_id
 def test_mode_and_special_routes_resolve_to_section_ids() -> None:
     assert resolve_section_id("Correlation Matrix") == "corr"
     assert resolve_section_id("market-intelligence") == "market_intelligence"
+    assert resolve_section_id("scientific-research") == "scientific_research"
     assert resolve_section_id("Decision Engine Lite") == "decision"
     assert resolve_section_id("Trading Plan") == "trading_plan"
     assert resolve_section_id("unknown") is None

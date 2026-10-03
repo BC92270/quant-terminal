@@ -12,6 +12,7 @@ __pycache__/
 .eggs/
 build/
 dist/
+node_modules/
 .pytest_cache/
 .hypothesis/
 .mypy_cache/
@@ -38,6 +39,8 @@ env/
 /.quant_ai/
 /.quant_data/
 /.quant_audit/
+/.scientific_research_data/
+/.scientific_research_runtime/
 /.industrialization/
 /backups/
 *.sqlite

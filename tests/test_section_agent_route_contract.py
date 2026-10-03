@@ -31,6 +31,7 @@ EXPECTED_WORKSPACE_CODES = (
     "rates",
     "credit",
     "macro",
+    "scientific_research",
     "market_intelligence",
     "psychology",
     "quant_ai",
@@ -90,7 +91,7 @@ def test_default_registry_covers_navigator_and_every_workspace_once() -> None:
     expected = {*EXPECTED_WORKSPACE_CODES, "navigator", "trading_plan"}
 
     assert set(registry.codes()) == expected
-    assert len(registry.manifests()) == len(expected) == 21
+    assert len(registry.manifests()) == len(expected) == 22
     assert registry.get("navigator") is NAVIGATOR_MANIFEST
     assert registry.get("trading_plan") is TRADING_PLAN_MANIFEST
     assert all(registry.require(code) is manifests_by_code[code] for code in EXPECTED_WORKSPACE_CODES)
@@ -142,10 +143,11 @@ def test_app_mounts_the_fail_soft_assistant_on_all_route_families() -> None:
         for node in ast.walk(tree)
         if isinstance(node, ast.Call) and _call_name(node) == helper_name
     ]
-    assert len(mounts) == 6
+    assert len(mounts) == 7
     assert {_literal_first_argument(node) for node in mounts if node.args} == {
         "navigator",
         "worldmonitor",
+        "scientific_research",
         "market_intelligence",
         "psychology",
         "quant_ai",
