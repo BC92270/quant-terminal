@@ -1,0 +1,42 @@
+{
+  "product": "Scientific Research Brain",
+  "version": "0.6.5.0",
+  "phase": "6.5",
+  "route": "scientific-research",
+  "entrypoint": "scientific_research_lab.render_scientific_research_brain",
+  "python_package": "scientific_research",
+  "independent_engine": "scientific_research/src/replication/cross-runtime-engine.ts",
+  "independent_cli": "scientific_research/bin/cross-runtime-verify.mjs",
+  "production_status": "RESEARCH_ONLY",
+  "automatic_promotion_authorized": false,
+  "independence_dimensions": {
+    "implementation": true,
+    "investigator": false
+  },
+  "runtime_state": {
+    "environment_variable": "SRB_MEMORY_DIR",
+    "default": ".scientific_research_data",
+    "included_in_git": false
+  },
+  "required_python_dependency": "httpx[http2]>=0.28,<0.29",
+  "pinned_javascript_toolchain": {
+    "package_manager": "pnpm@11.25.0",
+    "typescript": "5.9.3"
+  },
+  "verification": [
+    "python -m compileall -q scientific_research scientific_research_lab.py",
+    "python -m unittest discover -s scientific_research/tests_python -p test_*.py -q",
+    "python -m unittest discover -s tests -p test_scientific*.py -q",
+    "python -m pytest -q tests/test_scientific_route_smoke.py",
+    "pnpm --dir scientific_research install --frozen-lockfile",
+    "pnpm --dir scientific_research run verify"
+  ],
+  "verified_suite_counts": {
+    "python_internal": 63,
+    "python_integration": 47,
+    "python_route": 1,
+    "typescript_node": 11
+  },
+  "patch_scope": "Frozen, append-only cross-runtime reproduction of all nine governed ALFRED/BIS OOS screens through an independently authored TypeScript/Node implementation.",
+  "scientific_boundary": "Cross-runtime parity proves reproducibility of the frozen implementation contract only; it is not investigator independence, peer review, causal proof, scientific truth or production authorization."
+}

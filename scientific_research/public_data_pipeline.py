@@ -28,7 +28,7 @@ FHFA_SERIES_ID = "FHFA_TRADITIONAL_PURCHASE_ONLY_MONTHLY_US_SA"
 BLS_RENT_SERIES_ID = "CUSR0000SEHA"
 AVAILABILITY_POLICY = "REFERENCE_MONTH_END_PLUS_90_DAYS_CONSERVATIVE_PROXY"
 DEFAULT_USER_AGENT = (
-    "ScientificResearchBrain/0.6.4.2 "
+    "ScientificResearchBrain/0.6.5.0 "
     "(research-only; contact=research-operations@users.noreply.github.com)"
 )
 
@@ -54,7 +54,7 @@ ECB_RTD_USAGE_POLICY_URL = (
 ECB_RTD_AVAILABILITY_POLICY = "LATEST_REFERENCE_PERIOD_PER_UNIQUE_FIRST_RECORDED_RELEASE_EVENT"
 ECB_RTD_PARSER_VERSION = "SRB_ECB_RTD_FIRST_VINTAGE_V1"
 ECB_DEFAULT_USER_AGENT = (
-    "ScientificResearchBrain/0.6.4.2 "
+    "ScientificResearchBrain/0.6.5.0 "
     "(research-only; contact=research-operations@users.noreply.github.com)"
 )
 ECB_RTD_COLUMNS = (

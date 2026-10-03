@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.4.2 — architecture contract
+# Scientific Research Brain v0.6.5.0 — architecture contract
 
 ## Design rule
 
@@ -36,6 +36,10 @@ Failure + Surprise + Theory memory
 ALFRED/BIS initial-release snapshot
   ↓ 9 OOS screens + paired forecast tests + Holm correction
 Independent replication record
+  ↓ frozen source/snapshot/build challenge
+Independent TypeScript/Node reconstruction
+  ↓ field-level parity or retained discrepancy
+Cross-runtime verification record
 ```
 
 ## Registry ownership
@@ -49,6 +53,7 @@ Independent replication record
 - Phase 6.2 owns measurement models/decisions, evidence assessments and syntheses.
 - Phase 6.3 owns historical contracts/audits, dataset manifests, append-only attempts, break diagnostics, reproducibility capsules, measurement-robustness protocols and comparative reports.
 - Phase 6.4 uses the Phase-4 replication registry for an immutable frozen protocol followed by one guarded completion transition; it owns ALFRED initial-release snapshots, cross-market OOS traces and multiplicity-adjusted forecast comparisons.
+- Phase 6.5 owns append-only cross-runtime verification records and content-addressed challenge/result artifacts. The independent Node process reads only the sealed canonical source files and cannot authorize production.
 
 All mutable registries under one state root share a bounded POSIX inter-process lock. Each JSON read-modify-write transaction is serialized, fsynced and published with atomic replacement; the audit JSONL file is validated, locked and fsynced before append. A missing file is valid empty state. Invalid JSON, a non-array root or a non-object row raises `RegistryCorruptionError` and blocks mutation. A lock timeout also fails closed instead of risking a lost scientific record.
 
@@ -73,7 +78,8 @@ The derived gate order is:
 15. `MEASUREMENT_ROBUSTNESS`
 16. `VALIDATION_COUNCIL_REVIEWED`
 17. `INDEPENDENT_REPLICATION`
-18. `PRODUCTION_PROMOTION_LOCK`
+18. `CROSS_RUNTIME_REPRODUCIBILITY`
+19. `PRODUCTION_PROMOTION_LOCK`
 
 `SATISFIED` means that the required artifact exists and passes that gate's narrow policy. It never implies scientific truth. `BLOCKED` and `CONFLICT` dominate the mission state. `NOT_EVALUATED` is not a pass.
 
@@ -82,6 +88,8 @@ The derived gate order is:
 `VALIDATION_COUNCIL_REVIEWED` is satisfied only by `SRB_COUNCIL_REVIEW_V2` tied to the latest historical run and latest measurement report. It requires an explicit computational-not-human boundary, `RESEARCH_WORKFLOW_ONLY`, retained negative-result disposition when applicable, `automatic_promotion_authorized=false` and `RESEARCH_ONLY`.
 
 `INDEPENDENT_REPLICATION` ignores legacy status strings. It requires `SRB_INDEPENDENT_REPLICATION_V1`, a persisted frozen protocol, complete execution tied to the latest historical run, point-in-time `PASS`, at least one declared independent market/period/implementation axis, snapshot and execution fingerprints, an outcome (of any sign), and intact production/auto-promotion locks.
+
+`CROSS_RUNTIME_REPRODUCIBILITY` requires a completed `SRB_CROSS_RUNTIME_VERIFICATION_V1` challenge tied to an eligible independent replication. The challenge binds the sealed source snapshot and TypeScript source hashes before execution. Every declared result must match, retained discrepancy count must be zero, implementation independence must be explicit, investigator independence must remain false, and production/automatic-promotion locks must remain intact.
 
 ## Identity model
 
@@ -97,6 +105,9 @@ The derived gate order is:
 - `replication_id`: digest over the frozen reference run/report, markets, official series, measurements, split, baseline, multiplicity and causal event-time support contract.
 - `source_snapshot_fingerprint`: digest over canonical ALFRED initial-release rows for all six BIS series.
 - `execution_fingerprint`: digest over the frozen replication contract, snapshot and every OOS trace/result identity.
+- `verification_id`: digest-derived identity over the governed replication, snapshot manifest, canonical CSV inventory, TypeScript source inventory and frozen comparison contract.
+- `engine_build_fingerprint`: digest over the compiled independent engine and fixed Node CLI used for the execution.
+- `result_fingerprint`: SHA-256 digest of the bounded TypeScript result artifact compared with the Python reference.
 
 Selection pressure counts every attempt. Theory weights and independent-failure stop rules deduplicate by `evidence_unit_id`, falling back to legacy `run_id` only when necessary.
 
@@ -136,3 +147,4 @@ Legacy JSON rows remain readable because every new dataclass field has a default
 - no automatic production promotion;
 - no unattended network or experiment loop;
 - no claim of independent investigator or independent implementation when only market/data lineage differ.
+- no cross-runtime pass when any structural or numerical discrepancy remains.

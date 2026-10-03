@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.4.2
+# Scientific Research Brain v0.6.5.0
 
 Scientific Research Brain (SRB) is the terminal's provenance-first research operating system. It turns a research question into an auditable chain of source understanding, competing hypotheses, explicit measurement choices, causal data contracts, retained experiment attempts and reproducible out-of-sample results.
 
@@ -22,6 +22,16 @@ It is not an autonomous trading engine. Every artifact is `RESEARCH_ONLY`; produ
 14. Budgets and stop rules are explicit; merely viewing a screen does not consume or reconcile them.
 15. A computational Validation Council dossier is never represented as a human-panel attestation.
 16. Replication must be frozen before retrieval, retain outcome sign, expose its independence dimensions and use point-in-time evidence.
+17. Cross-runtime agreement is accepted only from a frozen, hashed challenge executed by a separately authored implementation; agreement proves reproducibility of the declared contract, not scientific truth.
+
+## What v0.6.5.0 adds
+
+- **Independent implementation axis:** a separately authored TypeScript/Node engine reads the sealed canonical ALFRED CSV files directly and shares no Python numerical functions.
+- **Full nine-screen reconstruction:** the second engine independently rebuilds causal release-event support, fits every AR(1)/OU model, recomputes baselines, forecast traces, Diebold–Mariano diagnostics and the Holm family.
+- **Frozen cross-runtime challenge:** protocol identity, canonical file hashes and row counts, snapshot manifest, engine sources, source replication and tolerance are sealed before execution.
+- **Field-level parity ledger:** every structural field and numerical trace is compared at a declared `1e-6` tolerance; discrepancies are retained rather than rounded away or silently overwritten.
+- **Fail-closed Mission Control gate:** `CROSS_RUNTIME_REPRODUCIBILITY` is satisfied only when every declared result matches, no discrepancy remains and the research-only promotion lock is intact.
+- **Honest independence accounting:** implementation independence is `true`; investigator independence remains `false`. This is internal reproduction, not third-party peer review.
 
 ## What v0.6.4.2 adds
 
@@ -105,6 +115,8 @@ Question + explicit null
   → frozen independent-market replication protocol
   → ALFRED/BIS initial-release snapshot
   → 9 chronological OOS screens + Holm ledger
+  → frozen TypeScript/Node challenge
+  → independent 9-screen reconstruction + field-level parity ledger
 ```
 
 Mission Control derives this state. It does not mutate it.
@@ -144,6 +156,8 @@ The replication layer prefers the public ALFRED download form in `Observations, 
 
 The protocol is persisted before retrieval. For each observation month, `realtime_start_date` records when the first release became available; real and nominal observations are aligned only after both were public. When several reference periods first appear together, forecasting support keeps the latest period for that event so one co-released value cannot leak into another; non-advancing backfills are also excluded. The untouched raw rows and every exclusion remain auditable. ALFRED coverage starts at the first vintage retained by ALFRED rather than at the beginning of each underlying BIS history. Raw downloads and canonical rows are stored with FRED/ALFRED and BIS attribution and terms links.
 
+Phase 6.5 then gives those sealed local artifacts to a pinned Node.js runtime. The TypeScript verifier performs no network request, checks every source and canonical-file digest before execution, and writes a content-addressed result beside the immutable challenge. A `PASS` requires equality of structure and verdicts plus numerical agreement within the frozen tolerance.
+
 ## Verification
 
 From the repository root:
@@ -154,7 +168,7 @@ python3 -m unittest discover -s scientific_research/tests_python -p 'test_*.py' 
 python3 -m unittest discover -s tests -p 'test_scientific*.py' -v
 ```
 
-The original standalone TypeScript foundation remains separately verifiable through the pinned lockfile:
+The TypeScript foundation and independent replication engine are separately verifiable through the pinned lockfile:
 
 ```bash
 pnpm --dir scientific_research install --frozen-lockfile
@@ -170,6 +184,7 @@ pnpm --dir scientific_research run verify
 - The built-in audited historical executor currently supports the OU/AR(1) surrogate at a one-period horizon.
 - CUSUM can flag forecast-loss instability; it does not identify a causal regime.
 - A completed Council dossier is a system-generated workflow decision, not human peer review or scientific acceptance.
-- ALFRED/BIS replication supplies independent markets and data lineage, but it is executed by the same SRB implementation and investigator; those axes remain explicitly non-independent.
+- Phase 6.4 ALFRED/BIS replication supplies independent markets and data lineage. Phase 6.5 adds an independent TypeScript/Node implementation, while the investigator, question, protocol and source snapshot remain shared.
+- Cross-runtime parity establishes reproducibility of the frozen implementation contract. It is not an external audit, peer review, causal proof or evidence that the chosen measurement is scientifically valid.
 - A completed independent-market replication closes an execution gate regardless of sign. It does not by itself justify generalization, causality, trading use or production promotion.
 - There is no automatic background research loop, arbitrary code execution, belief update or production route.

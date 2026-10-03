@@ -44,7 +44,7 @@ REPLICATION_EVENT_TIME_SUPPORT_POLICY = (
     "EXCLUDE_NON_ADVANCING_BACKFILLS"
 )
 ALFRED_USER_AGENT = (
-    "ScientificResearchBrain/0.6.4.2 research-only replication; "
+    "ScientificResearchBrain/0.6.5.0 research-only replication; "
     "public initial-release download; no automated production use"
 )
 
