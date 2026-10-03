@@ -24,6 +24,7 @@ from scientific_research import (
     Phase62Registry,
     Phase63Registry,
     Phase65Registry,
+    Phase66Registry,
     RegistryCorruptionError,
     ResearchBudget,
     build_scout_record,
@@ -70,6 +71,13 @@ from scientific_research import (
     freeze_cross_runtime_verification,
     execute_cross_runtime_verification,
     cross_runtime_runtime_status,
+    build_prospective_vintage_summary,
+    execute_direct_bis_reconciliation,
+    freeze_direct_bis_reconciliation,
+    DIRECT_BIS_EXPORT_HELP_URL,
+    DIRECT_BIS_SOURCE_URL,
+    DIRECT_BIS_TERMS_URL,
+    DIRECT_BIS_TOPIC_URL,
     ALFRED_BIS_MARKETS,
     ALFRED_FORM_ACCESS_MODE,
     ALFRED_GRAPH_ACCESS_MODE,
@@ -123,7 +131,7 @@ except Exception:  # pragma: no cover - allows core unit tests without Streamlit
 # No financial engine is imported or mutated from this module.
 # ============================================================
 
-SRB_VERSION = "0.6.5.0"
+SRB_VERSION = "0.6.6.0"
 SRB_WORKSPACE_SLUG = "scientific-research"
 DEFAULT_MEMORY_DIR = ".scientific_research_data"
 
@@ -452,6 +460,7 @@ class ScientificResearchMemory:
         self.phase62 = Phase62Registry(base)
         self.phase63 = Phase63Registry(base)
         self.phase65 = Phase65Registry(base)
+        self.phase66 = Phase66Registry(base)
 
     @staticmethod
     def _load_json(path: Path) -> list[dict[str, Any]]:
@@ -3737,6 +3746,181 @@ def _render_cross_runtime_verification(memory: ScientificResearchMemory, replica
         st.json(current)
 
 
+def _render_direct_source_reconciliation(memory: ScientificResearchMemory, replication: dict[str, Any]) -> None:
+    st.divider()
+    st.markdown("#### Direct BIS Source Observatory · Phase 6.6")
+    st.caption(
+        "This explicit, keyless acquisition reads the official BIS EER bulk file directly and reconciles its current "
+        "revised values against the sealed ALFRED initial-release snapshot. It validates source routing, coverage and "
+        "revision accounting. It is not a vintage archive, an independent underlying data lineage or a replacement for "
+        "the point-in-time replication."
+    )
+    st.markdown(
+        f"[Official bulk file]({DIRECT_BIS_SOURCE_URL}) · "
+        f"[export documentation]({DIRECT_BIS_EXPORT_HELP_URL}) · "
+        f"[EER methodology]({DIRECT_BIS_TOPIC_URL}) · "
+        f"[terms]({DIRECT_BIS_TERMS_URL})"
+    )
+    records = [
+        row for row in memory.phase66.list_reconciliations()
+        if str(row.get("replication_id") or "") == str(replication.get("replication_id") or "")
+    ]
+    current = max(records, key=lambda row: str(row.get("created_at") or ""), default=None)
+    completed_records = [row for row in records if str(row.get("execution_status") or "") == "COMPLETE"]
+    prospective = build_prospective_vintage_summary(
+        completed_records,
+        replication_id=str(replication.get("replication_id") or ""),
+        min_distinct_snapshots=int((current or {}).get("prospective_min_distinct_snapshots") or 12),
+        min_distinct_latest_periods=int((current or {}).get("prospective_min_distinct_latest_periods") or 12),
+        min_span_days=int((current or {}).get("prospective_min_span_days") or 300),
+    )
+
+    if completed_records:
+        latest_complete = max(completed_records, key=lambda row: str(row.get("retrieved_at") or ""))
+        c1, c2, c3, c4, c5 = st.columns(5)
+        c1.metric("Direct series", f"{latest_complete.get('series_count', 0)}/{latest_complete.get('expected_series_count', 0)}")
+        c2.metric("Overlap rows", int(latest_complete.get("total_overlap_rows") or 0))
+        c3.metric("Revised rows", int(latest_complete.get("total_revised_rows") or 0))
+        c4.metric("Latest BIS month", latest_complete.get("latest_period") or "N/A")
+        c5.metric("Point-in-time", latest_complete.get("point_in_time_status") or "NOT_POINT_IN_TIME")
+        st.success(
+            f"Direct-source reconciliation complete: {latest_complete.get('reconciliation_status')} · "
+            f"snapshot {latest_complete.get('direct_snapshot_id')} · source integrity PASS."
+        )
+        summary_rows = []
+        for item in latest_complete.get("series_results") or ():
+            summary_rows.append({
+                "Market": item.get("market_label"),
+                "Measurement": item.get("measurement"),
+                "Series": item.get("series_id"),
+                "Initial rows": item.get("initial_release_row_count"),
+                "Current revised rows": item.get("current_revised_row_count"),
+                "Overlap": item.get("overlap_row_count"),
+                "Changed": item.get("revised_row_count"),
+                "Exact %": round(float(item.get("exact_match_rate") or 0.0) * 100.0, 3),
+                "Mean abs revision": item.get("mean_absolute_revision"),
+                "Max abs revision": item.get("max_absolute_revision"),
+                "Latest delta": item.get("latest_overlap_revision_delta"),
+            })
+        if summary_rows:
+            st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
+        st.caption(
+            f"Raw {latest_complete.get('raw_archive_sha256')} · direct snapshot "
+            f"{latest_complete.get('direct_snapshot_fingerprint')} · reconciliation "
+            f"{latest_complete.get('reconciliation_fingerprint')} · artifact "
+            f"{latest_complete.get('direct_snapshot_path')}"
+        )
+        p1, p2, p3, p4 = st.columns(4)
+        p1.metric("Forward ledger", prospective.get("status", "WARMING_UP"))
+        p2.metric(
+            "Distinct snapshots",
+            f"{prospective.get('distinct_snapshots', 0)}/{prospective.get('required_distinct_snapshots', 12)}",
+        )
+        p3.metric(
+            "Distinct latest months",
+            f"{prospective.get('distinct_latest_periods', 0)}/{prospective.get('required_distinct_latest_periods', 12)}",
+        )
+        p4.metric(
+            "Observed span",
+            f"{prospective.get('span_days', 0)}/{prospective.get('required_span_days', 300)} days",
+        )
+        st.warning(
+            "Prospective vintages start only when this ledger observes them. Earlier BIS vintages are never reconstructed "
+            "or fabricated. WARMING_UP does not block the provenance gate and does not authorize a historical OOS claim."
+        )
+        st.download_button(
+            "Export full reconciliation dossier (JSON)",
+            data=json.dumps(latest_complete, ensure_ascii=False, indent=2, sort_keys=True, default=str),
+            file_name=f"{latest_complete.get('reconciliation_id', 'direct-bis-reconciliation')}.json",
+            mime="application/json",
+            use_container_width=True,
+            key=f"srb_p66_export_{latest_complete.get('reconciliation_id')}",
+        )
+        with st.expander("Full direct-source record", expanded=False):
+            st.json(latest_complete)
+
+    if current is not None and str(current.get("execution_status") or "") == "NOT_RUN":
+        st.info(
+            f"Frozen before network access: {current.get('reconciliation_id')} · protocol "
+            f"{current.get('protocol_fingerprint')}. Acquisition remains explicit and user-triggered."
+        )
+        if st.button(
+            "Acquire official BIS snapshot and reconcile",
+            use_container_width=True,
+            key=f"srb_p66_execute_{current.get('reconciliation_id')}",
+        ):
+            try:
+                with st.spinner("Streaming the official BIS bulk archive, sealing six series and measuring revisions..."):
+                    completed = execute_direct_bis_reconciliation(
+                        current,
+                        data_root=memory.root,
+                        prior_records=records,
+                    )
+                    memory.phase66.save_reconciliation(completed)
+                    memory.audit("PHASE66_DIRECT_BIS_RECONCILIATION_COMPLETE", {
+                        "reconciliation_id": completed.reconciliation_id,
+                        "replication_id": completed.replication_id,
+                        "direct_snapshot_id": completed.direct_snapshot_id,
+                        "direct_snapshot_fingerprint": completed.direct_snapshot_fingerprint,
+                        "raw_archive_sha256": completed.raw_archive_sha256,
+                        "series_count": completed.series_count,
+                        "total_overlap_rows": completed.total_overlap_rows,
+                        "total_revised_rows": completed.total_revised_rows,
+                        "reconciliation_status": completed.reconciliation_status,
+                        "point_in_time_status": completed.point_in_time_status,
+                        "historical_evidence_eligible": completed.historical_evidence_eligible,
+                        "prospective_vintage_status": completed.prospective_vintage_status,
+                        "automatic_promotion_authorized": completed.automatic_promotion_authorized,
+                        "production_status": completed.production_status,
+                    })
+                st.session_state["srb_p5_flash"] = (
+                    f"Direct BIS reconciliation complete: {completed.series_count} series · "
+                    f"{completed.total_revised_rows} revised overlap rows retained."
+                )
+                st.rerun()
+            except Exception as exc:
+                memory.audit("PHASE66_DIRECT_BIS_RECONCILIATION_FAILED", {
+                    "reconciliation_id": current.get("reconciliation_id"),
+                    "replication_id": current.get("replication_id"),
+                    "error_type": type(exc).__name__,
+                    "error": str(exc)[:700],
+                    "historical_evidence_eligible": False,
+                    "production_status": "RESEARCH_ONLY",
+                })
+                st.error(str(exc))
+        return
+
+    st.info(
+        "A new cycle creates a separate frozen record before the next download. Repeating identical bytes is retained as "
+        "an observation but cannot increase the content-distinct forward-vintage count."
+    )
+    if st.button(
+        "Freeze next direct BIS observation",
+        use_container_width=True,
+        key="srb_p66_freeze_next_observation",
+    ):
+        try:
+            frozen = freeze_direct_bis_reconciliation(replication)
+            memory.phase66.save_reconciliation(frozen)
+            memory.audit("PHASE66_DIRECT_BIS_PROTOCOL_FROZEN", {
+                "reconciliation_id": frozen.reconciliation_id,
+                "replication_id": frozen.replication_id,
+                "protocol_fingerprint": frozen.protocol_fingerprint,
+                "reference_snapshot_id": frozen.reference_snapshot_id,
+                "history_semantics": frozen.history_semantics,
+                "point_in_time_status": frozen.point_in_time_status,
+                "historical_evidence_eligible": frozen.historical_evidence_eligible,
+                "automatic_promotion_authorized": frozen.automatic_promotion_authorized,
+                "production_status": frozen.production_status,
+            })
+            st.session_state["srb_p5_flash"] = (
+                f"Direct BIS observation frozen: {frozen.reconciliation_id}. No network request has run yet."
+            )
+            st.rerun()
+        except Exception as exc:
+            st.error(str(exc))
+
+
 def _render_validation_learning(memory: ScientificResearchMemory) -> None:
     st.markdown("### Scientific Validation & Learning · Phase 5.1")
     st.caption(
@@ -4351,6 +4535,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                     with st.expander("Full replication record", expanded=False):
                         st.json(replication)
                     _render_cross_runtime_verification(memory, replication)
+                    _render_direct_source_reconciliation(memory, replication)
 
 
 

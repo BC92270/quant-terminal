@@ -10,6 +10,11 @@ from typing import Any, Callable, Iterable, Mapping
 from .phase63_models import MissionSnapshot, RegistryFileHealth, ResearchGate
 from .registry_io import registry_lock
 from .replication_engine import REPLICATION_EVENT_TIME_SUPPORT_POLICY
+from .direct_bis_reconciliation import (
+    DIRECT_BIS_HISTORY_SEMANTICS,
+    DIRECT_BIS_PROTOCOL_VERSION,
+    build_prospective_vintage_summary,
+)
 
 
 def _now_iso() -> str:
@@ -125,6 +130,7 @@ def capture_registry_snapshot(memory: Any, audit_limit: int = 250) -> dict[str, 
         ("measurement_protocols", memory.phase63.list_measurement_protocols, memory.phase63.paths["measurement_protocols"]),
         ("measurement_reports", memory.phase63.list_measurement_reports, memory.phase63.paths["measurement_reports"]),
         ("cross_runtime_verifications", memory.phase65.list_verifications, memory.phase65.paths["verifications"]),
+        ("direct_source_reconciliations", memory.phase66.list_reconciliations, memory.phase66.paths["reconciliations"]),
     )
     # Every mutable registry uses the same root-level lock. Holding it for the
     # complete read prevents Mission Control from mixing pre- and post-write
@@ -655,6 +661,101 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
             "Freeze and execute the independent TypeScript/Node challenge against the sealed ALFRED snapshot."
         ) if not cross_runtime_ok else "",
     ))
+
+    direct_rows = [
+        dict(row) for row in (snapshot.get("direct_source_reconciliations") or ())
+        if _text(row.get("replication_id")) in eligible_replication_ids
+    ]
+    eligible_direct: list[dict[str, Any]] = []
+    direct_defects: list[str] = []
+    for row in direct_rows:
+        if _text(row.get("execution_status")) != "COMPLETE":
+            continue
+        defects: list[str] = []
+        dimensions = row.get("independence_dimensions") or {}
+        series_results = [dict(item) for item in (row.get("series_results") or ()) if isinstance(item, Mapping)]
+        if _text(row.get("protocol_version")) != DIRECT_BIS_PROTOCOL_VERSION:
+            defects.append("missing governed direct-source protocol")
+        if _text(row.get("source_integrity_status")) != "PASS":
+            defects.append("direct source integrity is not PASS")
+        if _text(row.get("coverage_status")) != "PASS":
+            defects.append("declared direct series coverage is not PASS")
+        if _text(row.get("reconciliation_status")) not in {"EXACT_MATCH", "RECONCILED_WITH_REVISIONS"}:
+            defects.append("revision reconciliation is incomplete")
+        expected_count = int(row.get("expected_series_count") or 0)
+        series_count = int(row.get("series_count") or 0)
+        if expected_count < 1 or series_count != expected_count or len(series_results) != expected_count:
+            defects.append("not every frozen series has a reconciliation result")
+        if not _text(row.get("direct_snapshot_id")) or not _text(row.get("direct_snapshot_fingerprint")):
+            defects.append("direct snapshot identity or fingerprint is missing")
+        if not _text(row.get("raw_archive_sha256")) or not _text(row.get("reconciliation_fingerprint")):
+            defects.append("raw archive or reconciliation fingerprint is missing")
+        if _text(row.get("history_semantics")) != DIRECT_BIS_HISTORY_SEMANTICS:
+            defects.append("current revised-history semantics are not explicit")
+        if _text(row.get("point_in_time_status")) != "NOT_POINT_IN_TIME":
+            defects.append("direct revised history is being overstated as point-in-time")
+        if row.get("historical_evidence_eligible") is not False:
+            defects.append("direct revised history is incorrectly eligible as historical evidence")
+        if not isinstance(dimensions, Mapping):
+            defects.append("independence dimensions are missing")
+        else:
+            if dimensions.get("distribution_channel") is not True or dimensions.get("source_host") is not True:
+                defects.append("independent direct distribution route is not declared")
+            if dimensions.get("underlying_data_lineage") is not False or dimensions.get("point_in_time") is not False:
+                defects.append("shared lineage or non-point-in-time boundary is overstated")
+            if dimensions.get("investigator") is not False:
+                defects.append("investigator independence is overstated")
+        minimum_overlap = int(row.get("min_overlap_rows") or 0)
+        if any(
+            int(item.get("overlap_row_count") or 0) < minimum_overlap
+            or not _text(item.get("comparison_fingerprint"))
+            or item.get("historical_evidence_eligible") is not False
+            for item in series_results
+        ):
+            defects.append("a series comparison lacks governed overlap, fingerprint or evidence boundary")
+        if _text(row.get("production_status")) != "RESEARCH_ONLY" or row.get("automatic_promotion_authorized") is not False:
+            defects.append("research-only promotion lock is absent")
+        if defects:
+            direct_defects.append(f"{_text(row.get('reconciliation_id')) or 'reconciliation'}: {', '.join(defects)}.")
+        else:
+            eligible_direct.append(row)
+
+    direct_conflict = bool(direct_defects)
+    direct_ok = bool(eligible_direct) and not direct_conflict
+    direct_status = "CONFLICT" if direct_conflict else "SATISFIED" if direct_ok else "NOT_EVALUATED"
+    prospective = {}
+    if eligible_direct:
+        latest_direct = max(eligible_direct, key=lambda item: _text(item.get("retrieved_at")))
+        prospective = build_prospective_vintage_summary(
+            direct_rows,
+            replication_id=_text(latest_direct.get("replication_id")),
+            min_distinct_snapshots=int(latest_direct.get("prospective_min_distinct_snapshots") or 12),
+            min_distinct_latest_periods=int(latest_direct.get("prospective_min_distinct_latest_periods") or 12),
+            min_span_days=int(latest_direct.get("prospective_min_span_days") or 300),
+        )
+    gates.append(_gate(
+        "DIRECT_SOURCE_RECONCILIATION",
+        "Direct-source reconciliation",
+        direct_status,
+        (
+            f"{len(eligible_direct)} direct BIS revised-history observation(s) reconcile all declared series; "
+            f"the prospective vintage ledger is {prospective.get('status', 'WARMING_UP')} "
+            f"({prospective.get('distinct_snapshots', 0)}/"
+            f"{prospective.get('required_distinct_snapshots', 12)} content-distinct snapshots). "
+            "This gate validates provenance and revision accounting, not point-in-time historical evidence."
+            if direct_ok else
+            "A completed direct-source record violates its provenance, coverage or non-point-in-time boundary."
+            if direct_conflict else
+            "No complete direct BIS revised-history reconciliation is tied to the governed replication."
+        ),
+        refs=[row.get("reconciliation_id") for row in direct_rows],
+        blockers=direct_defects,
+        next_action=(
+            "Inspect and retain the direct-source conflict; never promote revised history into point-in-time evidence."
+            if direct_conflict else
+            "Freeze one explicit direct BIS observation, then acquire and reconcile the six declared series."
+        ) if not direct_ok else "",
+    ))
     unauthorized_belief = any(bool(row.get("belief_update_authorized")) for row in syntheses)
     bad_production = []
     for key, rows in snapshot.items():
@@ -704,6 +805,7 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         "measurement_protocols": len(measurement_protocols),
         "measurement_reports": len(measurement_reports),
         "cross_runtime_verifications": len(cross_runtime_rows),
+        "direct_source_reconciliations": len(direct_rows),
         "diagnostics": len([row for row in (snapshot.get("break_diagnostics") or ()) if _text(row.get("run_id")) == _text(latest_historical.get("run_id"))]),
         "inconsistencies": len(inconsistencies),
     }

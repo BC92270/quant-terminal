@@ -274,6 +274,46 @@ def _complete_snapshot(
             "automatic_promotion_authorized": False,
             "production_status": "RESEARCH_ONLY",
         }],
+        "direct_source_reconciliations": [{
+            "reconciliation_id": "DBR-1",
+            "replication_id": "REPLICATION-1",
+            "protocol_version": "SRB_DIRECT_BIS_RECONCILIATION_V1",
+            "execution_status": "COMPLETE",
+            "source_integrity_status": "PASS",
+            "coverage_status": "PASS",
+            "reconciliation_status": "RECONCILED_WITH_REVISIONS",
+            "direct_snapshot_id": "BISREV-1",
+            "direct_snapshot_fingerprint": "sha256:direct-snapshot",
+            "raw_archive_sha256": "sha256:raw-archive",
+            "reconciliation_fingerprint": "sha256:reconciliation",
+            "history_semantics": "CURRENT_REVISED_HISTORY_NOT_A_VINTAGE_ARCHIVE",
+            "point_in_time_status": "NOT_POINT_IN_TIME",
+            "historical_evidence_eligible": False,
+            "expected_series_count": 1,
+            "series_count": 1,
+            "min_overlap_rows": 24,
+            "retrieved_at": "2026-01-04T00:00:00+00:00",
+            "latest_period": "2025-12-01",
+            "prospective_min_distinct_snapshots": 12,
+            "prospective_min_distinct_latest_periods": 12,
+            "prospective_min_span_days": 300,
+            "series_results": [{
+                "series_id": "RBUSBIS",
+                "overlap_row_count": 40,
+                "comparison_fingerprint": "sha256:comparison",
+                "historical_evidence_eligible": False,
+            }],
+            "independence_dimensions": {
+                "distribution_channel": True,
+                "source_host": True,
+                "underlying_data_lineage": False,
+                "methodology": False,
+                "point_in_time": False,
+                "investigator": False,
+            },
+            "automatic_promotion_authorized": False,
+            "production_status": "RESEARCH_ONLY",
+        }],
         "failures": [],
         "surprises": [],
         "budgets": [],
@@ -347,6 +387,36 @@ class PublicDataMissionGateTests(unittest.TestCase):
         self.assertEqual(gate.status, "CONFLICT")
         self.assertEqual(mission.overall_status, "BLOCKED")
         self.assertIn("retain every cross-runtime discrepancy", mission.next_action)
+
+    def test_direct_revised_history_closes_only_the_provenance_gate(self) -> None:
+        mission = build_mission_snapshot(_complete_snapshot(), "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "DIRECT_SOURCE_RECONCILIATION")
+
+        self.assertEqual(gate.status, "SATISFIED")
+        self.assertIn("not point-in-time historical evidence", gate.summary)
+        self.assertIn("WARMING_UP", gate.summary)
+        self.assertEqual(mission.overall_status, "READY_FOR_REVIEW")
+
+    def test_direct_source_point_in_time_overclaim_blocks_mission(self) -> None:
+        snapshot = _complete_snapshot()
+        snapshot["direct_source_reconciliations"][0]["point_in_time_status"] = "PASS"
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "DIRECT_SOURCE_RECONCILIATION")
+
+        self.assertEqual(gate.status, "CONFLICT")
+        self.assertIn("overstated as point-in-time", " ".join(gate.blockers))
+        self.assertEqual(mission.overall_status, "BLOCKED")
+
+    def test_missing_direct_source_observation_remains_waiting(self) -> None:
+        snapshot = _complete_snapshot()
+        snapshot["direct_source_reconciliations"] = []
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "DIRECT_SOURCE_RECONCILIATION")
+
+        self.assertEqual(gate.status, "NOT_EVALUATED")
+        self.assertEqual(mission.overall_status, "WAITING_EVIDENCE")
 
     def test_legacy_review_and_status_only_replication_cannot_close_governed_gates(self) -> None:
         snapshot = _complete_snapshot()
