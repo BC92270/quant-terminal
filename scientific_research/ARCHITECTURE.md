@@ -1,10 +1,12 @@
-# Scientific Research Brain v0.6.4.1 — architecture contract
+# Scientific Research Brain v0.6.4.2 — architecture contract
 
 ## Design rule
 
 Registries own facts. Mission Control is a pure projection over one captured snapshot and must never create a second source of truth. A disagreement between registries is a first-class `CONFLICT`, not something the dashboard silently repairs.
 
 Mission Control holds the shared state-root lock while capturing every registry and the audit tail, preventing one dashboard snapshot from mixing bytes observed before and after a concurrent transaction.
+
+When every gate is satisfied, the derived mission action is the final Validation Council review. A pre-completion action persisted in the research plan remains historical context and cannot contradict `READY_FOR_REVIEW`.
 
 ## Layers
 

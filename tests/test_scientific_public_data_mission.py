@@ -297,6 +297,19 @@ class PublicDataMissionGateTests(unittest.TestCase):
         self.assertEqual(self._historical_gate(mission).status, "SATISFIED")
         self.assertEqual(mission.overall_status, "READY_FOR_REVIEW")
 
+    def test_ready_mission_replaces_stale_plan_action_with_final_review(self) -> None:
+        snapshot = _complete_snapshot()
+        snapshot["plans"][0]["next_action"] = "Provide a chronological dataset before review."
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+
+        self.assertEqual(mission.overall_status, "READY_FOR_REVIEW")
+        self.assertEqual(
+            mission.next_action,
+            "Review the completed mission with the Validation Council.",
+        )
+        self.assertNotIn("Provide a chronological dataset", mission.next_action)
+
     def test_legacy_review_and_status_only_replication_cannot_close_governed_gates(self) -> None:
         snapshot = _complete_snapshot()
         snapshot["reviews"] = [{"review_id": "LEGACY-REVIEW", "run_id": "RUN-PRIMARY"}]

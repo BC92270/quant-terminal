@@ -619,7 +619,10 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         or next((gate for gate in gates if gate.status == "NOT_EVALUATED"), None)
         or next((gate for gate in gates if gate.status == "WARNING"), None)
     )
-    next_action = next_gate.next_action if next_gate else _text(plan.get("next_action")) or "Review the completed mission with the Validation Council."
+    # A persisted plan action describes how to reach a reviewable state. Once
+    # every gate is satisfied it is historical context, not the current action;
+    # surfacing it here would contradict READY_FOR_REVIEW in Mission Control.
+    next_action = next_gate.next_action if next_gate else "Review the completed mission with the Validation Council."
     ledger = next((dict(row) for row in (snapshot.get("budgets") or ()) if _text(row.get("plan_id")) == _text(plan.get("plan_id"))), {})
     budget_remaining = {
         "literature_queries": max(0.0, float(ledger.get("max_literature_queries") or 0) - float(ledger.get("used_literature_queries") or 0)),

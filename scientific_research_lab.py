@@ -119,7 +119,7 @@ except Exception:  # pragma: no cover - allows core unit tests without Streamlit
 # No financial engine is imported or mutated from this module.
 # ============================================================
 
-SRB_VERSION = "0.6.4.1"
+SRB_VERSION = "0.6.4.2"
 SRB_WORKSPACE_SLUG = "scientific-research"
 DEFAULT_MEMORY_DIR = ".scientific_research_data"
 

@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.4.1 — verification
+# Scientific Research Brain v0.6.4.2 — verification
 
 ## Required commands
 
@@ -17,7 +17,7 @@ pnpm --dir scientific_research run verify
 
 ## Python coverage
 
-The v0.6.4.1 suite covers:
+The v0.6.4.2 suite covers:
 
 - complete point-in-time contract validation and revised-history warnings;
 - measurement-lineage and observable-lifecycle conflicts;
@@ -52,6 +52,7 @@ The v0.6.4.1 suite covers:
 - three markets × three measurements with complete chronological forecast traces;
 - paired horizon-one forecast comparisons and nine-test Holm-Bonferroni adjustment;
 - explicit market/data-lineage independence with implementation/investigator non-independence.
+- replacement of stale persisted plan instructions when every Mission Control gate is satisfied and the mission is ready for final review.
 
 ## Acceptance criteria
 

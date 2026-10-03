@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.4.1
+# Scientific Research Brain v0.6.4.2
 
 Scientific Research Brain (SRB) is the terminal's provenance-first research operating system. It turns a research question into an auditable chain of source understanding, competing hypotheses, explicit measurement choices, causal data contracts, retained experiment attempts and reproducible out-of-sample results.
 
@@ -22,6 +22,11 @@ It is not an autonomous trading engine. Every artifact is `RESEARCH_ONLY`; produ
 14. Budgets and stop rules are explicit; merely viewing a screen does not consume or reconcile them.
 15. A computational Validation Council dossier is never represented as a human-panel attestation.
 16. Replication must be frozen before retrieval, retain outcome sign, expose its independence dimensions and use point-in-time evidence.
+
+## What v0.6.4.2 adds
+
+- **State-consistent next action:** once every governed gate is satisfied, Mission Control replaces any obsolete persisted plan instruction with the final Validation Council review action.
+- **Visible closure without scientific overclaim:** `READY_FOR_REVIEW` now has one unambiguous operational instruction while production remains locked to `RESEARCH_ONLY`.
 
 ## What v0.6.4.1 adds
 
