@@ -60,7 +60,7 @@ The v0.6.6.0 suite covers:
 - exact UTC timestamp serialization across Python and TypeScript, with a declared numerical tolerance of `1e-6`;
 - explicit implementation independence, explicit investigator non-independence and unbroken `RESEARCH_ONLY` locks.
 - persist-before-network direct BIS observation protocols and append-only `FROZEN → COMPLETE` lifecycle;
-- bounded ZIP/CSV validation, exact six-series filtering, source schema/status/collection checks and content-addressed raw/canonical persistence;
+- bounded ZIP/CSV validation, exact six-series filtering, source schema/status/collection checks, content-addressed raw/canonical persistence and fail-closed restart/tamper revalidation;
 - field-level reconciliation of ALFRED initial releases against current BIS revised history without classifying legitimate revisions as transport failures;
 - explicit independent distribution path with shared underlying BIS lineage and permanently non-point-in-time historical eligibility;
 - prospective forward-vintage readiness that deduplicates identical content and requires 12 distinct snapshots, 12 distinct latest months and 300 observed days;

@@ -452,6 +452,123 @@ def _persist_direct_snapshot(
     return snapshot_id, snapshot_fingerprint, str(target.relative_to(root)), raw_sha, series_manifest
 
 
+def load_persisted_direct_bis_snapshot(
+    data_root: str | os.PathLike[str],
+    snapshot_id: str,
+    *,
+    series_matrix: Mapping[str, Mapping[str, str]],
+    expected_fingerprint: str = "",
+) -> dict[str, Any]:
+    """Reload and revalidate every raw/canonical byte of a sealed BIS snapshot."""
+    identity = str(snapshot_id or "").strip()
+    if not re.fullmatch(r"BISREV-[0-9a-f]{16}", identity):
+        raise DirectBisDataError("Persisted direct BIS snapshot_id is invalid.")
+    matrix = _series_matrix(series_matrix)
+    required_series = {
+        series_id
+        for metadata in matrix.values()
+        for series_id in (metadata["real_series_id"], metadata["nominal_series_id"])
+    }
+    root = Path(data_root).resolve()
+    base = (root / "public_data" / "bis_revised_history").resolve()
+    target = (base / identity).resolve()
+    if target.parent != base or not target.is_dir():
+        raise DirectBisDataError(f"Persisted direct BIS snapshot is missing: {identity}")
+    manifest_path = target / "manifest.json"
+    if not manifest_path.is_file() or manifest_path.stat().st_size > 2_000_000:
+        raise DirectBisDataError("Persisted direct BIS manifest is missing or oversized.")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise DirectBisDataError("Persisted direct BIS manifest is invalid JSON.") from exc
+    if not isinstance(manifest, dict) or str(manifest.get("snapshot_id") or "") != identity:
+        raise DirectBisDataError("Persisted direct BIS snapshot identity is inconsistent.")
+    if str(manifest.get("history_semantics") or "") != DIRECT_BIS_HISTORY_SEMANTICS:
+        raise DirectBisDataError("Persisted direct BIS revised-history semantics changed.")
+    if str(manifest.get("point_in_time_status") or "") != "NOT_POINT_IN_TIME":
+        raise DirectBisDataError("Persisted direct BIS snapshot is overstated as point-in-time.")
+    if manifest.get("historical_evidence_eligible") is not False:
+        raise DirectBisDataError("Persisted direct BIS snapshot is incorrectly eligible as historical evidence.")
+    if manifest.get("automatic_promotion_authorized") is not False or str(manifest.get("production_status") or "") != "RESEARCH_ONLY":
+        raise DirectBisDataError("Persisted direct BIS snapshot lost its research-only promotion lock.")
+    series_manifest = manifest.get("series")
+    if not isinstance(series_manifest, dict) or set(series_manifest) != required_series:
+        raise DirectBisDataError("Persisted direct BIS manifest does not exactly cover the frozen series matrix.")
+
+    raw_path = target / DIRECT_BIS_REQUIRED_MEMBER.replace(".csv", ".zip")
+    if not raw_path.is_file() or raw_path.stat().st_size > DIRECT_BIS_MAX_ARCHIVE_BYTES:
+        raise DirectBisDataError("Persisted direct BIS raw archive is missing or oversized.")
+    raw = raw_path.read_bytes()
+    raw_sha = _sha256_bytes(raw)
+    if raw_sha != str(manifest.get("raw_archive_sha256") or ""):
+        raise DirectBisDataError("Persisted direct BIS raw archive fingerprint mismatch.")
+    if len(raw) != int(manifest.get("raw_archive_bytes") or -1):
+        raise DirectBisDataError("Persisted direct BIS raw archive byte count mismatch.")
+    parsed_rows, raw_csv_bytes = parse_bis_eer_archive(raw, matrix)
+    if raw_csv_bytes != int(manifest.get("raw_csv_bytes") or -1):
+        raise DirectBisDataError("Persisted direct BIS uncompressed byte count mismatch.")
+
+    verified_manifest: dict[str, dict[str, Any]] = {}
+    for series_id, parsed in sorted(parsed_rows.items()):
+        metadata = series_manifest.get(series_id)
+        if not isinstance(metadata, Mapping):
+            raise DirectBisDataError(f"Persisted direct BIS metadata is malformed for {series_id}.")
+        parsed_fingerprint = _digest(parsed)
+        if parsed_fingerprint != str(metadata.get("row_fingerprint") or ""):
+            raise DirectBisDataError(f"Persisted direct BIS raw row fingerprint mismatch for {series_id}.")
+        if (
+            len(parsed) != int(metadata.get("row_count") or -1)
+            or parsed[0]["period_start_date"] != str(metadata.get("observation_start") or "")
+            or parsed[-1]["period_start_date"] != str(metadata.get("observation_end") or "")
+            or parsed[0]["title"] != str(metadata.get("title") or "")
+        ):
+            raise DirectBisDataError(f"Persisted direct BIS series inventory mismatch for {series_id}.")
+        canonical_path = target / f"{series_id}_canonical.csv"
+        if not canonical_path.is_file() or canonical_path.stat().st_size > 5_000_000:
+            raise DirectBisDataError(f"Persisted direct BIS canonical file is missing or oversized for {series_id}.")
+        canonical: list[dict[str, Any]] = []
+        try:
+            with canonical_path.open("r", encoding="utf-8", newline="") as handle:
+                reader = csv.DictReader(handle)
+                if reader.fieldnames != ["period_start_date", "value", "observation_status", "collection", "title"]:
+                    raise DirectBisDataError(f"Persisted direct BIS canonical schema changed for {series_id}.")
+                for source in reader:
+                    canonical.append({
+                        "period_start_date": str(source.get("period_start_date") or ""),
+                        "value": round(float(str(source.get("value") or "")), 12),
+                        "observation_status": str(source.get("observation_status") or ""),
+                        "collection": str(source.get("collection") or ""),
+                        "title": str(source.get("title") or ""),
+                    })
+        except DirectBisDataError:
+            raise
+        except Exception as exc:
+            raise DirectBisDataError(f"Persisted direct BIS canonical rows are invalid for {series_id}.") from exc
+        if canonical != parsed or _digest(canonical) != parsed_fingerprint:
+            raise DirectBisDataError(f"Persisted direct BIS canonical content mismatch for {series_id}.")
+        verified_manifest[series_id] = dict(metadata)
+
+    snapshot_fingerprint = _digest({
+        "source_url": DIRECT_BIS_SOURCE_URL,
+        "history_semantics": DIRECT_BIS_HISTORY_SEMANTICS,
+        "raw_archive_sha256": raw_sha,
+        "series": verified_manifest,
+    })
+    if snapshot_fingerprint != str(manifest.get("snapshot_fingerprint") or ""):
+        raise DirectBisDataError("Persisted direct BIS snapshot fingerprint mismatch.")
+    if identity != f"BISREV-{snapshot_fingerprint.split(':', 1)[1][:16]}":
+        raise DirectBisDataError("Persisted direct BIS snapshot ID is not derived from its fingerprint.")
+    if expected_fingerprint and snapshot_fingerprint != str(expected_fingerprint):
+        raise DirectBisDataError("Persisted direct BIS snapshot does not match the expected fingerprint.")
+    return {
+        "snapshot_id": identity,
+        "snapshot_fingerprint": snapshot_fingerprint,
+        "manifest": manifest,
+        "rows": parsed_rows,
+        "path": str(target.relative_to(root)),
+    }
+
+
 def _reference_rows(value: Any) -> list[dict[str, Any]]:
     source_rows = value.rows if hasattr(value, "rows") else value.get("rows") if isinstance(value, Mapping) else None
     rows: list[dict[str, Any]] = []
@@ -599,6 +716,13 @@ def execute_direct_bis_reconciliation(
         direct_rows,
         raw_csv_bytes,
     )
+    verified_direct = load_persisted_direct_bis_snapshot(
+        data_root,
+        snapshot_id,
+        series_matrix=matrix,
+        expected_fingerprint=snapshot_fingerprint,
+    )
+    direct_rows = verified_direct["rows"]
 
     results: list[dict[str, Any]] = []
     total_overlap = 0
@@ -746,5 +870,6 @@ __all__ = [
     "download_bis_eer_archive",
     "execute_direct_bis_reconciliation",
     "freeze_direct_bis_reconciliation",
+    "load_persisted_direct_bis_snapshot",
     "parse_bis_eer_archive",
 ]

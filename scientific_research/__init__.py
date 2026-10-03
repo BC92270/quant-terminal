@@ -130,6 +130,7 @@ from .direct_bis_reconciliation import (
     download_bis_eer_archive,
     execute_direct_bis_reconciliation,
     freeze_direct_bis_reconciliation,
+    load_persisted_direct_bis_snapshot,
     parse_bis_eer_archive,
 )
 
@@ -167,7 +168,8 @@ __all__ = [
     "DIRECT_BIS_PROTOCOL_VERSION", "DIRECT_BIS_SOURCE_URL", "DIRECT_BIS_TERMS_URL",
     "DIRECT_BIS_TOPIC_URL", "DirectBisDataError", "build_prospective_vintage_summary",
     "download_bis_eer_archive", "execute_direct_bis_reconciliation",
-    "freeze_direct_bis_reconciliation", "parse_bis_eer_archive",
+    "freeze_direct_bis_reconciliation", "load_persisted_direct_bis_snapshot",
+    "parse_bis_eer_archive",
 ]
 
 from .phase6_models import (

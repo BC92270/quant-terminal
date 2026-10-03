@@ -16,6 +16,7 @@ from scientific_research.direct_bis_reconciliation import (
     build_prospective_vintage_summary,
     execute_direct_bis_reconciliation,
     freeze_direct_bis_reconciliation,
+    load_persisted_direct_bis_snapshot,
     parse_bis_eer_archive,
 )
 from scientific_research.phase66_registry import Phase66Registry
@@ -174,8 +175,28 @@ class DirectBisReconciliationTests(unittest.TestCase):
             artifact = Path(directory) / completed.direct_snapshot_path
             self.assertTrue((artifact / "manifest.json").is_file())
             self.assertTrue((artifact / "WS_EER_csv_flat.zip").is_file())
+            verified = load_persisted_direct_bis_snapshot(
+                directory,
+                completed.direct_snapshot_id,
+                series_matrix=ALFRED_BIS_MARKETS,
+                expected_fingerprint=completed.direct_snapshot_fingerprint,
+            )
+            self.assertEqual(verified["snapshot_fingerprint"], completed.direct_snapshot_fingerprint)
             with self.assertRaisesRegex(ValueError, "append-only"):
                 registry.save_reconciliation(replace(completed, total_revised_rows=0))
+            canonical = artifact / "RBUSBIS_canonical.csv"
+            canonical.write_text(
+                canonical.read_text(encoding="utf-8")
+                + "2099-01-01,100.0,A,A: Average of observations through period,Tampered title\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(DirectBisDataError, "canonical"):
+                load_persisted_direct_bis_snapshot(
+                    directory,
+                    completed.direct_snapshot_id,
+                    series_matrix=ALFRED_BIS_MARKETS,
+                    expected_fingerprint=completed.direct_snapshot_fingerprint,
+                )
 
     def test_parser_rejects_non_normal_required_observation(self) -> None:
         raw, _ = _archive(abnormal=True)
