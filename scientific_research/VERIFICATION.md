@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.6.0 — verification
+# Scientific Research Brain v0.6.6.1 — verification
 
 ## Required commands
 
@@ -17,7 +17,7 @@ pnpm --dir scientific_research run verify
 
 ## Python coverage
 
-The v0.6.6.0 suite covers:
+The v0.6.6.1 suite covers:
 
 - complete point-in-time contract validation and revised-history warnings;
 - measurement-lineage and observable-lifecycle conflicts;

@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.6.0
+# Scientific Research Brain v0.6.6.1
 
 Scientific Research Brain (SRB) is the terminal's provenance-first research operating system. It turns a research question into an auditable chain of source understanding, competing hypotheses, explicit measurement choices, causal data contracts, retained experiment attempts and reproducible out-of-sample results.
 
@@ -24,6 +24,11 @@ It is not an autonomous trading engine. Every artifact is `RESEARCH_ONLY`; produ
 16. Replication must be frozen before retrieval, retain outcome sign, expose its independence dimensions and use point-in-time evidence.
 17. Cross-runtime agreement is accepted only from a frozen, hashed challenge executed by a separately authored implementation; agreement proves reproducibility of the declared contract, not scientific truth.
 18. Current revised history may reconcile source provenance and revisions, but it never becomes point-in-time evidence; prospective vintages begin only when actually observed.
+
+## What v0.6.6.1 adds
+
+- **Rendered release parity:** the live hero now identifies Phase 6.6 and v0.6.6.1, matching the direct-source functionality, release manifest and runtime evidence.
+- **Provider identity parity:** every public-data User-Agent now reports the same patch release without changing any frozen scientific protocol or persisted artifact identity.
 
 ## What v0.6.6.0 adds
 

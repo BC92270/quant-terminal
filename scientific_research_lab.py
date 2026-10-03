@@ -131,7 +131,7 @@ except Exception:  # pragma: no cover - allows core unit tests without Streamlit
 # No financial engine is imported or mutated from this module.
 # ============================================================
 
-SRB_VERSION = "0.6.6.0"
+SRB_VERSION = "0.6.6.1"
 SRB_WORKSPACE_SLUG = "scientific-research"
 DEFAULT_MEMORY_DIR = ".scientific_research_data"
 
@@ -5400,11 +5400,11 @@ def render_scientific_research_brain(
     st.markdown(
         f"""
         <div class="srb-hero">
-            <div class="srb-kicker">SCIENTIFIC RESEARCH BRAIN · PHASE 6.5 · V{SRB_VERSION}</div>
+            <div class="srb-kicker">SCIENTIFIC RESEARCH BRAIN · PHASE 6.6 · V{SRB_VERSION}</div>
             <div class="srb-title">Evidence-to-Experiment Research Mission Control</div>
             <div class="srb-sub">
                 Source-grounded scientific understanding, competing measurement hypotheses, causal historical-data contracts, append-only experiment attempts,
-                timestamped OOS forecast traces, reproducibility capsules and an independent TypeScript/Node reproduction in one auditable research loop. Mission gates expose contradictions and missing evidence;
+                timestamped OOS forecast traces, reproducibility capsules, an independent TypeScript/Node reproduction and direct BIS revision provenance in one auditable research loop. Mission gates expose contradictions and missing evidence;
                 no synthesis updates beliefs automatically and production promotion remains locked.
             </div>
         </div>
