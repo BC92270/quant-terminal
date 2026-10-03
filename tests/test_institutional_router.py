@@ -114,6 +114,18 @@ def test_autonomous_workspaces_have_allowlisted_routes() -> None:
     assert _route_query(build_workspace_route("psychology", instrument)) == {"workspace": ["market-psychology"]}
     assert _route_query(build_workspace_route("quant_ai", instrument)) == {"workspace": ["quant-ai"]}
     assert _route_query(build_workspace_route("market_intelligence", instrument)) == {"workspace": ["market-intelligence"]}
+    assert _route_query(build_workspace_route("scientific_research", instrument)) == {
+        "workspace": ["scientific-research"]
+    }
+
+
+def test_scientific_research_workspace_is_research_only_and_profile_visible() -> None:
+    workspace = WORKSPACE_BY_CODE["scientific_research"]
+
+    assert workspace.function == "SRB"
+    assert workspace.mode is None
+    assert workspace.special_route == "scientific-research"
+    assert set(workspace.audiences) == set(CLIENT_PROFILES)
 
 
 def test_client_profiles_reference_valid_bounded_workspaces() -> None:

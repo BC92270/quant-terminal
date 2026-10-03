@@ -10,6 +10,8 @@ numpy
 pandas
 plotly
 requests
+# ALFRED's public graph-vintage edge requires HTTP/2 from some cloud networks.
+httpx[http2]>=0.28,<0.29
 scikit-learn>=1.5,<2.0
 scipy
 # 0.14.0 imports SciPy's removed private `_lazywhere`; 0.14.5+ vendors the

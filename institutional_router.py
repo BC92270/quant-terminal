@@ -343,6 +343,7 @@ WORKSPACES: tuple[WorkspaceSpec, ...] = (
     WorkspaceSpec("rates", "GOVT", "Rates Dashboard", "Sovereign curves, duration and policy repricing.", "Rates Dashboard", "Rates", "^TNX", ("macro", "risk", "multi_asset"), force_context=True),
     WorkspaceSpec("credit", "CRPR", "Fixed Income & Credit", "Curve, spread, DV01, CS01 and relative-value analytics.", "Fixed Income & Credit Analytics", "Rates", "LQD", ("macro", "risk", "cio", "wealth"), force_context=True),
     WorkspaceSpec("macro", "ECON", "Macro / Central Banks", "Growth, inflation, liquidity and policy regime.", "Macro / Central Banks", "Equity", "SPY", ("macro", "multi_asset", "cio"), force_context=True),
+    WorkspaceSpec("scientific_research", "SRB", "Scientific Research Brain", "Evidence, experiments, causal data contracts and independent replication.", None, "Equity", "SPY", ("multi_asset", "equity", "macro", "risk", "cio", "wealth"), special_route="scientific-research"),
     WorkspaceSpec("market_intelligence", "MINT", "Market Intelligence", "Catalysts, information absorption, microstructure and probabilistic forecasts.", None, "Equity", "NVDA", ("multi_asset", "equity", "macro", "risk", "cio"), special_route="market-intelligence"),
     WorkspaceSpec("psychology", "PSYC", "Market Psychology", "Narratives, positioning, reflexivity and behavioral state.", None, "Equity", "SPY", ("multi_asset", "equity", "cio"), special_route="market-psychology"),
     WorkspaceSpec("quant_ai", "ASKQ", "Quant AI · CIO", "Cross-domain research assistant and investment committee.", None, "Equity", "SPY", ("multi_asset", "equity", "macro", "risk", "cio", "wealth"), special_route="quant-ai"),
@@ -742,6 +743,7 @@ def _launch_special(route: str) -> None:
     st.session_state["market_psychology_lab_open"] = route == "market-psychology"
     st.session_state["quant_ai_open"] = route == "quant-ai"
     st.session_state["market_intelligence_open"] = route == "market-intelligence"
+    st.session_state["scientific_research_open"] = route == "scientific-research"
     st.query_params.clear()
     st.query_params["workspace"] = route
     st.rerun()

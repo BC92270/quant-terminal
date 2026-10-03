@@ -135,6 +135,21 @@ except Exception as _exc:
 
 
 # ============================================================
+# SCIENTIFIC RESEARCH BRAIN — SAFE AUTONOMOUS WORKSPACE IMPORT
+# ============================================================
+# The entire research workspace is optional at product boot.  A packaging or
+# dependency error must degrade this route only, never the market terminal.
+SCIENTIFIC_RESEARCH_IMPORT_ERROR = None
+render_scientific_research_brain = None
+
+try:
+    from scientific_research_lab import render_scientific_research_brain
+except Exception as _exc:
+    SCIENTIFIC_RESEARCH_IMPORT_ERROR = _exc
+    render_scientific_research_brain = None
+
+
+# ============================================================
 # CONTEXTUAL SECTION ASSISTANTS — SAFE IMPORT
 # ============================================================
 # The assistant is an additive shell.  Every existing workspace must remain
@@ -5237,7 +5252,13 @@ def _render_contextual_section_assistant(
 
 _route_workspace = _route_query_value("workspace")
 
-if _route_workspace in {"worldmonitor", "market-psychology", "quant-ai", "market-intelligence"}:
+if _route_workspace in {
+    "worldmonitor",
+    "market-psychology",
+    "quant-ai",
+    "market-intelligence",
+    "scientific-research",
+}:
     # Autonomous workspaces can be opened in independent browser tabs from the
     # institutional router.  Only a small allow-list of non-sensitive route
     # names is persisted in the URL.
@@ -5247,6 +5268,7 @@ if _route_workspace in {"worldmonitor", "market-psychology", "quant-ai", "market
     st.session_state["market_psychology_lab_open"] = _route_workspace == "market-psychology"
     st.session_state["quant_ai_open"] = _route_workspace == "quant-ai"
     st.session_state["market_intelligence_open"] = _route_workspace == "market-intelligence"
+    st.session_state["scientific_research_open"] = _route_workspace == "scientific-research"
 
 elif _route_workspace == "terminal":
     try:
@@ -5339,6 +5361,55 @@ if st.session_state.get("worldmonitor_v211_open", False):
     else:
         st.error(f"WorldMonitor import error: {WM_V211_IMPORT_ERROR}")
         st.info("Expected file location: /workspaces/quant-terminal/worldmonitor_bridge_v211.py")
+
+    st.stop()
+
+# ============================================================
+# SCIENTIFIC RESEARCH BRAIN — AUTONOMOUS DIRECT VIEW
+# ============================================================
+# SRB owns a full-screen, research-only workflow.  It renders before the global
+# market header/sidebar so no unrelated ticker surface leaks into the mission.
+if st.session_state.get("scientific_research_open", False):
+    apply_terminal_shell_theme()
+    top_cols = st.columns([1, 5])
+
+    with top_cols[0]:
+        if st.button(
+            "← Command Center",
+            use_container_width=True,
+            key="scientific_research_back_to_command_center_v0641",
+        ):
+            st.session_state["scientific_research_open"] = False
+            st.session_state["asset_class_selected"] = False
+            st.query_params.clear()
+            st.rerun()
+
+    with top_cols[1]:
+        st.caption(
+            "SCIENTIFIC RESEARCH BRAIN · EVIDENCE / EXPERIMENT / REPLICATION · RESEARCH_ONLY"
+        )
+
+    _render_contextual_section_assistant(
+        "scientific_research",
+        mode_or_route="scientific-research",
+        section_label="Scientific Research Brain",
+    )
+
+    if callable(render_scientific_research_brain):
+        render_scientific_research_brain(
+            ticker=st.session_state.get("ticker"),
+            price_data=st.session_state.get("price_data"),
+            analysis=st.session_state.get("analysis"),
+        )
+    else:
+        st.error(
+            "Scientific Research Brain import error: "
+            f"{SCIENTIFIC_RESEARCH_IMPORT_ERROR}"
+        )
+        st.info(
+            "Expected files: scientific_research_lab.py and scientific_research/ "
+            "at project root. Production promotion remains disabled."
+        )
 
     st.stop()
 

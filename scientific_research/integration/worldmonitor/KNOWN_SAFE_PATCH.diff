@@ -1,0 +1,17 @@
+--- src/components/index.ts
++++ src/components/index.ts
+@@ -41,3 +41,4 @@
+ export * from './UnifiedSettings';
+ export * from './TradePolicyPanel';
+ export * from './SupplyChainPanel';
++export * from './ScientificResearchPanel';
+--- src/config/variants/finance.ts
++++ src/config/variants/finance.ts
+@@ -162,6 +162,7 @@
+   regulation: { name: 'Financial Regulation', enabled: true, priority: 2 },
+   institutional: { name: 'Hedge Funds & PE', enabled: true, priority: 2 },
+   analysis: { name: 'Market Analysis', enabled: true, priority: 2 },
++  'scientific-research': { name: 'Scientific Research Brain', enabled: true, priority: 1 },
+   'etf-flows': { name: 'BTC ETF Tracker', enabled: true, priority: 2 },
+   stablecoins: { name: 'Stablecoins', enabled: true, priority: 2 },
+   'gcc-investments': { name: 'GCC Investments', enabled: true, priority: 2 },
