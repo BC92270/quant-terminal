@@ -12,6 +12,7 @@ export * from './literature/types.js';
 export * from './llm/openai-compatible.js';
 export * from './llm/types.js';
 export * from './ontology/mechanisms.js';
+export * from './replication/cross-runtime-engine.js';
 export * from './storage/in-memory.js';
 export * from './storage/local-storage.js';
 export * from './storage/store.js';

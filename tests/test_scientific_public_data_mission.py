@@ -252,6 +252,28 @@ def _complete_snapshot(
                 "production_status": "RESEARCH_ONLY",
             }
         ],
+        "cross_runtime_verifications": [{
+            "verification_id": "XRV-1",
+            "replication_id": "REPLICATION-1",
+            "protocol_version": "SRB_CROSS_RUNTIME_VERIFICATION_V1",
+            "execution_status": "COMPLETE",
+            "implementation_gate_status": "PASS",
+            "parity_status": "PASS",
+            "challenge_fingerprint": "sha256:challenge",
+            "engine_source_fingerprint": "sha256:source",
+            "engine_build_fingerprint": "sha256:build",
+            "result_fingerprint": "sha256:result",
+            "result_count": 9,
+            "matched_result_count": 9,
+            "discrepancy_count": 0,
+            "discrepancies": [],
+            "independence_dimensions": {
+                "implementation": True,
+                "investigator": False,
+            },
+            "automatic_promotion_authorized": False,
+            "production_status": "RESEARCH_ONLY",
+        }],
         "failures": [],
         "surprises": [],
         "budgets": [],
@@ -309,6 +331,22 @@ class PublicDataMissionGateTests(unittest.TestCase):
             "Review the completed mission with the Validation Council.",
         )
         self.assertNotIn("Provide a chronological dataset", mission.next_action)
+
+    def test_completed_cross_runtime_disagreement_blocks_ready_state(self) -> None:
+        snapshot = _complete_snapshot()
+        verification = snapshot["cross_runtime_verifications"][0]
+        verification["parity_status"] = "FAIL"
+        verification["implementation_gate_status"] = "FAIL"
+        verification["matched_result_count"] = 8
+        verification["discrepancy_count"] = 1
+        verification["discrepancies"] = ["GB/RELATIVE_PRICE_WEDGE: candidate RMSE differs"]
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "CROSS_RUNTIME_REPRODUCIBILITY")
+
+        self.assertEqual(gate.status, "CONFLICT")
+        self.assertEqual(mission.overall_status, "BLOCKED")
+        self.assertIn("retain every cross-runtime discrepancy", mission.next_action)
 
     def test_legacy_review_and_status_only_replication_cannot_close_governed_gates(self) -> None:
         snapshot = _complete_snapshot()

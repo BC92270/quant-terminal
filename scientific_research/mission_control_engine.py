@@ -124,6 +124,7 @@ def capture_registry_snapshot(memory: Any, audit_limit: int = 250) -> dict[str, 
         ("capsules", memory.phase63.list_capsules, memory.phase63.paths["capsules"]),
         ("measurement_protocols", memory.phase63.list_measurement_protocols, memory.phase63.paths["measurement_protocols"]),
         ("measurement_reports", memory.phase63.list_measurement_reports, memory.phase63.paths["measurement_reports"]),
+        ("cross_runtime_verifications", memory.phase65.list_verifications, memory.phase65.paths["verifications"]),
     )
     # Every mutable registry uses the same root-level lock. Holding it for the
     # complete read prevents Mission Control from mixing pre- and post-write
@@ -595,6 +596,65 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         blockers=replication_defects if not replication_ok else (),
         next_action="Execute a declared replication on an independent period, market or implementation." if not replication_ok else "",
     ))
+
+    eligible_replication_ids = {_text(row.get("replication_id")) for row in eligible_replications}
+    cross_runtime_rows = [
+        dict(row) for row in (snapshot.get("cross_runtime_verifications") or ())
+        if _text(row.get("replication_id")) in eligible_replication_ids
+    ]
+    eligible_cross_runtime: list[dict[str, Any]] = []
+    cross_runtime_defects: list[str] = []
+    completed_cross_runtime = False
+    for row in cross_runtime_rows:
+        defects = []
+        dimensions = row.get("independence_dimensions") or {}
+        if _text(row.get("protocol_version")) != "SRB_CROSS_RUNTIME_VERIFICATION_V1":
+            defects.append("missing governed cross-runtime protocol")
+        if _text(row.get("execution_status")) != "COMPLETE":
+            defects.append("TypeScript execution is incomplete")
+        else:
+            completed_cross_runtime = True
+        if _text(row.get("parity_status")) != "PASS" or _text(row.get("implementation_gate_status")) != "PASS":
+            defects.append("cross-runtime parity did not pass")
+        if not isinstance(dimensions, Mapping) or dimensions.get("implementation") is not True:
+            defects.append("independent implementation axis is not declared")
+        if isinstance(dimensions, Mapping) and dimensions.get("investigator") is not False:
+            defects.append("investigator independence is overstated")
+        if not _text(row.get("challenge_fingerprint")) or not _text(row.get("engine_source_fingerprint")):
+            defects.append("challenge or source fingerprint is missing")
+        if not _text(row.get("engine_build_fingerprint")) or not _text(row.get("result_fingerprint")):
+            defects.append("build or result fingerprint is missing")
+        if int(row.get("result_count") or 0) < 1 or int(row.get("matched_result_count") or 0) != int(row.get("result_count") or 0):
+            defects.append("not every declared result matched")
+        if int(row.get("discrepancy_count") or 0) != 0 or row.get("discrepancies"):
+            defects.append("numerical or structural discrepancies remain")
+        if _text(row.get("production_status")) != "RESEARCH_ONLY" or row.get("automatic_promotion_authorized") is not False:
+            defects.append("research-only promotion lock is absent")
+        if defects:
+            cross_runtime_defects.append(f"{_text(row.get('verification_id')) or 'verification'}: {', '.join(defects)}.")
+        else:
+            eligible_cross_runtime.append(row)
+    cross_runtime_ok = bool(eligible_cross_runtime)
+    cross_runtime_status = "SATISFIED" if cross_runtime_ok else "CONFLICT" if completed_cross_runtime else "NOT_EVALUATED"
+    gates.append(_gate(
+        "CROSS_RUNTIME_REPRODUCIBILITY",
+        "Cross-runtime reproducibility",
+        cross_runtime_status,
+        (
+            f"{len(eligible_cross_runtime)} sealed TypeScript/Node reproduction(s) match every persisted Python result."
+            if cross_runtime_ok else
+            "A completed independent code-path reproduction disagrees with the persisted Python execution."
+            if completed_cross_runtime else
+            "No completed independent TypeScript/Node reproduction is tied to the governed replication."
+        ),
+        refs=[row.get("verification_id") for row in cross_runtime_rows],
+        blockers=cross_runtime_defects,
+        next_action=(
+            "Inspect and retain every cross-runtime discrepancy before changing either implementation."
+            if completed_cross_runtime else
+            "Freeze and execute the independent TypeScript/Node challenge against the sealed ALFRED snapshot."
+        ) if not cross_runtime_ok else "",
+    ))
     unauthorized_belief = any(bool(row.get("belief_update_authorized")) for row in syntheses)
     bad_production = []
     for key, rows in snapshot.items():
@@ -643,6 +703,7 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         "capsules": len(capsules),
         "measurement_protocols": len(measurement_protocols),
         "measurement_reports": len(measurement_reports),
+        "cross_runtime_verifications": len(cross_runtime_rows),
         "diagnostics": len([row for row in (snapshot.get("break_diagnostics") or ()) if _text(row.get("run_id")) == _text(latest_historical.get("run_id"))]),
         "inconsistencies": len(inconsistencies),
     }
