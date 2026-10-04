@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.7.0
+# Scientific Research Brain v0.6.8.0
 
 Scientific Research Brain (SRB) is the terminal's provenance-first research operating system. It turns a research question into an auditable chain of source understanding, competing hypotheses, explicit measurement choices, causal data contracts, retained experiment attempts and reproducible out-of-sample results.
 
@@ -25,6 +25,17 @@ It is not an autonomous trading engine. Every artifact is `RESEARCH_ONLY`; produ
 17. Cross-runtime agreement is accepted only from a frozen, hashed challenge executed by a separately authored implementation; agreement proves reproducibility of the declared contract, not scientific truth.
 18. Current revised history may reconcile source provenance and revisions, but it never becomes point-in-time evidence; prospective vintages begin only when actually observed.
 19. Cross-provider agreement is evaluated on predeclared comparable transformations, never raw index bases; provider, host, methodology, underlying lineage, point-in-time and investigator independence are separate claims.
+20. A prospective schedule is an operating contract, not evidence: the real frozen seed is maturity observation #1, only genuinely observed future bytes can add monthly credit thereafter, and duplicates/missed windows remain visible while historical backfill is forbidden.
+
+## What v0.6.8.0 adds
+
+- **Strict mission-lineage isolation:** a question without an explicitly linked experiment can no longer inherit the first global experiment, run or replication. Mission Control, Run Room and the epistemic timeline resolve only governed foreign-key descendants.
+- **Prospective monthly operating contract:** one immutable `SRB_PROSPECTIVE_OBSERVATION_PROGRAM_V1` binds the real Phase-6.6 seed, UTC-month cadence, one credited observation per window and the existing 12 snapshots / 12 latest months / 300 observed days thresholds.
+- **No-backfill calendar:** the first eligible window is always the month after freeze. Captured, open and missed windows are derived without mutation; a missed month is retained permanently and duplicate same-window observations never create extra schedule credit.
+- **Separated closure states:** the current dossier may remain `READY_FOR_REVIEW` while the evidence clock is `WARMING_UP`. The new Mission gate validates that the future protocol is frozen and intact; it does not claim that 300 days have elapsed.
+- **Closure Cockpit:** current-study result, 22-gate coverage, longitudinal maturity, phase lineage, scientific non-claims and the next real observation date are visible from Command Center in one action.
+- **External-verifier handoff index:** JSON and Markdown closure dossiers bind the program, direct-observation and latest triangulation fingerprints, Mission state, prospective counts and explicit non-claims. Reproduction still requires the referenced state/content-addressed artifacts; export does not manufacture investigator independence or peer review.
+- **Operational UX hardening:** active gate blockers are separated from superseded historical plan debt; finite chart guards remove empty/invalid Vega domains; focus-visible, responsive and reduced-motion rules improve constrained Codespace views.
 
 ## What v0.6.7.0 adds
 
@@ -149,6 +160,8 @@ Question + explicit null
   → initial-release versus current-revised reconciliation
   → frozen OECD/BIS comparability contract
   → 3-country monthly-change triangulation + retained concordance/divergence
+  → frozen future-only monthly observation program
+  → captured/open/missed UTC windows + portable closure dossier
 ```
 
 Mission Control derives this state. It does not mutate it.
@@ -190,11 +203,11 @@ The protocol is persisted before retrieval. For each observation month, `realtim
 
 Phase 6.5 then gives those sealed local artifacts to a pinned Node.js runtime. The TypeScript verifier performs no network request, checks every source and canonical-file digest before execution, and writes a content-addressed result beside the immutable challenge. A `PASS` requires equality of structure and verdicts plus numerical agreement within the frozen tolerance.
 
-### BIS direct · revised-history reconciliation and forward ledger
+### BIS direct · revised-history reconciliation and raw observation inventory
 
 Phase 6.6 freezes a separate observation contract before contacting the official BIS bulk endpoint. The bounded parser reads only monthly real/nominal broad indices for the same United States, United Kingdom and Japan series, seals the raw ZIP and six canonical histories, then aligns them with the already sealed ALFRED initial-release rows. The complete comparison table preserves every revision delta and fingerprint.
 
-This route supplies an independent host and distribution path, not an independent underlying provider or methodology: both paths ultimately describe BIS EER data. The bulk file is the current revised history and is permanently marked `NOT_POINT_IN_TIME`; it cannot replace or improve the sign of the historical OOS replication. Each later explicit acquisition becomes an as-observed ledger entry. Identical bytes are retained but cannot increase the distinct-snapshot count, and no vintage before the ledger existed is inferred.
+This route supplies an independent host and distribution path, not an independent underlying provider or methodology: both paths ultimately describe BIS EER data. The bulk file is the current revised history and is permanently marked `NOT_POINT_IN_TIME`; it cannot replace or improve the sign of the historical OOS replication. Each later explicit acquisition becomes an append-only observation. Phase-6.6 aggregate counts are a legacy raw-content inventory only; Phase 6.8 is authoritative for schedule credit and maturity. No vintage before the ledger existed is inferred.
 
 ### OECD/BIS · cross-provider measurement triangulation
 
@@ -203,6 +216,14 @@ Phase 6.7 freezes the completed direct-BIS snapshot, the exact OECD SDMX query a
 The comparison never expects raw index levels to match. For each country it aligns common months, computes consecutive monthly log changes, then applies the predeclared correlation, sign-agreement and mean-absolute-gap thresholds. Rolling correlations and rebased-level distance are descriptive diagnostics. A divergence is a valid retained result; `NOT_COMPARABLE` prevents a concordance claim.
 
 OECD is an official, free, keyless provider distinct from the BIS host, but the SDMX `National` methodology code does not by itself establish a separate underlying data lineage. The record therefore keeps `underlying_data_lineage=false`, `methodology=false`, `point_in_time=false` and `investigator=false`. This layer measures robustness to another official representation; it is not a second causal OOS study, a historical vintage archive or peer review.
+
+### Prospective evidence clock · future-only operating route
+
+Phase 6.8 freezes the latest completed direct-BIS observation as a real seed. Its first eligible acquisition window is the following UTC calendar month; neither a second acquisition in the freeze month nor any earlier history can be relabelled as prospective. Each later completed Phase-6.6 observation is assigned to the month in which its bytes were actually retrieved.
+
+The calendar credits exactly zero or one deterministic observation per month: the earliest eligible `(retrieved_at, reconciliation_id)` whose frozen acquisition lifecycle also completed inside that UTC month. All observations remain append-only, but later versions in the same month—including content-distinct versions—cannot increase any maturity count. A retrieval completed only after the month closes is retained as late evidence but cannot repair that window. An empty or late-only closed window becomes `MISSED_RETAINED` (or `MISSED_RETAINED_LATE_COMPLETION`) and is never backfillable. Readiness still requires all three frozen conditions across the seed plus credited monthly observations: 12 content-distinct snapshots, 12 distinct latest months and at least 300 days between the first and last credited content observations.
+
+The `PROSPECTIVE_OBSERVATION_PROTOCOL` gate evaluates the replication holding the latest governed direct observation; older replications keep their own one-program histories without creating a false global conflict. It is satisfied when that active operating contract, seed lineage, fingerprint, cadence and research-only locks are intact. Mission Control exposes `core_study_status` separately from `prospective_operations_status`, so a missing or conflicted future protocol cannot retroactively rewrite the completed historical study. Scientific maturity remains a third, separate displayed status.
 
 ## Verification
 
@@ -233,5 +254,6 @@ pnpm --dir scientific_research run verify
 - Phase 6.4 ALFRED/BIS replication supplies independent markets and data lineage. Phase 6.5 adds an independent TypeScript/Node implementation, while the investigator, question, protocol and source snapshot remain shared.
 - Cross-runtime parity establishes reproducibility of the frozen implementation contract. It is not an external audit, peer review, causal proof or evidence that the chosen measurement is scientifically valid.
 - Phase 6.6 direct BIS acquisition proves a separate delivery path and measures revisions only. The underlying BIS lineage is shared, the bulk history is revised, and the first forward snapshot is merely the start of a future vintage ledger.
+- Phase 6.8 can freeze and operate the forward ledger now, but it cannot accelerate elapsed months, create independent investigators or turn a reviewable internal dossier into peer review.
 - A completed independent-market replication closes an execution gate regardless of sign. It does not by itself justify generalization, causality, trading use or production promotion.
 - There is no automatic background research loop, arbitrary code execution, belief update or production route.

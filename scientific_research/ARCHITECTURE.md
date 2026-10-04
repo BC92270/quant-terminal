@@ -1,10 +1,12 @@
-# Scientific Research Brain v0.6.7.0 — architecture contract
+# Scientific Research Brain v0.6.8.0 — architecture contract
 
 ## Design rule
 
 Registries own facts. Mission Control is a pure projection over one captured snapshot and must never create a second source of truth. A disagreement between registries is a first-class `CONFLICT`, not something the dashboard silently repairs.
 
 Mission Control holds the shared state-root lock while capturing every registry and the audit tail, preventing one dashboard snapshot from mixing bytes observed before and after a concurrent transaction.
+
+Mission lineage is resolved from the selected question through explicit IDs and governed foreign keys. There is no global fallback to the first experiment, run or replication; an unlinked mission remains incomplete instead of borrowing another mission's evidence.
 
 When every gate is satisfied, the derived mission action is the final Validation Council review. A pre-completion action persisted in the research plan remains historical context and cannot contradict `READY_FOR_REVIEW`.
 
@@ -48,6 +50,10 @@ Direct-source reconciliation + prospective as-observed ledger
 Official OECD monthly CPI-based REER snapshot
   ↓ monthly-log-change diagnostics; raw levels never equated
 Cross-provider triangulation + retained concordance/divergence
+  ↓ frozen future-only UTC-month cadence
+Prospective observation program + no-backfill calendar
+  ↓ current-study status remains separate from elapsed evidence maturity
+Closure dossier + external-verifier handoff
 ```
 
 ## Registry ownership
@@ -62,8 +68,9 @@ Cross-provider triangulation + retained concordance/divergence
 - Phase 6.3 owns historical contracts/audits, dataset manifests, append-only attempts, break diagnostics, reproducibility capsules, measurement-robustness protocols and comparative reports.
 - Phase 6.4 uses the Phase-4 replication registry for an immutable frozen protocol followed by one guarded completion transition; it owns ALFRED initial-release snapshots, cross-market OOS traces and multiplicity-adjusted forecast comparisons.
 - Phase 6.5 owns append-only cross-runtime verification records and content-addressed challenge/result artifacts. The independent Node process reads only the sealed canonical source files and cannot authorize production.
-- Phase 6.6 owns append-only direct-source reconciliation records, content-addressed BIS revised-history snapshots and the derived forward-vintage readiness ledger. It can validate provenance and revision accounting only; it cannot rewrite Phase-6.4 point-in-time evidence.
+- Phase 6.6 owns append-only direct-source reconciliation records, content-addressed BIS revised-history snapshots and a legacy raw-content inventory. It can validate provenance and revision accounting only; Phase 6.8 alone governs monthly schedule credit and prospective maturity, and neither layer can rewrite Phase-6.4 point-in-time evidence.
 - Phase 6.7 owns append-only cross-provider triangulation records and content-addressed OECD revised-history snapshots. It separates provider/host independence from unresolved methodology and underlying lineage, and it cannot rewrite Phase-6.4 point-in-time evidence or select a preferred source after observing disagreement.
+- Phase 6.8 owns one immutable prospective observation program per governed replication. It binds a real Phase-6.6 seed, admits at most the earliest same-window-completed observation per UTC month, retains late/duplicate/missed windows and exports a closure boundary. Mission Control evaluates the active replication selected by the latest eligible direct observation while preserving older replication programs as history. It cannot edit Phase-6.6 observations, backfill a missed month, assert elapsed maturity, establish investigator independence or authorize production.
 
 All mutable registries under one state root share a bounded POSIX inter-process lock. Each JSON read-modify-write transaction is serialized, fsynced and published with atomic replacement; the audit JSONL file is validated, locked and fsynced before append. A missing file is valid empty state. Invalid JSON, a non-array root or a non-object row raises `RegistryCorruptionError` and blocks mutation. A lock timeout also fails closed instead of risking a lost scientific record.
 
@@ -91,7 +98,8 @@ The derived gate order is:
 18. `CROSS_RUNTIME_REPRODUCIBILITY`
 19. `DIRECT_SOURCE_RECONCILIATION`
 20. `CROSS_PROVIDER_MEASUREMENT_TRIANGULATION`
-21. `PRODUCTION_PROMOTION_LOCK`
+21. `PROSPECTIVE_OBSERVATION_PROTOCOL`
+22. `PRODUCTION_PROMOTION_LOCK`
 
 `SATISFIED` means that the required artifact exists and passes that gate's narrow policy. It never implies scientific truth. `BLOCKED` and `CONFLICT` dominate the mission state. `NOT_EVALUATED` is not a pass.
 
@@ -106,6 +114,8 @@ The derived gate order is:
 `DIRECT_SOURCE_RECONCILIATION` requires a completed `SRB_DIRECT_BIS_RECONCILIATION_V1` observation tied to an eligible replication. Every frozen series must pass archive/schema/coverage gates and have a comparison fingerprint. The record must say `CURRENT_REVISED_HISTORY_NOT_A_VINTAGE_ARCHIVE`, `NOT_POINT_IN_TIME`, `historical_evidence_eligible=false`, shared underlying lineage, non-independent investigator and intact promotion locks. Revision differences are admissible; boundary overclaims are conflicts. Prospective readiness is reported separately and never backfilled.
 
 `CROSS_PROVIDER_MEASUREMENT_TRIANGULATION` requires a completed `SRB_CROSS_PROVIDER_TRIANGULATION_V1` record tied to an eligible direct-BIS observation. The raw OECD CSV, three canonical series and every country comparison must be fingerprinted. Comparable countries must expose the exact frozen correlation, directional-agreement and mean-gap checks. `CONCORDANT` and `MEASUREMENT_DIVERGENCE` both satisfy execution quality because disagreement is an admissible result; `NOT_COMPARABLE` remains `WARNING`. Provider and host independence must be true while methodology, underlying lineage, point-in-time and investigator independence remain false. Any overclaim is a `CONFLICT`.
+
+`PROSPECTIVE_OBSERVATION_PROTOCOL` requires exactly one valid `SRB_PROSPECTIVE_OBSERVATION_PROGRAM_V1` tied to an eligible direct-source seed. Its fingerprint binds the seed, UTC-month cadence, one-credit-per-window rule, no-backfill policy, 12/12/300 thresholds and research-only locks. The gate is outcome-neutral and validates operational readiness only. The derived maturity can remain `WARMING_UP`, `OBSERVATION_DUE` or `ACTIVE_WITH_RETAINED_GAPS` without changing a completed current-study result. Threshold edits, duplicated governing programs, missing seed lineage, automatic execution or promotion, and any backfill authorization are conflicts.
 
 ## Identity model
 
@@ -130,6 +140,8 @@ The derived gate order is:
 - `triangulation_id`: unique frozen comparison identity derived from replication, direct snapshot, freeze time and protocol fingerprint.
 - `oecd_snapshot_fingerprint`: digest over the exact raw OECD response, three canonical inventories and revised-history semantics.
 - `triangulation_fingerprint`: digest over the frozen protocol, sealed BIS/OECD snapshots, every monthly-change row and the retained outcome.
+- `program_id`: deterministic identity over the governed replication, real seed reconciliation, freeze instant and exact future-observation protocol fingerprint.
+- `dossier_fingerprint`: digest over the point-in-time closure export, including current Mission status, future-program state, maturity counts and explicit scientific non-claims.
 
 Selection pressure counts every attempt. Theory weights and independent-failure stop rules deduplicate by `evidence_unit_id`, falling back to legacy `run_id` only when necessary.
 

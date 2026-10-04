@@ -358,4 +358,6 @@ class MissionSnapshot:
     blockers: tuple[str, ...]
     budget_remaining: dict[str, float]
     counts: dict[str, int]
+    core_study_status: str = "WAITING_EVIDENCE"
+    prospective_operations_status: str = "NOT_EVALUATED"
     production_status: str = "RESEARCH_ONLY"

@@ -46,6 +46,7 @@ class ScientificRouteSmokeTests(unittest.TestCase):
             app.button(key="scientific_research_back_to_command_center_v0641").label,
             "← Command Center",
         )
+        self.assertTrue(any("Prospective Evidence Clock" in str(item.value) for item in app.caption))
 
 
 if __name__ == "__main__":

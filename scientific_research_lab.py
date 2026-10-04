@@ -5,7 +5,7 @@ import json
 import os
 import re
 from dataclasses import asdict, dataclass, field, replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from html import unescape
 from pathlib import Path
 from typing import Any, Callable
@@ -26,6 +26,8 @@ from scientific_research import (
     Phase65Registry,
     Phase66Registry,
     Phase67Registry,
+    Phase68Registry,
+    ProspectiveObservationProgram,
     RegistryCorruptionError,
     ResearchBudget,
     build_scout_record,
@@ -75,6 +77,7 @@ from scientific_research import (
     build_prospective_vintage_summary,
     execute_direct_bis_reconciliation,
     freeze_direct_bis_reconciliation,
+    validate_completed_direct_bis_reconciliation,
     DIRECT_BIS_EXPORT_HELP_URL,
     DIRECT_BIS_SOURCE_URL,
     DIRECT_BIS_TERMS_URL,
@@ -85,6 +88,9 @@ from scientific_research import (
     OECD_SOURCE_URL,
     OECD_STRUCTURE_URL,
     OECD_TERMS_URL,
+    build_research_closure_dossier,
+    evaluate_prospective_observation_program,
+    freeze_prospective_observation_program,
     ALFRED_BIS_MARKETS,
     ALFRED_FORM_ACCESS_MODE,
     ALFRED_GRAPH_ACCESS_MODE,
@@ -138,7 +144,7 @@ except Exception:  # pragma: no cover - allows core unit tests without Streamlit
 # No financial engine is imported or mutated from this module.
 # ============================================================
 
-SRB_VERSION = "0.6.7.0"
+SRB_VERSION = "0.6.8.0"
 SRB_WORKSPACE_SLUG = "scientific-research"
 DEFAULT_MEMORY_DIR = ".scientific_research_data"
 
@@ -469,6 +475,7 @@ class ScientificResearchMemory:
         self.phase65 = Phase65Registry(base)
         self.phase66 = Phase66Registry(base)
         self.phase67 = Phase67Registry(base)
+        self.phase68 = Phase68Registry(base)
 
     @staticmethod
     def _load_json(path: Path) -> list[dict[str, Any]]:
@@ -942,10 +949,162 @@ def _inject_css() -> None:
         .srb-mission-kicker{color:#a990ff;font-size:.66rem;letter-spacing:.18em;font-weight:900;text-transform:uppercase;}
         .srb-mission-copy{color:rgba(232,240,250,.72);font-size:.82rem;line-height:1.45;margin-top:5px;}
         .srb-section-rule{height:1px;background:linear-gradient(90deg,transparent,rgba(80,220,255,.34),rgba(151,105,255,.34),transparent);margin:18px 0;}
+        .stButton>button:focus-visible,.stDownloadButton>button:focus-visible,[role="tab"]:focus-visible{
+          outline:3px solid #55e8ff!important;outline-offset:3px!important;}
+        @media (max-width: 900px){
+          .srb-hero{padding:16px 16px;border-radius:16px}.srb-title{font-size:1.55rem}.srb-sub{font-size:.84rem}
+          .srb-mission-banner{padding:12px 13px}.block-container{padding-left:1rem!important;padding-right:1rem!important}
+        }
+        @media (prefers-reduced-motion: reduce){
+          *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+        }
         </style>
         """,
         unsafe_allow_html=True,
     )
+
+
+def _finite_time_chart(
+    timestamps: list[Any],
+    series: dict[str, list[Any]],
+) -> pd.DataFrame:
+    """Return only finite, dated rows so hidden Streamlit tabs cannot emit Vega extent warnings."""
+    if not timestamps or any(len(values) != len(timestamps) for values in series.values()):
+        return pd.DataFrame()
+    frame = pd.DataFrame({"timestamp": timestamps, **series})
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce", utc=True)
+    for column in series:
+        frame[column] = pd.to_numeric(frame[column], errors="coerce")
+    frame = frame.replace([float("inf"), float("-inf")], pd.NA).dropna(subset=["timestamp"])
+    frame = frame.dropna(subset=list(series), how="all")
+    if frame.empty:
+        return frame
+    return frame.set_index("timestamp").sort_index()
+
+
+def _closure_dossier_markdown(dossier: dict[str, Any]) -> str:
+    maturity = dossier.get("forward_vintage_maturity") or {}
+    boundaries = dossier.get("evidence_boundaries") or {}
+    schedule = dossier.get("schedule") or {}
+    seed = dossier.get("seed") or {}
+    observations = list(dossier.get("prospective_observation_inventory") or ())
+    cross_provider = dossier.get("latest_cross_provider_artifact") or {}
+    historical = dossier.get("historical_artifact_index") or {}
+    gate_index = list(dossier.get("mission_gate_index") or ())
+    missed = [
+        row for row in (dossier.get("prospective_calendar") or ())
+        if str(row.get("status") or "").startswith("MISSED_RETAINED")
+    ]
+    lines = [
+        "# Scientific Research Brain — Closure Dossier",
+        "",
+        f"- Dossier: `{dossier.get('dossier_fingerprint', '')}`",
+        f"- Artifact inventory: `{dossier.get('artifact_inventory_fingerprint', '')}`",
+        f"- Verification scope: `{dossier.get('verification_scope', '')}`",
+        f"- Generated: `{dossier.get('generated_at', '')}`",
+        f"- Question: `{dossier.get('question_id', 'UNKNOWN')}`",
+        f"- Mission snapshot: `{dossier.get('mission_snapshot_id', 'UNKNOWN')}`",
+        f"- Operational mission: **{dossier.get('mission_status', 'UNKNOWN')}**",
+        f"- Core study status: **{dossier.get('core_study_status', 'UNKNOWN')}**",
+        f"- Mission-status authority: `{dossier.get('mission_status_authority', '')}`",
+        f"- Current study: **{dossier.get('current_study_review_status', 'UNKNOWN')}**",
+        f"- Longitudinal program: **{dossier.get('longitudinal_program_status', 'UNKNOWN')}**",
+        f"- Production: **{dossier.get('production_status', 'RESEARCH_ONLY')}**",
+        f"- Program: `{dossier.get('program_id', '')}`",
+        f"- Program fingerprint: `{dossier.get('program_protocol_fingerprint', '')}`",
+        f"- Replication: `{dossier.get('replication_id', '')}`",
+        f"- Seed reconciliation: `{seed.get('reconciliation_id', '')}`",
+        f"- Seed snapshot: `{seed.get('snapshot_id', '')}`",
+        f"- Seed fingerprint: `{seed.get('snapshot_fingerprint', '')}`",
+        "",
+        "## Prospective evidence clock",
+        "",
+        f"- Distinct snapshots: {maturity.get('distinct_snapshots', 0)}/{maturity.get('required_distinct_snapshots', 12)}",
+        f"- Distinct latest months: {maturity.get('distinct_latest_periods', 0)}/{maturity.get('required_distinct_latest_periods', 12)}",
+        f"- Observed span: {maturity.get('span_days', 0)}/{maturity.get('required_span_days', 300)} days",
+        f"- Next observation: `{schedule.get('next_observation_at', '')}`",
+        f"- Missed windows retained: {schedule.get('missed_windows', 0)}",
+        f"- Calendar fingerprint: `{schedule.get('calendar_fingerprint', '')}`",
+        "",
+        "## Governed historical artifact index",
+        "",
+        f"- Report / protocol: `{historical.get('report_id', '')}` / `{historical.get('protocol_id', '')}`",
+        f"- Experiment: `{historical.get('experiment_id', '')}`",
+        f"- Conclusion: `{historical.get('conclusion', '')}`",
+        f"- Snapshot: `{historical.get('snapshot_id', '')}`",
+        f"- Snapshot fingerprint: `{historical.get('snapshot_fingerprint', '')}`",
+        f"- Executor digest: `{historical.get('executor_code_digest', '')}`",
+        "- Historical-result recomputation by this export: **NOT PERFORMED**",
+        "",
+        "## Mission gate index",
+        "",
+    ]
+    if gate_index:
+        for item in gate_index:
+            lines.append(
+                f"- `{item.get('gate_id', '')}` · **{item.get('status', 'UNKNOWN')}** · "
+                f"refs `{', '.join(str(value) for value in (item.get('artifact_refs') or ())) or 'NONE'}`"
+            )
+    else:
+        lines.append("- Mission gates were not supplied; registry recomputation is required.")
+    lines.extend((
+        "",
+        "## Direct observation artifact index",
+        "",
+    ))
+    if observations:
+        for item in observations:
+            lines.extend((
+                f"### `{item.get('reconciliation_id', '')}` · {item.get('program_role', 'UNKNOWN')}",
+                "",
+                f"- Schedule window: `{item.get('schedule_window', '')}` · credited: **{str(bool(item.get('schedule_credit'))).upper()}**",
+                f"- Retrieved / completed: `{item.get('retrieved_at', '')}` / `{item.get('completed_at', '')}`",
+                f"- Snapshot: `{item.get('direct_snapshot_id', '')}`",
+                f"- Snapshot path: `{item.get('direct_snapshot_path', '')}`",
+                f"- Snapshot fingerprint: `{item.get('direct_snapshot_fingerprint', '')}`",
+                f"- Raw archive SHA-256: `{item.get('raw_archive_sha256', '')}`",
+                f"- Reconciliation fingerprint: `{item.get('reconciliation_fingerprint', '')}`",
+                f"- Observation receipt: `{item.get('observation_receipt_fingerprint', '')}`",
+                "",
+            ))
+    else:
+        lines.extend(("No governed direct observation is indexed.", ""))
+    lines.extend((
+        "## Cross-provider artifact index",
+        "",
+        f"- Verification: `{dossier.get('latest_cross_provider_artifact_verification', '')}`",
+        f"- Triangulation: `{cross_provider.get('triangulation_id', '')}`",
+        f"- Direct reconciliation: `{cross_provider.get('direct_reconciliation_id', '')}`",
+        f"- OECD snapshot: `{cross_provider.get('oecd_snapshot_id', '')}`",
+        f"- OECD snapshot path: `{cross_provider.get('oecd_snapshot_path', '')}`",
+        f"- OECD snapshot fingerprint: `{cross_provider.get('oecd_snapshot_fingerprint', '')}`",
+        f"- Raw CSV SHA-256: `{cross_provider.get('raw_csv_sha256', '')}`",
+        f"- Triangulation fingerprint: `{cross_provider.get('triangulation_fingerprint', '')}`",
+        "",
+        "## Retained missed windows",
+        "",
+    ))
+    if missed:
+        for item in missed:
+            lines.append(
+                f"- `{item.get('window', '')}` · {item.get('status', '')} · "
+                f"observations `{', '.join(item.get('reconciliation_ids') or ()) or 'NONE'}` · backfillable **FALSE**"
+            )
+    else:
+        lines.append("- None at export time.")
+    lines.extend((
+        "",
+        f"Timing authority: {dossier.get('timing_authority', '')}",
+        "",
+        "The handoff is an integrity index. Reproduction also requires every referenced registry, state file and content-addressed artifact.",
+        "",
+        "## Non-claims",
+        "",
+    ))
+    for key, value in boundaries.items():
+        lines.append(f"- {key.replace('_', ' ')}: **{str(value).upper()}**")
+    lines.extend(("", dossier.get("closure_interpretation") or "", ""))
+    return "\n".join(lines)
 
 
 def _paper_from_session(data: dict[str, Any]) -> ScientificPaper:
@@ -1004,7 +1163,7 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
     for gate in mission.gates:
         gate_counts[gate.status] = gate_counts.get(gate.status, 0) + 1
     m1, m2, m3, m4, m5, m6 = st.columns(6)
-    m1.metric("Mission state", mission.overall_status)
+    m1.metric("Operational mission", mission.overall_status)
     m2.metric("Satisfied", gate_counts.get("SATISFIED", 0))
     m3.metric("Blocked", gate_counts.get("BLOCKED", 0))
     m4.metric("Conflicts", gate_counts.get("CONFLICT", 0))
@@ -1012,8 +1171,8 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
     m6.metric("Production", mission.production_status)
     st.info(f"Next action · {mission.next_action}")
 
-    command_tab, measurement_tab, evidence_tab, run_tab = st.tabs([
-        "Mission Control", "Measurement Arena", "Evidence Microscope", "Run Room",
+    command_tab, closure_tab, measurement_tab, evidence_tab, run_tab = st.tabs([
+        "Mission Control", "Closure Cockpit", "Measurement Arena", "Evidence Microscope", "Run Room",
     ])
     with command_tab:
         left, center, right = st.columns([1.12, 2.05, 1.18])
@@ -1096,9 +1255,22 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
             with st.expander("Registry health details", expanded=bool(health_counts.get("INVALID"))):
                 st.dataframe(pd.DataFrame(health), use_container_width=True, hide_index=True)
             if mission.blockers:
-                st.markdown("**Mission blockers**")
+                st.markdown("**Active gate blockers**")
                 for item in mission.blockers:
                     st.write(f"- {item}")
+            historical_debt = list((plans[0] if plans else {}).get("blockers") or ())
+            if historical_debt:
+                with st.expander(
+                    "Historical plan debt · superseded by current gate evidence"
+                    if mission.overall_status == "READY_FOR_REVIEW"
+                    else "Historical plan debt",
+                    expanded=False,
+                ):
+                    st.caption(
+                        "These items are retained from the original plan. They are not active blockers unless a current gate says so."
+                    )
+                    for item in historical_debt:
+                        st.write(f"- {item}")
 
         timeline = build_epistemic_timeline(registry_snapshot, question_id, limit=80)
         st.markdown("#### Epistemic timeline")
@@ -1107,6 +1279,154 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
             st.dataframe(pd.DataFrame(timeline), use_container_width=True, hide_index=True)
         else:
             st.info("No timestamped mission event is available.")
+
+    with closure_tab:
+        st.markdown("#### Closure & Prospective Operations Cockpit · Phase 6.8")
+        st.caption(
+            "The completed study dossier and the longitudinal evidence clock are separate states. "
+            "A reviewable result may coexist with a warming prospective ledger; elapsed time, external review and "
+            "investigator independence are never manufactured by software."
+        )
+        gate_map = {gate.gate_id: gate for gate in mission.gates}
+        measurement_gate = gate_map.get("MEASUREMENT_ROBUSTNESS")
+        eligible_report_ids = set(measurement_gate.artifact_refs if measurement_gate else ())
+        measurement_reports = [
+            dict(row) for row in (registry_snapshot.get("measurement_reports") or ())
+            if measurement_gate and measurement_gate.status == "SATISFIED"
+            and str(row.get("question_id") or "") == question_id
+            and str(row.get("experiment_id") or "") == str(question.get("experiment_id") or "")
+            and str(row.get("status") or "") == "COMPLETE"
+            and str(row.get("gate_status") or "") == "PASS"
+            and str(row.get("common_support_status") or "") == "PASS"
+            and str(row.get("common_split_status") or "") == "PASS"
+            and str(row.get("point_in_time_status") or "") == "PASS"
+            and str(row.get("report_id") or "") in eligible_report_ids
+        ]
+        latest_report = max(measurement_reports, key=lambda row: str(row.get("created_at") or ""), default={})
+        program_gate = gate_map.get("PROSPECTIVE_OBSERVATION_PROTOCOL")
+        program_ids = set(program_gate.artifact_refs if program_gate else ())
+        programs = [
+            dict(row) for row in (registry_snapshot.get("prospective_observation_programs") or ())
+            if str(row.get("program_id") or "") in program_ids
+        ]
+        program = programs[0] if len(programs) == 1 else {}
+        program_state: dict[str, Any] = {}
+        program_error = ""
+        if program_gate and program_gate.status == "CONFLICT":
+            program_error = "Mission Control reports a conflicting prospective protocol. Export and acquisition are disabled."
+        elif len(programs) > 1:
+            program_error = f"{len(programs)} program rows resolve to the active replication; exactly one is required."
+        elif program and program_gate and program_gate.status == "SATISFIED":
+            try:
+                program_state = evaluate_prospective_observation_program(
+                    program,
+                    registry_snapshot.get("direct_source_reconciliations") or (),
+                    as_of=str(registry_snapshot.get("captured_at") or "") or None,
+                )
+            except Exception as exc:
+                program_error = f"{type(exc).__name__}: {str(exc)}"
+
+        maturity = program_state.get("maturity") or {}
+        top1, top2, top3, top4 = st.columns(4)
+        top1.metric("Current study", mission.core_study_status)
+        top2.metric("Retained result", latest_report.get("conclusion") or "NOT AVAILABLE")
+        top3.metric(
+            "Longitudinal clock",
+            "INVALID / CONFLICT" if program_error else program_state.get("program_status") or "NOT FROZEN",
+        )
+        top4.metric("External human review", "NOT ESTABLISHED")
+        if latest_report:
+            st.caption(
+                f"Retained governed measurement report · {latest_report.get('report_id')} · "
+                f"protocol {latest_report.get('protocol_id')}"
+            )
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Governed gates", f"{gate_counts.get('SATISFIED', 0)}/{len(mission.gates)}")
+        c2.metric(
+            "Distinct snapshots",
+            f"{maturity.get('distinct_snapshots', 0)}/{maturity.get('required_distinct_snapshots', 12)}",
+        )
+        c3.metric(
+            "Distinct latest months",
+            f"{maturity.get('distinct_latest_periods', 0)}/{maturity.get('required_distinct_latest_periods', 12)}",
+        )
+        c4.metric(
+            "Observed span",
+            f"{maturity.get('span_days', 0)}/{maturity.get('required_span_days', 300)} days",
+        )
+        if program_error:
+            st.error(f"Prospective program cannot be verified: {program_error}")
+        elif program_state:
+            if program_state.get("observation_due"):
+                st.warning(
+                    f"A real observation is due in the {str(program_state.get('next_observation_at') or '')[:7]} UTC window. "
+                    "A missed window will remain visible and cannot be backfilled."
+                )
+            else:
+                st.info(
+                    f"Next prospective window · {program_state.get('next_observation_at')} · "
+                    f"missed windows retained · {program_state.get('missed_windows', 0)}."
+                )
+        else:
+            st.warning(
+                "The current study may already be reviewable, but the future observation cadence is not frozen yet. "
+                "Freeze Phase 6.8 in Validation & Learning → Independent Replication."
+            )
+
+        phase_rows = []
+        for phase, gate_id, scope in (
+            ("6.4", "INDEPENDENT_REPLICATION", "Point-in-time multi-market replication"),
+            ("6.5", "CROSS_RUNTIME_REPRODUCIBILITY", "Independent TypeScript implementation"),
+            ("6.6", "DIRECT_SOURCE_RECONCILIATION", "BIS revised-history provenance"),
+            ("6.7", "CROSS_PROVIDER_MEASUREMENT_TRIANGULATION", "OECD/BIS measurement robustness"),
+            ("6.8", "PROSPECTIVE_OBSERVATION_PROTOCOL", "Future-only evidence accrual clock"),
+        ):
+            gate = gate_map.get(gate_id)
+            phase_rows.append({
+                "Phase": phase,
+                "Layer": scope,
+                "Gate": gate.status if gate else "MISSING",
+                "Artifacts": len(gate.artifact_refs) if gate else 0,
+                "Boundary": (gate.summary if gate else "")[:220],
+            })
+        st.dataframe(pd.DataFrame(phase_rows), use_container_width=True, hide_index=True)
+        st.warning(
+            "Scientific boundaries · investigator independence: NOT ESTABLISHED · peer review: NOT ESTABLISHED · "
+            "causal truth: NOT ESTABLISHED · production authorization: DISABLED."
+        )
+
+        if program and not program_error:
+            dossier = build_research_closure_dossier(
+                program,
+                registry_snapshot.get("direct_source_reconciliations") or (),
+                as_of=str(registry_snapshot.get("captured_at") or "") or None,
+                mission_status=mission.overall_status,
+                core_study_status=mission.core_study_status,
+                mission_gate_count=len(mission.gates),
+                question_id=mission.question_id,
+                mission_snapshot_id=mission.snapshot_id,
+                mission_gates=mission.gates,
+                retained_result=latest_report,
+                triangulation_records=registry_snapshot.get("cross_provider_triangulations") or (),
+            )
+            d1, d2 = st.columns(2)
+            d1.download_button(
+                "Export closure dossier · JSON",
+                data=json.dumps(dossier, ensure_ascii=False, indent=2, sort_keys=True, default=str),
+                file_name=f"{mission.question_id}-closure-dossier.json",
+                mime="application/json",
+                use_container_width=True,
+                key=f"srb_p68_closure_json_{mission.question_id}",
+            )
+            d2.download_button(
+                "Export verifier handoff · Markdown",
+                data=_closure_dossier_markdown(dossier),
+                file_name=f"{mission.question_id}-external-verifier-handoff.md",
+                mime="text/markdown",
+                use_container_width=True,
+                key=f"srb_p68_closure_md_{mission.question_id}",
+            )
+            st.caption(f"Closure dossier fingerprint · {dossier.get('dossier_fingerprint')}")
 
     with measurement_tab:
         st.markdown("#### Measurement Arena")
@@ -1205,15 +1525,17 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
             actual = list(run.get("actual_values") or [])
             candidate = list(run.get("candidate_predictions") or [])
             if timestamps and len(timestamps) == len(actual) == len(candidate):
-                trace = pd.DataFrame({"timestamp": timestamps, "actual": actual, "candidate": candidate}).set_index("timestamp")
+                trace = _finite_time_chart(timestamps, {"actual": actual, "candidate": candidate})
                 st.markdown("**Timestamped OOS forecast trace**")
-                st.line_chart(trace)
-                errors = pd.DataFrame({
-                    "timestamp": timestamps,
-                    "candidate error": list(run.get("candidate_errors") or []),
-                }).set_index("timestamp")
+                if not trace.empty:
+                    st.line_chart(trace)
+                errors = _finite_time_chart(
+                    timestamps,
+                    {"candidate error": list(run.get("candidate_errors") or [])},
+                )
                 st.markdown("**Signed errors · actual − prediction**")
-                st.line_chart(errors)
+                if not errors.empty:
+                    st.line_chart(errors)
             else:
                 st.warning("This run has no complete timestamped forecast trace and cannot support formal comparison diagnostics.")
             if room.get("diagnostics"):
@@ -1225,7 +1547,9 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
                 d3.metric("Signals", len(diagnostic.get("signal_timestamps") or []))
                 path = list(diagnostic.get("cumulative_path") or [])
                 if path and timestamps and len(path) == len(timestamps):
-                    st.line_chart(pd.DataFrame({"timestamp": timestamps, "loss-differential CUSUM": path}).set_index("timestamp"))
+                    diagnostic_chart = _finite_time_chart(timestamps, {"loss-differential CUSUM": path})
+                    if not diagnostic_chart.empty:
+                        st.line_chart(diagnostic_chart)
                 for warning in diagnostic.get("warnings") or []:
                     st.warning(warning)
             if room.get("capsules"):
@@ -3819,7 +4143,7 @@ def _render_direct_source_reconciliation(memory: ScientificResearchMemory, repli
             f"{latest_complete.get('direct_snapshot_path')}"
         )
         p1, p2, p3, p4 = st.columns(4)
-        p1.metric("Forward ledger", prospective.get("status", "WARMING_UP"))
+        p1.metric("Raw content inventory", "LEGACY / DIAGNOSTIC")
         p2.metric(
             "Distinct snapshots",
             f"{prospective.get('distinct_snapshots', 0)}/{prospective.get('required_distinct_snapshots', 12)}",
@@ -3833,8 +4157,9 @@ def _render_direct_source_reconciliation(memory: ScientificResearchMemory, repli
             f"{prospective.get('span_days', 0)}/{prospective.get('required_span_days', 300)} days",
         )
         st.warning(
-            "Prospective vintages start only when this ledger observes them. Earlier BIS vintages are never reconstructed "
-            "or fabricated. WARMING_UP does not block the provenance gate and does not authorize a historical OOS claim."
+            "These Phase 6.6 counts are an unconstrained content inventory, not the authoritative schedule or maturity clock. "
+            "Phase 6.8 alone enforces one credit per UTC month, same-window completion and permanent missed gaps. Earlier BIS "
+            "vintages are never reconstructed; neither view authorizes a historical OOS claim."
         )
         st.download_button(
             "Export full reconciliation dossier (JSON)",
@@ -4039,17 +4364,24 @@ def _render_cross_provider_triangulation(memory: ScientificResearchMemory, repli
         if chart_rows:
             chart = pd.DataFrame(chart_rows)
             chart["Period"] = pd.to_datetime(chart["Period"], errors="coerce")
+            chart["Absolute monthly change gap (pp)"] = pd.to_numeric(
+                chart["Absolute monthly change gap (pp)"], errors="coerce"
+            )
+            chart = chart.replace([float("inf"), float("-inf")], pd.NA)
+            chart = chart.dropna(subset=["Period", "Country", "Absolute monthly change gap (pp)"])
             chart = chart.dropna(subset=["Period"]).pivot(
                 index="Period",
                 columns="Country",
                 values="Absolute monthly change gap (pp)",
             )
-            st.markdown("##### Time-localized measurement distance")
-            st.line_chart(chart, use_container_width=True)
-            st.caption(
-                "Absolute gap between OECD and BIS monthly log changes. Spikes are measurement differences to "
-                "investigate, not errors to erase."
-            )
+            chart = chart.dropna(axis=0, how="all").dropna(axis=1, how="all")
+            if not chart.empty:
+                st.markdown("##### Time-localized measurement distance")
+                st.line_chart(chart, use_container_width=True)
+                st.caption(
+                    "Absolute gap between OECD and BIS monthly log changes. Spikes are measurement differences to "
+                    "investigate, not errors to erase."
+                )
         st.caption(
             f"Raw {latest.get('raw_csv_sha256')} · OECD snapshot "
             f"{latest.get('oecd_snapshot_fingerprint')} · triangulation "
@@ -4158,6 +4490,380 @@ def _render_cross_provider_triangulation(memory: ScientificResearchMemory, repli
             st.rerun()
         except Exception as exc:
             st.error(str(exc))
+
+
+def _render_prospective_observation_program(memory: ScientificResearchMemory, replication: dict[str, Any]) -> None:
+    st.divider()
+    st.markdown("#### Prospective Evidence Clock · Phase 6.8")
+    st.caption(
+        "This operating protocol freezes one UTC-calendar-month cadence around a real direct-BIS seed. "
+        "It retains duplicate observations and missed windows, credits at most one window per month and never "
+        "retroactively labels data as observed. The protocol can be complete today; the 12/12/300 evidence horizon cannot."
+    )
+    st.warning(
+        "The current study review and this longitudinal clock are independent statuses. WARMING_UP is honest future work, "
+        "not a defect and not permission to rewrite the retained NO_OOS_IMPROVEMENT result."
+    )
+    replication_id = str(replication.get("replication_id") or "")
+    direct_records = [
+        row for row in memory.phase66.list_reconciliations()
+        if str(row.get("replication_id") or "") == replication_id
+    ]
+    completed_direct = [row for row in direct_records if str(row.get("execution_status") or "") == "COMPLETE"]
+    if not completed_direct:
+        st.info("Complete one governed direct-BIS reconciliation before freezing the prospective clock.")
+        return
+    direct_validation_errors = []
+    for record in completed_direct:
+        validation = validate_completed_direct_bis_reconciliation(
+            record,
+            reference_replication=replication,
+        )
+        if validation.get("status") != "PASS":
+            direct_validation_errors.append(
+                f"{record.get('reconciliation_id') or 'UNKNOWN'} · "
+                + "; ".join(str(item) for item in (validation.get("defects") or ()))
+            )
+    if direct_validation_errors:
+        st.error(
+            "A completed direct-source row is not bound to this exact governed replication. "
+            "Program freeze, acquisition and export are disabled."
+        )
+        for item in direct_validation_errors:
+            st.write(f"- {item}")
+        return
+    programs = [
+        row for row in memory.phase68.list_programs()
+        if str(row.get("replication_id") or "") == replication_id
+    ]
+    if len(programs) > 1:
+        st.error(
+            f"Prospective program conflict: {len(programs)} immutable rows govern {replication_id}. "
+            "Acquisition and export are disabled until the registry is restored from a verified backup."
+        )
+        st.dataframe(pd.DataFrame(programs), use_container_width=True, hide_index=True)
+        return
+    program = programs[0] if programs else None
+    if program is None:
+        validation_at = datetime.now(timezone.utc).isoformat()
+        candidate_programs = []
+        seed_errors = []
+        for record in completed_direct:
+            try:
+                candidate_programs.append((record, freeze_prospective_observation_program(record, created_at=validation_at)))
+            except Exception as exc:
+                seed_errors.append(
+                    f"{record.get('reconciliation_id') or 'UNKNOWN'} · {type(exc).__name__}: {str(exc)}"
+                )
+        if seed_errors:
+            st.error(
+                "At least one completed direct-source row is ineligible. The irreversible Phase 6.8 freeze is disabled."
+            )
+            for item in seed_errors:
+                st.write(f"- {item}")
+            return
+        if not candidate_programs:
+            st.error("No governed complete direct-source seed passes the Phase 6.8 eligibility contract.")
+            return
+        seed, candidate_preview = max(
+            candidate_programs,
+            key=lambda item: (
+                datetime.fromisoformat(str(item[0].get("retrieved_at") or "").replace("Z", "+00:00")).astimezone(timezone.utc),
+                str(item[0].get("reconciliation_id") or ""),
+            ),
+        )
+        preview_storage_key = f"srb_p68_prepared_program_{replication_id}"
+        seed_signature = hashlib.sha256(json.dumps({
+            "replication_id": replication_id,
+            "reconciliation_id": seed.get("reconciliation_id"),
+            "direct_snapshot_fingerprint": seed.get("direct_snapshot_fingerprint"),
+            "raw_archive_sha256": seed.get("raw_archive_sha256"),
+            "reconciliation_fingerprint": seed.get("reconciliation_fingerprint"),
+            "retrieved_at": seed.get("retrieved_at"),
+            "completed_at": seed.get("completed_at"),
+        }, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+        stored_preview = st.session_state.get(preview_storage_key)
+        if not isinstance(stored_preview, dict) or stored_preview.get("seed_signature") != seed_signature:
+            st.session_state.pop(preview_storage_key, None)
+            stored_preview = None
+        if stored_preview:
+            try:
+                prepared_at = datetime.fromisoformat(
+                    str((stored_preview.get("program") or {}).get("protocol_frozen_at") or "").replace("Z", "+00:00")
+                ).astimezone(timezone.utc)
+            except (TypeError, ValueError):
+                prepared_at = datetime.min.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) - prepared_at > timedelta(minutes=15):
+                st.session_state.pop(preview_storage_key, None)
+                stored_preview = None
+                st.warning("The unpersisted preregistration preview expired after 15 minutes and must be prepared again.")
+        p1, p2, p3 = st.columns(3)
+        p1.metric("Real seed", seed.get("direct_snapshot_id") or "N/A")
+        p2.metric("Seed observed", str(seed.get("retrieved_at") or "")[:10] or "N/A")
+        p3.metric("Seed latest month", seed.get("latest_period") or "N/A")
+        st.info(
+            "Freezing stores the seed, 12 distinct snapshots, 12 distinct latest months, 300 observed days, "
+            "one credit per UTC month and a permanent no-backfill policy. It performs no network request."
+        )
+        if stored_preview is None:
+            st.caption(
+                "Step 1 of 2 · prepare a 15-minute session-bound immutable object. The exact object is then shown for "
+                "hash confirmation before it can be persisted."
+            )
+            if st.button(
+                "Prepare exact immutable preregistration",
+                use_container_width=True,
+                key=f"srb_p68_prepare_{replication_id}",
+            ):
+                st.session_state[preview_storage_key] = {
+                    "seed_signature": seed_signature,
+                    "program": asdict(candidate_preview),
+                }
+                st.rerun()
+            return
+        preview = ProspectiveObservationProgram(**dict(stored_preview.get("program") or {}))
+        with st.expander("Review the exact immutable preregistration", expanded=True):
+            st.success("Seed eligibility · PASS · latest governed complete observation for this replication")
+            st.write(f"Seed reconciliation · `{seed.get('reconciliation_id')}`")
+            st.write(f"Direct snapshot fingerprint · `{seed.get('direct_snapshot_fingerprint')}`")
+            st.write(f"Raw archive SHA-256 · `{seed.get('raw_archive_sha256')}`")
+            st.write(f"Reconciliation fingerprint · `{seed.get('reconciliation_fingerprint')}`")
+            st.write(f"Proposed program · `{preview.program_id}`")
+            st.write(f"Protocol fingerprint · `{preview.protocol_fingerprint}`")
+            st.write(f"First future window · `{preview.first_future_window}`")
+            st.caption(
+                "This one-per-replication record is immutable. A wrong seed cannot be replaced in place; recovery requires "
+                "the verified pre-freeze backup, never a second program row."
+            )
+        confirmed = st.checkbox(
+            "I verified the seed IDs and hashes and confirm the irreversible no-backfill monthly protocol.",
+            key=f"srb_p68_confirm_{preview.program_id}",
+        )
+        if st.button(
+            "Freeze prospective monthly observation program",
+            use_container_width=True,
+            key=f"srb_p68_freeze_{replication_id}",
+            disabled=not confirmed,
+        ):
+            try:
+                frozen = preview
+                memory.phase68.save_program(frozen)
+                memory.audit("PHASE68_PROSPECTIVE_OBSERVATION_PROGRAM_FROZEN", {
+                    "program_id": frozen.program_id,
+                    "replication_id": frozen.replication_id,
+                    "seed_reconciliation_id": frozen.seed_reconciliation_id,
+                    "seed_snapshot_id": frozen.seed_snapshot_id,
+                    "protocol_fingerprint": frozen.protocol_fingerprint,
+                    "first_future_window": frozen.first_future_window,
+                    "historical_backfill_permitted": frozen.historical_backfill_permitted,
+                    "automatic_execution_authorized": frozen.automatic_execution_authorized,
+                    "automatic_promotion_authorized": frozen.automatic_promotion_authorized,
+                    "production_status": frozen.production_status,
+                })
+                st.session_state["srb_p5_flash"] = (
+                    f"Prospective program frozen: {frozen.program_id} · first eligible window "
+                    f"{frozen.first_future_window[:7]} UTC."
+                )
+                st.session_state.pop(preview_storage_key, None)
+                st.rerun()
+            except Exception as exc:
+                st.error(str(exc))
+        return
+
+    try:
+        state = evaluate_prospective_observation_program(
+            program,
+            direct_records,
+            as_of=datetime.now(timezone.utc).isoformat(),
+        )
+    except Exception as exc:
+        st.error(f"Prospective program fails closed: {type(exc).__name__}: {str(exc)}")
+        return
+    maturity = state.get("maturity") or {}
+    a1, a2, a3 = st.columns(3)
+    a1.metric("Program", state.get("program_status") or "UNKNOWN")
+    a2.metric("Protocol integrity", state.get("protocol_integrity_status") or "FAIL")
+    a3.metric("Evidence maturity", maturity.get("status") or "WARMING_UP")
+    b1, b2, b3 = st.columns(3)
+    b1.metric(
+        "Distinct snapshots",
+        f"{maturity.get('distinct_snapshots', 0)}/{maturity.get('required_distinct_snapshots', 12)}",
+    )
+    b2.metric(
+        "Distinct latest months",
+        f"{maturity.get('distinct_latest_periods', 0)}/{maturity.get('required_distinct_latest_periods', 12)}",
+    )
+    b3.metric(
+        "Observed span",
+        f"{maturity.get('span_days', 0)}/{maturity.get('required_span_days', 300)} days",
+    )
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Captured windows", int(state.get("captured_windows") or 0))
+    c2.metric("Missed retained", int(state.get("missed_windows") or 0))
+    c3.metric("Duplicate observations", int(state.get("duplicate_window_observations") or 0))
+    if state.get("observation_due"):
+        st.warning(
+            f"Observation due now · {state.get('next_observation_at')}. Freeze before download; "
+            "if this UTC month closes empty, the gap remains permanently visible."
+        )
+    else:
+        st.info(f"Next eligible UTC window · {state.get('next_observation_at')}")
+
+    calendar = list(state.get("calendar") or ())
+    if calendar:
+        with st.expander(
+            "Prospective calendar · latest 24 windows (full ledger in closure dossier)",
+            expanded=bool(state.get("missed_windows")),
+        ):
+            st.dataframe(pd.DataFrame(calendar[-24:]), use_container_width=True, hide_index=True)
+    st.caption(
+        f"Program {program.get('program_id')} · protocol {program.get('protocol_fingerprint')} · "
+        f"seed {program.get('seed_reconciliation_id')} · first future window {program.get('first_future_window')}"
+    )
+
+    snapshot = capture_registry_snapshot(memory)
+    reference_run = next((
+        row for row in snapshot.get("runs") or ()
+        if str(row.get("run_id") or "") == str(replication.get("reference_run_id") or "")
+    ), {})
+    explicit_question_id = str(replication.get("question_id") or reference_run.get("question_id") or "")
+    experiment_questions = [
+        row for row in snapshot.get("questions") or ()
+        if str(row.get("experiment_id") or "") == str(replication.get("experiment_id") or "")
+    ]
+    question = next((
+        row for row in experiment_questions
+        if explicit_question_id and str(row.get("question_id") or "") == explicit_question_id
+    ), {})
+    if not question and len(experiment_questions) == 1:
+        question = experiment_questions[0]
+    mission = build_mission_snapshot(snapshot, str(question.get("question_id") or "")) if question else None
+    if not mission and len(experiment_questions) > 1:
+        st.warning(
+            "Closure Mission lineage is ambiguous because several questions share this experiment and no explicit "
+            "question foreign key resolves the replication. Exported Mission authority is UNRESOLVED."
+        )
+    retained_report: dict[str, Any] = {}
+    if mission:
+        measurement_gate = next(
+            (gate for gate in mission.gates if gate.gate_id == "MEASUREMENT_ROBUSTNESS"),
+            None,
+        )
+        report_ids = set(measurement_gate.artifact_refs if measurement_gate and measurement_gate.status == "SATISFIED" else ())
+        retained_report = max((
+            dict(row) for row in snapshot.get("measurement_reports") or ()
+            if str(row.get("question_id") or "") == mission.question_id
+            and str(row.get("experiment_id") or "") == str(replication.get("experiment_id") or "")
+            and str(row.get("report_id") or "") in report_ids
+            and str(row.get("status") or "") == "COMPLETE"
+            and str(row.get("gate_status") or "") == "PASS"
+            and str(row.get("point_in_time_status") or "") == "PASS"
+        ), key=lambda row: str(row.get("created_at") or ""), default={})
+    dossier = build_research_closure_dossier(
+        program,
+        direct_records,
+        as_of=str(snapshot.get("captured_at") or "") or None,
+        mission_status=mission.overall_status if mission else "UNRESOLVED",
+        core_study_status=mission.core_study_status if mission else "UNRESOLVED",
+        mission_gate_count=len(mission.gates) if mission else 0,
+        question_id=mission.question_id if mission else "UNRESOLVED",
+        mission_snapshot_id=mission.snapshot_id if mission else "UNRESOLVED",
+        mission_gates=mission.gates if mission else (),
+        retained_result=retained_report,
+        triangulation_records=snapshot.get("cross_provider_triangulations") or (),
+    )
+    d1, d2, d3 = st.columns(3)
+    d1.download_button(
+        "Export frozen program",
+        data=json.dumps(program, ensure_ascii=False, indent=2, sort_keys=True, default=str),
+        file_name=f"{program.get('program_id')}-preregistration.json",
+        mime="application/json",
+        use_container_width=True,
+        key=f"srb_p68_program_export_{program.get('program_id')}",
+    )
+    d2.download_button(
+        "Export closure dossier",
+        data=json.dumps(dossier, ensure_ascii=False, indent=2, sort_keys=True, default=str),
+        file_name=f"{program.get('program_id')}-closure-dossier.json",
+        mime="application/json",
+        use_container_width=True,
+        key=f"srb_p68_dossier_export_{program.get('program_id')}",
+    )
+    d3.download_button(
+        "Export external handoff",
+        data=_closure_dossier_markdown(dossier),
+        file_name=f"{program.get('program_id')}-external-handoff.md",
+        mime="text/markdown",
+        use_container_width=True,
+        key=f"srb_p68_handoff_export_{program.get('program_id')}",
+    )
+    st.caption(f"Closure dossier fingerprint · {dossier.get('dossier_fingerprint')}")
+
+    pending = max(
+        (row for row in direct_records if str(row.get("execution_status") or "") == "NOT_RUN"),
+        key=lambda row: str(row.get("created_at") or ""),
+        default=None,
+    )
+    if state.get("observation_due") and pending is None:
+        if st.button(
+            "Freeze this month's direct-BIS observation",
+            use_container_width=True,
+            key=f"srb_p68_freeze_due_{program.get('program_id')}",
+        ):
+            try:
+                frozen = freeze_direct_bis_reconciliation(replication)
+                memory.phase66.save_reconciliation(frozen)
+                memory.audit("PHASE68_SCHEDULED_DIRECT_BIS_PROTOCOL_FROZEN", {
+                    "program_id": program.get("program_id"),
+                    "window": str(state.get("next_observation_at") or "")[:7],
+                    "reconciliation_id": frozen.reconciliation_id,
+                    "protocol_fingerprint": frozen.protocol_fingerprint,
+                    "historical_backfill_permitted": False,
+                    "automatic_execution_authorized": False,
+                    "production_status": frozen.production_status,
+                })
+                st.rerun()
+            except Exception as exc:
+                st.error(str(exc))
+    elif state.get("observation_due") and pending is not None:
+        st.info(
+            f"Frozen before network access · {pending.get('reconciliation_id')} · ready for explicit acquisition."
+        )
+        if st.button(
+            "Acquire due BIS snapshot and reconcile",
+            use_container_width=True,
+            key=f"srb_p68_execute_due_{pending.get('reconciliation_id')}",
+        ):
+            try:
+                with st.spinner("Sealing the official BIS bytes and updating the as-observed monthly clock..."):
+                    completed = execute_direct_bis_reconciliation(
+                        pending,
+                        data_root=memory.root,
+                        prior_records=direct_records,
+                    )
+                    memory.phase66.save_reconciliation(completed)
+                    memory.audit("PHASE68_SCHEDULED_DIRECT_BIS_OBSERVATION_COMPLETE", {
+                        "program_id": program.get("program_id"),
+                        "window": str(state.get("next_observation_at") or "")[:7],
+                        "reconciliation_id": completed.reconciliation_id,
+                        "direct_snapshot_id": completed.direct_snapshot_id,
+                        "direct_snapshot_fingerprint": completed.direct_snapshot_fingerprint,
+                        "retrieved_at": completed.retrieved_at,
+                        "latest_period": completed.latest_period,
+                        "historical_evidence_eligible": False,
+                        "automatic_promotion_authorized": False,
+                        "production_status": completed.production_status,
+                    })
+                st.rerun()
+            except Exception as exc:
+                memory.audit("PHASE68_SCHEDULED_DIRECT_BIS_OBSERVATION_FAILED", {
+                    "program_id": program.get("program_id"),
+                    "reconciliation_id": pending.get("reconciliation_id"),
+                    "error_type": type(exc).__name__,
+                    "error": str(exc)[:700],
+                    "production_status": "RESEARCH_ONLY",
+                })
+                st.error(str(exc))
 
 
 def _render_validation_learning(memory: ScientificResearchMemory) -> None:
@@ -4776,6 +5482,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                     _render_cross_runtime_verification(memory, replication)
                     _render_direct_source_reconciliation(memory, replication)
                     _render_cross_provider_triangulation(memory, replication)
+                    _render_prospective_observation_program(memory, replication)
 
 
 
@@ -5640,11 +6347,11 @@ def render_scientific_research_brain(
     st.markdown(
         f"""
         <div class="srb-hero">
-            <div class="srb-kicker">SCIENTIFIC RESEARCH BRAIN · PHASE 6.7 · V{SRB_VERSION}</div>
+            <div class="srb-kicker">SCIENTIFIC RESEARCH BRAIN · PHASE 6.8 · V{SRB_VERSION}</div>
             <div class="srb-title">Evidence-to-Experiment Research Mission Control</div>
             <div class="srb-sub">
                 Source-grounded scientific understanding, competing measurement hypotheses, causal historical-data contracts, append-only experiment attempts,
-                timestamped OOS forecast traces, reproducibility capsules, an independent TypeScript/Node reproduction, direct BIS revision provenance and OECD/BIS measurement triangulation in one auditable research loop. Mission gates expose contradictions and missing evidence;
+                timestamped OOS forecast traces, reproducibility capsules, an independent TypeScript/Node reproduction, direct BIS revision provenance, OECD/BIS measurement triangulation and a future-only prospective evidence clock in one auditable research loop. Mission gates expose contradictions and missing evidence;
                 no synthesis updates beliefs automatically and production promotion remains locked.
             </div>
         </div>
@@ -5698,7 +6405,7 @@ def render_scientific_research_brain(
 
     st.caption(
         f"Scientific Research Brain v{SRB_VERSION} · Mission Control / Measurement Arena / Evidence Microscope / Historical Data Contracts / "
-        "Append-only Attempts / OOS Forecast Traces / Reproducibility Capsules / Council v2 / ALFRED-BIS Replication / OECD-BIS Triangulation active. "
+        "Append-only Attempts / OOS Forecast Traces / Reproducibility Capsules / Council v2 / ALFRED-BIS Replication / OECD-BIS Triangulation / Prospective Evidence Clock active. "
         "External searches, evidence promotion, measurement decisions and experiment execution are explicit; production promotion remains disabled."
     )
 

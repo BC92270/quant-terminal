@@ -5,7 +5,7 @@ import json
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from .phase63_models import MissionSnapshot, RegistryFileHealth, ResearchGate
 from .registry_io import registry_lock
@@ -14,10 +14,16 @@ from .direct_bis_reconciliation import (
     DIRECT_BIS_HISTORY_SEMANTICS,
     DIRECT_BIS_PROTOCOL_VERSION,
     build_prospective_vintage_summary,
+    validate_completed_direct_bis_reconciliation,
 )
 from .cross_provider_triangulation import (
     CROSS_PROVIDER_PROTOCOL_VERSION,
     OECD_HISTORY_SEMANTICS,
+)
+from .prospective_observation import (
+    PROSPECTIVE_OBSERVATION_PROTOCOL_VERSION,
+    evaluate_prospective_observation_program,
+    validate_prospective_observation_program,
 )
 
 
@@ -32,6 +38,25 @@ def _stable_id(prefix: str, *parts: str) -> str:
 
 def _text(value: Any) -> str:
     return str(value or "").strip()
+
+
+def _exact_int(value: Any, *, default: int = 0) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) else default
+
+
+def _utc_instant(value: Any) -> datetime:
+    parsed = datetime.fromisoformat(_text(value).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        raise ValueError("timezone required")
+    return parsed.astimezone(timezone.utc)
+
+
+def _observation_order(row: Mapping[str, Any]) -> tuple[datetime, str]:
+    try:
+        instant = _utc_instant(row.get("retrieved_at"))
+    except (TypeError, ValueError):
+        instant = datetime.min.replace(tzinfo=timezone.utc)
+    return instant, _text(row.get("reconciliation_id"))
 
 
 def _as_rows(value: Any) -> list[dict[str, Any]]:
@@ -136,6 +161,7 @@ def capture_registry_snapshot(memory: Any, audit_limit: int = 250) -> dict[str, 
         ("cross_runtime_verifications", memory.phase65.list_verifications, memory.phase65.paths["verifications"]),
         ("direct_source_reconciliations", memory.phase66.list_reconciliations, memory.phase66.paths["reconciliations"]),
         ("cross_provider_triangulations", memory.phase67.list_triangulations, memory.phase67.paths["triangulations"]),
+        ("prospective_observation_programs", memory.phase68.list_programs, memory.phase68.paths["programs"]),
     )
     # Every mutable registry uses the same root-level lock. Holding it for the
     # complete read prevents Mission Control from mixing pre- and post-write
@@ -158,6 +184,147 @@ def capture_registry_snapshot(memory: Any, audit_limit: int = 250) -> dict[str, 
 
 def _find(rows: Iterable[Mapping[str, Any]], field: str, identity: str) -> dict[str, Any]:
     return next((dict(row) for row in rows if _text(row.get(field)) == _text(identity)), {})
+
+
+def build_mission_lineage_index(snapshot: Mapping[str, Any], question_id: str) -> dict[str, set[str]]:
+    """Resolve only explicit or identity-linked descendants of one question.
+
+    The index intentionally has no global "first experiment" fallback. A row with no
+    question_id is visible only when one of its governed foreign keys already belongs
+    to this mission's lineage.
+    """
+    qid = _text(question_id)
+    question = _find(snapshot.get("questions") or (), "question_id", qid)
+    index: dict[str, set[str]] = {
+        "question_id": {qid} if qid else set(),
+        "plan_id": set(),
+        "hypothesis_id": set(),
+        "observable_id": set(),
+        "evidence_id": set(),
+        "contract_id": set(),
+        "manifest_id": set(),
+        "experiment_id": set(),
+        "attempt_id": set(),
+        "run_id": set(),
+        "review_id": set(),
+        "capsule_id": set(),
+        "diagnostic_id": set(),
+        "replication_id": set(),
+        "verification_id": set(),
+        "reconciliation_id": set(),
+        "triangulation_id": set(),
+        "program_id": set(),
+    }
+
+    def add(field: str, value: Any) -> None:
+        identity = _text(value)
+        if identity:
+            index[field].add(identity)
+
+    add("plan_id", question.get("plan_id"))
+    add("observable_id", question.get("selected_observable_id"))
+    add("experiment_id", question.get("experiment_id"))
+    for registry, identity_field in (
+        ("plans", "plan_id"),
+        ("hypotheses", "hypothesis_id"),
+        ("observables", "observable_id"),
+        ("evidence", "evidence_id"),
+        ("data_contracts", "contract_id"),
+    ):
+        for row in snapshot.get(registry) or ():
+            if isinstance(row, Mapping) and _text(row.get("question_id")) == qid:
+                add(identity_field, row.get(identity_field))
+                add("experiment_id", row.get("experiment_id"))
+                add("observable_id", row.get("observable_id"))
+                add("plan_id", row.get("plan_id"))
+    for registry in ("measurement_protocols", "measurement_reports"):
+        for row in snapshot.get(registry) or ():
+            if isinstance(row, Mapping) and _text(row.get("question_id")) == qid:
+                add("experiment_id", row.get("experiment_id"))
+
+    for row in snapshot.get("dataset_manifests") or ():
+        if isinstance(row, Mapping) and _text(row.get("contract_id")) in index["contract_id"]:
+            add("manifest_id", row.get("manifest_id"))
+    for row in snapshot.get("attempts") or ():
+        if isinstance(row, Mapping) and _text(row.get("experiment_id")) in index["experiment_id"]:
+            add("attempt_id", row.get("attempt_id"))
+    for row in snapshot.get("runs") or ():
+        if not isinstance(row, Mapping):
+            continue
+        row_question = _text(row.get("question_id"))
+        row_experiment = _text(row.get("experiment_id"))
+        linked = (
+            row_question == qid
+            and (not row_experiment or row_experiment in index["experiment_id"])
+            if row_question
+            else row_experiment in index["experiment_id"]
+        )
+        if linked:
+            add("run_id", row.get("run_id"))
+            add("attempt_id", row.get("attempt_id"))
+            add("manifest_id", row.get("dataset_manifest_id"))
+    for registry, identity_field in (
+        ("reviews", "review_id"),
+        ("capsules", "capsule_id"),
+        ("break_diagnostics", "diagnostic_id"),
+        ("failures", "failure_id"),
+        ("surprises", "surprise_id"),
+    ):
+        for row in snapshot.get(registry) or ():
+            if isinstance(row, Mapping) and _text(row.get("run_id")) in index["run_id"]:
+                if identity_field in index:
+                    add(identity_field, row.get(identity_field))
+    for row in snapshot.get("replications") or ():
+        if not isinstance(row, Mapping):
+            continue
+        row_question = _text(row.get("question_id"))
+        row_experiment = _text(row.get("experiment_id"))
+        reference_run = _text(row.get("reference_run_id"))
+        foreign_link = (
+            (not row_experiment or row_experiment in index["experiment_id"])
+            and (not reference_run or reference_run in index["run_id"])
+            and bool(row_experiment or reference_run)
+        )
+        if foreign_link and (not row_question or row_question == qid):
+            add("replication_id", row.get("replication_id"))
+    for row in snapshot.get("cross_runtime_verifications") or ():
+        if isinstance(row, Mapping) and _text(row.get("replication_id")) in index["replication_id"]:
+            add("verification_id", row.get("verification_id"))
+    for row in snapshot.get("direct_source_reconciliations") or ():
+        if isinstance(row, Mapping) and _text(row.get("replication_id")) in index["replication_id"]:
+            add("reconciliation_id", row.get("reconciliation_id"))
+    direct_replication = {
+        _text(row.get("reconciliation_id")): _text(row.get("replication_id"))
+        for row in (snapshot.get("direct_source_reconciliations") or ())
+        if isinstance(row, Mapping) and _text(row.get("reconciliation_id"))
+    }
+    for row in snapshot.get("cross_provider_triangulations") or ():
+        if not isinstance(row, Mapping):
+            continue
+        replication_id = _text(row.get("replication_id"))
+        reconciliation_id = _text(row.get("direct_reconciliation_id"))
+        linked = (
+            (not replication_id or replication_id in index["replication_id"])
+            and (not reconciliation_id or reconciliation_id in index["reconciliation_id"])
+            and (not reconciliation_id or direct_replication.get(reconciliation_id) == replication_id)
+            and bool(replication_id or reconciliation_id)
+        )
+        if linked:
+            add("triangulation_id", row.get("triangulation_id"))
+    for row in snapshot.get("prospective_observation_programs") or ():
+        if not isinstance(row, Mapping):
+            continue
+        replication_id = _text(row.get("replication_id"))
+        reconciliation_id = _text(row.get("seed_reconciliation_id"))
+        linked = (
+            (not replication_id or replication_id in index["replication_id"])
+            and (not reconciliation_id or reconciliation_id in index["reconciliation_id"])
+            and (not reconciliation_id or direct_replication.get(reconciliation_id) == replication_id)
+            and bool(replication_id or reconciliation_id)
+        )
+        if linked:
+            add("program_id", row.get("program_id"))
+    return index
 
 
 def _gate(
@@ -191,12 +358,13 @@ def _active_question(snapshot: Mapping[str, Any], question_id: str = "") -> dict
 def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -> MissionSnapshot:
     question = _active_question(snapshot, question_id)
     qid = _text(question.get("question_id"))
+    lineage = build_mission_lineage_index(snapshot, qid)
     plan = _find(snapshot.get("plans") or (), "plan_id", _text(question.get("plan_id")))
     if not plan:
         plan = next((dict(row) for row in (snapshot.get("plans") or ()) if _text(row.get("question_id")) == qid), {})
     experiment_id = _text(question.get("experiment_id"))
-    if not experiment_id:
-        experiment_id = _text(next((row.get("experiment_id") for row in (snapshot.get("experiment_specs") or ()) if _text(row.get("experiment_id"))), ""))
+    if not experiment_id and len(lineage["experiment_id"]) == 1:
+        experiment_id = next(iter(lineage["experiment_id"]))
     specs = [dict(row) for row in (snapshot.get("experiment_specs") or ()) if _text(row.get("experiment_id")) == experiment_id]
     ready_spec = next((row for row in specs if _text(row.get("status")) == "READY"), specs[-1] if specs else {})
     hypotheses = [dict(row) for row in (snapshot.get("hypotheses") or ()) if _text(row.get("question_id")) == qid]
@@ -241,8 +409,21 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
     contract_audit = max(contract_audits, key=lambda row: _text(row.get("created_at")), default={})
     manifests = [dict(row) for row in (snapshot.get("dataset_manifests") or ()) if _text(row.get("contract_id")) == _text(contract.get("contract_id"))]
     manifest = max(manifests, key=lambda row: _text(row.get("created_at")), default={})
-    attempts = [dict(row) for row in (snapshot.get("attempts") or ()) if _text(row.get("experiment_id")) == experiment_id]
-    runs = [dict(row) for row in (snapshot.get("runs") or ()) if _text(row.get("experiment_id")) == experiment_id]
+    attempts = [
+        dict(row) for row in (snapshot.get("attempts") or ())
+        if _text(row.get("attempt_id")) in lineage["attempt_id"]
+    ]
+    runs = [
+        dict(row) for row in (snapshot.get("runs") or ())
+        if (
+            (
+                _text(row.get("question_id")) == qid
+                and (not _text(row.get("experiment_id")) or _text(row.get("experiment_id")) == experiment_id)
+            )
+            if _text(row.get("question_id"))
+            else _text(row.get("experiment_id")) == experiment_id
+        )
+    ]
     historical_runs = [row for row in runs if _text(row.get("stage")) == "HISTORICAL_OOS"]
     attributed_historical = [
         row for row in historical_runs
@@ -251,7 +432,14 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
     ]
     latest_historical = max(attributed_historical, key=lambda row: _text(row.get("created_at")), default={})
     reviews = [dict(row) for row in (snapshot.get("reviews") or ()) if _text(row.get("run_id")) == _text(latest_historical.get("run_id"))]
-    replications = [dict(row) for row in (snapshot.get("replications") or ()) if _text(row.get("experiment_id")) == experiment_id]
+    replications = [
+        dict(row) for row in (snapshot.get("replications") or ())
+        if (not _text(row.get("question_id")) or _text(row.get("question_id")) == qid)
+        and (
+            _text(row.get("experiment_id")) == experiment_id
+            or _text(row.get("reference_run_id")) in lineage["run_id"]
+        )
+    ]
     capsules = [dict(row) for row in (snapshot.get("capsules") or ()) if _text(row.get("run_id")) == _text(latest_historical.get("run_id"))]
     measurement_protocols = [
         dict(row) for row in (snapshot.get("measurement_protocols") or ())
@@ -263,6 +451,10 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
     ]
 
     inconsistencies: list[str] = []
+    if not experiment_id and len(lineage["experiment_id"]) > 1:
+        inconsistencies.append(
+            "Mission lineage is ambiguous: more than one explicitly linked experiment exists and the question selects none."
+        )
     invalid_health = [row for row in (snapshot.get("registry_health") or ()) if _text(row.get("status")) == "INVALID"]
     if invalid_health:
         inconsistencies.extend(f"Registry {row.get('registry')} is invalid: {row.get('detail')}" for row in invalid_health)
@@ -279,6 +471,8 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
     if empty_reviewed:
         inconsistencies.extend(f"Evidence {_text(row.get('evidence_id'))} is labelled GROUNDED_REVIEWED but contains no claims, mechanisms or entities." for row in empty_reviewed)
     for row in list(snapshot.get("failures") or ()) + list(snapshot.get("surprises") or ()):
+        if _text(row.get("run_id")) not in lineage["run_id"]:
+            continue
         history = list(row.get("lifecycle_history") or ())
         if history and _text(history[-1].get("to")) != _text(row.get("status")):
             identity = _text(row.get("failure_id")) or _text(row.get("surprise_id"))
@@ -565,6 +759,7 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
 
     eligible_replications: list[dict[str, Any]] = []
     replication_defects: list[str] = []
+    replication_lineage_conflicts: list[str] = []
     for row in replications:
         dimensions = row.get("independence_dimensions") or {}
         independent_axis = any(
@@ -572,6 +767,15 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
             for key in ("market", "period", "implementation")
         ) if isinstance(dimensions, Mapping) else False
         defects = []
+        if _text(row.get("experiment_id")) != experiment_id:
+            defects.append("replication experiment conflicts with the mission lineage")
+            replication_lineage_conflicts.append(
+                f"{_text(row.get('replication_id')) or 'replication'}: experiment foreign key conflicts with the reference-run lineage."
+            )
+        if _text(row.get("reference_run_id")) and _text(row.get("reference_run_id")) not in lineage["run_id"]:
+            replication_lineage_conflicts.append(
+                f"{_text(row.get('replication_id')) or 'replication'}: reference run belongs to another mission lineage."
+            )
         if _text(row.get("protocol_version")) != "SRB_INDEPENDENT_REPLICATION_V1":
             defects.append("missing governed replication protocol")
         if _text(row.get("reference_run_id")) != _text(latest_historical.get("run_id")):
@@ -597,18 +801,32 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         else:
             eligible_replications.append(row)
     replication_ok = bool(eligible_replications)
+    replication_status = (
+        "CONFLICT" if replication_lineage_conflicts else "SATISFIED" if replication_ok else "NOT_EVALUATED"
+    )
     gates.append(_gate(
-        "INDEPENDENT_REPLICATION", "Independent replication", "SATISFIED" if replication_ok else "NOT_EVALUATED",
+        "INDEPENDENT_REPLICATION", "Independent replication", replication_status,
         (
+            "A replication contains contradictory governed foreign keys and cannot enter this mission lineage."
+            if replication_lineage_conflicts else
             f"{len(eligible_replications)} governed independent replication execution(s) recorded; outcome sign does not affect gate completion."
             if replication_ok else "No governed point-in-time independent replication execution is complete."
         ),
         refs=[row.get("replication_id") for row in replications],
-        blockers=replication_defects if not replication_ok else (),
-        next_action="Execute a declared replication on an independent period, market or implementation." if not replication_ok else "",
+        blockers=replication_lineage_conflicts or (replication_defects if not replication_ok else ()),
+        next_action=(
+            "Retain the conflicting replication and restore consistent experiment/reference-run foreign keys."
+            if replication_lineage_conflicts else
+            "Execute a declared replication on an independent period, market or implementation."
+            if not replication_ok else ""
+        ),
     ))
 
     eligible_replication_ids = {_text(row.get("replication_id")) for row in eligible_replications}
+    eligible_replication_by_id = {
+        _text(row.get("replication_id")): row for row in eligible_replications
+        if _text(row.get("replication_id"))
+    }
     cross_runtime_rows = [
         dict(row) for row in (snapshot.get("cross_runtime_verifications") or ())
         if _text(row.get("replication_id")) in eligible_replication_ids
@@ -679,6 +897,11 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         defects: list[str] = []
         dimensions = row.get("independence_dimensions") or {}
         series_results = [dict(item) for item in (row.get("series_results") or ()) if isinstance(item, Mapping)]
+        authoritative_validation = validate_completed_direct_bis_reconciliation(
+            row,
+            reference_replication=eligible_replication_by_id.get(_text(row.get("replication_id"))),
+        )
+        defects.extend(str(item) for item in authoritative_validation.get("defects") or ())
         if _text(row.get("protocol_version")) != DIRECT_BIS_PROTOCOL_VERSION:
             defects.append("missing governed direct-source protocol")
         if _text(row.get("source_integrity_status")) != "PASS":
@@ -687,8 +910,8 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
             defects.append("declared direct series coverage is not PASS")
         if _text(row.get("reconciliation_status")) not in {"EXACT_MATCH", "RECONCILED_WITH_REVISIONS"}:
             defects.append("revision reconciliation is incomplete")
-        expected_count = int(row.get("expected_series_count") or 0)
-        series_count = int(row.get("series_count") or 0)
+        expected_count = _exact_int(row.get("expected_series_count"))
+        series_count = _exact_int(row.get("series_count"))
         if expected_count < 1 or series_count != expected_count or len(series_results) != expected_count:
             defects.append("not every frozen series has a reconciliation result")
         if not _text(row.get("direct_snapshot_id")) or not _text(row.get("direct_snapshot_fingerprint")):
@@ -710,9 +933,9 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
                 defects.append("shared lineage or non-point-in-time boundary is overstated")
             if dimensions.get("investigator") is not False:
                 defects.append("investigator independence is overstated")
-        minimum_overlap = int(row.get("min_overlap_rows") or 0)
+        minimum_overlap = _exact_int(row.get("min_overlap_rows"))
         if any(
-            int(item.get("overlap_row_count") or 0) < minimum_overlap
+            _exact_int(item.get("overlap_row_count"), default=-1) < minimum_overlap
             or not _text(item.get("comparison_fingerprint"))
             or item.get("historical_evidence_eligible") is not False
             for item in series_results
@@ -730,7 +953,7 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
     direct_status = "CONFLICT" if direct_conflict else "SATISFIED" if direct_ok else "NOT_EVALUATED"
     prospective = {}
     if eligible_direct:
-        latest_direct = max(eligible_direct, key=lambda item: _text(item.get("retrieved_at")))
+        latest_direct = max(eligible_direct, key=_observation_order)
         prospective = build_prospective_vintage_summary(
             direct_rows,
             replication_id=_text(latest_direct.get("replication_id")),
@@ -744,10 +967,11 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         direct_status,
         (
             f"{len(eligible_direct)} direct BIS revised-history observation(s) reconcile all declared series; "
-            f"the prospective vintage ledger is {prospective.get('status', 'WARMING_UP')} "
+            f"the legacy raw-content inventory is {prospective.get('status', 'WARMING_UP')} "
             f"({prospective.get('distinct_snapshots', 0)}/"
             f"{prospective.get('required_distinct_snapshots', 12)} content-distinct snapshots). "
-            "This gate validates provenance and revision accounting, not point-in-time historical evidence."
+            "Phase 6.8 is authoritative for monthly schedule credit and maturity. This gate validates provenance and "
+            "revision accounting, not point-in-time historical evidence."
             if direct_ok else
             "A completed direct-source record violates its provenance, coverage or non-point-in-time boundary."
             if direct_conflict else
@@ -766,10 +990,16 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         _text(row.get("reconciliation_id")) for row in eligible_direct
         if _text(row.get("reconciliation_id"))
     }
+    eligible_direct_by_id = {
+        _text(row.get("reconciliation_id")): row for row in eligible_direct
+        if _text(row.get("reconciliation_id"))
+    }
     triangulation_rows = [
         dict(row) for row in (snapshot.get("cross_provider_triangulations") or ())
-        if _text(row.get("replication_id")) in eligible_replication_ids
-        and _text(row.get("direct_reconciliation_id")) in eligible_direct_ids
+        if (
+            _text(row.get("replication_id")) in eligible_replication_ids
+            or _text(row.get("direct_reconciliation_id")) in eligible_direct_ids
+        )
     ]
     eligible_triangulations: list[dict[str, Any]] = []
     non_comparable_triangulations: list[dict[str, Any]] = []
@@ -780,6 +1010,15 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         defects: list[str] = []
         dimensions = row.get("independence_dimensions") or {}
         results = [dict(item) for item in (row.get("series_results") or ()) if isinstance(item, Mapping)]
+        direct_parent = eligible_direct_by_id.get(_text(row.get("direct_reconciliation_id")))
+        if not direct_parent or _text(direct_parent.get("replication_id")) != _text(row.get("replication_id")):
+            defects.append("direct reconciliation does not belong to the declared replication")
+        elif (
+            _text(row.get("direct_snapshot_id")) != _text(direct_parent.get("direct_snapshot_id"))
+            or _text(row.get("direct_snapshot_fingerprint"))
+            != _text(direct_parent.get("direct_snapshot_fingerprint"))
+        ):
+            defects.append("direct snapshot identity differs from the declared reconciliation")
         if _text(row.get("protocol_version")) != CROSS_PROVIDER_PROTOCOL_VERSION:
             defects.append("missing governed cross-provider protocol")
         if _text(row.get("source_integrity_status")) != "PASS":
@@ -789,8 +1028,8 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         outcome = _text(row.get("triangulation_outcome"))
         if outcome not in {"CONCORDANT", "MEASUREMENT_DIVERGENCE", "NOT_COMPARABLE"}:
             defects.append("triangulation outcome is missing or unsupported")
-        expected_count = int(row.get("expected_series_count") or 0)
-        source_count = int(row.get("source_series_count") or 0)
+        expected_count = _exact_int(row.get("expected_series_count"))
+        source_count = _exact_int(row.get("source_series_count"))
         if expected_count != 3 or source_count != expected_count or len(results) != expected_count:
             defects.append("the frozen GB/JP/US comparison matrix is incomplete")
         if not _text(row.get("oecd_snapshot_id")) or not _text(row.get("oecd_snapshot_fingerprint")):
@@ -816,7 +1055,7 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
                 defects.append("unresolved underlying lineage or methodology is overstated as independent")
             if dimensions.get("point_in_time") is not False or dimensions.get("investigator") is not False:
                 defects.append("point-in-time or investigator independence is overstated")
-        minimum_overlap = int(row.get("min_overlap_rows") or 0)
+        minimum_overlap = _exact_int(row.get("min_overlap_rows"))
         for result in results:
             result_status = _text(result.get("status"))
             if result_status not in {"CONCORDANT", "MEASUREMENT_DIVERGENCE", "NOT_COMPARABLE"}:
@@ -828,7 +1067,7 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
                 defects.append("a country comparison is incorrectly eligible as historical evidence")
             if result_status != "NOT_COMPARABLE":
                 checks = result.get("threshold_checks")
-                if int(result.get("overlap_row_count") or 0) < minimum_overlap:
+                if _exact_int(result.get("overlap_row_count"), default=-1) < minimum_overlap:
                     defects.append("a comparable country result lacks governed overlap")
                 if not isinstance(checks, Mapping) or set(checks) != {
                     "change_correlation", "sign_agreement", "mean_absolute_change_gap"
@@ -887,6 +1126,107 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
             "Freeze the OECD/BIS thresholds before network access, then acquire the three monthly CPI-based REER series."
         ) if not triangulation_ok else "",
     ))
+
+    all_program_rows = [
+        dict(row) for row in (snapshot.get("prospective_observation_programs") or ())
+        if _text(row.get("replication_id")) in eligible_replication_ids
+    ]
+    active_direct = max(eligible_direct, key=_observation_order, default={})
+    active_replication_id = _text(active_direct.get("replication_id"))
+    program_rows = [
+        row for row in all_program_rows
+        if _text(row.get("replication_id")) == active_replication_id
+    ]
+    valid_programs: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    program_defects: list[str] = []
+    if len(program_rows) > 1:
+        identities = ", ".join(_text(row.get("program_id")) or "MISSING_ID" for row in program_rows)
+        program_defects.append(
+            f"Active replication {active_replication_id} has {len(program_rows)} prospective program rows ({identities}); exactly one is allowed."
+        )
+    for row in program_rows:
+        identity = _text(row.get("program_id")) or "program"
+        defects: list[str] = []
+        validation = validate_prospective_observation_program(row)
+        defects.extend(str(item) for item in validation.get("defects") or ())
+        if _text(row.get("protocol_version")) != PROSPECTIVE_OBSERVATION_PROTOCOL_VERSION:
+            defects.append("missing governed prospective observation protocol")
+        replication_direct = [
+            direct for direct in eligible_direct
+            if _text(direct.get("replication_id")) == _text(row.get("replication_id"))
+        ]
+        replication_direct_ids = {
+            _text(direct.get("reconciliation_id")) for direct in replication_direct
+            if _text(direct.get("reconciliation_id"))
+        }
+        if _text(row.get("seed_reconciliation_id")) not in replication_direct_ids:
+            defects.append("seed direct reconciliation is absent or ineligible")
+        try:
+            frozen_at = _utc_instant(row.get("protocol_frozen_at"))
+            available_at_freeze: list[tuple[datetime, dict[str, Any]]] = []
+            for direct in replication_direct:
+                retrieved_at = _utc_instant(direct.get("retrieved_at"))
+                completed_at = _utc_instant(direct.get("completed_at"))
+                if retrieved_at <= frozen_at and completed_at <= frozen_at:
+                    available_at_freeze.append((retrieved_at, direct))
+            expected_seed = max(
+                available_at_freeze,
+                key=lambda item: (item[0], _text(item[1].get("reconciliation_id"))),
+            )[1] if available_at_freeze else {}
+            if _text(expected_seed.get("reconciliation_id")) != _text(row.get("seed_reconciliation_id")):
+                defects.append("seed is not the latest eligible direct observation available at protocol freeze")
+        except (TypeError, ValueError):
+            defects.append("seed recency cannot be verified from governed UTC timestamps")
+        if len(program_rows) != 1:
+            defects.append("more than one prospective program governs the replication")
+        if defects:
+            program_defects.append(f"{identity}: {', '.join(dict.fromkeys(defects))}.")
+            continue
+        try:
+            state = evaluate_prospective_observation_program(
+                row,
+                [
+                    direct for direct in direct_rows
+                    if _text(direct.get("replication_id")) == _text(row.get("replication_id"))
+                ],
+                as_of=_text(snapshot.get("captured_at")) or None,
+            )
+        except Exception as exc:
+            program_defects.append(f"{identity}: {type(exc).__name__}: {str(exc)}.")
+            continue
+        valid_programs.append((row, state))
+
+    program_conflict = bool(program_defects)
+    program_ok = len(valid_programs) == 1 and not program_conflict
+    program_status = "CONFLICT" if program_conflict else "SATISFIED" if program_ok else "NOT_EVALUATED"
+    program_state = valid_programs[0][1] if program_ok else {}
+    maturity = program_state.get("maturity") or {}
+    gates.append(_gate(
+        "PROSPECTIVE_OBSERVATION_PROTOCOL",
+        "Prospective observation protocol",
+        program_status,
+        (
+            f"Future-only UTC monthly program is {program_state.get('program_status')}; "
+            f"maturity is {maturity.get('status', 'WARMING_UP')} with "
+            f"{maturity.get('distinct_snapshots', 0)}/{maturity.get('required_distinct_snapshots', 12)} "
+            f"content-distinct snapshots, {maturity.get('distinct_latest_periods', 0)}/"
+            f"{maturity.get('required_distinct_latest_periods', 12)} latest months and "
+            f"{maturity.get('span_days', 0)}/{maturity.get('required_span_days', 300)} observed days. "
+            "This gate validates the frozen operating protocol, not longitudinal scientific maturity."
+            if program_ok else
+            "A prospective program violates its frozen cadence, seed, no-backfill boundary or research-only lock."
+            if program_conflict else
+            f"No future-only observation program is frozen around the active replication {active_replication_id or 'UNKNOWN'} direct-BIS seed."
+        ),
+        refs=[row.get("program_id") for row in program_rows],
+        blockers=program_defects,
+        next_action=(
+            "Retain the conflict and restore the exact frozen program; never relabel a missed window as observed."
+            if program_conflict else
+            "Freeze the monthly prospective observation program around the latest governed direct-BIS seed."
+        ) if not program_ok else "",
+    ))
+
     unauthorized_belief = any(bool(row.get("belief_update_authorized")) for row in syntheses)
     bad_production = []
     for key, rows in snapshot.items():
@@ -898,14 +1238,25 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
     production_safe = not unauthorized_belief and not bad_production
     gates.append(_gate(
         "PRODUCTION_PROMOTION_LOCK", "Production & belief lock", "SATISFIED" if production_safe else "BLOCKED",
-        "RESEARCH_ONLY enforced; synthesis cannot update beliefs automatically." if production_safe else "Unauthorized production/belief state detected.",
+        "Workspace-wide RESEARCH_ONLY kill-switch enforced; synthesis cannot update beliefs automatically."
+        if production_safe else "Workspace-wide unauthorized production/belief state detected.",
         blockers=bad_production + (["A synthesis authorizes automatic belief update."] if unauthorized_belief else []),
         next_action="Restore RESEARCH_ONLY and revoke automatic belief update before continuing." if not production_safe else "",
     ))
 
     blocking_statuses = {"BLOCKED", "CONFLICT"}
     evidence_pending_statuses = {"NOT_EVALUATED", "WARNING"}
-    overall = "BLOCKED" if any(gate.status in blocking_statuses for gate in gates) else "WAITING_EVIDENCE" if any(gate.status in evidence_pending_statuses for gate in gates) else "READY_FOR_REVIEW"
+    def derived_status(selected: Sequence[ResearchGate]) -> str:
+        return (
+            "BLOCKED" if any(gate.status in blocking_statuses for gate in selected)
+            else "WAITING_EVIDENCE" if any(gate.status in evidence_pending_statuses for gate in selected)
+            else "READY_FOR_REVIEW"
+        )
+
+    overall = derived_status(gates)
+    core_gates = [gate for gate in gates if gate.gate_id != "PROSPECTIVE_OBSERVATION_PROTOCOL"]
+    core_study_status = derived_status(core_gates)
+    prospective_operations_status = program_status
     next_gate = (
         next((gate for gate in gates if gate.status in blocking_statuses), None)
         or next((gate for gate in gates if gate.status == "NOT_EVALUATED"), None)
@@ -924,7 +1275,10 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         "cycles": max(0.0, float(ledger.get("max_cycles") or 0) - float(ledger.get("used_cycles") or 0)),
         "compute_units": max(0.0, float(ledger.get("max_compute_units") or 0) - float(ledger.get("used_compute_units") or 0)),
     }
-    all_blockers = list(plan.get("blockers") or ())
+    # Persisted plan blockers describe historical planning debt. Active mission
+    # blockers come only from the current derived gates; otherwise a fully
+    # satisfied READY mission can contradict itself in the UI.
+    all_blockers: list[str] = []
     for gate in gates:
         all_blockers.extend(gate.blockers)
     counts = {
@@ -938,6 +1292,7 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         "cross_runtime_verifications": len(cross_runtime_rows),
         "direct_source_reconciliations": len(direct_rows),
         "cross_provider_triangulations": len(triangulation_rows),
+        "prospective_observation_programs": len(all_program_rows),
         "diagnostics": len([row for row in (snapshot.get("break_diagnostics") or ()) if _text(row.get("run_id")) == _text(latest_historical.get("run_id"))]),
         "inconsistencies": len(inconsistencies),
     }
@@ -963,6 +1318,8 @@ def build_mission_snapshot(snapshot: Mapping[str, Any], question_id: str = "") -
         blockers=tuple(dict.fromkeys(_text(item) for item in all_blockers if _text(item))),
         budget_remaining=budget_remaining,
         counts=counts,
+        core_study_status=core_study_status,
+        prospective_operations_status=prospective_operations_status,
     )
 
 
@@ -1036,11 +1393,15 @@ def build_evidence_inspector(snapshot: Mapping[str, Any], question_id: str) -> l
 def build_run_room(snapshot: Mapping[str, Any], question_id: str) -> dict[str, Any]:
     mission = build_mission_snapshot(snapshot, question_id)
     question = _find(snapshot.get("questions") or (), "question_id", mission.question_id)
+    lineage = build_mission_lineage_index(snapshot, mission.question_id)
     experiment_id = _text(question.get("experiment_id"))
-    if not experiment_id:
-        experiment_id = _text(next((row.get("experiment_id") for row in (snapshot.get("experiment_specs") or ()) if row.get("experiment_id")), ""))
+    if not experiment_id and len(lineage["experiment_id"]) == 1:
+        experiment_id = next(iter(lineage["experiment_id"]))
     spec = _find(snapshot.get("experiment_specs") or (), "experiment_id", experiment_id)
-    runs = [dict(row) for row in (snapshot.get("runs") or ()) if _text(row.get("experiment_id")) == experiment_id]
+    runs = [
+        dict(row) for row in (snapshot.get("runs") or ())
+        if _text(row.get("run_id")) in lineage["run_id"]
+    ]
     run = max(runs, key=lambda row: _text(row.get("created_at")), default={})
     run_id = _text(run.get("run_id"))
     return {
@@ -1054,18 +1415,23 @@ def build_run_room(snapshot: Mapping[str, Any], question_id: str) -> dict[str, A
         "manifest": _find(snapshot.get("dataset_manifests") or (), "manifest_id", _text(run.get("dataset_manifest_id"))),
         "capsules": [dict(row) for row in (snapshot.get("capsules") or ()) if _text(row.get("run_id")) == run_id],
         "diagnostics": [dict(row) for row in (snapshot.get("break_diagnostics") or ()) if _text(row.get("run_id")) == run_id],
-        "replications": [dict(row) for row in (snapshot.get("replications") or ()) if _text(row.get("experiment_id")) == experiment_id],
+        "replications": [
+            dict(row) for row in (snapshot.get("replications") or ())
+            if _text(row.get("replication_id")) in lineage["replication_id"]
+        ],
     }
 
 
 def build_epistemic_timeline(snapshot: Mapping[str, Any], question_id: str, limit: int = 120) -> list[dict[str, Any]]:
     qid = _text(question_id)
+    lineage = build_mission_lineage_index(snapshot, qid)
     timeline: list[dict[str, Any]] = []
     identity_fields = (
         "question_id", "hypothesis_id", "plan_id", "observable_id", "measurement_model_id",
         "decision_id", "evidence_id", "assessment_id", "synthesis_id", "contract_id",
         "manifest_id", "attempt_id", "run_id", "review_id", "failure_id", "surprise_id",
-        "capsule_id", "diagnostic_id",
+        "capsule_id", "diagnostic_id", "replication_id", "verification_id",
+        "reconciliation_id", "triangulation_id", "program_id",
     )
     for registry, rows in snapshot.items():
         if not isinstance(rows, list) or registry in {"registry_health", "audit"}:
@@ -1074,7 +1440,12 @@ def build_epistemic_timeline(snapshot: Mapping[str, Any], question_id: str, limi
             if not isinstance(row, Mapping):
                 continue
             row_qid = _text(row.get("question_id"))
-            if row_qid and qid and row_qid != qid:
+            linked = row_qid == qid if row_qid else any(
+                _text(row.get(field)) in identities
+                for field, identities in lineage.items()
+                if identities and field in row
+            )
+            if qid and not linked:
                 continue
             ref_id = next((_text(row.get(field)) for field in identity_fields if _text(row.get(field))), "")
             created_at = _text(row.get("created_at"))
@@ -1089,7 +1460,13 @@ def build_epistemic_timeline(snapshot: Mapping[str, Any], question_id: str, limi
                     })
     for event in snapshot.get("audit") or ():
         payload = event.get("payload") or {}
-        if qid and _text(payload.get("question_id")) not in {"", qid} and qid not in json.dumps(payload, default=str):
+        payload_qid = _text(payload.get("question_id"))
+        linked = payload_qid == qid if payload_qid else any(
+            _text(payload.get(field)) in identities
+            for field, identities in lineage.items()
+            if identities and field in payload
+        )
+        if qid and not linked:
             continue
         ref_id = next((_text(payload.get(field)) for field in identity_fields if _text(payload.get(field))), "")
         timeline.append({

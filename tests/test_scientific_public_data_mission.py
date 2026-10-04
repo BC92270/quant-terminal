@@ -1,8 +1,86 @@
 from __future__ import annotations
 
 import unittest
+import copy
+import hashlib
+from dataclasses import asdict
 
-from scientific_research.mission_control_engine import build_mission_snapshot
+from scientific_research.direct_bis_reconciliation import (
+    direct_bis_reconciliation_fingerprint,
+    freeze_direct_bis_reconciliation,
+)
+from scientific_research.mission_control_engine import (
+    build_epistemic_timeline,
+    build_mission_snapshot,
+    build_run_room,
+)
+from scientific_research.prospective_observation import freeze_prospective_observation_program
+
+
+def _sha256(value: str) -> str:
+    return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _complete_direct(
+    replication: dict[str, object],
+    *,
+    token: str,
+    frozen_at: str,
+    retrieved_at: str,
+    completed_at: str,
+    latest_period: str = "2025-12-01",
+) -> dict[str, object]:
+    frozen = freeze_direct_bis_reconciliation(replication, created_at=frozen_at)
+    snapshot_fingerprint = _sha256(f"direct-snapshot-{token}")
+    snapshot_id = f"BISREV-{snapshot_fingerprint.split(':', 1)[1][:16]}"
+    results = tuple({
+        "series_id": series_id,
+        "overlap_row_count": 40,
+        "exact_match_row_count": 39,
+        "revised_row_count": 1,
+        "comparison_fingerprint": _sha256(f"comparison-{token}-{series_id}"),
+        "direct_row_fingerprint": _sha256(f"direct-rows-{token}-{series_id}"),
+        "history_semantics": "CURRENT_REVISED_HISTORY_NOT_A_VINTAGE_ARCHIVE",
+        "historical_evidence_eligible": False,
+    } for series_id in ("RBUSBIS", "NBUSBIS"))
+    row: dict[str, object] = {
+        **asdict(frozen),
+        "status": "COMPLETE",
+        "execution_status": "COMPLETE",
+        "completed_at": completed_at,
+        "source_integrity_status": "PASS",
+        "coverage_status": "PASS",
+        "reconciliation_status": "RECONCILED_WITH_REVISIONS",
+        "direct_snapshot_id": snapshot_id,
+        "direct_snapshot_path": f"public_data/bis_revised_history/{snapshot_id}",
+        "direct_snapshot_fingerprint": snapshot_fingerprint,
+        "raw_archive_sha256": _sha256(f"raw-{token}"),
+        "raw_archive_bytes": 100,
+        "raw_csv_bytes": 500,
+        "retrieved_at": retrieved_at,
+        "response_metadata": {},
+        "latest_period": latest_period,
+        "series_count": 2,
+        "total_overlap_rows": 80,
+        "total_exact_match_rows": 78,
+        "total_revised_rows": 2,
+        "series_results": results,
+    }
+    row["reconciliation_fingerprint"] = direct_bis_reconciliation_fingerprint(row)
+    row["lifecycle_history"] = tuple(row["lifecycle_history"]) + ({
+        "at": completed_at,
+        "event": "DIRECT_BIS_ACQUISITION_AND_RECONCILIATION_COMPLETE",
+        "status": "COMPLETE",
+        "execution_status": "COMPLETE",
+        "source_integrity_status": "PASS",
+        "coverage_status": "PASS",
+        "reconciliation_status": row["reconciliation_status"],
+        "direct_snapshot_id": row["direct_snapshot_id"],
+        "direct_snapshot_fingerprint": row["direct_snapshot_fingerprint"],
+        "historical_evidence_eligible": False,
+        "production_status": "RESEARCH_ONLY",
+    },)
+    return row
 
 
 def _complete_snapshot(
@@ -44,8 +122,8 @@ def _complete_snapshot(
         "forecast_trace_fingerprint": "sha256:forecast-competitor",
         "production_status": "RESEARCH_ONLY",
     }
-    return {
-        "captured_at": "2026-01-04T00:00:00+00:00",
+    snapshot = {
+        "captured_at": "2026-01-05T00:00:00+00:00",
         "registry_health": [],
         "questions": [
             {
@@ -245,7 +323,15 @@ def _complete_snapshot(
                     "implementation": False,
                 },
                 "point_in_time_status": "PASS",
-                "source_snapshot_fingerprint": "sha256:replication-source",
+                "snapshot_id": "ALFRED-SNAPSHOT-1",
+                "source_snapshot_fingerprint": _sha256("replication-source"),
+                "series_matrix": {
+                    "US": {
+                        "label": "United States",
+                        "real_series_id": "RBUSBIS",
+                        "nominal_series_id": "NBUSBIS",
+                    },
+                },
                 "execution_fingerprint": "sha256:replication-execution",
                 "replication_outcome": "NO_OOS_IMPROVEMENT",
                 "automatic_promotion_authorized": False,
@@ -278,6 +364,7 @@ def _complete_snapshot(
             "reconciliation_id": "DBR-1",
             "replication_id": "REPLICATION-1",
             "protocol_version": "SRB_DIRECT_BIS_RECONCILIATION_V1",
+            "status": "COMPLETE",
             "execution_status": "COMPLETE",
             "source_integrity_status": "PASS",
             "coverage_status": "PASS",
@@ -292,7 +379,10 @@ def _complete_snapshot(
             "expected_series_count": 1,
             "series_count": 1,
             "min_overlap_rows": 24,
+            "created_at": "2026-01-03T23:50:00+00:00",
+            "protocol_frozen_at": "2026-01-03T23:55:00+00:00",
             "retrieved_at": "2026-01-04T00:00:00+00:00",
+            "completed_at": "2026-01-04T00:05:00+00:00",
             "latest_period": "2025-12-01",
             "prospective_min_distinct_snapshots": 12,
             "prospective_min_distinct_latest_periods": 12,
@@ -370,6 +460,24 @@ def _complete_snapshot(
         "budgets": [],
         "break_diagnostics": [],
     }
+    governed_direct = _complete_direct(
+        snapshot["replications"][0],
+        token="primary",
+        frozen_at="2026-01-03T23:50:00+00:00",
+        retrieved_at="2026-01-04T00:00:00+00:00",
+        completed_at="2026-01-04T00:05:00+00:00",
+    )
+    snapshot["direct_source_reconciliations"] = [governed_direct]
+    snapshot["cross_provider_triangulations"][0]["direct_reconciliation_id"] = governed_direct["reconciliation_id"]
+    snapshot["cross_provider_triangulations"][0]["direct_snapshot_id"] = governed_direct["direct_snapshot_id"]
+    snapshot["cross_provider_triangulations"][0]["direct_snapshot_fingerprint"] = governed_direct["direct_snapshot_fingerprint"]
+    snapshot["prospective_observation_programs"] = [asdict(
+        freeze_prospective_observation_program(
+            snapshot["direct_source_reconciliations"][0],
+            created_at="2026-01-04T02:00:00+00:00",
+        )
+    )]
+    return snapshot
 
 
 class PublicDataMissionGateTests(unittest.TestCase):
@@ -448,6 +556,179 @@ class PublicDataMissionGateTests(unittest.TestCase):
         self.assertIn("WARMING_UP", gate.summary)
         self.assertEqual(mission.overall_status, "READY_FOR_REVIEW")
 
+    def test_frozen_prospective_protocol_closes_operations_not_maturity(self) -> None:
+        mission = build_mission_snapshot(_complete_snapshot(), "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "PROSPECTIVE_OBSERVATION_PROTOCOL")
+
+        self.assertEqual(gate.status, "SATISFIED")
+        self.assertIn("WARMING_UP", gate.summary)
+        self.assertIn("not longitudinal scientific maturity", gate.summary)
+        self.assertEqual(len(mission.gates), 22)
+        self.assertEqual(mission.overall_status, "READY_FOR_REVIEW")
+        self.assertEqual(mission.core_study_status, "READY_FOR_REVIEW")
+        self.assertEqual(mission.prospective_operations_status, "SATISFIED")
+
+    def test_missing_or_tampered_prospective_protocol_fails_closed(self) -> None:
+        snapshot = _complete_snapshot()
+        snapshot["prospective_observation_programs"] = []
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "PROSPECTIVE_OBSERVATION_PROTOCOL")
+        self.assertEqual(gate.status, "NOT_EVALUATED")
+        self.assertEqual(mission.overall_status, "WAITING_EVIDENCE")
+        self.assertEqual(mission.core_study_status, "READY_FOR_REVIEW")
+        self.assertEqual(mission.prospective_operations_status, "NOT_EVALUATED")
+
+        snapshot = _complete_snapshot()
+        snapshot["prospective_observation_programs"][0]["historical_backfill_permitted"] = True
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "PROSPECTIVE_OBSERVATION_PROTOCOL")
+        self.assertEqual(gate.status, "CONFLICT")
+        self.assertIn("historical backfill", " ".join(gate.blockers))
+        self.assertEqual(mission.overall_status, "BLOCKED")
+        self.assertEqual(mission.core_study_status, "READY_FOR_REVIEW")
+        self.assertEqual(mission.prospective_operations_status, "CONFLICT")
+
+    def test_duplicate_program_rows_fail_closed_even_with_the_same_identity(self) -> None:
+        snapshot = _complete_snapshot()
+        snapshot["prospective_observation_programs"].append(
+            copy.deepcopy(snapshot["prospective_observation_programs"][0])
+        )
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "PROSPECTIVE_OBSERVATION_PROTOCOL")
+
+        self.assertEqual(gate.status, "CONFLICT")
+        self.assertIn("exactly one", " ".join(gate.blockers))
+        self.assertEqual(mission.core_study_status, "READY_FOR_REVIEW")
+
+    def test_each_replication_can_have_one_program_without_global_conflict(self) -> None:
+        snapshot = _complete_snapshot()
+        second_replication = copy.deepcopy(snapshot["replications"][0])
+        second_replication["replication_id"] = "REPLICATION-2"
+        second_replication["snapshot_id"] = "ALFRED-SNAPSHOT-2"
+        second_replication["source_snapshot_fingerprint"] = _sha256("replication-source-2")
+        second_replication["execution_fingerprint"] = "sha256:replication-execution-2"
+        snapshot["replications"].append(second_replication)
+        second_direct = _complete_direct(
+            second_replication,
+            token="second-replication",
+            frozen_at="2026-01-04T02:50:00+00:00",
+            retrieved_at="2026-01-04T03:00:00+00:00",
+            completed_at="2026-01-04T03:05:00+00:00",
+        )
+        snapshot["direct_source_reconciliations"].append(second_direct)
+        snapshot["prospective_observation_programs"].append(asdict(
+            freeze_prospective_observation_program(
+                second_direct,
+                created_at="2026-01-04T04:00:00+00:00",
+            )
+        ))
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "PROSPECTIVE_OBSERVATION_PROTOCOL")
+
+        self.assertEqual(gate.status, "SATISFIED")
+        self.assertEqual(mission.counts["prospective_observation_programs"], 2)
+        self.assertEqual(mission.overall_status, "READY_FOR_REVIEW")
+
+    def test_prospective_seed_must_be_latest_observation_available_at_freeze(self) -> None:
+        snapshot = _complete_snapshot()
+        newer = _complete_direct(
+            snapshot["replications"][0],
+            token="newer-at-freeze",
+            frozen_at="2026-01-04T01:20:00+00:00",
+            retrieved_at="2026-01-04T01:30:00+00:00",
+            completed_at="2026-01-04T01:35:00+00:00",
+        )
+        snapshot["direct_source_reconciliations"].append(newer)
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "PROSPECTIVE_OBSERVATION_PROTOCOL")
+        self.assertEqual(gate.status, "CONFLICT")
+        self.assertIn("not the latest eligible", " ".join(gate.blockers))
+
+    def test_seed_recency_excludes_an_observation_completed_after_freeze(self) -> None:
+        snapshot = _complete_snapshot()
+        later_completion = _complete_direct(
+            snapshot["replications"][0],
+            token="retrieved-before-freeze-completed-after",
+            frozen_at="2026-01-04T01:20:00+00:00",
+            retrieved_at="2026-01-04T01:30:00+00:00",
+            completed_at="2026-01-04T02:30:00+00:00",
+        )
+        snapshot["direct_source_reconciliations"].append(later_completion)
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "PROSPECTIVE_OBSERVATION_PROTOCOL")
+
+        self.assertEqual(gate.status, "SATISFIED")
+        self.assertNotIn("not the latest eligible", " ".join(gate.blockers))
+
+    def test_direct_record_must_bind_exact_parent_replication_snapshot_and_matrix(self) -> None:
+        snapshot = _complete_snapshot()
+        foreign_parent = copy.deepcopy(snapshot["replications"][0])
+        foreign_parent["snapshot_id"] = "ALFRED-FOREIGN-SNAPSHOT"
+        foreign_parent["source_snapshot_fingerprint"] = _sha256("foreign-reference-snapshot")
+        internally_valid_but_foreign = _complete_direct(
+            foreign_parent,
+            token="foreign-parent",
+            frozen_at="2026-01-03T23:50:00+00:00",
+            retrieved_at="2026-01-04T00:00:00+00:00",
+            completed_at="2026-01-04T00:05:00+00:00",
+        )
+        snapshot["direct_source_reconciliations"] = [internally_valid_but_foreign]
+        snapshot["cross_provider_triangulations"] = []
+        snapshot["prospective_observation_programs"] = []
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "DIRECT_SOURCE_RECONCILIATION")
+
+        self.assertEqual(gate.status, "CONFLICT")
+        self.assertIn("differs from its parent replication", " ".join(gate.blockers))
+
+    def test_replication_with_contradictory_experiment_and_reference_run_is_conflict(self) -> None:
+        snapshot = _complete_snapshot()
+        contradictory = copy.deepcopy(snapshot["replications"][0])
+        contradictory["replication_id"] = "REPLICATION-CONTRADICTORY"
+        contradictory["experiment_id"] = "EXPERIMENT-FOREIGN"
+        snapshot["replications"].append(contradictory)
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(gate for gate in mission.gates if gate.gate_id == "INDEPENDENT_REPLICATION")
+
+        self.assertEqual(gate.status, "CONFLICT")
+        self.assertIn("experiment foreign key conflicts", " ".join(gate.blockers))
+
+    def test_cross_provider_direct_parent_mismatch_is_conflict(self) -> None:
+        snapshot = _complete_snapshot()
+        second_replication = copy.deepcopy(snapshot["replications"][0])
+        second_replication["replication_id"] = "REPLICATION-2"
+        second_replication["snapshot_id"] = "ALFRED-SNAPSHOT-2"
+        second_replication["source_snapshot_fingerprint"] = _sha256("replication-source-2")
+        second_replication["execution_fingerprint"] = "sha256:replication-execution-2"
+        snapshot["replications"].append(second_replication)
+        second_direct = _complete_direct(
+            second_replication,
+            token="triangulation-parent-mismatch",
+            frozen_at="2026-01-04T02:50:00+00:00",
+            retrieved_at="2026-01-04T03:00:00+00:00",
+            completed_at="2026-01-04T03:05:00+00:00",
+        )
+        snapshot["direct_source_reconciliations"].append(second_direct)
+        triangulation = snapshot["cross_provider_triangulations"][0]
+        triangulation["direct_reconciliation_id"] = second_direct["reconciliation_id"]
+        triangulation["direct_snapshot_id"] = second_direct["direct_snapshot_id"]
+        triangulation["direct_snapshot_fingerprint"] = second_direct["direct_snapshot_fingerprint"]
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        gate = next(
+            gate for gate in mission.gates
+            if gate.gate_id == "CROSS_PROVIDER_MEASUREMENT_TRIANGULATION"
+        )
+
+        self.assertEqual(gate.status, "CONFLICT")
+        self.assertIn("does not belong to the declared replication", " ".join(gate.blockers))
+
     def test_direct_source_point_in_time_overclaim_blocks_mission(self) -> None:
         snapshot = _complete_snapshot()
         snapshot["direct_source_reconciliations"][0]["point_in_time_status"] = "PASS"
@@ -462,6 +743,8 @@ class PublicDataMissionGateTests(unittest.TestCase):
     def test_missing_direct_source_observation_remains_waiting(self) -> None:
         snapshot = _complete_snapshot()
         snapshot["direct_source_reconciliations"] = []
+        snapshot["prospective_observation_programs"] = []
+        snapshot["cross_provider_triangulations"] = []
 
         mission = build_mission_snapshot(snapshot, "QUESTION-1")
         gate = next(gate for gate in mission.gates if gate.gate_id == "DIRECT_SOURCE_RECONCILIATION")
@@ -562,6 +845,56 @@ class PublicDataMissionGateTests(unittest.TestCase):
         self.assertIn("REPLICATION-1", replication.artifact_refs)
         self.assertIn("LEGACY-REPLICATION", replication.artifact_refs)
         self.assertEqual(mission.overall_status, "READY_FOR_REVIEW")
+
+    def test_unlinked_question_cannot_inherit_another_missions_experiment_or_timeline(self) -> None:
+        snapshot = _complete_snapshot()
+        snapshot["questions"].append({
+            "question_id": "QUESTION-2",
+            "plan_id": "PLAN-2",
+            "title": "Unrelated mission",
+            "status": "PLANNED",
+        })
+        snapshot["plans"].append({
+            "plan_id": "PLAN-2",
+            "question_id": "QUESTION-2",
+            "selected_hypothesis_id": "",
+            "blockers": ["Unrelated historical planning debt"],
+            "created_at": "2026-01-05T00:00:00+00:00",
+        })
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-2")
+        transfer = next(gate for gate in mission.gates if gate.gate_id == "PARTIAL_TRANSFER_ELIGIBLE")
+        attempt = next(gate for gate in mission.gates if gate.gate_id == "ATTEMPT_REGISTERED")
+        room = build_run_room(snapshot, "QUESTION-2")
+        timeline = build_epistemic_timeline(snapshot, "QUESTION-2")
+
+        self.assertEqual(transfer.status, "BLOCKED")
+        self.assertNotIn("TRANSFER-1", transfer.artifact_refs)
+        self.assertEqual(attempt.status, "NOT_EVALUATED")
+        self.assertEqual(room["specification"], {})
+        self.assertEqual(room["run"], {})
+        self.assertNotIn("RUN-PRIMARY", {row.get("ref_id") for row in timeline})
+        self.assertIn("QUESTION-2", {row.get("ref_id") for row in timeline})
+        self.assertNotIn("Unrelated historical planning debt", mission.blockers)
+
+    def test_explicit_foreign_question_run_cannot_leak_through_shared_experiment(self) -> None:
+        snapshot = _complete_snapshot()
+        foreign = copy.deepcopy(snapshot["runs"][0])
+        foreign.update({
+            "run_id": "RUN-FOREIGN-QUESTION",
+            "question_id": "QUESTION-2",
+            "created_at": "2026-01-10T00:00:00+00:00",
+            "verdict": "FAIL",
+        })
+        snapshot["runs"].append(foreign)
+
+        mission = build_mission_snapshot(snapshot, "QUESTION-1")
+        room = build_run_room(snapshot, "QUESTION-1")
+        timeline = build_epistemic_timeline(snapshot, "QUESTION-1")
+
+        self.assertEqual(room["run"].get("run_id"), "RUN-PRIMARY")
+        self.assertNotIn("RUN-FOREIGN-QUESTION", {row.get("ref_id") for row in timeline})
+        self.assertEqual(mission.counts["historical_runs"], 2)
 
 
 if __name__ == "__main__":

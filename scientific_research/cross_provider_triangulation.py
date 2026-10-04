@@ -37,7 +37,7 @@ OECD_TERMS_URL = "https://www.oecd.org/en/about/terms-conditions.html"
 OECD_HISTORY_SEMANTICS = "CURRENT_REVISED_HISTORY_NOT_A_VINTAGE_ARCHIVE"
 OECD_MAX_CSV_BYTES = 5_000_000
 OECD_USER_AGENT = (
-    "ScientificResearchBrain/0.6.7.0 research-only cross-provider triangulation; "
+    "ScientificResearchBrain/0.6.8.0 research-only cross-provider triangulation; "
     "bounded public OECD SDMX request; no unattended production use"
 )
 OECD_EXPECTED_STRUCTURE_ID = "OECD.SDD.STES:DSD_STES@DF_FINMARK(4.0)"

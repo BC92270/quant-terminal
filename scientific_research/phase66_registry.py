@@ -69,6 +69,8 @@ class Phase66Registry:
             if incoming_execution == "NOT_RUN" and persisted != incoming:
                 raise ValueError(f"Frozen direct-source protocol cannot be edited in place: {identity}")
             if incoming_execution == "COMPLETE":
+                from .direct_bis_reconciliation import validate_completed_direct_bis_reconciliation
+
                 if str(row.get("status") or "") != "COMPLETE":
                     raise ValueError("Completed direct-source acquisition must have status COMPLETE.")
                 if str(row.get("source_integrity_status") or "") != "PASS":
@@ -85,6 +87,12 @@ class Phase66Registry:
                 ):
                     if not str(row.get(required) or ""):
                         raise ValueError(f"Completed direct-source acquisition is missing {required}.")
+                validation = validate_completed_direct_bis_reconciliation(row)
+                if validation["status"] != "PASS":
+                    raise ValueError(
+                        "Completed direct-source acquisition is invalid: "
+                        + "; ".join(str(item) for item in validation["defects"])
+                    )
             for index, prior in enumerate(rows):
                 if str(prior.get("reconciliation_id") or "") == identity:
                     rows[index] = row
