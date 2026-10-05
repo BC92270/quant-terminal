@@ -6,10 +6,11 @@ import os
 import re
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timedelta, timezone
-from html import unescape
+from html import escape, unescape
 from pathlib import Path
 from typing import Any, Callable
 
+import plotly.graph_objects as go
 import requests
 
 from scientific_research import (
@@ -144,7 +145,7 @@ except Exception:  # pragma: no cover - allows core unit tests without Streamlit
 # No financial engine is imported or mutated from this module.
 # ============================================================
 
-SRB_VERSION = "0.6.8.0"
+SRB_VERSION = "0.6.8.1"
 SRB_WORKSPACE_SLUG = "scientific-research"
 DEFAULT_MEMORY_DIR = ".scientific_research_data"
 
@@ -941,9 +942,12 @@ def _inject_css() -> None:
         .srb-title{font-size:2rem;color:#f8fbff;font-weight:950;margin-top:5px}
         .srb-sub{color:rgba(225,238,250,.70);font-size:.90rem;line-height:1.45;max-width:1200px;margin-top:7px}
         .srb-card{border:1px solid rgba(90,205,255,.15);border-radius:15px;background:rgba(5,16,33,.68);padding:12px 14px;}
-        .srb-status{border:1px solid rgba(90,205,255,.14);border-radius:14px;padding:10px 12px;background:rgba(4,13,28,.72);}
+        .srb-status{border:1px solid rgba(90,205,255,.14);border-radius:14px;padding:10px 12px;background:rgba(4,13,28,.72);
+          min-height:78px;min-width:0;display:flex;flex-direction:column;justify-content:space-between;}
         .srb-status-label{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(210,230,245,.55);font-weight:850;}
-        .srb-status-value{font-size:1.02rem;color:#f8fbff;font-weight:900;margin-top:4px;}
+        .srb-status-value{font-size:1.02rem;color:#f8fbff;font-weight:900;line-height:1.22;margin-top:7px;}
+        .srb-status-value--long{font-size:clamp(.66rem,.72vw,.82rem);letter-spacing:.01em;white-space:nowrap;overflow-x:auto;
+          scrollbar-width:thin;font-variant-numeric:tabular-nums;}
         .srb-mission-banner{border:1px solid rgba(127,92,255,.32);border-radius:18px;padding:14px 17px;margin:8px 0 14px 0;
           background:linear-gradient(105deg,rgba(16,12,39,.95),rgba(4,20,35,.92));box-shadow:0 18px 48px rgba(0,0,0,.22);}
         .srb-mission-kicker{color:#a990ff;font-size:.66rem;letter-spacing:.18em;font-weight:900;text-transform:uppercase;}
@@ -968,18 +972,91 @@ def _finite_time_chart(
     timestamps: list[Any],
     series: dict[str, list[Any]],
 ) -> pd.DataFrame:
-    """Return only finite, dated rows so hidden Streamlit tabs cannot emit Vega extent warnings."""
+    """Return a finite dated domain while retaining only meaningful internal gaps."""
     if not timestamps or any(len(values) != len(timestamps) for values in series.values()):
         return pd.DataFrame()
     frame = pd.DataFrame({"timestamp": timestamps, **series})
-    frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce", utc=True)
+    frame["timestamp"] = frame["timestamp"].map(
+        lambda value: pd.to_datetime(value, errors="coerce", utc=True)
+    )
     for column in series:
         frame[column] = pd.to_numeric(frame[column], errors="coerce")
     frame = frame.replace([float("inf"), float("-inf")], pd.NA).dropna(subset=["timestamp"])
-    frame = frame.dropna(subset=list(series), how="all")
-    if frame.empty:
-        return frame
-    return frame.set_index("timestamp").sort_index()
+    frame = frame.sort_values("timestamp")
+    populated = frame[list(series)].notna().any(axis=1).tolist()
+    populated_positions = [index for index, present in enumerate(populated) if present]
+    if not populated_positions:
+        return frame.iloc[0:0].set_index("timestamp")
+    frame = frame.iloc[populated_positions[0]:populated_positions[-1] + 1]
+    return frame.set_index("timestamp")
+
+
+def _finite_line_figure(
+    frame: pd.DataFrame,
+    *,
+    x_axis_title: str = "UTC timestamp",
+    y_axis_title: str = "Value",
+) -> go.Figure | None:
+    """Build a Vega-free line figure from finite dated observations only."""
+    if frame is None or frame.empty or not len(frame.columns):
+        return None
+    safe = frame.copy()
+    safe.index = pd.DatetimeIndex([
+        pd.to_datetime(value, errors="coerce", utc=True) for value in safe.index
+    ])
+    safe = safe.loc[~safe.index.isna()]
+    traces: list[tuple[str, list[str], list[float | None]]] = []
+    for raw_column in safe.columns:
+        values = pd.to_numeric(safe[raw_column], errors="coerce")
+        finite = values.notna() & values.map(
+            lambda value: False
+            if pd.isna(value)
+            else bool(float("-inf") < float(value) < float("inf"))
+        )
+        if not finite.any():
+            continue
+        traces.append((
+            str(raw_column),
+            [value.isoformat() for value in safe.index],
+            [float(value) if is_finite else None for value, is_finite in zip(values, finite)],
+        ))
+    if not traces:
+        return None
+    figure = go.Figure()
+    for name, x_values, y_values in traces:
+        figure.add_trace(go.Scatter(
+            x=x_values,
+            y=y_values,
+            mode="lines",
+            name=name,
+            connectgaps=False,
+            hovertemplate=f"%{{x}}<br>{escape(name)}: %{{y:.6g}}<extra></extra>",
+        ))
+    figure.update_layout(
+        template="plotly_dark",
+        height=320,
+        margin={"l": 12, "r": 12, "t": 18, "b": 12},
+        hovermode="x unified",
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "left", "x": 0},
+        xaxis_title=x_axis_title,
+        yaxis_title=y_axis_title,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+    )
+    return figure
+
+
+def _status_card_html(label: Any, value: Any) -> str:
+    """Render long governance tokens without the destructive wrapping of st.metric."""
+    safe_label = escape(str(label or ""), quote=True)
+    safe_value = escape(str(value or "N/A"), quote=True)
+    density = " srb-status-value--long" if len(str(value or "")) > 18 else ""
+    return (
+        f'<section class="srb-status" aria-label="{safe_label}: {safe_value}">'
+        f'<div class="srb-status-label">{safe_label}</div>'
+        f'<div class="srb-status-value{density}" title="{safe_value}">{safe_value}</div>'
+        "</section>"
+    )
 
 
 def _closure_dossier_markdown(dossier: dict[str, Any]) -> str:
@@ -1143,7 +1220,7 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
         ]
         if invalid:
             st.error("Mission Control cannot resolve a research question because at least one registry is malformed.")
-            st.dataframe(pd.DataFrame(invalid), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(invalid), width="stretch", hide_index=True)
         else:
             st.info("No autonomous research question exists yet. Run one explicit bounded Research Director cycle first.")
         return
@@ -1208,12 +1285,12 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
                         "status": task.get("status"),
                         "type": task.get("task_type"),
                         "description": task.get("description") or task.get("query"),
-                    } for task in tasks]), use_container_width=True, hide_index=True)
+                    } for task in tasks]), width="stretch", hide_index=True)
             if mission.budget_remaining:
                 with st.expander("Remaining bounded budget", expanded=False):
                     st.dataframe(pd.DataFrame([{
                         "resource": key.replace("_", " "), "remaining": value,
-                    } for key, value in mission.budget_remaining.items()]), use_container_width=True, hide_index=True)
+                    } for key, value in mission.budget_remaining.items()]), width="stretch", hide_index=True)
 
         with center:
             st.markdown("#### Gate stack")
@@ -1223,7 +1300,7 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
                 "summary": gate.summary,
                 "next action": gate.next_action,
             } for gate in mission.gates]
-            st.dataframe(pd.DataFrame(gate_rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(gate_rows), width="stretch", hide_index=True)
             for gate in mission.gates:
                 if gate.status not in {"BLOCKED", "CONFLICT", "WARNING"}:
                     continue
@@ -1253,7 +1330,7 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
             h2.metric("Empty", health_counts.get("MISSING", 0))
             h3.metric("Invalid", health_counts.get("INVALID", 0))
             with st.expander("Registry health details", expanded=bool(health_counts.get("INVALID"))):
-                st.dataframe(pd.DataFrame(health), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(health), width="stretch", hide_index=True)
             if mission.blockers:
                 st.markdown("**Active gate blockers**")
                 for item in mission.blockers:
@@ -1276,7 +1353,7 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
         st.markdown("#### Epistemic timeline")
         st.caption("Created records and declared lifecycle transitions; this is not a rewritten narrative history.")
         if timeline:
-            st.dataframe(pd.DataFrame(timeline), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(timeline), width="stretch", hide_index=True)
         else:
             st.info("No timestamped mission event is available.")
 
@@ -1328,13 +1405,25 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
 
         maturity = program_state.get("maturity") or {}
         top1, top2, top3, top4 = st.columns(4)
-        top1.metric("Current study", mission.core_study_status)
-        top2.metric("Retained result", latest_report.get("conclusion") or "NOT AVAILABLE")
-        top3.metric(
-            "Longitudinal clock",
-            "INVALID / CONFLICT" if program_error else program_state.get("program_status") or "NOT FROZEN",
+        top1.markdown(
+            _status_card_html("Current study", mission.core_study_status),
+            unsafe_allow_html=True,
         )
-        top4.metric("External human review", "NOT ESTABLISHED")
+        top2.markdown(
+            _status_card_html("Retained result", latest_report.get("conclusion") or "NOT AVAILABLE"),
+            unsafe_allow_html=True,
+        )
+        top3.markdown(
+            _status_card_html(
+                "Longitudinal clock",
+                "INVALID / CONFLICT" if program_error else program_state.get("program_status") or "NOT FROZEN",
+            ),
+            unsafe_allow_html=True,
+        )
+        top4.markdown(
+            _status_card_html("External human review", "NOT ESTABLISHED"),
+            unsafe_allow_html=True,
+        )
         if latest_report:
             st.caption(
                 f"Retained governed measurement report · {latest_report.get('report_id')} · "
@@ -1389,7 +1478,7 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
                 "Artifacts": len(gate.artifact_refs) if gate else 0,
                 "Boundary": (gate.summary if gate else "")[:220],
             })
-        st.dataframe(pd.DataFrame(phase_rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(phase_rows), width="stretch", hide_index=True)
         st.warning(
             "Scientific boundaries · investigator independence: NOT ESTABLISHED · peer review: NOT ESTABLISHED · "
             "causal truth: NOT ESTABLISHED · production authorization: DISABLED."
@@ -1415,7 +1504,7 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
                 data=json.dumps(dossier, ensure_ascii=False, indent=2, sort_keys=True, default=str),
                 file_name=f"{mission.question_id}-closure-dossier.json",
                 mime="application/json",
-                use_container_width=True,
+                width="stretch",
                 key=f"srb_p68_closure_json_{mission.question_id}",
             )
             d2.download_button(
@@ -1423,7 +1512,7 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
                 data=_closure_dossier_markdown(dossier),
                 file_name=f"{mission.question_id}-external-verifier-handoff.md",
                 mime="text/markdown",
-                use_container_width=True,
+                width="stretch",
                 key=f"srb_p68_closure_md_{mission.question_id}",
             )
             st.caption(f"Closure dossier fingerprint · {dossier.get('dossier_fingerprint')}")
@@ -1449,7 +1538,7 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
                 "historical OOS": row.get("historical_runs"),
                 "invariance": row.get("invariance_status"),
             } for row in rows]
-            st.dataframe(pd.DataFrame(compact), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(compact), width="stretch", hide_index=True)
             display = {f"{row.get('label')} · {row.get('observable_id')}": row for row in rows}
             selected = display[st.selectbox("Inspect measurement", list(display.keys()), key="srb_v063_measurement_inspect")]
             d1, d2 = st.columns(2)
@@ -1503,7 +1592,7 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
                 st.caption(f"Provenance {claim.get('provenance_id')} · digest {claim.get('source_digest')}")
             if bundle.get("assessments"):
                 st.markdown("**Hypothesis assessments**")
-                st.dataframe(pd.DataFrame(bundle.get("assessments")), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(bundle.get("assessments")), width="stretch", hide_index=True)
             with st.expander("Raw immutable evidence record", expanded=False):
                 st.json(evidence, expanded=True)
 
@@ -1527,15 +1616,27 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
             if timestamps and len(timestamps) == len(actual) == len(candidate):
                 trace = _finite_time_chart(timestamps, {"actual": actual, "candidate": candidate})
                 st.markdown("**Timestamped OOS forecast trace**")
-                if not trace.empty:
-                    st.line_chart(trace)
+                trace_figure = _finite_line_figure(trace, y_axis_title="Observed / predicted value")
+                if trace_figure is not None:
+                    st.plotly_chart(
+                        trace_figure,
+                        width="stretch",
+                        config={"displayModeBar": False},
+                        key="srb_v068_oos_trace",
+                    )
                 errors = _finite_time_chart(
                     timestamps,
                     {"candidate error": list(run.get("candidate_errors") or [])},
                 )
                 st.markdown("**Signed errors · actual − prediction**")
-                if not errors.empty:
-                    st.line_chart(errors)
+                error_figure = _finite_line_figure(errors, y_axis_title="Signed error")
+                if error_figure is not None:
+                    st.plotly_chart(
+                        error_figure,
+                        width="stretch",
+                        config={"displayModeBar": False},
+                        key="srb_v068_candidate_errors",
+                    )
             else:
                 st.warning("This run has no complete timestamped forecast trace and cannot support formal comparison diagnostics.")
             if room.get("diagnostics"):
@@ -1548,8 +1649,17 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
                 path = list(diagnostic.get("cumulative_path") or [])
                 if path and timestamps and len(path) == len(timestamps):
                     diagnostic_chart = _finite_time_chart(timestamps, {"loss-differential CUSUM": path})
-                    if not diagnostic_chart.empty:
-                        st.line_chart(diagnostic_chart)
+                    diagnostic_figure = _finite_line_figure(
+                        diagnostic_chart,
+                        y_axis_title="Loss-differential CUSUM",
+                    )
+                    if diagnostic_figure is not None:
+                        st.plotly_chart(
+                            diagnostic_figure,
+                            width="stretch",
+                            config={"displayModeBar": False},
+                            key="srb_v068_break_diagnostic",
+                        )
                 for warning in diagnostic.get("warnings") or []:
                     st.warning(warning)
             if room.get("capsules"):
@@ -1562,7 +1672,7 @@ def _render_mission_control_views(memory: ScientificResearchMemory, registry_sna
                 _render_validation_review(room["reviews"][-1])
             if room.get("failures") or room.get("surprises"):
                 st.markdown("**Persistent failure / surprise memory**")
-                st.dataframe(pd.DataFrame((room.get("failures") or []) + (room.get("surprises") or [])), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame((room.get("failures") or []) + (room.get("surprises") or [])), width="stretch", hide_index=True)
 
     with st.expander("Mission snapshot JSON", expanded=False):
         st.json(mission_row, expanded=True)
@@ -1711,7 +1821,7 @@ def _render_overview(memory: ScientificResearchMemory) -> None:
     st.session_state.setdefault("srb_quest_question_v02", "")
     q1, q2 = st.columns([1, 4])
     with q1:
-        if st.button("Load example", use_container_width=True, key="srb_load_quest_example_v02"):
+        if st.button("Load example", width="stretch", key="srb_load_quest_example_v02"):
             st.session_state["srb_quest_title_v02"] = "Early detection of speculative bubbles"
             st.session_state["srb_quest_question_v02"] = (
                 "Search mathematics, physics and scientific literature for transferable mechanisms "
@@ -1734,7 +1844,7 @@ def _render_overview(memory: ScientificResearchMemory) -> None:
             height=120,
         )
         priority = st.selectbox("Priority", ["NORMAL", "HIGH", "EXPLORATORY"], index=0, key="srb_quest_priority_v02")
-        submitted = st.form_submit_button("Create research quest", use_container_width=True)
+        submitted = st.form_submit_button("Create research quest", width="stretch")
     if submitted:
         if not title.strip() or not question.strip():
             st.warning("Enter a title and a scientific question. Placeholder examples are not submitted values.")
@@ -1762,7 +1872,7 @@ def _render_overview(memory: ScientificResearchMemory) -> None:
     if quests:
         frame = pd.DataFrame(quests)
         cols = [c for c in ["quest_id", "title", "status", "priority", "merged_into", "created_at", "updated_at"] if c in frame.columns]
-        st.dataframe(frame[cols], use_container_width=True, hide_index=True)
+        st.dataframe(frame[cols], width="stretch", hide_index=True)
 
 
 def _render_literature(memory: ScientificResearchMemory) -> None:
@@ -1782,7 +1892,7 @@ def _render_literature(memory: ScientificResearchMemory) -> None:
     with c2:
         rows = st.selectbox("Results", [5, 10, 15, 20], index=1, key="srb_literature_rows_v01")
 
-    if st.button("Search literature", use_container_width=True, key="srb_crossref_search_v01"):
+    if st.button("Search literature", width="stretch", key="srb_crossref_search_v01"):
         try:
             with st.spinner("Querying Crossref..."):
                 results = search_crossref(query, rows=rows, mailto=os.getenv("SRB_CONTACT_EMAIL"))
@@ -1823,7 +1933,7 @@ def _render_literature(memory: ScientificResearchMemory) -> None:
             "Access": paper.access_level,
             "Why": row["reason"],
         })
-    st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(table_rows), width="stretch", hide_index=True)
 
     labels = [
         f"{idx + 1}. [{row['track']}] {row['paper'].title[:100]} · {row['paper'].paper_id[-8:]}"
@@ -1848,11 +1958,11 @@ def _render_literature(memory: ScientificResearchMemory) -> None:
 
     b1, b2 = st.columns(2)
     with b1:
-        if st.button("Save paper to memory", use_container_width=True, key="srb_save_paper_v025"):
+        if st.button("Save paper to memory", width="stretch", key="srb_save_paper_v025"):
             memory.save_paper(selected)
             st.success("Paper saved.")
     with b2:
-        if st.button("Compile available scientific content", use_container_width=True, key="srb_compile_selected_v025"):
+        if st.button("Compile available scientific content", width="stretch", key="srb_compile_selected_v025"):
             try:
                 compilation, bundle = compile_and_persist(memory, selected, prefer_llm=True)
                 st.session_state["srb_last_compilation"] = asdict(compilation)
@@ -1901,7 +2011,7 @@ def _render_compilation_intelligence(compilation: dict[str, Any]) -> None:
                 "Parser confidence": e.get("extraction_confidence"),
                 "Provenance": e.get("provenance_id"),
             } for e in entities])
-            st.dataframe(frame, use_container_width=True, hide_index=True)
+            st.dataframe(frame, width="stretch", hide_index=True)
             if entity_types:
                 st.caption("Entity taxonomy: " + " · ".join(f"{k} {v}" for k, v in sorted(entity_types.items())))
         else:
@@ -1911,12 +2021,12 @@ def _render_compilation_intelligence(compilation: dict[str, Any]) -> None:
         assumptions = compilation.get("assumption_records") or []
         if claims:
             st.markdown("**Source-grounded claims**")
-            st.dataframe(pd.DataFrame(claims), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(claims), width="stretch", hide_index=True)
         else:
             st.info("No explicit claim record detected in the supplied source text.")
         if assumptions:
             st.markdown("**Explicit assumptions**")
-            st.dataframe(pd.DataFrame(assumptions), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(assumptions), width="stretch", hide_index=True)
         else:
             st.info("No explicit assumption marker detected. The engine does not invent implicit assumptions.")
     with tabs[3]:
@@ -1933,7 +2043,7 @@ def _render_compilation_intelligence(compilation: dict[str, Any]) -> None:
                     "Signature": eq.get("structural_signature"),
                     "Dimensions": eq.get("dimensional_status"),
                 })
-            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
             selected_idx = st.selectbox(
                 "Inspect equation", list(range(len(equations))),
                 format_func=lambda i: f"Equation {i+1} · {equations[i].get('equation_type')}",
@@ -1953,7 +2063,7 @@ def _render_compilation_intelligence(compilation: dict[str, Any]) -> None:
                 "Family": next((fam for fam, items in families.items() if k in items), "OTHER"),
                 "Grounded provenance": len(provenance_map.get(k) or []),
             } for k, v in mechanisms.items()])
-            st.dataframe(frame, use_container_width=True, hide_index=True)
+            st.dataframe(frame, width="stretch", hide_index=True)
         else:
             st.info("No controlled mechanism marker detected.")
     with tabs[5]:
@@ -2035,7 +2145,7 @@ def _render_compiler(memory: ScientificResearchMemory) -> None:
     )
     st.caption("LLM status: configured" if llm_configured() else "LLM status: deterministic fallback")
 
-    if st.button("Compile + build scientific understanding", use_container_width=True, key="srb_compile_manual_v02"):
+    if st.button("Compile + build scientific understanding", width="stretch", key="srb_compile_manual_v02"):
         try:
             compilation, bundle = compile_and_persist(memory, paper, full_text=full_text, prefer_llm=prefer_llm)
             st.session_state["srb_last_compilation"] = asdict(compilation)
@@ -2069,7 +2179,7 @@ def _render_structural_match(memory: ScientificResearchMemory) -> None:
     )
     input_key = hashlib.sha256(f"{source.strip()}|{target.strip()}".encode("utf-8")).hexdigest()[:20]
 
-    if st.button("Run structural screen", use_container_width=True, key="srb_structural_match_v025"):
+    if st.button("Run structural screen", width="stretch", key="srb_structural_match_v025"):
         if not source.strip() or not target.strip():
             st.session_state.pop("srb_last_structural_match", None)
             st.warning("Enter both a source scientific context and a target problem before running a structural screen.")
@@ -2121,14 +2231,14 @@ def _render_knowledge_graph(memory: ScientificResearchMemory) -> None:
         st.markdown("**Node taxonomy**")
         st.dataframe(
             pd.DataFrame([{"Node type": k, "Count": v} for k, v in (summary.get("node_types") or {}).items()]),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
     with right:
         st.markdown("**Relation taxonomy**")
         st.dataframe(
             pd.DataFrame([{"Relation": k, "Count": v} for k, v in (summary.get("relations") or {}).items()]),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
@@ -2142,7 +2252,7 @@ def _render_knowledge_graph(memory: ScientificResearchMemory) -> None:
             "type": row.get("node_type"),
             "label": row.get("label"),
         })
-    st.dataframe(pd.DataFrame(compact), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(compact), width="stretch", hide_index=True)
 
     labels = [f"{row.get('node_type')} · {str(row.get('label') or '')[:90]} · {row.get('node_id')}" for row in nodes]
     if labels:
@@ -2170,7 +2280,7 @@ def _render_knowledge_graph(memory: ScientificResearchMemory) -> None:
                     "Neighbor ID": other.get("node_id"),
                     "Provenance": prov,
                 })
-            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
         else:
             st.info("This node has no stored neighbors yet.")
 
@@ -2206,7 +2316,7 @@ def _render_discovery_lab(memory: ScientificResearchMemory) -> None:
             key="srb_p3_collision_target",
         )
         current_key = hashlib.sha256(f"{source}|{target}|{source_domain}|{target_domain}".encode("utf-8")).hexdigest()[:20]
-        if st.button("Run Concept Collider", use_container_width=True, key="srb_p3_collider_run"):
+        if st.button("Run Concept Collider", width="stretch", key="srb_p3_collider_run"):
             if not source.strip() or not target.strip():
                 st.warning("Enter both a source scientific concept and a target problem.")
                 st.session_state.pop("srb_p3_last_collision", None)
@@ -2249,7 +2359,7 @@ def _render_discovery_lab(memory: ScientificResearchMemory) -> None:
 
     with tab2:
         st.caption("Search the persistent Knowledge Graph for source-grounded bridges between papers classified in different domains.")
-        if st.button("Discover cross-domain graph bridges", use_container_width=True, key="srb_p3_graph_discovery"):
+        if st.button("Discover cross-domain graph bridges", width="stretch", key="srb_p3_graph_discovery"):
             discoveries = discover_graph_bridges(memory.graph)
             for item in discoveries:
                 memory.phase3.save_discovery(item)
@@ -2266,7 +2376,7 @@ def _render_discovery_lab(memory: ScientificResearchMemory) -> None:
                 "Mechanisms": ", ".join(r.get("shared_mechanisms") or []),
                 "Entities": ", ".join((r.get("shared_entities") or [])[:5]),
             } for r in rows]
-            st.dataframe(pd.DataFrame(compact), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(compact), width="stretch", hide_index=True)
         else:
             st.info("No stored cross-domain bridge yet. Compile source-grounded papers from at least two scientific domains to activate graph discovery.")
 
@@ -2276,7 +2386,7 @@ def _render_discovery_lab(memory: ScientificResearchMemory) -> None:
             index=0, key="srb_p3_gap_domain",
         )
         st.caption("A gap means 'represented in stored source-grounded literature outside the target domain, absent in stored target-domain literature'. It is not proof of novelty in the global literature.")
-        if st.button("Detect stored-knowledge gaps", use_container_width=True, key="srb_p3_gap_run"):
+        if st.button("Detect stored-knowledge gaps", width="stretch", key="srb_p3_gap_run"):
             gaps = detect_domain_gaps(memory.graph, target_domain=target_gap_domain)
             for item in gaps:
                 memory.phase3.save_gap(item)
@@ -2286,7 +2396,7 @@ def _render_discovery_lab(memory: ScientificResearchMemory) -> None:
         if gaps is None:
             gaps = [g for g in memory.phase3.list_gaps() if str(g.get("target_domain")) == target_gap_domain]
         if gaps:
-            st.dataframe(pd.DataFrame(gaps), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(gaps), width="stretch", hide_index=True)
         else:
             st.info("No gap detected with the currently stored cross-domain knowledge.")
 
@@ -2305,7 +2415,7 @@ def _render_discovery_lab(memory: ScientificResearchMemory) -> None:
                 "evidence": r.get("evidence_score"), "research_value": r.get("research_value"),
                 "source_domain": r.get("source_domain"), "target_domain": r.get("target_domain"),
             } for r in rows]
-            st.dataframe(pd.DataFrame(compact), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(compact), width="stretch", hide_index=True)
 
 
 def _render_transmutation_lab(memory: ScientificResearchMemory) -> None:
@@ -2355,7 +2465,7 @@ def _render_transmutation_lab(memory: ScientificResearchMemory) -> None:
     falsification = st.text_area("Falsification test", height=100, key="srb_p3_trans_falsification")
 
     input_key = hashlib.sha256(f"{source_context}|{equation}|{target_problem}|{mapping_text}|{observables_text}|{causal}|{falsification}|{source_domain}|{target_domain}".encode("utf-8")).hexdigest()[:20]
-    if st.button("Build candidate + run Transfer Auditor", use_container_width=True, key="srb_p3_trans_run"):
+    if st.button("Build candidate + run Transfer Auditor", width="stretch", key="srb_p3_trans_run"):
         if not equation.strip() or not target_problem.strip():
             st.warning("Source equation and target problem are required.")
             st.session_state.pop("srb_p3_last_transfer", None)
@@ -2411,7 +2521,7 @@ def _render_transmutation_lab(memory: ScientificResearchMemory) -> None:
         {"Layer": "Falsifiability", "Status": audit.get("falsifiability_status")},
         {"Layer": "Evidence", "Status": audit.get("evidence_status")},
     ]
-    st.dataframe(pd.DataFrame(audit_rows), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(audit_rows), width="stretch", hide_index=True)
     if audit.get("blockers"):
         st.error("Blockers: " + "; ".join(audit.get("blockers") or []))
     if audit.get("requirements"):
@@ -2445,21 +2555,21 @@ def _render_experiment_result(result: dict[str, Any]) -> None:
     candidate_metrics = result.get("candidate_metrics") or {}
     if candidate_metrics:
         st.markdown("**Candidate metrics**")
-        st.dataframe(pd.DataFrame([candidate_metrics]), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame([candidate_metrics]), width="stretch", hide_index=True)
     baseline_metrics = result.get("baseline_metrics") or {}
     if baseline_metrics:
         rows = []
         for name, metrics in baseline_metrics.items():
             rows.append({"Baseline": name, **dict(metrics or {})})
         st.markdown("**Baselines**")
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
     deltas = result.get("deltas_vs_baseline") or {}
     if deltas:
         rows = []
         for name, metrics in deltas.items():
             rows.append({"Baseline": name, **dict(metrics or {})})
         st.markdown("**Delta vs baseline**")
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
     fitted = result.get("fitted_parameters") or {}
     if fitted:
         st.markdown("**Fitted parameters**")
@@ -2516,7 +2626,7 @@ def _render_experiment_factory(memory: ScientificResearchMemory) -> None:
                             st.error(blocker)
                     for warning in preview.warnings:
                         st.warning(warning)
-                    if st.button("Create guarded experiment specification", use_container_width=True, key="srb_p4_build_spec"):
+                    if st.button("Create guarded experiment specification", width="stretch", key="srb_p4_build_spec"):
                         memory.phase4.save_specification(preview)
                         memory.audit("PHASE4_EXPERIMENT_SPEC", {
                             "experiment_id": preview.experiment_id,
@@ -2552,7 +2662,7 @@ def _render_experiment_factory(memory: ScientificResearchMemory) -> None:
             kappa = float(q2.number_input("κ mean reversion", min_value=0.001, max_value=2.0, value=0.18, step=0.01, format="%.4f", key="srb_p4_syn_kappa"))
             sigma = float(q3.number_input("σ noise", min_value=0.001, max_value=10.0, value=0.65, step=0.05, format="%.4f", key="srb_p4_syn_sigma"))
             dt = float(q4.number_input("Δt", min_value=0.001, max_value=10.0, value=1.0, step=0.1, format="%.4f", key="srb_p4_syn_dt"))
-            if st.button("Run synthetic sanity + robustness", use_container_width=True, key="srb_p4_syn_run"):
+            if st.button("Run synthetic sanity + robustness", width="stretch", key="srb_p4_syn_run"):
                 try:
                     result = run_synthetic_experiment(spec, n_steps=n_steps, kappa=kappa, sigma=sigma, dt=dt, run_robustness=True)
                     memory.phase4.save_run(result)
@@ -2607,7 +2717,7 @@ def _render_experiment_factory(memory: ScientificResearchMemory) -> None:
                                     labels_values = [x.isoformat() for x in parsed_time]
                                 if labels_values is not None:
                                     st.caption(f"Rows: {len(frame):,} · Target: {target_col} · Time: {time_col} · legacy unaudited path")
-                                    if st.button("Run legacy chronological OOS", use_container_width=True, key="srb_p4_hist_run"):
+                                    if st.button("Run legacy chronological OOS", width="stretch", key="srb_p4_hist_run"):
                                         try:
                                             result = run_historical_oos_experiment(spec, numeric.astype(float).tolist(), labels=labels_values)
                                             memory.phase4.save_run(result)
@@ -2648,7 +2758,7 @@ def _render_experiment_factory(memory: ScientificResearchMemory) -> None:
                 ]
                 if claims:
                     st.caption(f"Stored source-grounded claim nodes for this paper: {len(claims)}")
-                if st.button("Create replication plan", use_container_width=True, key="srb_p4_rep_build"):
+                if st.button("Create replication plan", width="stretch", key="srb_p4_rep_build"):
                     try:
                         plan = build_replication_plan(
                             spec,
@@ -2683,7 +2793,7 @@ def _render_experiment_factory(memory: ScientificResearchMemory) -> None:
                 "transfer_verdict": r.get("transfer_verdict"), "target": r.get("target_variable"),
                 "production": r.get("production_status"),
             } for r in specs]
-            st.dataframe(pd.DataFrame(compact), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(compact), width="stretch", hide_index=True)
         runs = memory.phase4.list_runs()
         if runs:
             st.markdown("**Experiment runs**")
@@ -2692,11 +2802,11 @@ def _render_experiment_factory(memory: ScientificResearchMemory) -> None:
                 "verdict": r.get("verdict"), "train": r.get("train_size"), "test": r.get("test_size"),
                 "data_fingerprint": str(r.get("data_fingerprint") or "")[:16], "production": r.get("production_status"),
             } for r in runs]
-            st.dataframe(pd.DataFrame(compact), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(compact), width="stretch", hide_index=True)
         reps = memory.phase4.list_replications()
         if reps:
             st.markdown("**Replication plans**")
-            st.dataframe(pd.DataFrame(reps), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(reps), width="stretch", hide_index=True)
 
 
 def _phase63_context(memory: ScientificResearchMemory, question: dict[str, Any]) -> dict[str, Any]:
@@ -3343,7 +3453,7 @@ def _render_data_contract_studio(memory: ScientificResearchMemory) -> None:
                 ("Measurement Decision", context["decision"].get("decision_id"), context["decision"].get("status")),
                 ("Observable", context["observable"].get("observable_id"), context["observable"].get("status")),
             ]
-            st.dataframe(pd.DataFrame(lineage, columns=["Lineage", "Artifact", "State"]), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(lineage, columns=["Lineage", "Artifact", "State"]), width="stretch", hide_index=True)
             missing = [name for name, identity, _ in lineage if not identity]
             if missing:
                 st.error("Contract declaration is blocked by missing lineage: " + ", ".join(missing))
@@ -3443,7 +3553,7 @@ def _render_data_contract_studio(memory: ScientificResearchMemory) -> None:
                     "Contract rationale",
                     placeholder="Why this market, universe, anchor family, release convention and split operationalize the declared measurement?",
                 )
-                preview_clicked = st.form_submit_button("Build immutable contract preview", use_container_width=True)
+                preview_clicked = st.form_submit_button("Build immutable contract preview", width="stretch")
 
             if preview_clicked:
                 try:
@@ -3495,7 +3605,7 @@ def _render_data_contract_studio(memory: ScientificResearchMemory) -> None:
                     )
                     if st.button(
                         "Persist validated contract + point-in-time audit",
-                        use_container_width=True, disabled=not persist_ok, key="srb_v063_contract_persist",
+                        width="stretch", disabled=not persist_ok, key="srb_v063_contract_persist",
                     ):
                         try:
                             saved_contract = memory.phase63.save_contract(contract_row)
@@ -3637,7 +3747,7 @@ def _render_data_contract_studio(memory: ScientificResearchMemory) -> None:
                             "market_state": list(materialized.values),
                             "public_availability": list(materialized.availability_timestamps),
                         })
-                        st.dataframe(preview_frame.head(200), use_container_width=True, hide_index=True)
+                        st.dataframe(preview_frame.head(200), width="stretch", hide_index=True)
                         st.caption("Preview is capped at 200 rows; fingerprints cover the complete materialized dataset.")
                         for warning in manifest.get("warnings") or []:
                             st.warning(warning)
@@ -3659,7 +3769,7 @@ def _render_data_contract_studio(memory: ScientificResearchMemory) -> None:
                             key="srb_v063_data_attestation",
                         )
                         b1, b2 = st.columns(2)
-                        if b1.button("Persist fingerprinted dataset manifest", use_container_width=True, key="srb_v063_manifest_persist"):
+                        if b1.button("Persist fingerprinted dataset manifest", width="stretch", key="srb_v063_manifest_persist"):
                             try:
                                 saved_manifest = memory.phase63.save_manifest(manifest)
                                 memory.audit("PHASE63_DATASET_MATERIALIZED", {
@@ -3678,7 +3788,7 @@ def _render_data_contract_studio(memory: ScientificResearchMemory) -> None:
                                 if revision_risk else
                                 "Register attempt → run audited Historical OOS"
                             ),
-                            use_container_width=True, disabled=not attested, key="srb_v063_historical_run",
+                            width="stretch", disabled=not attested, key="srb_v063_historical_run",
                         )
                         if run_clicked:
                             attempt = None
@@ -3812,7 +3922,7 @@ def _render_data_contract_studio(memory: ScientificResearchMemory) -> None:
                 "experiment_id": row.get("experiment_id"), "run_signature": row.get("run_signature"),
                 "evidence_unit_id": row.get("evidence_unit_id"), "run_id": row.get("run_id"),
                 "created_at": row.get("created_at"), "error": row.get("error_message"),
-            } for row in attempts]), use_container_width=True, hide_index=True)
+            } for row in attempts]), width="stretch", hide_index=True)
         else:
             st.info("No Phase-6.3 attempt has been registered.")
         contracts = memory.phase63.list_contracts()
@@ -3822,7 +3932,7 @@ def _render_data_contract_studio(memory: ScientificResearchMemory) -> None:
                 "contract_id": row.get("contract_id"), "market": row.get("market"),
                 "anchor": row.get("anchor_family"), "observable_id": row.get("observable_id"),
                 "revision": row.get("revision_policy"), "status": row.get("status"),
-            } for row in contracts]), use_container_width=True, hide_index=True)
+            } for row in contracts]), width="stretch", hide_index=True)
         capsules = memory.phase63.list_capsules()
         if capsules:
             st.markdown("#### Reproducibility capsules")
@@ -3830,7 +3940,7 @@ def _render_data_contract_studio(memory: ScientificResearchMemory) -> None:
                 "capsule_id": row.get("capsule_id"), "run_id": row.get("run_id"),
                 "replay_grade": row.get("replay_grade"), "executor": row.get("executor"),
                 "code_digest": str(row.get("code_digest") or "")[:20], "status": row.get("status"),
-            } for row in capsules]), use_container_width=True, hide_index=True)
+            } for row in capsules]), width="stretch", hide_index=True)
         measurement_protocols = memory.phase63.list_measurement_protocols()
         if measurement_protocols:
             st.markdown("#### Frozen measurement-robustness protocols")
@@ -3838,7 +3948,7 @@ def _render_data_contract_studio(memory: ScientificResearchMemory) -> None:
                 "protocol_id": row.get("protocol_id"), "snapshot_id": row.get("snapshot_id"),
                 "contract_id": row.get("contract_id"), "variants": len(row.get("variants") or []),
                 "point_in_time": row.get("point_in_time_status"), "status": row.get("status"),
-            } for row in measurement_protocols]), use_container_width=True, hide_index=True)
+            } for row in measurement_protocols]), width="stretch", hide_index=True)
         measurement_reports = memory.phase63.list_measurement_reports()
         if measurement_reports:
             st.markdown("#### Measurement-robustness reports")
@@ -3846,7 +3956,7 @@ def _render_data_contract_studio(memory: ScientificResearchMemory) -> None:
                 "report_id": row.get("report_id"), "protocol_id": row.get("protocol_id"),
                 "conclusion": row.get("conclusion"), "variants": row.get("variant_count"),
                 "common_support": row.get("common_support_status"), "gate": row.get("gate_status"),
-            } for row in measurement_reports]), use_container_width=True, hide_index=True)
+            } for row in measurement_reports]), width="stretch", hide_index=True)
 
 
 def _phase5_find_context(memory: ScientificResearchMemory, run_row: dict[str, Any]) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
@@ -3896,7 +4006,7 @@ def _render_validation_review(review: dict[str, Any]) -> None:
                 "Requirements": " | ".join(item.get("requirements") or []),
             })
         st.markdown("**Validation Council**")
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
     multiple = review.get("multiple_testing") or {}
     if multiple:
         st.markdown("**Multiple-testing / selection ledger**")
@@ -3946,7 +4056,7 @@ def _render_cross_runtime_verification(memory: ScientificResearchMemory, replica
         )
         if st.button(
             "Freeze independent TypeScript challenge",
-            use_container_width=True,
+            width="stretch",
             key="srb_p65_freeze_cross_runtime",
         ):
             try:
@@ -3991,7 +4101,7 @@ def _render_cross_runtime_verification(memory: ScientificResearchMemory, replica
             "Same investigator and governed workflow" if key == "investigator" and not value else
             "Inherited from the frozen Phase 6.4 replication"
         ),
-    } for key, value in dimensions.items()]), use_container_width=True, hide_index=True)
+    } for key, value in dimensions.items()]), width="stretch", hide_index=True)
 
     if str(current.get("execution_status") or "") == "NOT_RUN":
         if runtime.get("ready"):
@@ -4005,7 +4115,7 @@ def _render_cross_runtime_verification(memory: ScientificResearchMemory, replica
             )
         if st.button(
             "Execute sealed TypeScript verification",
-            use_container_width=True,
+            width="stretch",
             key="srb_p65_execute_cross_runtime",
             disabled=not bool(runtime.get("ready")),
         ):
@@ -4135,7 +4245,7 @@ def _render_direct_source_reconciliation(memory: ScientificResearchMemory, repli
                 "Latest delta": item.get("latest_overlap_revision_delta"),
             })
         if summary_rows:
-            st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(summary_rows), width="stretch", hide_index=True)
         st.caption(
             f"Raw {latest_complete.get('raw_archive_sha256')} · direct snapshot "
             f"{latest_complete.get('direct_snapshot_fingerprint')} · reconciliation "
@@ -4166,7 +4276,7 @@ def _render_direct_source_reconciliation(memory: ScientificResearchMemory, repli
             data=json.dumps(latest_complete, ensure_ascii=False, indent=2, sort_keys=True, default=str),
             file_name=f"{latest_complete.get('reconciliation_id', 'direct-bis-reconciliation')}.json",
             mime="application/json",
-            use_container_width=True,
+            width="stretch",
             key=f"srb_p66_export_{latest_complete.get('reconciliation_id')}",
         )
         with st.expander("Full direct-source record", expanded=False):
@@ -4179,7 +4289,7 @@ def _render_direct_source_reconciliation(memory: ScientificResearchMemory, repli
         )
         if st.button(
             "Acquire official BIS snapshot and reconcile",
-            use_container_width=True,
+            width="stretch",
             key=f"srb_p66_execute_{current.get('reconciliation_id')}",
         ):
             try:
@@ -4229,7 +4339,7 @@ def _render_direct_source_reconciliation(memory: ScientificResearchMemory, repli
     )
     if st.button(
         "Freeze next direct BIS observation",
-        use_container_width=True,
+        width="stretch",
         key="srb_p66_freeze_next_observation",
     ):
         try:
@@ -4360,7 +4470,7 @@ def _render_cross_provider_triangulation(memory: ScientificResearchMemory, repli
                     "Absolute monthly change gap (pp)": change.get("absolute_change_gap_pp"),
                 })
         if summary_rows:
-            st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(summary_rows), width="stretch", hide_index=True)
         if chart_rows:
             chart = pd.DataFrame(chart_rows)
             chart["Period"] = pd.to_datetime(chart["Period"], errors="coerce")
@@ -4375,9 +4485,19 @@ def _render_cross_provider_triangulation(memory: ScientificResearchMemory, repli
                 values="Absolute monthly change gap (pp)",
             )
             chart = chart.dropna(axis=0, how="all").dropna(axis=1, how="all")
-            if not chart.empty:
+            chart_figure = _finite_line_figure(
+                chart,
+                x_axis_title="Reference period",
+                y_axis_title="Absolute monthly change gap (pp)",
+            )
+            if chart_figure is not None:
                 st.markdown("##### Time-localized measurement distance")
-                st.line_chart(chart, use_container_width=True)
+                st.plotly_chart(
+                    chart_figure,
+                    width="stretch",
+                    config={"displayModeBar": False},
+                    key="srb_v068_measurement_distance",
+                )
                 st.caption(
                     "Absolute gap between OECD and BIS monthly log changes. Spikes are measurement differences to "
                     "investigate, not errors to erase."
@@ -4392,7 +4512,7 @@ def _render_cross_provider_triangulation(memory: ScientificResearchMemory, repli
             data=json.dumps(latest, ensure_ascii=False, indent=2, sort_keys=True, default=str),
             file_name=f"{latest.get('triangulation_id', 'cross-provider-triangulation')}.json",
             mime="application/json",
-            use_container_width=True,
+            width="stretch",
             key=f"srb_p67_export_{latest.get('triangulation_id')}",
         )
         with st.expander("Frozen thresholds, lineage boundaries and full record", expanded=False):
@@ -4409,7 +4529,7 @@ def _render_cross_provider_triangulation(memory: ScientificResearchMemory, repli
         t3.metric("Max mean gap (pp)", current.get("max_mean_absolute_change_gap_pp"))
         if st.button(
             "Acquire OECD snapshot and triangulate",
-            use_container_width=True,
+            width="stretch",
             key=f"srb_p67_execute_{current.get('triangulation_id')}",
         ):
             try:
@@ -4464,7 +4584,7 @@ def _render_cross_provider_triangulation(memory: ScientificResearchMemory, repli
     )
     if st.button(
         "Freeze OECD/BIS triangulation protocol",
-        use_container_width=True,
+        width="stretch",
         key="srb_p67_freeze_protocol",
     ):
         try:
@@ -4541,7 +4661,7 @@ def _render_prospective_observation_program(memory: ScientificResearchMemory, re
             f"Prospective program conflict: {len(programs)} immutable rows govern {replication_id}. "
             "Acquisition and export are disabled until the registry is restored from a verified backup."
         )
-        st.dataframe(pd.DataFrame(programs), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(programs), width="stretch", hide_index=True)
         return
     program = programs[0] if programs else None
     if program is None:
@@ -4612,7 +4732,7 @@ def _render_prospective_observation_program(memory: ScientificResearchMemory, re
             )
             if st.button(
                 "Prepare exact immutable preregistration",
-                use_container_width=True,
+                width="stretch",
                 key=f"srb_p68_prepare_{replication_id}",
             ):
                 st.session_state[preview_storage_key] = {
@@ -4641,7 +4761,7 @@ def _render_prospective_observation_program(memory: ScientificResearchMemory, re
         )
         if st.button(
             "Freeze prospective monthly observation program",
-            use_container_width=True,
+            width="stretch",
             key=f"srb_p68_freeze_{replication_id}",
             disabled=not confirmed,
         ):
@@ -4715,7 +4835,7 @@ def _render_prospective_observation_program(memory: ScientificResearchMemory, re
             "Prospective calendar · latest 24 windows (full ledger in closure dossier)",
             expanded=bool(state.get("missed_windows")),
         ):
-            st.dataframe(pd.DataFrame(calendar[-24:]), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(calendar[-24:]), width="stretch", hide_index=True)
     st.caption(
         f"Program {program.get('program_id')} · protocol {program.get('protocol_fingerprint')} · "
         f"seed {program.get('seed_reconciliation_id')} · first future window {program.get('first_future_window')}"
@@ -4778,7 +4898,7 @@ def _render_prospective_observation_program(memory: ScientificResearchMemory, re
         data=json.dumps(program, ensure_ascii=False, indent=2, sort_keys=True, default=str),
         file_name=f"{program.get('program_id')}-preregistration.json",
         mime="application/json",
-        use_container_width=True,
+        width="stretch",
         key=f"srb_p68_program_export_{program.get('program_id')}",
     )
     d2.download_button(
@@ -4786,7 +4906,7 @@ def _render_prospective_observation_program(memory: ScientificResearchMemory, re
         data=json.dumps(dossier, ensure_ascii=False, indent=2, sort_keys=True, default=str),
         file_name=f"{program.get('program_id')}-closure-dossier.json",
         mime="application/json",
-        use_container_width=True,
+        width="stretch",
         key=f"srb_p68_dossier_export_{program.get('program_id')}",
     )
     d3.download_button(
@@ -4794,7 +4914,7 @@ def _render_prospective_observation_program(memory: ScientificResearchMemory, re
         data=_closure_dossier_markdown(dossier),
         file_name=f"{program.get('program_id')}-external-handoff.md",
         mime="text/markdown",
-        use_container_width=True,
+        width="stretch",
         key=f"srb_p68_handoff_export_{program.get('program_id')}",
     )
     st.caption(f"Closure dossier fingerprint · {dossier.get('dossier_fingerprint')}")
@@ -4807,7 +4927,7 @@ def _render_prospective_observation_program(memory: ScientificResearchMemory, re
     if state.get("observation_due") and pending is None:
         if st.button(
             "Freeze this month's direct-BIS observation",
-            use_container_width=True,
+            width="stretch",
             key=f"srb_p68_freeze_due_{program.get('program_id')}",
         ):
             try:
@@ -4831,7 +4951,7 @@ def _render_prospective_observation_program(memory: ScientificResearchMemory, re
         )
         if st.button(
             "Acquire due BIS snapshot and reconcile",
-            use_container_width=True,
+            width="stretch",
             key=f"srb_p68_execute_due_{pending.get('reconciliation_id')}",
         ):
             try:
@@ -4936,7 +5056,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                     "This action creates a system-generated research-workflow review. "
                     "It does not represent a human-panel decision, scientific acceptance or production authorization."
                 )
-                if st.button("Run computational Validation Council dossier", use_container_width=True, key="srb_p5_run_council"):
+                if st.button("Run computational Validation Council dossier", width="stretch", key="srb_p5_run_council"):
                     try:
                         review, failures, surprises, population = validate_and_learn(
                             spec, run, transfer_audit=audit,
@@ -4985,7 +5105,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
         if not rows:
             st.info("Failure Memory is empty. Negative results and robustness failures will be preserved here.")
         else:
-            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
             lifecycle_rows = list(rows)
             if lifecycle_rows:
                 st.caption(
@@ -5062,7 +5182,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                 with st.expander("Failure lifecycle history", expanded=False):
                     history = row.get("lifecycle_history") or []
                     if history:
-                        st.dataframe(pd.DataFrame(history), use_container_width=True, hide_index=True)
+                        st.dataframe(pd.DataFrame(history), width="stretch", hide_index=True)
                     else:
                         st.caption("Legacy record: lifecycle history will be initialized on the next explicit transition.")
 
@@ -5071,7 +5191,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
         if not rows:
             st.info("Surprise Memory is empty. Material expectation reversals will be stored here instead of discarded as noise.")
         else:
-            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
             lifecycle_rows = list(rows)
             if lifecycle_rows:
                 st.caption(
@@ -5148,7 +5268,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                 with st.expander("Surprise lifecycle history", expanded=False):
                     history = row.get("lifecycle_history") or []
                     if history:
-                        st.dataframe(pd.DataFrame(history), use_container_width=True, hide_index=True)
+                        st.dataframe(pd.DataFrame(history), width="stretch", hide_index=True)
                     else:
                         st.caption("Legacy record: lifecycle history will be initialized on the next explicit transition.")
 
@@ -5164,13 +5284,13 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
             theories = pop.get("theories") or []
             if theories:
                 frame = pd.DataFrame(theories).sort_values("weight", ascending=False)
-                st.dataframe(frame[["label", "weight", "support_score", "challenge_score"]], use_container_width=True, hide_index=True)
+                st.dataframe(frame[["label", "weight", "support_score", "challenge_score"]], width="stretch", hide_index=True)
                 leader = max(theories, key=lambda x: float(x.get("weight") or 0.0))
                 st.metric("Current leading explanation", leader.get("label"), f"weight {float(leader.get('weight') or 0.0):.3f}")
             events = pop.get("evidence_events") or []
             if events:
                 with st.expander("Evidence events", expanded=False):
-                    st.dataframe(pd.DataFrame(events), use_container_width=True, hide_index=True)
+                    st.dataframe(pd.DataFrame(events), width="stretch", hide_index=True)
             st.warning("Theory weights are comparative bookkeeping scores. They are not posterior probabilities and must not be interpreted as calibrated confidence.")
 
     with tab5:
@@ -5188,7 +5308,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                 "stage": r.get("stage"), "decision": r.get("council_decision"), "grade": r.get("scientific_grade"),
                 "evidence_tier": r.get("evidence_tier"), "production": r.get("production_status"),
             } for r in reviews]
-            st.dataframe(pd.DataFrame(compact), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(compact), width="stretch", hide_index=True)
 
     with tab6:
         st.markdown("#### Independent Replication Observatory · Phase 6.4")
@@ -5239,7 +5359,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                     "Cost": "FREE",
                     "API key": "NOT REQUIRED",
                 })
-            st.dataframe(pd.DataFrame(source_rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(source_rows), width="stretch", hide_index=True)
             st.markdown(
                 f"Official documentation: [ALFRED initial/vintage downloads]({ALFRED_HELP_URL}) · "
                 f"[FRED legal/terms]({FRED_TERMS_URL}) · [BIS permitted use]({BIS_TERMS_URL})"
@@ -5270,7 +5390,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                     st.error("Complete the eligible computational Council dossier and measurement report before freezing replication.")
                 if st.button(
                     "Freeze independent replication protocol",
-                    use_container_width=True,
+                    width="stretch",
                     key="srb_p64_freeze_replication",
                     disabled=not prerequisites_ok,
                 ):
@@ -5316,7 +5436,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                 st.dataframe(pd.DataFrame([{
                     "Axis": key.replace("_", " ").title(),
                     "Independent": bool(value),
-                } for key, value in dimensions.items()]), use_container_width=True, hide_index=True)
+                } for key, value in dimensions.items()]), width="stretch", hide_index=True)
                 if str(replication.get("execution_status") or "") == "NOT_RUN":
                     protocol_is_current = (
                         str(replication.get("event_time_support_policy") or "")
@@ -5333,7 +5453,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                         )
                         if st.button(
                             "Freeze corrected event-time replication protocol",
-                            use_container_width=True,
+                            width="stretch",
                             key="srb_p641_freeze_event_time_protocol",
                             disabled=not prerequisites_ok,
                         ):
@@ -5370,7 +5490,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                         )
                         if st.button(
                             "Freeze official ALFRED graph-vintage fallback",
-                            use_container_width=True,
+                            width="stretch",
                             key="srb_p64_freeze_graph_fallback",
                         ):
                             try:
@@ -5400,7 +5520,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                                 st.error(str(exc))
                     if st.button(
                         "Execute frozen point-in-time replication",
-                        use_container_width=True,
+                        width="stretch",
                         key="srb_p64_execute_replication",
                         disabled=not protocol_is_current,
                     ):
@@ -5472,7 +5592,7 @@ def _render_validation_learning(memory: ScientificResearchMemory) -> None:
                             "Holm candidate better": comparison.get("candidate_better_after_holm_5pct"),
                         })
                     if compact_results:
-                        st.dataframe(pd.DataFrame(compact_results), use_container_width=True, hide_index=True)
+                        st.dataframe(pd.DataFrame(compact_results), width="stretch", hide_index=True)
                     st.caption(
                         f"Snapshot {replication.get('snapshot_id')} · {replication.get('source_snapshot_fingerprint')} · "
                         f"execution {replication.get('execution_fingerprint')} · artifacts {replication.get('snapshot_path')}"
@@ -5544,7 +5664,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
             max_literature_queries=int(max_queries), max_hypotheses=int(max_hyp), max_tasks=int(max_tasks),
             max_experiment_proposals=2, max_cycles=1, max_compute_units=float(compute_units),
         )
-        if st.button("Run one bounded Research Director cycle", use_container_width=True, key="srb_p61_run_cycle"):
+        if st.button("Run one bounded Research Director cycle", width="stretch", key="srb_p61_run_cycle"):
             output = run_bounded_research_cycle(
                 failures=memory.phase5.list_failures(), surprises=memory.phase5.list_surprises(),
                 theory_populations=memory.phase5.list_theory_populations(), gaps=memory.phase3.list_gaps(),
@@ -5596,7 +5716,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
                 "target": x.get("target_variable"), "observable": x.get("selected_observable_id"),
                 "evidence": len(x.get("grounded_evidence_refs") or []), "plan_id": x.get("plan_id"),
             } for x in sorted(rows, key=lambda x: float(x.get("priority_score") or 0.0), reverse=True)]
-            st.dataframe(pd.DataFrame(compact), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(compact), width="stretch", hide_index=True)
             labels = [f"{x.get('status')} · {float(x.get('priority_score') or 0):.1f} · {x.get('title')} · {x.get('question_id')}" for x in rows]
             choice = st.selectbox("Inspect open question", labels, key="srb_p61_question_inspect")
             row = rows[labels.index(choice)]
@@ -5662,7 +5782,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
             rows = sorted([x for x in hypotheses if str(x.get("question_id") or "") == qchoice], key=lambda x: float(x.get("priority_score") or 0.0), reverse=True)
             st.caption((questions.get(qchoice) or {}).get("question") or "")
             frame = pd.DataFrame([{ "hypothesis_id": x.get("hypothesis_id"), "priority": x.get("priority_score"), "label": x.get("label"), "family": x.get("mechanism_family"), "status": x.get("status"), "source": x.get("source_type") } for x in rows])
-            st.dataframe(frame, use_container_width=True, hide_index=True)
+            st.dataframe(frame, width="stretch", hide_index=True)
             labels = [f"{float(x.get('priority_score') or 0):.1f} · {x.get('label')}" for x in rows]
             choice = st.selectbox("Inspect hypothesis", labels, key="srb_p61_hyp_inspect")
             row = rows[labels.index(choice)]
@@ -5708,7 +5828,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
             b4.metric("Compute budget", f"{float(ledger.get('used_compute_units') or 0):.1f}/{float(ledger.get('max_compute_units') or 0):.1f}", f"{remaining['compute_units']:.1f} left")
             tasks = plan.get("tasks") or []
             if tasks:
-                st.dataframe(pd.DataFrame([{ "task_id": x.get("task_id"), "type": x.get("task_type"), "status": x.get("status"), "info_gain": x.get("expected_information_gain"), "cost": x.get("estimated_cost"), "results": len(x.get("result_refs") or []), "description": x.get("description") } for x in tasks]), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame([{ "task_id": x.get("task_id"), "type": x.get("task_type"), "status": x.get("status"), "info_gain": x.get("expected_information_gain"), "cost": x.get("estimated_cost"), "results": len(x.get("result_refs") or []), "description": x.get("description") } for x in tasks]), width="stretch", hide_index=True)
             st.markdown("**Stop rules**")
             for rule in plan.get("stop_rules") or []:
                 st.write(f"- {rule}")
@@ -5719,7 +5839,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
             events = [x for x in memory.phase61.list_budget_events() if str(x.get("plan_id") or "") == str(plan.get("plan_id") or "")]
             if events:
                 with st.expander("Budget ledger events", expanded=False):
-                    st.dataframe(pd.DataFrame(events), use_container_width=True, hide_index=True)
+                    st.dataframe(pd.DataFrame(events), width="stretch", hide_index=True)
 
     with tab5:
         questions = [x for x in memory.phase6.list_questions() if str(x.get("status") or "") not in {"ANSWERED", "STOPPED"}]
@@ -5734,7 +5854,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
             qchoice = st.selectbox("Research question", qlabels, key="srb_p61_obs_question")
             qrow = questions[qlabels.index(qchoice)]
             existing = [x for x in memory.phase61.list_observables() if str(x.get("question_id") or "") == str(qrow.get("question_id") or "")]
-            if st.button("Generate guarded observable candidates", use_container_width=True, key="srb_p61_obs_generate"):
+            if st.button("Generate guarded observable candidates", width="stretch", key="srb_p61_obs_generate"):
                 generated = generate_observable_candidates(qrow, experiment_id=str(qrow.get("experiment_id") or ""))
                 for item in generated:
                     memory.phase61.save_observable(item)
@@ -5747,7 +5867,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
                     "observability": x.get("observability_score"), "interpretability": x.get("economic_interpretability_score"),
                     "leakage_risk": x.get("leakage_risk_score"), "data_feasibility": x.get("data_feasibility_score"),
                 } for x in sorted(existing, key=lambda x: float(x.get("total_score") or 0), reverse=True)]
-                st.dataframe(pd.DataFrame(compact), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(compact), width="stretch", hide_index=True)
                 labels = [f"{x.get('status')} · {float(x.get('total_score') or 0):.1f} · {x.get('label')} · {x.get('observable_id')}" for x in existing]
                 choice = st.selectbox("Inspect observable candidate", labels, key="srb_p61_obs_inspect")
                 obs = existing[labels.index(choice)]
@@ -5799,7 +5919,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
                 chosen_labels = st.multiselect(
                     "Competing observable definitions", list(obs_labels.keys()), default=list(obs_labels.keys()), key="srb_p62_mm_observables"
                 )
-                if st.button("Create / refresh competing Measurement Model", use_container_width=True, key="srb_p62_mm_create"):
+                if st.button("Create / refresh competing Measurement Model", width="stretch", key="srb_p62_mm_create"):
                     try:
                         model, hypotheses = build_measurement_model(qrow, observables, [obs_labels[x] for x in chosen_labels])
                         memory.phase62.save_measurement_model(model, hypotheses)
@@ -5824,7 +5944,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
                         "label": x.get("label"), "unit": x.get("unit"), "frequency": x.get("frequency"),
                         "measurement_error_risks": "; ".join(x.get("measurement_error_risks") or []),
                         "sensitivity_dimensions": "; ".join(x.get("sensitivity_dimensions") or []),
-                    } for x in hyps]), use_container_width=True, hide_index=True)
+                    } for x in hyps]), width="stretch", hide_index=True)
                 with st.expander("Measurement invariance contract", expanded=False):
                     for item in model.get("comparison_principles") or []:
                         st.write(f"- {item}")
@@ -5940,7 +6060,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
                 remaining = memory.phase61.budget_remaining(ledger)
                 st.info(f"Literature queries remaining for this plan: {int(remaining['literature_queries'])}")
                 results_n = st.number_input("Results", min_value=3, max_value=20, value=8, step=1, key="srb_p61_scout_results")
-                if st.button("Execute one bounded literature scout", use_container_width=True, key="srb_p61_scout_run"):
+                if st.button("Execute one bounded literature scout", width="stretch", key="srb_p61_scout_run"):
                     query = str(task.get("query") or "")
                     try:
                         if memory.phase61.budget_remaining(ledger)["literature_queries"] < 1:
@@ -5970,7 +6090,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
             if latest.get("error"):
                 st.error(latest.get("error"))
             elif latest.get("results"):
-                st.dataframe(pd.DataFrame(latest.get("results")), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(latest.get("results")), width="stretch", hide_index=True)
 
     with tab8:
         scouts = [x for x in memory.phase6.list_scouts() if x.get("results")]
@@ -5989,7 +6109,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
             st.write(result.get("title") or "")
             st.caption(f"Access: {result.get('access_level')} · DOI: {result.get('doi') or 'n/a'}")
             reason = st.text_area("Why promote this paper for scientific review?", key="srb_p61_promo_reason")
-            if st.button("Promote selected scout result for review", use_container_width=True, key="srb_p61_promote"):
+            if st.button("Promote selected scout result for review", width="stretch", key="srb_p61_promote"):
                 try:
                     promotion = build_evidence_promotion(scout, result, reason)
                     paper = _paper_from_session(result)
@@ -6005,7 +6125,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
         promotions = memory.phase61.list_promotions()
         if promotions:
             st.markdown("**Promoted papers awaiting/under review**")
-            st.dataframe(pd.DataFrame([{ "promotion_id": x.get("promotion_id"), "status": x.get("status"), "title": x.get("title"), "doi": x.get("doi"), "question": x.get("question_id"), "evidence_id": x.get("evidence_id") } for x in promotions]), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame([{ "promotion_id": x.get("promotion_id"), "status": x.get("status"), "title": x.get("title"), "doi": x.get("doi"), "question": x.get("question_id"), "evidence_id": x.get("evidence_id") } for x in promotions]), width="stretch", hide_index=True)
             labels = [f"{x.get('status')} · {x.get('title')} · {x.get('promotion_id')}" for x in promotions]
             choice = st.selectbox("Promotion to compile / inspect", labels, key="srb_p61_promotion_compile")
             promo = promotions[labels.index(choice)]
@@ -6023,7 +6143,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
                 help="Scope is provenance, not a quality score. Do not label an abstract as full text.",
             )
             if str(promo.get("status") or "") != "GROUNDED_REVIEWED":
-                if st.button("Compile promoted source + create grounded evidence", use_container_width=True, key="srb_p61_compile_promo"):
+                if st.button("Compile promoted source + create grounded evidence", width="stretch", key="srb_p61_compile_promo"):
                     try:
                         paper = _paper_from_session(raw_paper)
                         source_text = str(supplied_text or "").strip()
@@ -6083,7 +6203,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
                         "This Grounded Evidence has no extracted claims, mechanisms or semantic entities. "
                         "Phase 6.3 can recompile the same verified source, but only a non-empty grounded result may replace it."
                     )
-                    if st.button("Recompile empty grounded source with 6.3 hardening", use_container_width=True, key="srb_p621_recompile_empty_evidence"):
+                    if st.button("Recompile empty grounded source with 6.3 hardening", width="stretch", key="srb_p621_recompile_empty_evidence"):
                         try:
                             paper = _paper_from_session(raw_paper)
                             source_text = str(supplied_text or "").strip()
@@ -6136,7 +6256,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
         evidence_rows = memory.phase61.list_evidence()
         if evidence_rows:
             st.markdown("**Grounded evidence registry**")
-            st.dataframe(pd.DataFrame([{ "evidence_id": x.get("evidence_id"), "question": x.get("question_id"), "paper": x.get("title"), "source_level": x.get("source_level"), "claims": len(x.get("claim_ids") or []), "mechanisms": len(x.get("mechanism_keys") or []), "relation": x.get("relation_to_question"), "status": x.get("status") } for x in evidence_rows]), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame([{ "evidence_id": x.get("evidence_id"), "question": x.get("question_id"), "paper": x.get("title"), "source_level": x.get("source_level"), "claims": len(x.get("claim_ids") or []), "mechanisms": len(x.get("mechanism_keys") or []), "relation": x.get("relation_to_question"), "status": x.get("status") } for x in evidence_rows]), width="stretch", hide_index=True)
             st.warning("Grounded evidence is not automatically classified as SUPPORT or REFUTE and does not update Belief Engine weights without a later explicit synthesis/validation step.")
 
     with tab9:
@@ -6170,12 +6290,12 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
                 claim_map = {str(x.get("claim_id")): str(x.get("text") or "") for x in (understanding.get("claims") or []) if isinstance(x, dict) and str(x.get("claim_id") or "")}
                 if claim_map:
                     st.markdown("**Grounded source claims available for assessment**")
-                    st.dataframe(pd.DataFrame([{"claim_id": k, "text": v} for k, v in claim_map.items()]), use_container_width=True, hide_index=True)
+                    st.dataframe(pd.DataFrame([{"claim_id": k, "text": v} for k, v in claim_map.items()]), width="stretch", hide_index=True)
                 relation = st.selectbox("Evidence relation", ["UNRESOLVED", "SUPPORTS", "CHALLENGES", "CONTEXT_ONLY", "NEUTRAL"], key="srb_p62_es_relation")
                 strength = st.slider("Assessment strength (bookkeeping, not probability)", 0, 100, 50, 1, key="srb_p62_es_strength")
                 selected_claims = st.multiselect("Grounded claim refs", list(claim_map.keys()), key="srb_p62_es_claims") if claim_map else []
                 rationale = st.text_area("Evidence assessment rationale", key="srb_p62_es_rationale", placeholder="Explain scope, direction and why the cited claim bears on this hypothesis.")
-                if st.button("Record explicit evidence assessment", use_container_width=True, key="srb_p62_es_assess"):
+                if st.button("Record explicit evidence assessment", width="stretch", key="srb_p62_es_assess"):
                     try:
                         assessment = build_evidence_assessment(evidence, hyp, relation, strength, rationale, selected_claims, assessor="HUMAN")
                         memory.phase62.save_evidence_assessment(assessment)
@@ -6189,8 +6309,8 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
                 st.dataframe(pd.DataFrame([{
                     "assessment_id": x.get("assessment_id"), "evidence_id": x.get("evidence_id"), "hypothesis_id": x.get("hypothesis_id"),
                     "relation": x.get("relation"), "strength": x.get("strength"), "claims": len(x.get("claim_refs") or []), "assessor": x.get("assessor"),
-                } for x in assessments]), use_container_width=True, hide_index=True)
-                if st.button("Build evidence synthesis record", use_container_width=True, key="srb_p62_es_synthesize"):
+                } for x in assessments]), width="stretch", hide_index=True)
+                if st.button("Build evidence synthesis record", width="stretch", key="srb_p62_es_synthesize"):
                     synthesis_record = build_evidence_synthesis(qchoice, q_hyps, assessments)
                     memory.phase62.save_evidence_synthesis(synthesis_record)
                     memory.audit("PHASE62_EVIDENCE_SYNTHESIS", {"synthesis_id": synthesis_record.synthesis_id, "question_id": synthesis_record.question_id, "conclusion": synthesis_record.conclusion, "belief_update_authorized": False})
@@ -6205,7 +6325,7 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
                 c4.metric("Belief update", "AUTHORIZED" if latest.get("belief_update_authorized") else "NO")
                 summaries = latest.get("hypothesis_summaries") or []
                 if summaries:
-                    st.dataframe(pd.DataFrame(summaries), use_container_width=True, hide_index=True)
+                    st.dataframe(pd.DataFrame(summaries), width="stretch", hide_index=True)
                 st.markdown("**Required next evidence**")
                 for item in latest.get("required_next_evidence") or []:
                     st.write(f"- {item}")
@@ -6246,11 +6366,11 @@ def _render_autonomous_research(memory: ScientificResearchMemory) -> None:
         cycles = memory.phase6.list_cycles()
         if cycles:
             st.markdown("**Director cycles**")
-            st.dataframe(pd.DataFrame([{ "cycle_id": x.get("cycle_id"), "status": x.get("status"), "question": x.get("selected_question_id"), "plan": x.get("plan_id"), "external_actions": x.get("external_actions_executed"), "experiment_execution": x.get("experiment_execution_allowed"), "created_at": x.get("created_at") } for x in cycles]), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame([{ "cycle_id": x.get("cycle_id"), "status": x.get("status"), "question": x.get("selected_question_id"), "plan": x.get("plan_id"), "external_actions": x.get("external_actions_executed"), "experiment_execution": x.get("experiment_execution_allowed"), "created_at": x.get("created_at") } for x in cycles]), width="stretch", hide_index=True)
         budgets = memory.phase61.list_budgets()
         if budgets:
             st.markdown("**Budget ledgers**")
-            st.dataframe(pd.DataFrame(budgets), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(budgets), width="stretch", hide_index=True)
         st.warning("Phase 6.3 keeps measurement uncertainty and evidence interpretation explicit. It still cannot run unattended experiments, auto-update beliefs, or promote research into production.")
 
 def _render_memory(memory: ScientificResearchMemory) -> None:
@@ -6259,7 +6379,7 @@ def _render_memory(memory: ScientificResearchMemory) -> None:
     with tab1:
         rows = memory.list_papers()
         if rows:
-            st.dataframe(pd.DataFrame(rows).drop(columns=["raw_metadata"], errors="ignore"), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(rows).drop(columns=["raw_metadata"], errors="ignore"), width="stretch", hide_index=True)
         else:
             st.info("No papers stored yet.")
     with tab2:
@@ -6267,7 +6387,7 @@ def _render_memory(memory: ScientificResearchMemory) -> None:
         if rows:
             frame = pd.DataFrame(rows)
             compact_cols = [c for c in ["compilation_id", "paper_id", "domain", "evidence_level", "compiler", "ontology_version", "understanding_id", "created_at"] if c in frame.columns]
-            st.dataframe(frame[compact_cols], use_container_width=True, hide_index=True)
+            st.dataframe(frame[compact_cols], width="stretch", hide_index=True)
         else:
             st.info("No compilations stored yet.")
     with tab3:
@@ -6287,7 +6407,7 @@ def _render_memory(memory: ScientificResearchMemory) -> None:
                     "ontology": row.get("ontology_version") or "legacy",
                     "source_kind": row.get("source_kind"),
                 })
-            st.dataframe(pd.DataFrame(compact), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(compact), width="stretch", hide_index=True)
         else:
             st.info("No scientific understanding bundles stored yet.")
     with tab4:
@@ -6295,7 +6415,7 @@ def _render_memory(memory: ScientificResearchMemory) -> None:
         if rows:
             frame = pd.DataFrame(rows)
             st.metric("Persistent provenance records", len(frame))
-            st.dataframe(frame, use_container_width=True, hide_index=True)
+            st.dataframe(frame, width="stretch", hide_index=True)
         else:
             st.info("No provenance records stored yet. Recompile an abstract/full text with Phase 2.5 to ground problems, mechanisms and semantic entities.")
     with tab5:
@@ -6308,7 +6428,7 @@ def _render_memory(memory: ScientificResearchMemory) -> None:
                 st.rerun()
         if rows:
             frame = pd.DataFrame(rows)
-            st.dataframe(frame, use_container_width=True, hide_index=True)
+            st.dataframe(frame, width="stretch", hide_index=True)
             active = [row for row in rows if str(row.get("status") or "OPEN") != "MERGED"]
             if active:
                 labels = [f"{row.get('status','OPEN')} · {row.get('title','')} · {row.get('quest_id')}" for row in active]
@@ -6329,7 +6449,7 @@ def _render_memory(memory: ScientificResearchMemory) -> None:
     with tab6:
         rows = memory.audit_tail(100)
         if rows:
-            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
         else:
             st.info("Audit trail is empty.")
 

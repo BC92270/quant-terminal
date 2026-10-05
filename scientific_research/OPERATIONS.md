@@ -1,16 +1,16 @@
-# Scientific Research Brain v0.6.8.0 — live operations runbook
+# Scientific Research Brain v0.6.8.1 — live operations runbook
 
 This runbook operates the Codespace deployment without changing scientific meaning. Runtime state is external to Git, every network acquisition remains explicit, and every release remains `RESEARCH_ONLY`.
 
 ## Canonical live layout
 
 ```text
-/workspaces/quant-terminal-srb-v0680-live   immutable release checkout
+/workspaces/quant-terminal-srb-v0681-live   immutable release checkout
 /workspaces/quant-terminal/.scientific_research_data   governed runtime state
 /workspaces/.codex-runtime-srb-v0680       PID, log, local backups and acceptance evidence
 ```
 
-The release checkout must resolve to the published annotated v0.6.8.0 tag. The state root may be reused from v0.6.7.0 because Phase 6.8 is additive: it adds `phase68_prospective_observation_programs.json` only after an explicit freeze and does not rewrite earlier registries on view.
+The release checkout must resolve to the published annotated v0.6.8.1 tag. The state root may be reused from v0.6.7.0 because Phase 6.8 is additive: it adds `phase68_prospective_observation_programs.json` only after an explicit freeze and does not rewrite earlier registries on view. The v0.6.8.1 patch changes rendering and client-version identity only; it does not migrate or rewrite scientific state.
 
 The runtime directory and the state root are on the same Codespace storage. A copy under `/workspaces` is a local rollback copy, not an independent long-term backup.
 
@@ -21,8 +21,8 @@ Run from the release checkout before starting Streamlit:
 ```bash
 bash <<'SRB_PREFLIGHT'
 set -euo pipefail
-cd /workspaces/quant-terminal-srb-v0680-live
-release_tag="scientific-research-v0.6.8.0"
+cd /workspaces/quant-terminal-srb-v0681-live
+release_tag="scientific-research-v0.6.8.1"
 test "$(git cat-file -t "$release_tag")" = "tag"
 expected_commit="$(git rev-list -n 1 "$release_tag")"
 actual_commit="$(git rev-parse HEAD)"
@@ -110,7 +110,7 @@ Complete the release preflight and backup first. Refuse to start if anything alr
 ```bash
 bash <<'SRB_START'
 set -euo pipefail
-cd /workspaces/quant-terminal-srb-v0680-live
+cd /workspaces/quant-terminal-srb-v0681-live
 runtime_root="/workspaces/.codex-runtime-srb-v0680"
 export SRB_MEMORY_DIR="/workspaces/quant-terminal/.scientific_research_data"
 mkdir -p "$runtime_root"
@@ -157,20 +157,20 @@ done
 test "$health_ready" = "true"
 grep -Fx "ok" "$runtime_root/health.txt"
 
-test "$(readlink -f "/proc/$runtime_pid/cwd")" = "/workspaces/quant-terminal-srb-v0680-live"
+test "$(readlink -f "/proc/$runtime_pid/cwd")" = "/workspaces/quant-terminal-srb-v0681-live"
 tr '\0' '\n' < "/proc/$runtime_pid/environ" | grep -Fx "SRB_MEMORY_DIR=$SRB_MEMORY_DIR"
 ps -o pid,ppid,sid,lstart,command -p "$runtime_pid"
 ps -p "$runtime_pid" -o args= | grep -F -- "streamlit run app.py"
-test "$(git rev-parse HEAD)" = "$(git rev-list -n 1 scientific-research-v0.6.8.0)"
+test "$(git rev-parse HEAD)" = "$(git rev-list -n 1 scientific-research-v0.6.8.1)"
 tail -n 120 "$runtime_root/streamlit.log"
 SRB_START
 ```
 
 A valid health response is necessary but not sufficient. Acceptance also requires the PID checks above, exact commit/tag, route rendering, selected state root, current log tail and browser console.
 
-## One-time v0.6.7.0 → v0.6.8.0 state activation
+## One-time v0.6.7.0 → v0.6.8.x state activation
 
-The code migration is additive, but the new gate changes the combined operational Mission state until its operating contract is explicitly frozen. On an otherwise complete v0.6.7.0 state root, the first v0.6.8.0 render is expected to show `PROSPECTIVE_OBSERVATION_PROTOCOL = NOT_EVALUATED`, 21/22 satisfied gates and operational `WAITING_EVIDENCE`, while `core_study_status` remains `READY_FOR_REVIEW`. This temporary state does not invalidate or rewrite the retained study result.
+The code migration is additive, but the new gate changes the combined operational Mission state until its operating contract is explicitly frozen. On an otherwise complete v0.6.7.0 state root, the first v0.6.8.x render is expected to show `PROSPECTIVE_OBSERVATION_PROTOCOL = NOT_EVALUATED`, 21/22 satisfied gates and operational `WAITING_EVIDENCE`, while `core_study_status` remains `READY_FOR_REVIEW`. This temporary state does not invalidate or rewrite the retained study result.
 
 After the pre-release backup, dependency/test verification and exact-release start:
 
@@ -195,7 +195,7 @@ runtime_pid="$(cat "$runtime_root/streamlit.pid")"
 case "$runtime_pid" in
   ''|*[!0-9]*) echo "Invalid Streamlit PID" >&2; exit 1 ;;
 esac
-test "$(readlink -f "/proc/$runtime_pid/cwd")" = "/workspaces/quant-terminal-srb-v0680-live"
+test "$(readlink -f "/proc/$runtime_pid/cwd")" = "/workspaces/quant-terminal-srb-v0681-live"
 ps -o pid,ppid,sid,lstart,command -p "$runtime_pid"
 kill -TERM "$runtime_pid"
 for attempt in $(seq 1 30); do
@@ -247,7 +247,7 @@ An identical archive is retained but does not increase content-distinct maturity
 
 ## Rollback
 
-Code rollback uses a separate clean checkout of the prior immutable tag. Do not reset or rewrite the live state. Phase-6.7 code ignores the additive Phase-6.8 registry file; retain that file so returning to v0.6.8.0 restores the prospective program unchanged. After rollback, repeat dependency, test, health, route and state-rehydration checks before calling the older interface live.
+Rollback this rendering patch with a separate clean checkout of the prior immutable tag `scientific-research-v0.6.8.0`; do not reset or rewrite the live state. Both v0.6.8 releases use the same additive Phase-6.8 registry, so retain that file unchanged. If an emergency rollback goes farther to Phase 6.7, its code ignores the file; returning to either v0.6.8 release restores the prospective program. After rollback, repeat dependency, test, health, route and state-rehydration checks before calling the older interface live.
 
 ## Release acceptance evidence
 

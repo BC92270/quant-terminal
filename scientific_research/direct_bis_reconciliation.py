@@ -33,7 +33,7 @@ DIRECT_BIS_MAX_ARCHIVE_BYTES = 20_000_000
 DIRECT_BIS_MAX_UNCOMPRESSED_BYTES = 400_000_000
 DIRECT_BIS_REQUIRED_MEMBER = "WS_EER_csv_flat.csv"
 DIRECT_BIS_USER_AGENT = (
-    "ScientificResearchBrain/0.6.8.0 research-only direct-source reconciliation; "
+    "ScientificResearchBrain/0.6.8.1 research-only direct-source reconciliation; "
     "explicit public BIS bulk download; no unattended production use"
 )
 

@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.8.0
+# Scientific Research Brain v0.6.8.1
 
 Scientific Research Brain (SRB) is the terminal's provenance-first research operating system. It turns a research question into an auditable chain of source understanding, competing hypotheses, explicit measurement choices, causal data contracts, retained experiment attempts and reproducible out-of-sample results.
 
@@ -26,6 +26,12 @@ It is not an autonomous trading engine. Every artifact is `RESEARCH_ONLY`; produ
 18. Current revised history may reconcile source provenance and revisions, but it never becomes point-in-time evidence; prospective vintages begin only when actually observed.
 19. Cross-provider agreement is evaluated on predeclared comparable transformations, never raw index bases; provider, host, methodology, underlying lineage, point-in-time and investigator independence are separate claims.
 20. A prospective schedule is an operating contract, not evidence: the real frozen seed is maturity observation #1, only genuinely observed future bytes can add monthly credit thereafter, and duplicates/missed windows remain visible while historical backfill is forbidden.
+
+## What v0.6.8.1 hardens
+
+- **Warning-free hidden-tab charts:** the four time-series views now use finite-only Plotly figures with explicit empty-domain refusal, avoiding Vega-Lite `Infinite extent` warnings while preserving the same governed data.
+- **Current Streamlit width contract:** every Research Lab control and table uses `width="stretch"`, removing the retired `use_container_width` path from the 2026 runtime.
+- **Responsive closure tokens:** long governance outcomes remain legible in compact status cards without destructive word breaks, with escaped labels/values and mobile-safe sizing.
 
 ## What v0.6.8.0 adds
 

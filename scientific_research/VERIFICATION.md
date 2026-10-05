@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.8.0 — verification
+# Scientific Research Brain v0.6.8.1 — verification
 
 ## Required commands
 
@@ -21,7 +21,7 @@ The release proof records 63 internal Python tests, 90 scientific integration te
 
 ## Python coverage
 
-The v0.6.8.0 suite covers:
+The v0.6.8.1 suite covers:
 
 - complete point-in-time contract validation and revised-history warnings;
 - measurement-lineage and observable-lifecycle conflicts;
@@ -41,6 +41,7 @@ The v0.6.8.0 suite covers:
 - registry corruption failing closed without overwrite;
 - concurrent multi-process registry writes retaining every unique record, plus bounded lock-contention failure without mutation;
 - native `?workspace=scientific-research` Streamlit rendering with its research-only banner, governed workspaces and return control;
+- finite-only Plotly chart construction, empty-domain refusal, escaped responsive closure-status cards and the absence of deprecated Research Lab width arguments;
 - explicit, idempotent legacy lifecycle alignment without a fabricated historical assertion;
 - reproducibility capsule identity checks and secret-field filtering;
 - source-grounded evidence gates rejecting empty extraction;

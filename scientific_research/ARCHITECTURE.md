@@ -1,4 +1,4 @@
-# Scientific Research Brain v0.6.8.0 — architecture contract
+# Scientific Research Brain v0.6.8.1 — architecture contract
 
 ## Design rule
 

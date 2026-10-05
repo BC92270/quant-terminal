@@ -501,8 +501,10 @@ class ProspectiveObservationProgramTests(unittest.TestCase):
     def test_handoff_chart_and_accessibility_helpers_preserve_phase68_contract(self) -> None:
         from scientific_research_lab import (
             _closure_dossier_markdown,
+            _finite_line_figure,
             _finite_time_chart,
             _inject_css,
+            _status_card_html,
         )
 
         frame = _finite_time_chart(
@@ -512,6 +514,26 @@ class ProspectiveObservationProgramTests(unittest.TestCase):
         self.assertEqual(len(frame), 1)
         self.assertEqual(float(frame.iloc[0]["value"]), 2.0)
         self.assertTrue(frame.index.is_monotonic_increasing)
+        figure = _finite_line_figure(frame)
+        self.assertIsNotNone(figure)
+        self.assertEqual(len(figure.data), 1)
+        self.assertEqual(list(figure.data[0].y), [2.0])
+        gapped_figure = _finite_line_figure(_finite_time_chart(
+            ["2026-01-01", "2026-02-01", "2026-03-01"],
+            {"value": [1.0, None, 3.0]},
+        ))
+        self.assertIsNotNone(gapped_figure)
+        self.assertEqual(list(gapped_figure.data[0].y), [1.0, None, 3.0])
+        self.assertFalse(gapped_figure.data[0].connectgaps)
+        self.assertIsNone(_finite_line_figure(_finite_time_chart(
+            ["invalid", "2026-01-01"],
+            {"value": [1.0, float("inf")]},
+        )))
+
+        status = _status_card_html("Retained result", "CONSISTENT_NO_OOS_IMPROVEMENT")
+        self.assertIn("srb-status-value--long", status)
+        self.assertIn("CONSISTENT_NO_OOS_IMPROVEMENT", status)
+        self.assertNotIn("<script>", _status_card_html("<script>", "<script>"))
 
         dossier = {
             "dossier_fingerprint": "dossier-fingerprint",
@@ -598,6 +620,7 @@ class ProspectiveObservationProgramTests(unittest.TestCase):
         self.assertIn("focus-visible", css_source)
         self.assertIn("max-width: 900px", css_source)
         self.assertIn("prefers-reduced-motion", css_source)
+        self.assertIn("white-space:nowrap", css_source)
 
     def test_freeze_rejects_point_in_time_and_promotion_overclaims(self) -> None:
         invalid = _direct()
