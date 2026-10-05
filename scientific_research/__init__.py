@@ -9,6 +9,11 @@ adds a separately authored TypeScript/Node cross-runtime reproduction of the sea
 replication artifacts. Every object remains RESEARCH_ONLY.
 Phase 6.6 adds an explicit direct-BIS revised-history reconciliation and a
 prospective as-observed snapshot ledger without backfilling vintages.
+Phase 6.7 adds a frozen OECD/BIS cross-provider measurement triangulation that
+compares monthly changes without treating raw index levels or either provider as truth.
+Phase 6.8 freezes a future-only monthly observation program, retains missed windows
+without backfill and exports a closure dossier that separates review readiness from
+longitudinal evidence maturity.
 """
 
 from .phase2_models import (
@@ -127,11 +132,40 @@ from .direct_bis_reconciliation import (
     DIRECT_BIS_TOPIC_URL,
     DirectBisDataError,
     build_prospective_vintage_summary,
+    direct_bis_reconciliation_fingerprint,
     download_bis_eer_archive,
     execute_direct_bis_reconciliation,
     freeze_direct_bis_reconciliation,
     load_persisted_direct_bis_snapshot,
     parse_bis_eer_archive,
+    validate_completed_direct_bis_reconciliation,
+)
+from .phase67_models import CrossProviderTriangulationRecord
+from .phase67_registry import Phase67Registry
+from .cross_provider_triangulation import (
+    CROSS_PROVIDER_PROTOCOL_VERSION,
+    CrossProviderDataError,
+    OECD_API_DOCUMENTATION_URL,
+    OECD_BIS_REAL_MATRIX,
+    OECD_HISTORY_SEMANTICS,
+    OECD_SOURCE_URL,
+    OECD_STRUCTURE_URL,
+    OECD_TERMS_URL,
+    OecdCsvPayload,
+    download_oecd_reer_csv,
+    execute_cross_provider_triangulation,
+    freeze_cross_provider_triangulation,
+    load_persisted_oecd_snapshot,
+    parse_oecd_reer_csv,
+)
+from .phase68_models import ProspectiveObservationProgram
+from .phase68_registry import Phase68Registry
+from .prospective_observation import (
+    PROSPECTIVE_OBSERVATION_PROTOCOL_VERSION,
+    build_research_closure_dossier,
+    evaluate_prospective_observation_program,
+    freeze_prospective_observation_program,
+    validate_prospective_observation_program,
 )
 
 __all__ = [
@@ -167,9 +201,21 @@ __all__ = [
     "DIRECT_BIS_ACCESS_MODE", "DIRECT_BIS_EXPORT_HELP_URL", "DIRECT_BIS_HISTORY_SEMANTICS",
     "DIRECT_BIS_PROTOCOL_VERSION", "DIRECT_BIS_SOURCE_URL", "DIRECT_BIS_TERMS_URL",
     "DIRECT_BIS_TOPIC_URL", "DirectBisDataError", "build_prospective_vintage_summary",
+    "direct_bis_reconciliation_fingerprint",
     "download_bis_eer_archive", "execute_direct_bis_reconciliation",
     "freeze_direct_bis_reconciliation", "load_persisted_direct_bis_snapshot",
-    "parse_bis_eer_archive",
+    "parse_bis_eer_archive", "validate_completed_direct_bis_reconciliation",
+    "CrossProviderTriangulationRecord", "Phase67Registry",
+    "CROSS_PROVIDER_PROTOCOL_VERSION", "CrossProviderDataError",
+    "OECD_API_DOCUMENTATION_URL", "OECD_BIS_REAL_MATRIX", "OECD_HISTORY_SEMANTICS",
+    "OECD_SOURCE_URL", "OECD_STRUCTURE_URL", "OECD_TERMS_URL", "OecdCsvPayload",
+    "download_oecd_reer_csv", "execute_cross_provider_triangulation",
+    "freeze_cross_provider_triangulation", "load_persisted_oecd_snapshot",
+    "parse_oecd_reer_csv",
+    "ProspectiveObservationProgram", "Phase68Registry",
+    "PROSPECTIVE_OBSERVATION_PROTOCOL_VERSION", "build_research_closure_dossier",
+    "evaluate_prospective_observation_program", "freeze_prospective_observation_program",
+    "validate_prospective_observation_program",
 ]
 
 from .phase6_models import (

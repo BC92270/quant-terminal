@@ -1,8 +1,10 @@
-# Scientific Research Brain v0.6.6.1 — verification
+# Scientific Research Brain v0.6.8.1 — verification
 
 ## Required commands
 
 ```bash
+git diff --check
+python3 -c "import json,pathlib,subprocess; [json.loads(pathlib.Path(p).read_text(encoding='utf-8')) for p in subprocess.check_output(['git','ls-files','*.json'], text=True).splitlines()]"
 python3 -m compileall -q scientific_research scientific_research_lab.py
 python3 -m unittest discover -s scientific_research/tests_python -p 'test_*.py' -v
 python3 -m unittest discover -s tests -p 'test_scientific*.py' -v
@@ -15,9 +17,11 @@ pnpm --dir scientific_research install --frozen-lockfile
 pnpm --dir scientific_research run verify
 ```
 
+The release proof records 63 internal Python tests, 90 scientific integration tests (including the route smoke) and 11 TypeScript/Node tests. A later code change invalidates those counts until every command is rerun on the new exact commit.
+
 ## Python coverage
 
-The v0.6.6.1 suite covers:
+The v0.6.8.1 suite covers:
 
 - complete point-in-time contract validation and revised-history warnings;
 - measurement-lineage and observable-lifecycle conflicts;
@@ -37,6 +41,7 @@ The v0.6.6.1 suite covers:
 - registry corruption failing closed without overwrite;
 - concurrent multi-process registry writes retaining every unique record, plus bounded lock-contention failure without mutation;
 - native `?workspace=scientific-research` Streamlit rendering with its research-only banner, governed workspaces and return control;
+- finite-only Plotly chart construction, empty-domain refusal, escaped responsive closure-status cards and the absence of deprecated Research Lab width arguments;
 - explicit, idempotent legacy lifecycle alignment without a fabricated historical assertion;
 - reproducibility capsule identity checks and secret-field filtering;
 - source-grounded evidence gates rejecting empty extraction;
@@ -65,6 +70,24 @@ The v0.6.6.1 suite covers:
 - explicit independent distribution path with shared underlying BIS lineage and permanently non-point-in-time historical eligibility;
 - prospective forward-vintage readiness that deduplicates identical content and requires 12 distinct snapshots, 12 distinct latest months and 300 observed days;
 - fail-closed `DIRECT_SOURCE_RECONCILIATION` Mission Control behavior for coverage, fingerprints, provenance overclaims and promotion locks.
+- persist-before-network OECD/BIS triangulation protocols and append-only `FROZEN → COMPLETE` lifecycle;
+- exact three-country OECD SDMX schema, identity, status, frequency, unit, methodology, continuity, positivity and base-period checks;
+- raw OECD CSV plus canonical GB/JP/US persistence with restart and tamper revalidation;
+- base-invariant monthly log-change comparison, rolling diagnostics and frozen correlation/direction/mean-gap thresholds;
+- outcome-neutral `CONCORDANT`, `MEASUREMENT_DIVERGENCE` and `NOT_COMPARABLE` semantics without provider selection after result observation;
+- fail-closed `CROSS_PROVIDER_MEASUREMENT_TRIANGULATION` behavior for incomplete matrices, provenance overclaims, revised-history misuse and promotion-lock violations.
+- strict question-to-experiment lineage with no first-global-experiment fallback in Mission Control or Run Room;
+- epistemic-timeline isolation that excludes unlinked records and audit events from other missions;
+- immutable prospective-program identities, exact real-seed lineage and frozen 12/12/300 thresholds;
+- first-eligible-month enforcement, captured/open/missed calendar states, permanent no-backfill gaps and one schedule credit per UTC month;
+- deterministic one-per-month evidence selection even when many content-distinct observations share a window, plus late-completion exclusion;
+- full future-observation validation for lifecycle chronology, reconciliation hashes, frozen matrix coverage, comparison fingerprints and real month-start dates;
+- duplicate program rows (including identical IDs) failing closed, with one valid program allowed for each governed replication;
+- explicit foreign `question_id` authority over a shared experiment ID in Mission Control, Run Room and the epistemic timeline;
+- content-distinct maturity accounting that retains duplicate observations without manufacturing snapshots or latest months;
+- separate current-study review readiness and prospective-evidence maturity in Mission Control and closure exports;
+- closure dossier/calendar fingerprints, direct/OECD artifact indexes, exact missed-window identities, runtime timestamp authority and external-verifier non-claims;
+- finite-only dated chart frames plus responsive, focus-visible and reduced-motion UI rules.
 
 ## Acceptance criteria
 
@@ -88,10 +111,25 @@ The v0.6.6.1 suite covers:
 18. A direct BIS acquisition must be persisted frozen before network access and must retain the exact raw archive, six canonical series and complete comparison fingerprints.
 19. Current revised BIS history must remain `NOT_POINT_IN_TIME` and `historical_evidence_eligible=false`; violating either boundary is a Mission Control conflict.
 20. A prospective vintage count increases only for a content-distinct snapshot actually observed by the ledger; no historical vintage may be inferred or fabricated.
+21. An OECD/BIS triangulation must be persisted frozen before OECD access and bind the exact direct-BIS snapshot, country matrix and thresholds.
+22. Raw index levels are never an equality criterion; conclusions use consecutive monthly log changes on governed common support.
+23. Provider/host independence cannot be promoted into methodology, underlying-lineage, point-in-time or investigator independence.
+24. A retained `MEASUREMENT_DIVERGENCE` may close the execution-quality gate, while `NOT_COMPARABLE` cannot become a concordance claim.
+25. A mission without an explicit or governed foreign-key experiment link cannot inherit another mission's specification, attempts, runs, replications or timeline events.
+26. A Phase-6.8 program must be frozen around one exact completed direct-BIS seed; its first eligible window is the next UTC calendar month.
+27. The prospective calendar can never credit more than one observation per month; extra distinct snapshots in the same month cannot increase maturity, and a closed empty or late-only window remains missed with `backfillable=false`.
+28. A program threshold, seed, cadence, fingerprint, identity or research-only boundary change must fail closed in both the registry and Mission Control.
+29. `READY_FOR_REVIEW` for the current dossier cannot be represented as `READY_FOR_FORWARD_VINTAGE_STUDY` until 12 distinct snapshots, 12 distinct latest periods and 300 genuinely observed days exist.
+30. Closure exports must explicitly keep investigator independence, peer review, scientific truth and production authorization false.
+31. A complete prospective observation cannot accrue evidence unless its creation/freeze/retrieval/completion chronology, reconciliation hashes, exact series coverage and comparison fingerprints all validate.
+32. Two program rows for the active replication are a conflict even when their `program_id` values are identical; acquisition and export must stop.
+33. A record with an explicit foreign `question_id` cannot enter another mission merely by sharing its experiment ID.
+34. The historical `core_study_status` must remain derivable independently of `prospective_operations_status`; the combined operational Mission state may still wait or block.
+35. A verifier handoff is an index, not a self-contained reproduction: it must name the program, seed, direct snapshots, hashes, calendar gaps and cross-provider artifact while requiring the referenced state and files.
 
 ## Current scientific acceptance boundary
 
-Passing the software suite proves implementation behavior only. Scientific gates close only from persisted live artifacts satisfying their narrow contracts. A Council dossier is computational; ALFRED/BIS supplies independent market/data lineage; TypeScript/Node supplies an independent implementation. Direct BIS supplies an independent distribution route but shares the underlying BIS lineage and exposes revised history. The investigator and governed workflow remain shared. None of these is peer review, causal proof, production authorization or scientific truth.
+Passing the software suite proves implementation behavior only. Scientific gates close only from persisted live artifacts satisfying their narrow contracts. A Council dossier is computational; ALFRED/BIS supplies independent market/data lineage; TypeScript/Node supplies an independent implementation. Direct BIS supplies an independent distribution route but shares the underlying BIS lineage and exposes revised history. OECD supplies another official provider/host and a country-labelled representation, but the feed alone does not prove methodology or underlying-lineage independence. The investigator and governed workflow remain shared. None of these is peer review, causal proof, production authorization or scientific truth.
 
 ## Release boundary
 

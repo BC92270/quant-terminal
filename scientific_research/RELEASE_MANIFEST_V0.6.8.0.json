@@ -1,0 +1,93 @@
+{
+  "product": "Scientific Research Brain",
+  "version": "0.6.8.0",
+  "phase": "6.8",
+  "route": "scientific-research",
+  "entrypoint": "scientific_research_lab.render_scientific_research_brain",
+  "python_package": "scientific_research",
+  "release_branch": "codex/scientific-research-v0.6.8.0",
+  "expected_annotated_tag": "scientific-research-v0.6.8.0",
+  "commit_binding": "ANNOTATED_TAG_TARGET_AND_LIVE_ACCEPTANCE_EVIDENCE",
+  "prospective_protocol": "SRB_PROSPECTIVE_OBSERVATION_PROGRAM_V1",
+  "prospective_registry": "phase68_prospective_observation_programs.json",
+  "prospective_cadence": "UTC_CALENDAR_MONTH",
+  "first_eligible_window_policy": "MONTH_AFTER_REAL_PROTOCOL_FREEZE",
+  "maximum_credited_observations_per_window": 1,
+  "credited_observation_selection": "EARLIEST_RETRIEVED_AT_THEN_RECONCILIATION_ID_WITH_SAME_WINDOW_COMPLETION",
+  "duplicate_content_policy": "RETAIN_OBSERVATION_EXCLUDE_FROM_DISTINCT_EVIDENCE",
+  "missed_window_policy": "RETAIN_GAP_NEVER_BACKFILL",
+  "prospective_vintage_readiness": {
+    "minimum_content_distinct_snapshots": 12,
+    "minimum_distinct_latest_periods": 12,
+    "minimum_observed_span_days": 300,
+    "historical_backfill_permitted": false
+  },
+  "mission_gate_count": 22,
+  "new_mission_gate": "PROSPECTIVE_OBSERVATION_PROTOCOL",
+  "mission_lineage_policy": "EXPLICIT_QUESTION_AND_GOVERNED_FOREIGN_KEYS_ONLY_NO_GLOBAL_FALLBACK",
+  "closure_exports": [
+    "SRB_RESEARCH_CLOSURE_DOSSIER_V1_JSON",
+    "EXTERNAL_VERIFIER_HANDOFF_INDEX_MARKDOWN"
+  ],
+  "runtime_state": {
+    "environment_variable": "SRB_MEMORY_DIR",
+    "default": ".scientific_research_data",
+    "included_in_git": false,
+    "migration": "ADDITIVE_NEW_PHASE68_REGISTRY_NO_VIEW_TIME_REWRITE",
+    "expected_pre_activation_state": "PROSPECTIVE_OBSERVATION_PROTOCOL_NOT_EVALUATED_AND_WAITING_EVIDENCE",
+    "activation": "ONE_EXPLICIT_PROGRAM_FREEZE_AROUND_LATEST_ELIGIBLE_DIRECT_BIS_SEED",
+    "postcondition": "EXACTLY_ONE_VALID_PROGRAM_PER_GOVERNED_REPLICATION_WITH_RESTART_REHYDRATION_VERIFIED"
+  },
+  "state_durability": {
+    "local_checksum_inventory_required": true,
+    "off_codespace_copy_required": true,
+    "same_codespace_copy_is_independent_backup": false,
+    "checksum_algorithm": "SHA-256"
+  },
+  "production_status": "RESEARCH_ONLY",
+  "automatic_execution_authorized": false,
+  "automatic_promotion_authorized": false,
+  "human_investigator_independence_established": false,
+  "peer_review_established": false,
+  "python_dependency_manifest": "requirements.txt",
+  "python_dependency_install": "python3 -m pip install -r requirements.txt",
+  "required_python_dependency": "httpx[http2]>=0.28,<0.29",
+  "pinned_javascript_toolchain": {
+    "package_manager": "pnpm@11.25.0",
+    "typescript": "5.9.3"
+  },
+  "dependency_installation": [
+    "python3 -m pip install -r requirements.txt",
+    "corepack enable",
+    "corepack prepare pnpm@11.25.0 --activate",
+    "pnpm --dir scientific_research install --frozen-lockfile"
+  ],
+  "verification": [
+    "git diff --check",
+    "python3 -c \"import json,pathlib,subprocess; [json.loads(pathlib.Path(p).read_text(encoding='utf-8')) for p in subprocess.check_output(['git','ls-files','*.json'], text=True).splitlines()]\"",
+    "python3 -m compileall -q scientific_research scientific_research_lab.py",
+    "python3 -m unittest discover -s scientific_research/tests_python -p 'test_*.py' -q",
+    "python3 -m unittest discover -s tests -p 'test_scientific*.py' -q",
+    "python3 -m unittest tests.test_scientific_route_smoke -q",
+    "pnpm --dir scientific_research install --frozen-lockfile",
+    "pnpm --dir scientific_research run verify"
+  ],
+  "verified_suite_counts": {
+    "python_internal": 63,
+    "python_integration_total_including_route": 90,
+    "python_route_subset": 1,
+    "typescript_node": 11
+  },
+  "live_acceptance": [
+    "PORT_8501_UNOCCUPIED_BEFORE_START",
+    "PID_BOUND_TO_RELEASE_PROCESS",
+    "PROCESS_CWD_MATCHES_IMMUTABLE_RELEASE_CHECKOUT",
+    "PROCESS_SRB_MEMORY_DIR_MATCHES_GOVERNED_STATE_ROOT",
+    "HEALTH_READY_WITHIN_BOUNDED_WAIT",
+    "ANNOTATED_TAG_TARGET_MATCHES_RUNNING_COMMIT",
+    "STATE_REHYDRATES_WITH_IDENTICAL_ARTIFACT_IDENTITIES_AFTER_RESTART"
+  ],
+  "operations_runbook": "scientific_research/OPERATIONS.md",
+  "scope": "Strict per-mission lineage, immutable per-replication future-only monthly observation programs, deterministic one-credit windows, retained late and missed windows, separated current-study and prospective-operation states, closure cockpit, artifact-index handoffs and operational accessibility hardening.",
+  "scientific_boundary": "The software can freeze and operate the prospective program now, but it cannot fabricate 12 credited content-distinct observations, 12 credited distinct latest periods or 300 observed days. Current review readiness remains distinct from forward-vintage maturity. Nothing establishes external investigator independence, peer review, causal truth, production authorization or automatic promotion."
+}

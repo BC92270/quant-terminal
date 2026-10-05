@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import tempfile
 import unittest
@@ -103,7 +104,7 @@ def _replication() -> dict[str, object]:
         "execution_status": "COMPLETE",
         "point_in_time_status": "PASS",
         "snapshot_id": "ALFREDIR-0123456789abcdef",
-        "source_snapshot_fingerprint": "sha256:reference",
+        "source_snapshot_fingerprint": "sha256:" + hashlib.sha256(b"reference").hexdigest(),
         "series_matrix": ALFRED_BIS_MARKETS,
         "automatic_promotion_authorized": False,
         "production_status": "RESEARCH_ONLY",

@@ -33,7 +33,7 @@ DIRECT_BIS_MAX_ARCHIVE_BYTES = 20_000_000
 DIRECT_BIS_MAX_UNCOMPRESSED_BYTES = 400_000_000
 DIRECT_BIS_REQUIRED_MEMBER = "WS_EER_csv_flat.csv"
 DIRECT_BIS_USER_AGENT = (
-    "ScientificResearchBrain/0.6.6.1 research-only direct-source reconciliation; "
+    "ScientificResearchBrain/0.6.8.1 research-only direct-source reconciliation; "
     "explicit public BIS bulk download; no unattended production use"
 )
 
@@ -152,6 +152,297 @@ def _protocol_payload(record: Mapping[str, Any]) -> dict[str, Any]:
         "production_status",
     )
     return {key: record.get(key) for key in keys}
+
+
+def _is_sha256(value: Any) -> bool:
+    return bool(re.fullmatch(r"sha256:[0-9a-f]{64}", str(value or "")))
+
+
+def _exact_int(value: Any, *, minimum: int = 0) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= minimum
+
+
+def direct_bis_reconciliation_fingerprint(record: Mapping[str, Any]) -> str:
+    """Recompute the sealed comparison fingerprint from its governed inputs."""
+    return _digest({
+        "protocol_fingerprint": record.get("protocol_fingerprint"),
+        "reference_snapshot_fingerprint": record.get("reference_snapshot_fingerprint"),
+        "direct_snapshot_fingerprint": record.get("direct_snapshot_fingerprint"),
+        "series_results": list(record.get("series_results") or ()),
+        "history_semantics": DIRECT_BIS_HISTORY_SEMANTICS,
+    })
+
+
+def validate_completed_direct_bis_reconciliation(
+    value: Any,
+    *,
+    reference_replication: Any | None = None,
+) -> dict[str, Any]:
+    """Validate the complete persisted Phase-6.6 contract without reading artifacts.
+
+    When the owning replication is supplied, the sealed reference snapshot and exact
+    series matrix are also checked against that parent. This prevents a self-consistent
+    but foreign direct-source row from satisfying a mission gate.
+    """
+    row = _row(value)
+    defects: list[str] = []
+    identity = str(row.get("reconciliation_id") or "UNKNOWN")
+    if str(row.get("protocol_version") or "") != DIRECT_BIS_PROTOCOL_VERSION:
+        defects.append("unsupported direct-source protocol")
+    if str(row.get("status") or "") != "COMPLETE" or str(row.get("execution_status") or "") != "COMPLETE":
+        defects.append("direct-source lifecycle is not COMPLETE")
+    for field in ("replication_id", "reference_snapshot_id", "reference_snapshot_fingerprint"):
+        if not str(row.get(field) or ""):
+            defects.append(f"{field} is missing")
+    if not _is_sha256(row.get("reference_snapshot_fingerprint")):
+        defects.append("reference snapshot fingerprint is not SHA-256")
+
+    try:
+        matrix = _series_matrix(row.get("series_matrix"))
+    except ValueError as exc:
+        matrix = {}
+        defects.append(str(exc))
+    expected_series_ids = {
+        series_id
+        for metadata in matrix.values()
+        for series_id in (metadata["real_series_id"], metadata["nominal_series_id"])
+    }
+    expected_count = row.get("expected_series_count")
+    series_count = row.get("series_count")
+    if not _exact_int(expected_count, minimum=1) or expected_count != len(expected_series_ids):
+        defects.append("expected series count does not match the frozen matrix")
+    if not _exact_int(series_count, minimum=1) or series_count != expected_count:
+        defects.append("actual series count does not match the frozen matrix")
+
+    expected_protocol = _digest(_protocol_payload(row))
+    if str(row.get("protocol_fingerprint") or "") != expected_protocol:
+        defects.append("direct-source protocol fingerprint mismatch")
+    expected_identity = _stable_id(
+        "DBR",
+        row.get("replication_id"),
+        row.get("reference_snapshot_fingerprint"),
+        row.get("protocol_frozen_at"),
+        expected_protocol,
+    )
+    if str(row.get("reconciliation_id") or "") != expected_identity:
+        defects.append("direct-source reconciliation identity mismatch")
+
+    if str(row.get("source_access_mode") or "") != DIRECT_BIS_ACCESS_MODE:
+        defects.append("direct-source access mode changed")
+    if str(row.get("source_url") or "") != DIRECT_BIS_SOURCE_URL:
+        defects.append("direct-source URL changed")
+    expected_static_contract = {
+        "source_provider": "Bank for International Settlements",
+        "source_dataset": "BIS Effective exchange rates (WS_EER 1.0)",
+        "source_documentation_url": DIRECT_BIS_EXPORT_HELP_URL,
+        "source_terms_url": DIRECT_BIS_TERMS_URL,
+        "access_cost": "FREE",
+        "credentials_required": False,
+        "frequency": "MONTHLY",
+        "basket": "BROAD_64_ECONOMIES",
+    }
+    for field, expected in expected_static_contract.items():
+        if row.get(field) != expected:
+            defects.append(f"direct-source {field} changed")
+    for field, expected in (
+        ("min_rows_per_series", 120),
+        ("min_overlap_rows", 24),
+        ("prospective_min_distinct_snapshots", 12),
+        ("prospective_min_distinct_latest_periods", 12),
+        ("prospective_min_span_days", 300),
+    ):
+        if not _exact_int(row.get(field), minimum=1) or row.get(field) != expected:
+            defects.append(f"direct-source {field} changed")
+    tolerance = row.get("equality_tolerance")
+    if (
+        not isinstance(tolerance, (int, float))
+        or isinstance(tolerance, bool)
+        or not math.isfinite(float(tolerance))
+        or float(tolerance) != 1e-10
+    ):
+        defects.append("direct-source equality tolerance changed")
+    expected_independence = {
+        "distribution_channel": True,
+        "source_host": True,
+        "underlying_data_lineage": False,
+        "methodology": False,
+        "point_in_time": False,
+        "investigator": False,
+    }
+    if row.get("independence_dimensions") != expected_independence:
+        defects.append("direct-source independence dimensions changed")
+    if str(row.get("history_semantics") or "") != DIRECT_BIS_HISTORY_SEMANTICS:
+        defects.append("revised-history semantics changed")
+    if str(row.get("point_in_time_status") or "") != "NOT_POINT_IN_TIME":
+        defects.append("point-in-time boundary changed")
+    if row.get("historical_evidence_eligible") is not False:
+        defects.append("observation is overstated as historical evidence")
+    if row.get("automatic_promotion_authorized") is not False or str(row.get("production_status") or "") != "RESEARCH_ONLY":
+        defects.append("research-only promotion lock is absent")
+    if str(row.get("source_integrity_status") or "") != "PASS":
+        defects.append("source-integrity gate is not PASS")
+    if str(row.get("coverage_status") or "") != "PASS":
+        defects.append("coverage gate is not PASS")
+    if str(row.get("reconciliation_status") or "") not in {"EXACT_MATCH", "RECONCILED_WITH_REVISIONS"}:
+        defects.append("reconciliation result is not governed")
+
+    times: dict[str, datetime] = {}
+    for field in ("created_at", "protocol_frozen_at", "retrieved_at", "completed_at"):
+        try:
+            parsed = datetime.fromisoformat(str(row.get(field) or "").replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                raise ValueError("timezone required")
+            times[field] = parsed.astimezone(timezone.utc)
+        except ValueError:
+            defects.append(f"{field} is not a timezone-aware ISO-8601 timestamp")
+    if all(field in times for field in ("created_at", "protocol_frozen_at", "retrieved_at", "completed_at")):
+        if times["created_at"] != times["protocol_frozen_at"]:
+            defects.append("created_at and protocol_frozen_at differ")
+        if not times["protocol_frozen_at"] <= times["retrieved_at"] <= times["completed_at"]:
+            defects.append("direct-source lifecycle chronology is invalid")
+    try:
+        latest_period = date.fromisoformat(str(row.get("latest_period") or ""))
+        if latest_period.day != 1:
+            raise ValueError("month start required")
+        if "retrieved_at" in times and latest_period > times["retrieved_at"].date():
+            defects.append("direct-source latest period occurs after retrieval")
+    except ValueError:
+        defects.append("direct-source latest period is not a real month-start date")
+
+    for field in (
+        "direct_snapshot_fingerprint",
+        "raw_archive_sha256",
+        "reconciliation_fingerprint",
+    ):
+        if not _is_sha256(row.get(field)):
+            defects.append(f"{field} is not SHA-256")
+    direct_fingerprint = str(row.get("direct_snapshot_fingerprint") or "")
+    expected_snapshot_id = (
+        f"BISREV-{direct_fingerprint.split(':', 1)[1][:16]}" if _is_sha256(direct_fingerprint) else ""
+    )
+    if str(row.get("direct_snapshot_id") or "") != expected_snapshot_id:
+        defects.append("direct snapshot identity does not match its fingerprint")
+    expected_snapshot_path = f"public_data/bis_revised_history/{expected_snapshot_id}" if expected_snapshot_id else ""
+    if str(row.get("direct_snapshot_path") or "") != expected_snapshot_path:
+        defects.append("direct snapshot path does not match its content identity")
+    if not _exact_int(row.get("raw_archive_bytes"), minimum=1) or not _exact_int(row.get("raw_csv_bytes"), minimum=1):
+        defects.append("raw archive or CSV byte count is invalid")
+    if not isinstance(row.get("response_metadata"), Mapping):
+        defects.append("response metadata is missing")
+
+    minimum_overlap = row.get("min_overlap_rows")
+    if not _exact_int(minimum_overlap, minimum=1):
+        defects.append("minimum overlap is invalid")
+        minimum_overlap = 1
+    results = [dict(item) for item in (row.get("series_results") or ()) if isinstance(item, Mapping)]
+    result_ids = {str(item.get("series_id") or "") for item in results if str(item.get("series_id") or "")}
+    if len(results) != expected_count or result_ids != expected_series_ids:
+        defects.append("series results do not exactly match the frozen matrix")
+    overlap_total = 0
+    exact_total = 0
+    for index, result in enumerate(results):
+        overlap = result.get("overlap_row_count")
+        exact = result.get("exact_match_row_count")
+        revised = result.get("revised_row_count")
+        if not _exact_int(overlap, minimum=0) or overlap < minimum_overlap:
+            defects.append(f"series result {index + 1} has insufficient overlap")
+            overlap = 0
+        if not _exact_int(exact, minimum=0) or not _exact_int(revised, minimum=0) or exact + revised != overlap:
+            defects.append(f"series result {index + 1} has inconsistent exact/revised counts")
+            exact = 0
+        overlap_total += overlap
+        exact_total += exact
+        for field in ("comparison_fingerprint", "direct_row_fingerprint"):
+            if not _is_sha256(result.get(field)):
+                defects.append(f"series result {index + 1} {field} is not SHA-256")
+        if str(result.get("history_semantics") or "") != DIRECT_BIS_HISTORY_SEMANTICS:
+            defects.append(f"series result {index + 1} revised-history semantics changed")
+        if result.get("historical_evidence_eligible") is not False:
+            defects.append(f"series result {index + 1} is overstated as historical evidence")
+    total_overlap = row.get("total_overlap_rows")
+    total_exact = row.get("total_exact_match_rows")
+    total_revised = row.get("total_revised_rows")
+    if not all(_exact_int(value, minimum=0) for value in (total_overlap, total_exact, total_revised)):
+        defects.append("aggregate reconciliation counts are invalid")
+    elif (total_overlap, total_exact, total_revised) != (
+        overlap_total,
+        exact_total,
+        overlap_total - exact_total,
+    ):
+        defects.append("aggregate reconciliation counts do not match series results")
+    expected_status = "RECONCILED_WITH_REVISIONS" if overlap_total - exact_total else "EXACT_MATCH"
+    if str(row.get("reconciliation_status") or "") != expected_status:
+        defects.append("reconciliation status does not match retained revision counts")
+    if str(row.get("reconciliation_fingerprint") or "") != direct_bis_reconciliation_fingerprint(row):
+        defects.append("reconciliation fingerprint mismatch")
+
+    history = [dict(item) for item in (row.get("lifecycle_history") or ()) if isinstance(item, Mapping)]
+    frozen_events = [item for item in history if str(item.get("event") or "") == "DIRECT_BIS_PROTOCOL_FROZEN_BEFORE_NETWORK"]
+    complete_events = [
+        item for item in history
+        if str(item.get("event") or "") == "DIRECT_BIS_ACQUISITION_AND_RECONCILIATION_COMPLETE"
+    ]
+    if len(history) != 2 or len(frozen_events) != 1 or len(complete_events) != 1:
+        defects.append("exactly one frozen and one completion lifecycle event are required")
+    else:
+        frozen_event = frozen_events[0]
+        complete_event = complete_events[0]
+        expected_frozen_event = {
+            "at": row.get("protocol_frozen_at"),
+            "event": "DIRECT_BIS_PROTOCOL_FROZEN_BEFORE_NETWORK",
+            "status": "FROZEN",
+            "execution_status": "NOT_RUN",
+            "historical_evidence_eligible": False,
+            "production_status": "RESEARCH_ONLY",
+        }
+        expected_complete_event = {
+            "at": row.get("completed_at"),
+            "event": "DIRECT_BIS_ACQUISITION_AND_RECONCILIATION_COMPLETE",
+            "status": row.get("status"),
+            "execution_status": row.get("execution_status"),
+            "source_integrity_status": row.get("source_integrity_status"),
+            "coverage_status": row.get("coverage_status"),
+            "reconciliation_status": row.get("reconciliation_status"),
+            "direct_snapshot_id": row.get("direct_snapshot_id"),
+            "direct_snapshot_fingerprint": row.get("direct_snapshot_fingerprint"),
+            "historical_evidence_eligible": False,
+            "production_status": "RESEARCH_ONLY",
+        }
+        if frozen_event != expected_frozen_event:
+            defects.append("frozen lifecycle event differs from the exact governed event")
+        if complete_event != expected_complete_event:
+            defects.append("completion lifecycle event differs from the exact governed event")
+
+    if reference_replication is not None:
+        try:
+            parent = _row(reference_replication)
+        except (TypeError, ValueError):
+            parent = {}
+            defects.append("reference replication is malformed")
+        if str(parent.get("protocol_version") or "") != "SRB_INDEPENDENT_REPLICATION_V1":
+            defects.append("reference replication protocol is not governed")
+        if str(parent.get("execution_status") or "") != "COMPLETE":
+            defects.append("reference replication is not complete")
+        if str(row.get("replication_id") or "") != str(parent.get("replication_id") or ""):
+            defects.append("direct-source replication foreign key differs from its parent")
+        if str(row.get("reference_snapshot_id") or "") != str(parent.get("snapshot_id") or ""):
+            defects.append("direct-source reference snapshot ID differs from its parent replication")
+        if str(row.get("reference_snapshot_fingerprint") or "") != str(parent.get("source_snapshot_fingerprint") or ""):
+            defects.append("direct-source reference snapshot fingerprint differs from its parent replication")
+        try:
+            parent_matrix = _series_matrix(parent.get("series_matrix"))
+        except ValueError as exc:
+            parent_matrix = {}
+            defects.append(f"reference replication matrix is invalid: {exc}")
+        if matrix != parent_matrix:
+            defects.append("direct-source series matrix differs from its parent replication")
+    return {
+        "status": "PASS" if not defects else "FAIL",
+        "identity": identity,
+        "defects": tuple(dict.fromkeys(defects)),
+        "expected_protocol_fingerprint": expected_protocol,
+        "expected_reconciliation_fingerprint": direct_bis_reconciliation_fingerprint(row),
+    }
 
 
 def freeze_direct_bis_reconciliation(
@@ -795,12 +1086,11 @@ def execute_direct_bis_reconciliation(
     total_revised = total_overlap - total_exact
     latest_period = max(rows[-1]["period_start_date"] for rows in direct_rows.values())
     reconciliation_status = "RECONCILED_WITH_REVISIONS" if total_revised else "EXACT_MATCH"
-    reconciliation_fingerprint = _digest({
+    reconciliation_fingerprint = direct_bis_reconciliation_fingerprint({
         "protocol_fingerprint": record.protocol_fingerprint,
         "reference_snapshot_fingerprint": record.reference_snapshot_fingerprint,
         "direct_snapshot_fingerprint": snapshot_fingerprint,
         "series_results": results,
-        "history_semantics": DIRECT_BIS_HISTORY_SEMANTICS,
     })
     completed_at = _now_iso()
     completed = replace(
@@ -867,9 +1157,11 @@ __all__ = [
     "DIRECT_BIS_TOPIC_URL",
     "DirectBisDataError",
     "build_prospective_vintage_summary",
+    "direct_bis_reconciliation_fingerprint",
     "download_bis_eer_archive",
     "execute_direct_bis_reconciliation",
     "freeze_direct_bis_reconciliation",
     "load_persisted_direct_bis_snapshot",
     "parse_bis_eer_archive",
+    "validate_completed_direct_bis_reconciliation",
 ]
