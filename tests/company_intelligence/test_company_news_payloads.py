@@ -52,3 +52,19 @@ def test_desk_context_keeps_missing_scores_unavailable_and_handles_frames():
     assert context["posture"] == "Evidence pending"
     assert context["provider_flags"]["FMP estimates"] is False
     assert context["provider_flags"]["SEC / filings"] is True
+
+
+def test_desk_context_prefers_explicit_institutional_coverage():
+    context = build_desk_context(
+        "EXM",
+        {
+            "company_analysis": {
+                "scores": {"company_score": 72},
+                "institutional": {"overlay": {"score": 41, "coverage": 67}},
+            }
+        },
+    )
+
+    assert context["overlay_score"] == 41
+    assert context["coverage"] == 67
+    assert context["coverage_basis"] == "Institutional dimensions"

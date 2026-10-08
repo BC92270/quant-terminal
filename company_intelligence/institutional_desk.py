@@ -276,7 +276,7 @@ def _inject_desk_css() -> None:
 .ci-identity{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;margin-top:20px}.ci-name{font-family:Georgia,serif;font-size:clamp(2.0rem,4vw,3.35rem);line-height:1;color:#fff;font-weight:800;letter-spacing:-.035em}.ci-name span{color:var(--ci-cyan)}.ci-meta{margin-top:9px;color:#9bb0c2;font-size:.79rem;letter-spacing:.02em}.ci-posture{text-align:right}.ci-posture .label{font-size:.58rem;text-transform:uppercase;letter-spacing:.18em;color:#7890a4;font-weight:900}.ci-posture .value{margin-top:5px;font-family:Georgia,serif;color:#eff7fb;font-size:1.26rem;font-weight:800}.ci-posture.positive .value{color:var(--ci-green)}.ci-posture.watch .value{color:var(--ci-gold)}.ci-posture.negative .value{color:var(--ci-red)}
 .ci-kpis{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr 1.35fr;gap:9px;margin-top:21px}.ci-kpi{min-height:79px;padding:12px 14px;border:1px solid var(--ci-line);border-radius:13px;background:linear-gradient(180deg,rgba(14,35,51,.78),rgba(7,20,31,.72));backdrop-filter:blur(8px)}.ci-kpi .k{font-size:.57rem;text-transform:uppercase;letter-spacing:.16em;color:#8096a9;font-weight:900}.ci-kpi .v{font-family:Georgia,serif;color:#f5f8fb;font-size:1.35rem;font-weight:800;margin-top:5px}.ci-kpi .s{font-size:.64rem;color:#7f97aa;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ci-decision-grid{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:10px;margin:10px 0 18px}.ci-brief{padding:16px 17px;border:1px solid var(--ci-line);border-radius:15px;background:linear-gradient(145deg,rgba(10,29,43,.88),rgba(5,16,26,.92));min-height:116px}.ci-brief .eyebrow{font-size:.57rem;text-transform:uppercase;letter-spacing:.17em;color:var(--ci-gold);font-weight:900}.ci-brief h4{font-family:Georgia,serif;font-size:1.02rem;color:#eef5fa;margin:7px 0 6px}.ci-brief p{font-size:.73rem;line-height:1.55;color:#9db0c0;margin:0}.ci-brief .signal{color:var(--ci-cyan)}
-.ci-workspace-head{display:flex;align-items:flex-end;justify-content:space-between;gap:15px;margin:22px 0 10px;padding:0 2px 10px;border-bottom:1px solid var(--ci-line)}.ci-workspace-head .eyebrow{font-size:.59rem;text-transform:uppercase;letter-spacing:.18em;color:var(--ci-gold);font-weight:900}.ci-workspace-head h3{font-family:Georgia,serif;font-size:1.55rem;color:#f3f6f9;margin:5px 0 0}.ci-workspace-head p{max-width:660px;color:#8ea3b4;font-size:.74rem;line-height:1.5;margin:0;text-align:right}
+.ci-workspace-head{display:flex;align-items:flex-end;justify-content:space-between;gap:15px;margin:22px 0 10px;padding:0 2px 10px;border-bottom:1px solid var(--ci-line)}.ci-workspace-head .eyebrow{font-size:.59rem;text-transform:uppercase;letter-spacing:.18em;color:var(--ci-gold);font-weight:900}.ci-workspace-head .title{font-family:Georgia,serif;font-size:1.55rem;color:#f3f6f9;margin:5px 0 0;font-weight:800}.ci-workspace-head p{max-width:660px;color:#8ea3b4;font-size:.74rem;line-height:1.5;margin:0;text-align:right}
 [class*="st-key-company_intelligence_workspace_"] div[role="radiogroup"]{display:flex;flex-wrap:wrap;gap:7px;padding:9px;border:1px solid var(--ci-line);border-radius:15px;background:rgba(5,16,26,.78)}
 [class*="st-key-company_intelligence_workspace_"] div[role="radiogroup"] label{min-height:38px;padding:6px 10px!important;border:1px solid transparent;border-radius:10px;background:rgba(14,31,45,.60);transition:transform .16s ease,border-color .16s ease,background .16s ease}
 [class*="st-key-company_intelligence_workspace_"] div[role="radiogroup"] label:hover{transform:translateY(-1px);border-color:rgba(99,215,231,.35);background:rgba(22,48,65,.8)}
@@ -330,11 +330,19 @@ def _hero(ctx: Mapping[str, Any]) -> None:
     catalyst = "Forward evidence unavailable."
     if forward is not None:
         catalyst = f"Forward score {forward:.0f}/100; validate the underlying estimates and revision breadth before relying on it."
-    risk = "Coverage is incomplete; missing evidence remains N/A."
-    if valuation is not None and valuation < 55:
+    coverage = ctx.get("coverage")
+    if coverage is None:
+        risk = "Coverage is unavailable; no conclusion should be promoted from this snapshot."
+    elif ctx.get("overlay_score") is None:
+        risk = "The institutional overlay is not loaded in the core view; missing evidence remains N/A."
+    elif coverage < 80:
+        risk = f"Only {coverage:.0f}% of the expected evidence is covered; treat the posture as provisional."
+    elif valuation is not None and valuation < 55:
         risk = f"Valuation support is weak ({valuation:.0f}/100); scenario sensitivity deserves priority."
     elif quality is not None and quality < 55:
         risk = f"Profitability quality is fragile ({quality:.0f}/100); inspect margins and cash conversion."
+    else:
+        risk = "Score dispersion, source freshness and downside scenarios still require human validation."
 
     st.markdown(
         f"""
@@ -365,7 +373,7 @@ def _workspace_header(workspace: str) -> None:
     eyebrow, title, description = _WORKSPACE_META[workspace]
     st.markdown(
         f"""
-<div class="ci-workspace-head"><div><div class="eyebrow">{escape(eyebrow)}</div><h3>{escape(title)}</h3></div><p>{escape(description)}</p></div>
+<div class="ci-workspace-head"><div><div class="eyebrow">{escape(eyebrow)}</div><div class="title" role="heading" aria-level="2">{escape(title)}</div></div><p>{escape(description)}</p></div>
 """,
         unsafe_allow_html=True,
     )
@@ -391,15 +399,32 @@ def render_company_intelligence_mode(ticker: str, analysis: dict) -> None:
     ticker = str(ticker or "N/A").upper().strip()
     _inject_desk_css()
 
+    options = _workspace_options()
+    workspace_key = f"company_intelligence_workspace_{ticker}"
+    requested_workspace = st.session_state.get(workspace_key, options[0])
+    if requested_workspace not in options:
+        requested_workspace = options[0]
+
+    company = analysis.get("company_analysis", {})
+    prefetch_error: Exception | None = None
+    if requested_workspace != "Core Financials":
+        try:
+            with st.spinner("Loading governed institutional evidence…"):
+                company = _ensure_institutional(company, ticker)
+                company = _ensure_workspace_intelligence(company, ticker, requested_workspace)
+                analysis["company_analysis"] = company
+        except Exception as error:  # Keep the shell and other workspaces available.
+            prefetch_error = error
+
     context = build_desk_context(ticker, analysis)
     _hero(context)
     _provenance_panel(context)
 
     workspace = st.radio(
         "Company Intelligence Workspace",
-        _workspace_options(),
+        options,
         horizontal=True,
-        key=f"company_intelligence_workspace_{ticker}",
+        key=workspace_key,
         label_visibility="collapsed",
     )
     _workspace_header(workspace)
@@ -411,13 +436,12 @@ def render_company_intelligence_mode(ticker: str, analysis: dict) -> None:
             _render_degraded(workspace, error)
         return
 
-    company = analysis.get("company_analysis", {})
-    try:
-        with st.spinner("Loading governed institutional evidence…"):
-            company = _ensure_institutional(company, ticker)
-            company = _ensure_workspace_intelligence(company, ticker, workspace)
-            analysis["company_analysis"] = company
+    if prefetch_error is not None:
+        _render_degraded(workspace, prefetch_error)
+        return
 
+    company = analysis.get("company_analysis", company)
+    try:
         if workspace == "Management / Transcripts":
             render_management_transcripts(company)
         elif workspace == "Research Lab" and callable(render_research_lab):
