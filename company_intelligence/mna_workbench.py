@@ -308,7 +308,10 @@ def extract_mna_facts(ticker: str, analysis: Mapping[str, Any]) -> dict[str, Any
         "revenue_growth": _first_number(_first_scalar(growth, "revenue_growth_yoy", "annual_revenue_growth"), _first_scalar(forward, "revenue_growth_forward")),
         "ebitda_margin": _first_number(_first_scalar(profitability, "ebitda_margin"), ebitda / revenue if ebitda is not None and revenue not in (None, 0) else None),
         "operating_margin": _first_number(_first_scalar(profitability, "operating_margin"), ebit / revenue if ebit is not None and revenue not in (None, 0) else None),
-        "fcf_margin": _first_number(_first_scalar(balance, "fcf_margin"), free_cash_flow / revenue if free_cash_flow is not None and revenue not in (None, 0) else None),
+        # Keep the displayed ratio on the same normalized period/basis as the
+        # numerator and denominator shown in this workbench. Provider ratios can
+        # silently mix TTM and last-fiscal-year values.
+        "fcf_margin": _first_number(free_cash_flow / revenue if free_cash_flow is not None and revenue not in (None, 0) else None, _first_scalar(balance, "fcf_margin")),
         "trailing_pe": _first_number(_first_scalar(valuation, "trailing_pe"), _first_scalar(info, "trailingPE")),
         "forward_pe": _first_number(_first_scalar(valuation, "forward_pe"), _first_scalar(info, "forwardPE")),
         "ev_to_revenue": _first_number(_first_scalar(valuation, "ev_to_revenue"), enterprise_value / revenue if enterprise_value is not None and revenue not in (None, 0) else None),
@@ -928,6 +931,7 @@ def _render_fa(facts: Mapping[str, Any], ticker: str) -> None:
         x3.metric("DCF value / share", _money(result.get("value_per_share"), str(facts.get("currency"))))
         terminal_share = _finite(result.get("terminal_value_share"))
         x4.metric("Terminal value share", _percent(terminal_share), "High concentration" if terminal_share is not None and terminal_share > 0.75 else "")
+        st.caption(str(result.get("reason") or "Illustrative valuation assumptions require human review."))
         implied_growth = reverse_dcf_growth(facts, assumptions)
         if implied_growth is None:
             st.warning("Reverse DCF is infeasible inside the documented -50% to +150% growth bracket.")
@@ -1165,7 +1169,12 @@ def _render_doww(facts: Mapping[str, Any], ticker: str) -> None:
     )
     payload = _render_target_watch(facts, ticker) if lens.startswith("Target") else _render_acquirer_watch(facts, ticker)
     c1, c2 = st.columns([1, 2])
-    label = c1.text_input("Scenario label", value=f"{ticker} · {lens}", key=f"mna_scenario_label_{ticker}")
+    lens_key = "target" if lens.startswith("Target") else "acquirer"
+    label = c1.text_input(
+        "Scenario label",
+        value=f"{ticker} · {lens}",
+        key=f"mna_scenario_label_{ticker}_{lens_key}",
+    )
     if c1.button("Save governed snapshot", key=f"mna_save_scenario_{ticker}", width="stretch"):
         _save_scenario(ticker, label, payload)
         st.success("Scenario saved in the current research session.")

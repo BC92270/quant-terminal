@@ -16,6 +16,7 @@ from company_intelligence.mna_workbench import (
     simplified_ppa,
     synergy_npv,
     target_deal_case,
+    extract_mna_facts,
 )
 
 
@@ -248,6 +249,28 @@ def test_target_deal_case_applies_control_premium_and_transaction_ev_bridge():
     assert result["transaction_ev"] > lower["transaction_ev"]
 
 
+def test_fact_normalization_keeps_fcf_margin_on_the_displayed_period_basis():
+    analysis = {
+        "latest_price": 10.0,
+        "company_analysis": {
+            "profile": {"name": "Target", "market_cap": 1_000.0, "currency": "USD"},
+            "growth": {"revenue_ttm": 500.0, "latest_net_income": 50.0, "latest_free_cash_flow": 100.0},
+            "profitability": {"ebitda": 125.0},
+            "valuation": {},
+            "balance": {"total_cash": 100.0, "total_debt": 200.0, "fcf_margin": 0.05},
+            "analysts": {},
+            "forward": {},
+            "raw_data": {"info": {"sharesOutstanding": 100.0}},
+        },
+    }
+
+    facts = extract_mna_facts("TST", analysis)
+
+    assert facts["free_cash_flow"] == pytest.approx(100.0)
+    assert facts["revenue"] == pytest.approx(500.0)
+    assert facts["fcf_margin"] == pytest.approx(0.20)
+
+
 def test_target_deal_case_accepts_numeric_provider_scalars_after_validation():
     facts = {key: str(value) if isinstance(value, float) else value for key, value in _target_facts().items()}
 
@@ -401,3 +424,4 @@ def test_all_five_workflows_and_both_deal_lenses_render_offline():
     app.radio[1].set_value("Acquirer / accretion case").run()
     assert not app.exception
     assert any(metric.label == "PF net leverage" for metric in app.metric)
+    assert app.text_input[0].value == "TST · Acquirer / accretion case"
