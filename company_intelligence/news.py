@@ -3040,10 +3040,12 @@ def render_latest_news_briefing_v6(company_analysis: dict, ticker: str):
 
     if not raw_news_payload and isinstance(company_analysis.get("sentiment"), dict):
         sentiment = company_analysis.get("sentiment", {})
-        raw_news_payload = (
-            sentiment.get("news_table")
-            or sentiment.get("news")
-            or sentiment.get("latest_news")
+        # Never use Python boolean coalescing here: ``news_table`` is commonly a
+        # DataFrame and ``bool(DataFrame)`` raises an ambiguous-truth ValueError.
+        raw_news_payload = _news_merge_payloads(
+            sentiment.get("news_table"),
+            sentiment.get("news"),
+            sentiment.get("latest_news"),
         )
 
     if raw_news_payload is not None:
