@@ -373,7 +373,7 @@ def _workspace_header(workspace: str) -> None:
     eyebrow, title, description = _WORKSPACE_META[workspace]
     st.markdown(
         f"""
-<div class="ci-workspace-head"><div><div class="eyebrow">{escape(eyebrow)}</div><div class="title" role="heading" aria-level="2">{escape(title)}</div></div><p>{escape(description)}</p></div>
+<div class="ci-workspace-head"><div><div class="eyebrow">{escape(eyebrow)}</div><div class="title" role="heading" aria-level="2" aria-label="{escape(title)}">{escape(title)}</div></div><p>{escape(description)}</p></div>
 """,
         unsafe_allow_html=True,
     )
