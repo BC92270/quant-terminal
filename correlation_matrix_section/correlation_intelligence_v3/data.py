@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import re
 from typing import Any
 
 import numpy as np
@@ -101,9 +102,9 @@ def _extract_close_from_yf(raw: pd.DataFrame, ticker: str) -> pd.Series | None:
         return None
     t = normalize_ticker(ticker)
     if isinstance(raw.columns, pd.MultiIndex):
-        for field in ("Close", "Adj Close"):
-            if field in raw.columns.get_level_values(0) and t in raw[field].columns:
-                return pd.to_numeric(raw[field][t], errors="coerce").rename(t)
+        for price_field in ("Close", "Adj Close"):
+            if price_field in raw.columns.get_level_values(0) and t in raw[price_field].columns:
+                return pd.to_numeric(raw[price_field][t], errors="coerce").rename(t)
         try:
             if ("Close", t) in raw.columns:
                 return pd.to_numeric(raw[("Close", t)], errors="coerce").rename(t)
@@ -199,20 +200,54 @@ def _internal_quality(s: pd.Series) -> tuple[float, int]:
     return float(internal.isna().mean()), max_consecutive_missing(internal)
 
 
+def _requested_period_calendar_days(period: str | None, as_of: pd.Timestamp | None) -> int | None:
+    """Translate the supported yfinance-style period into an auditable calendar span.
+
+    This deliberately returns ``None`` for ``max`` and unknown values: inventing a
+    requested start date would make an absolute coverage metric look more precise
+    than the underlying request actually is.
+    """
+    value = str(period or "").strip().lower()
+    if not value or value == "max":
+        return None
+    if value == "ytd":
+        if as_of is None or pd.isna(as_of):
+            return None
+        end = pd.Timestamp(as_of).tz_localize(None).normalize()
+        return max(1, int((end - pd.Timestamp(year=end.year, month=1, day=1)).days) + 1)
+
+    match = re.fullmatch(r"(\d+)\s*(d|wk|mo|y)", value)
+    if not match:
+        return None
+    amount = int(match.group(1))
+    multiplier = {"d": 1.0, "wk": 7.0, "mo": 365.25 / 12.0, "y": 365.25}[match.group(2)]
+    return max(1, int(round(amount * multiplier)))
+
+
 def build_quality(
     levels: pd.DataFrame,
     changes: pd.DataFrame,
     transform_map: dict[str, str],
     provider_map: dict[str, str],
     source: str,
+    requested_period: str | None = None,
 ) -> pd.DataFrame:
-    """Audit coverage without treating unavailable pre-history as an internal data gap."""
+    """Build an explicit, non-relative-only audit of history and missing data.
+
+    ``Coverage %`` remains for backwards compatibility, but now means the most
+    conservative available coverage measure: observed-grid completeness capped by
+    requested-period calendar depth.  The former cross-sectional ratio is retained
+    as ``Relative history depth %`` and must not be read as absolute coverage.
+    """
     rows = []
     if levels is None:
         levels = pd.DataFrame()
 
     obs_counts = [int(levels[c].notna().sum()) for c in levels.columns if int(levels[c].notna().sum()) > 0]
     reference_obs = float(np.median(obs_counts)) if obs_counts else 0.0
+    grid_obs = int(len(levels.index))
+    grid_end = pd.Timestamp(levels.index.max()) if grid_obs else None
+    requested_calendar_days = _requested_period_calendar_days(requested_period, grid_end)
 
     for col in levels.columns:
         s = pd.to_numeric(levels[col], errors="coerce")
@@ -221,7 +256,33 @@ def build_quality(
         start = s.dropna().index.min() if non_missing else None
         end = s.dropna().index.max() if non_missing else None
         internal_missing, largest_internal_gap = _internal_quality(s)
-        coverage = min(1.0, non_missing / reference_obs) if reference_obs > 0 else np.nan
+        valid_positions = np.flatnonzero(s.notna().to_numpy())
+        leading_missing = int(valid_positions[0]) if len(valid_positions) else grid_obs
+        trailing_missing = int(grid_obs - valid_positions[-1] - 1) if len(valid_positions) else 0
+        internal_missing_obs = (
+            int(s.iloc[valid_positions[0] : valid_positions[-1] + 1].isna().sum())
+            if len(valid_positions)
+            else 0
+        )
+        total_missing = max(0, grid_obs - non_missing)
+
+        observed_grid_coverage = non_missing / grid_obs if grid_obs > 0 else np.nan
+        relative_history_depth = min(1.0, non_missing / reference_obs) if reference_obs > 0 else np.nan
+        within_history_coverage = 1.0 - internal_missing if not pd.isna(internal_missing) else np.nan
+        history_span_days = (
+            int((pd.Timestamp(end) - pd.Timestamp(start)).days) + 1
+            if start is not None and end is not None
+            else 0
+        )
+        requested_period_depth = (
+            min(1.0, history_span_days / requested_calendar_days)
+            if requested_calendar_days and history_span_days > 0
+            else np.nan
+        )
+        coverage_components = [observed_grid_coverage]
+        if not pd.isna(requested_period_depth):
+            coverage_components.append(requested_period_depth)
+        coverage = min(coverage_components) if coverage_components and not pd.isna(coverage_components[0]) else np.nan
         shortfall = max(0, int(round(reference_obs - non_missing))) if reference_obs > 0 else 0
         if pd.isna(coverage):
             coverage_status = "Unknown"
@@ -238,7 +299,26 @@ def build_quality(
             "Level obs": non_missing,
             "Return obs": int(c.notna().sum()),
             "Coverage %": coverage,
+            "Coverage basis": (
+                "min(observed grid, requested period depth)"
+                if requested_calendar_days is not None
+                else "observed grid"
+            ),
+            "Observed grid coverage %": observed_grid_coverage,
+            "Within-history coverage %": within_history_coverage,
+            "Relative history depth %": relative_history_depth,
+            "Requested period depth %": requested_period_depth,
+            "Requested period": str(requested_period) if requested_period is not None else "Unknown",
+            "Requested period calendar days": requested_calendar_days,
+            "Observed grid obs": grid_obs,
+            "Reference median obs": reference_obs,
+            "History depth obs": non_missing,
+            "History span calendar days": history_span_days,
             "History shortfall obs": shortfall,
+            "Total missing obs": total_missing,
+            "Leading missing obs": leading_missing,
+            "Internal missing obs": internal_missing_obs,
+            "Trailing missing obs": trailing_missing,
             "Internal missing %": internal_missing,
             "Largest internal gap": largest_internal_gap,
             "Coverage status": coverage_status,
@@ -375,7 +455,7 @@ def load_data_bundle(
         market_metadata = {}
     normalized_meta = {normalize_ticker(k): v for k, v in market_metadata.items()}
 
-    quality = build_quality(levels, changes, used_map, provider_map, source)
+    quality = build_quality(levels, changes, used_map, provider_map, source, requested_period=period)
     sync = synchronization_audit(levels, changes, normalized_meta, alignment_lags)
     return DataBundle(
         levels=levels,

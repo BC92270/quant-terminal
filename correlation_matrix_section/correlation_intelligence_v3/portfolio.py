@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from scipy.cluster.hierarchy import leaves_list, linkage
+from scipy.optimize import minimize
+from scipy.spatial.distance import squareform
 from sklearn.covariance import LedoitWolf
 
 from .utils import safe_float
@@ -409,3 +412,209 @@ def structured_correlation_stress_scenarios(
     rows.append(calc("Worst-case sign convergence +20%",wc))
     out=pd.DataFrame(rows); base=float(out.iloc[0]["Annualized vol"]); out["Vol change"]=out["Annualized vol"]/max(base,1e-18)-1
     return out
+
+
+def _inverse_variance_weights(cov: np.ndarray) -> np.ndarray:
+    iv = 1.0 / np.clip(np.diag(cov), 1e-18, None)
+    return iv / max(float(iv.sum()), 1e-18)
+
+
+def _cluster_variance(cov: np.ndarray, indices: list[int]) -> float:
+    sub = cov[np.ix_(indices, indices)]
+    w = _inverse_variance_weights(sub)
+    return float(w @ sub @ w)
+
+
+def _hrp_weights(cov: np.ndarray) -> tuple[np.ndarray, list[int]]:
+    """Hierarchical Risk Parity using average-linkage and recursive bisection."""
+
+    cov = np.asarray(cov, dtype=float)
+    p = len(cov)
+    if p < 2:
+        return np.ones(p, dtype=float), list(range(p))
+    vol = np.sqrt(np.clip(np.diag(cov), 1e-18, None))
+    corr = cov / np.outer(vol, vol)
+    corr = np.clip(0.5 * (corr + corr.T), -1.0, 1.0)
+    np.fill_diagonal(corr, 1.0)
+    dist = np.sqrt(np.clip((1.0 - corr) / 2.0, 0.0, None))
+    tree = linkage(squareform(dist, checks=False), method="average", optimal_ordering=True)
+    order = [int(i) for i in leaves_list(tree)]
+    weights = np.ones(p, dtype=float)
+    clusters: list[list[int]] = [order]
+    while clusters:
+        next_clusters: list[list[int]] = []
+        for cluster in clusters:
+            if len(cluster) <= 1:
+                continue
+            split = len(cluster) // 2
+            left, right = cluster[:split], cluster[split:]
+            lv = _cluster_variance(cov, left)
+            rv = _cluster_variance(cov, right)
+            alpha = 1.0 - lv / max(lv + rv, 1e-18)
+            weights[left] *= alpha
+            weights[right] *= 1.0 - alpha
+            next_clusters.extend([left, right])
+        clusters = next_clusters
+    weights = np.clip(weights, 0.0, None)
+    weights /= max(float(weights.sum()), 1e-18)
+    return weights, order
+
+
+def _minimum_variance_long_only(cov: np.ndarray) -> tuple[np.ndarray, dict]:
+    p = len(cov)
+    start = _inverse_variance_weights(cov)
+
+    def objective(w: np.ndarray) -> float:
+        return float(w @ cov @ w)
+
+    result = minimize(
+        objective,
+        x0=start,
+        method="SLSQP",
+        bounds=[(0.0, 1.0)] * p,
+        constraints={"type": "eq", "fun": lambda w: float(w.sum() - 1.0)},
+        options={"maxiter": 300, "ftol": 1e-12},
+    )
+    if not result.success or not np.isfinite(result.x).all():
+        return start, {"success": False, "fallback": "inverse_volatility", "message": str(result.message)}
+    w = np.clip(np.asarray(result.x, dtype=float), 0.0, 1.0)
+    w /= max(float(w.sum()), 1e-18)
+    return w, {"success": True, "fallback": None, "message": str(result.message)}
+
+
+def _allocation_weights(cov: np.ndarray, method: str) -> tuple[np.ndarray, dict]:
+    p = len(cov)
+    if method == "Equal weight":
+        return np.repeat(1.0 / p, p), {"success": True}
+    if method == "Inverse volatility":
+        return _inverse_variance_weights(cov), {"success": True}
+    if method == "HRP":
+        w, order = _hrp_weights(cov)
+        return w, {"success": True, "cluster_order": order}
+    if method == "Long-only minimum variance":
+        return _minimum_variance_long_only(cov)
+    raise ValueError(f"Unknown allocation method: {method}")
+
+
+def _max_drawdown(log_returns: np.ndarray) -> float:
+    wealth = np.exp(np.cumsum(np.asarray(log_returns, dtype=float)))
+    peak = np.maximum.accumulate(np.r_[1.0, wealth])
+    full = np.r_[1.0, wealth]
+    return float(np.min(full / np.maximum(peak, 1e-18) - 1.0))
+
+
+def allocation_model_comparison(
+    changes: pd.DataFrame,
+    universe: list[str],
+    train_days: int = 252,
+    test_days: int = 21,
+    min_train: int = 126,
+    max_folds: int = 8,
+    transaction_cost_bps: float = 10.0,
+) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+    """No-look-ahead allocation challenger lab.
+
+    Four long-only approaches are fitted only on each chronological training window and
+    evaluated on the following non-overlapping block.  The result is research evidence,
+    not an optimiser mandate; estimated linear turnover costs are shown explicitly.
+    """
+
+    cols = list(dict.fromkeys([c for c in universe if c in changes.columns]))
+    if len(cols) < 3:
+        return pd.DataFrame(), pd.DataFrame(), {"status": "insufficient_assets"}
+    rt = changes[cols].apply(pd.to_numeric, errors="coerce").dropna(how="any")
+    n = len(rt)
+    h = max(5, int(test_days))
+    train = min(int(train_days), max(int(min_train), n - h))
+    if n < int(min_train) + h:
+        return pd.DataFrame(), pd.DataFrame(), {"status": "insufficient_data", "obs": int(n)}
+
+    methods = ["Equal weight", "Inverse volatility", "HRP", "Long-only minimum variance"]
+    starts = list(range(train, n - h + 1, h))[-max(1, int(max_folds)):]
+    fold_rows: list[dict] = []
+    previous: dict[str, np.ndarray] = {}
+    fallback_count = 0
+    for fold_no, end in enumerate(starts, start=1):
+        train_frame = rt.iloc[max(0, end - train):end]
+        test_frame = rt.iloc[end:end + h]
+        if len(train_frame) < min_train or len(test_frame) < h:
+            continue
+        cov = _shrunk_cov(train_frame).to_numpy(dtype=float)
+        for method in methods:
+            try:
+                w, fit_meta = _allocation_weights(cov, method)
+            except Exception:
+                continue
+            if fit_meta.get("fallback"):
+                fallback_count += 1
+            turnover = float(0.5 * np.abs(w - previous[method]).sum()) if method in previous else 0.0
+            previous[method] = w
+            gross = test_frame.to_numpy(dtype=float) @ w
+            cost = turnover * float(transaction_cost_bps) / 10000.0
+            net = gross.copy()
+            if len(net):
+                net[0] -= cost
+            _, cvar = _historical_var_cvar(pd.Series(net), 0.95)
+            fold_rows.append({
+                "Fold": int(fold_no),
+                "Train start": str(train_frame.index[0]),
+                "Train end": str(train_frame.index[-1]),
+                "Test start": str(test_frame.index[0]),
+                "Test end": str(test_frame.index[-1]),
+                "Method": method,
+                "OOS ann. vol": float(np.std(net, ddof=1) * np.sqrt(252)),
+                "OOS mean ann.": float(np.mean(net) * 252),
+                "OOS CVaR95 daily": cvar,
+                "OOS max drawdown": _max_drawdown(net),
+                "Turnover": turnover,
+                "Estimated cost": cost,
+                "Effective N": float(1.0 / max(np.sum(w * w), 1e-18)),
+                "Max weight": float(np.max(w)),
+                "Fit fallback": fit_meta.get("fallback"),
+            })
+
+    fold_df = pd.DataFrame(fold_rows)
+    if fold_df.empty:
+        return pd.DataFrame(), pd.DataFrame(), {"status": "no_valid_folds", "obs": int(n)}
+
+    summary = fold_df.groupby("Method", as_index=False).agg(
+        Folds=("Fold", "nunique"),
+        **{
+            "OOS ann. vol": ("OOS ann. vol", "mean"),
+            "OOS mean ann.": ("OOS mean ann.", "mean"),
+            "OOS CVaR95 daily": ("OOS CVaR95 daily", "mean"),
+            "Worst max drawdown": ("OOS max drawdown", "min"),
+            "Mean turnover": ("Turnover", "mean"),
+            "Mean effective N": ("Effective N", "mean"),
+            "Mean max weight": ("Max weight", "mean"),
+        },
+    )
+    summary["Vol rank"] = summary["OOS ann. vol"].rank(method="min", ascending=True).astype(int)
+    summary = summary.sort_values(["Vol rank", "OOS CVaR95 daily"]).reset_index(drop=True)
+
+    current_cov = _shrunk_cov(rt.tail(train)).to_numpy(dtype=float)
+    weight_rows: list[dict] = []
+    method_meta: dict[str, dict] = {}
+    for method in methods:
+        w, fit_meta = _allocation_weights(current_cov, method)
+        method_meta[method] = fit_meta
+        for asset, weight in zip(cols, w):
+            weight_rows.append({"Method": method, "Asset": asset, "Weight": float(weight)})
+    weights = pd.DataFrame(weight_rows)
+    meta = {
+        "status": "ok",
+        "authority": "RESEARCH_ONLY",
+        "no_look_ahead": True,
+        "obs": int(n),
+        "assets": int(len(cols)),
+        "universe": cols,
+        "train_days": int(train),
+        "test_days": int(h),
+        "folds": int(fold_df["Fold"].nunique()),
+        "transaction_cost_bps": float(transaction_cost_bps),
+        "covariance_method": "Ledoit-Wolf",
+        "fallback_count": int(fallback_count),
+        "current_method_meta": method_meta,
+        "fold_results": fold_df,
+    }
+    return summary, weights, meta

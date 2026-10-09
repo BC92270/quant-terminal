@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from statsmodels.stats.diagnostic import acorr_ljungbox
 
 
 # NumPy 2 renamed ``trapz`` to ``trapezoid``. Keep the engine compatible with
@@ -15,29 +16,239 @@ from .estimators import trailing
 from .utils import safe_float
 
 
+def _matrix_validation(
+    values: np.ndarray,
+    *,
+    expected_row_sum: float,
+    prefix: str,
+    atol: float = 1e-6,
+) -> dict:
+    """Return JSON-safe numerical checks for a row-normalized decomposition.
+
+    The helper is deliberately independent from the VAR implementation so the
+    same publication gate is applied to time- and frequency-domain outputs.
+    """
+    arr = np.asarray(values, dtype=float)
+    finite = bool(arr.ndim == 2 and arr.size > 0 and np.isfinite(arr).all())
+    nonnegative = bool(finite and np.all(arr >= -atol))
+    if finite:
+        row_sums = arr.sum(axis=1)
+        max_error = float(np.max(np.abs(row_sums - float(expected_row_sum))))
+        normalized = bool(np.allclose(row_sums, expected_row_sum, atol=atol, rtol=1e-8))
+    else:
+        max_error = None
+        normalized = False
+    return {
+        f"{prefix}_finite": finite,
+        f"{prefix}_nonnegative": nonnegative,
+        f"{prefix}_rows_normalized": normalized,
+        f"{prefix}_row_sum_max_error": max_error,
+        f"{prefix}_checks_pass": bool(finite and nonnegative and normalized),
+    }
+
+
+def _var_fit_diagnostics(fit, lag: int, columns: list[str]) -> dict:
+    """Collect cheap, auditable VAR diagnostics without raising on edge cases."""
+    stable = None
+    stability_error = None
+    try:
+        stable = bool(fit.is_stable(verbose=False))
+    except Exception as exc:  # pragma: no cover - statsmodels normally implements this
+        stability_error = type(exc).__name__
+
+    try:
+        sigma = np.asarray(fit.sigma_u, dtype=float)
+    except Exception:
+        sigma = np.empty((0, 0), dtype=float)
+    sigma_finite = bool(sigma.ndim == 2 and sigma.size > 0 and np.isfinite(sigma).all())
+    sigma_square = bool(sigma_finite and sigma.shape[0] == sigma.shape[1] == len(columns))
+    sigma_condition = None
+    sigma_min_eigenvalue = None
+    sigma_positive_diagonal = False
+    if sigma_square:
+        try:
+            sigma_condition_raw = float(np.linalg.cond(sigma))
+            sigma_condition = sigma_condition_raw if np.isfinite(sigma_condition_raw) else None
+            sigma_min_eigenvalue_raw = float(np.linalg.eigvalsh((sigma + sigma.T) / 2.0).min())
+            sigma_min_eigenvalue = sigma_min_eigenvalue_raw if np.isfinite(sigma_min_eigenvalue_raw) else None
+            sigma_positive_diagonal = bool(np.all(np.diag(sigma) > 0.0))
+        except (ValueError, np.linalg.LinAlgError):
+            pass
+
+    try:
+        residuals = np.asarray(fit.resid, dtype=float)
+    except Exception:
+        residuals = np.empty((0, len(columns)), dtype=float)
+    residuals_finite = bool(
+        residuals.ndim == 2
+        and residuals.shape[0] > 0
+        and residuals.shape[1] == len(columns)
+        and np.isfinite(residuals).all()
+    )
+
+    lb_lag = None
+    lb_pvalues: dict[str, float] = {}
+    portmanteau_pvalue = None
+    portmanteau_error = None
+    if residuals_finite:
+        n_resid = int(residuals.shape[0])
+        candidate = min(10, max(1, n_resid // 5))
+        if candidate <= int(lag) and int(lag) + 1 < n_resid:
+            candidate = int(lag) + 1
+        if 0 < candidate < n_resid:
+            lb_lag = int(candidate)
+            for idx, name in enumerate(columns):
+                if float(np.std(residuals[:, idx], ddof=0)) <= np.finfo(float).eps:
+                    continue
+                try:
+                    result = acorr_ljungbox(residuals[:, idx], lags=[lb_lag], return_df=True)
+                    pvalue = safe_float(result["lb_pvalue"].iloc[-1])
+                    if pvalue is not None:
+                        lb_pvalues[str(name)] = float(pvalue)
+                except Exception:
+                    continue
+            try:
+                whiteness = fit.test_whiteness(nlags=lb_lag, adjusted=True)
+                portmanteau_pvalue = safe_float(getattr(whiteness, "pvalue", None))
+            except Exception as exc:
+                portmanteau_error = type(exc).__name__
+    lb_min = min(lb_pvalues.values()) if lb_pvalues else None
+
+    covariance_valid = bool(
+        sigma_square
+        and sigma_condition is not None
+        and sigma_condition <= 1e8
+        and sigma_min_eigenvalue is not None
+        and sigma_min_eigenvalue > 1e-12
+        and sigma_positive_diagonal
+    )
+    whiteness_available = bool(
+        len(lb_pvalues) == len(columns) and portmanteau_pvalue is not None
+    )
+    whiteness_pass = bool(
+        whiteness_available and portmanteau_pvalue is not None and portmanteau_pvalue >= 0.05
+    )
+    warnings: list[str] = []
+    if lb_min is not None and lb_min < 0.05:
+        warnings.append("univariate_residual_serial_correlation")
+    if portmanteau_pvalue is not None and portmanteau_pvalue < 0.05:
+        warnings.append("multivariate_residual_serial_correlation")
+    if sigma_condition is not None and sigma_condition > 1e8:
+        warnings.append("ill_conditioned_residual_covariance")
+    if stable is None:
+        warnings.append("stability_check_unavailable")
+    if not whiteness_available:
+        warnings.append("residual_whiteness_check_unavailable")
+    if not residuals_finite:
+        warnings.append("non_finite_residuals")
+    if not covariance_valid:
+        warnings.append("invalid_residual_covariance")
+
+    return {
+        "VAR stable": stable,
+        "stability_check_error": stability_error,
+        "residual_obs": int(residuals.shape[0]) if residuals.ndim == 2 else 0,
+        "residuals_finite": residuals_finite,
+        "residual_covariance_finite": sigma_finite,
+        "residual_covariance_positive_diagonal": sigma_positive_diagonal,
+        "residual_covariance_condition": sigma_condition,
+        "residual_covariance_min_eigenvalue": sigma_min_eigenvalue,
+        "residual_ljung_box_lag": lb_lag,
+        "residual_ljung_box_min_pvalue": lb_min,
+        "residual_ljung_box_pvalues": lb_pvalues,
+        "residual_portmanteau_adjusted": True,
+        "residual_portmanteau_pvalue": portmanteau_pvalue,
+        "residual_portmanteau_error": portmanteau_error,
+        "residual_whiteness_available": whiteness_available,
+        "residual_whiteness_pass_5pct": whiteness_pass if whiteness_available else None,
+        "fit_diagnostics_ok": bool(
+            stable is True and residuals_finite and covariance_valid and whiteness_pass
+        ),
+        "diagnostic_warnings": warnings,
+    }
+
+
+def _fail_closed_meta(
+    status: str,
+    reason: str,
+    *,
+    obs: int,
+    assets: int,
+    lag: int,
+    lag_meta: dict,
+    diagnostics: dict,
+) -> dict:
+    """Build the common non-authoritative result contract."""
+    return {
+        "status": status,
+        "authoritative": False,
+        "non_authoritative_reason": reason,
+        "obs": int(obs),
+        "assets": int(assets),
+        "VAR lag": int(lag),
+        **lag_meta,
+        **diagnostics,
+    }
+
+
 def _select_var_lag(data: pd.DataFrame, maxlags: int = 3) -> tuple[int, dict]:
-    """Select a parsimonious VAR lag using BIC, with deterministic fallbacks."""
+    """Select BIC among lags that pass the connectedness publication gate.
+
+    If no candidate passes stability, residual covariance and multivariate
+    whiteness diagnostics, the ordinary BIC winner is returned so the caller can
+    publish an explicit fail-closed reason instead of silently changing models.
+    """
     nobs, nvars = data.shape
     # Keep the model estimable. Each equation has roughly nvars*lag + intercept parameters.
     feasible = max(1, min(int(maxlags), max(1, (nobs - 10) // max(3 * nvars, 1))))
-    best_lag = 1
-    best_bic = np.inf
-    diagnostics: dict[str, float | int | str | bool] = {
+    best_any_lag = 1
+    best_any_bic = np.inf
+    best_valid_lag = None
+    best_valid_bic = np.inf
+    candidate_rows: list[dict] = []
+    diagnostics: dict = {
         "lag_max_feasible": feasible,
-        "lag_selection": "BIC",
+        "lag_selection": "BIC among publication-gate-admissible candidates",
     }
     for lag in range(1, feasible + 1):
         try:
             fit = VAR(data).fit(lag, trend="c")
             bic = safe_float(fit.bic)
-            if bic is not None and bic < best_bic:
-                best_bic = bic
-                best_lag = lag
-        except Exception:
+            fit_diag = _var_fit_diagnostics(fit, lag, list(data.columns))
+            admissible = bool(fit_diag.get("fit_diagnostics_ok"))
+            candidate_rows.append({
+                "lag": int(lag),
+                "bic": bic,
+                "admissible": admissible,
+                "stable": fit_diag.get("VAR stable"),
+                "portmanteau_pvalue": fit_diag.get("residual_portmanteau_pvalue"),
+                "covariance_condition": fit_diag.get("residual_covariance_condition"),
+            })
+            if bic is not None and bic < best_any_bic:
+                best_any_bic = bic
+                best_any_lag = lag
+            if admissible and bic is not None and bic < best_valid_bic:
+                best_valid_bic = bic
+                best_valid_lag = lag
+        except Exception as exc:
+            candidate_rows.append({
+                "lag": int(lag), "bic": None, "admissible": False,
+                "error": type(exc).__name__,
+            })
             continue
-    diagnostics["lag"] = best_lag
-    diagnostics["bic"] = None if not np.isfinite(best_bic) else float(best_bic)
-    return best_lag, diagnostics
+    if best_valid_lag is not None:
+        selected_lag = int(best_valid_lag)
+        selected_bic = best_valid_bic
+        diagnostics["lag_selection_status"] = "admissible_candidate_selected"
+    else:
+        selected_lag = int(best_any_lag)
+        selected_bic = best_any_bic
+        diagnostics["lag_selection_status"] = "no_admissible_candidate_fail_closed"
+    diagnostics["lag"] = selected_lag
+    diagnostics["bic"] = None if not np.isfinite(selected_bic) else float(selected_bic)
+    diagnostics["lag_candidates"] = candidate_rows
+    diagnostics["admissible_lag_count"] = int(sum(bool(row.get("admissible")) for row in candidate_rows))
+    return selected_lag, diagnostics
 
 
 def generalized_fevd(
@@ -62,7 +273,9 @@ def generalized_fevd(
         }
 
     # Standardization improves numerical conditioning but does not change the information set.
-    std = clean.std(ddof=1).replace(0, np.nan)
+    std = clean.std(ddof=1)
+    scale_floor = 10.0 * np.finfo(float).eps * clean.abs().max().clip(lower=1.0)
+    std = std.where(std.abs() > scale_floor, np.nan)
     z = ((clean - clean.mean()) / std).dropna(how="any")
     z.index = pd.RangeIndex(len(z))
     if len(z) < min_obs:
@@ -74,6 +287,23 @@ def generalized_fevd(
     except Exception as exc:
         return pd.DataFrame(), pd.DataFrame(), {"status": "fit_failed", "error": type(exc).__name__}
 
+    assets = list(z.columns)
+    fit_diagnostics = _var_fit_diagnostics(fit, lag, assets)
+    if fit_diagnostics["VAR stable"] is not True:
+        return pd.DataFrame(), pd.DataFrame(), _fail_closed_meta(
+            "unstable_var" if fit_diagnostics["VAR stable"] is False else "stability_unverified",
+            "VAR stability failed or could not be verified; connectedness output suppressed.",
+            obs=len(z), assets=len(assets), lag=lag, lag_meta=lag_meta,
+            diagnostics=fit_diagnostics,
+        )
+    if not fit_diagnostics["fit_diagnostics_ok"]:
+        return pd.DataFrame(), pd.DataFrame(), _fail_closed_meta(
+            "invalid_var_diagnostics",
+            "Residual whiteness, residuals, or residual covariance failed the publication gate; connectedness output suppressed.",
+            obs=len(z), assets=len(assets), lag=lag, lag_meta=lag_meta,
+            diagnostics=fit_diagnostics,
+        )
+
     try:
         psi = fit.ma_rep(maxn=max(1, int(horizon) - 1))
         sigma = np.asarray(fit.sigma_u, dtype=float)
@@ -81,7 +311,7 @@ def generalized_fevd(
         return pd.DataFrame(), pd.DataFrame(), {"status": "ma_failed", "error": type(exc).__name__}
 
     k = z.shape[1]
-    hmax = min(int(horizon), int(len(psi)))
+    hmax = max(1, min(max(1, int(horizon)), int(len(psi))))
     theta = np.zeros((k, k), dtype=float)
     sigma_diag = np.clip(np.diag(sigma), 1e-12, None)
 
@@ -103,7 +333,14 @@ def generalized_fevd(
     row_sums = theta.sum(axis=1, keepdims=True)
     theta_norm = np.divide(theta, row_sums, out=np.zeros_like(theta), where=row_sums > 1e-18)
     theta_pct = 100.0 * theta_norm
-    assets = list(z.columns)
+    fevd_checks = _matrix_validation(theta_pct, expected_row_sum=100.0, prefix="fevd")
+    if not fevd_checks["fevd_checks_pass"]:
+        return pd.DataFrame(), pd.DataFrame(), _fail_closed_meta(
+            "invalid_fevd",
+            "Generalized FEVD failed finite, non-negativity, or row-normalization checks.",
+            obs=len(z), assets=len(assets), lag=lag, lag_meta=lag_meta,
+            diagnostics={**fit_diagnostics, **fevd_checks},
+        )
     matrix = pd.DataFrame(theta_pct, index=assets, columns=assets)
 
     from_others = theta_pct.sum(axis=1) - np.diag(theta_pct)
@@ -118,21 +355,17 @@ def generalized_fevd(
     }).sort_values("NET transmitter", ascending=False).reset_index(drop=True)
 
     tci = float((theta_pct.sum() - np.trace(theta_pct)) / k)
-    stable = None
-    try:
-        stable = bool(fit.is_stable(verbose=False))
-    except Exception:
-        pass
-
     meta = {
         "status": "ok",
+        "authoritative": True,
         "obs": int(len(z)),
         "assets": int(k),
         "forecast_horizon": int(hmax),
         "TCI": tci,
         "VAR lag": int(lag),
-        "VAR stable": stable,
         **lag_meta,
+        **fit_diagnostics,
+        **fevd_checks,
     }
     return matrix, table, meta
 
@@ -232,16 +465,49 @@ def spectral_connectedness(
     if len(clean) < min_obs or clean.shape[1] < 2:
         return pd.DataFrame(), pd.DataFrame(), {"status": "insufficient_data", "obs": int(len(clean))}
 
-    std = clean.std(ddof=1).replace(0, np.nan)
+    std = clean.std(ddof=1)
+    scale_floor = 10.0 * np.finfo(float).eps * clean.abs().max().clip(lower=1.0)
+    std = std.where(std.abs() > scale_floor, np.nan)
     z = ((clean - clean.mean()) / std).dropna(how="any")
     z.index = pd.RangeIndex(len(z))
+    if len(z) < min_obs:
+        return pd.DataFrame(), pd.DataFrame(), {
+            "status": "insufficient_data",
+            "obs": int(len(z)),
+            "assets": int(z.shape[1]),
+        }
     lag, lag_meta = _select_var_lag(z, maxlags=maxlags)
     try:
         fit = VAR(z).fit(lag, trend="c")
+    except Exception as exc:
+        return pd.DataFrame(), pd.DataFrame(), {"status": "fit_failed", "error": type(exc).__name__}
+
+    assets = list(z.columns)
+    fit_diagnostics = _var_fit_diagnostics(fit, lag, assets)
+    if fit_diagnostics["VAR stable"] is not True:
+        meta = _fail_closed_meta(
+            "unstable_var" if fit_diagnostics["VAR stable"] is False else "stability_unverified",
+            "VAR stability failed or could not be verified; spectral connectedness output suppressed.",
+            obs=len(z), assets=len(assets), lag=lag, lag_meta=lag_meta,
+            diagnostics=fit_diagnostics,
+        )
+        meta["matrix_long"] = pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame(), meta
+    if not fit_diagnostics["fit_diagnostics_ok"]:
+        meta = _fail_closed_meta(
+            "invalid_var_diagnostics",
+            "Residual whiteness, residuals, or residual covariance failed the publication gate; spectral output suppressed.",
+            obs=len(z), assets=len(assets), lag=lag, lag_meta=lag_meta,
+            diagnostics=fit_diagnostics,
+        )
+        meta["matrix_long"] = pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame(), meta
+
+    try:
         sigma = np.asarray(fit.sigma_u, dtype=float)
         ar = np.asarray(fit.coefs, dtype=float)
     except Exception as exc:
-        return pd.DataFrame(), pd.DataFrame(), {"status": "fit_failed", "error": type(exc).__name__}
+        return pd.DataFrame(), pd.DataFrame(), {"status": "coefficient_failed", "error": type(exc).__name__}
 
     k = z.shape[1]
     # Add exact band boundaries to the Fourier grid. This makes the disjoint-band
@@ -287,7 +553,6 @@ def spectral_connectedness(
     theta_full_norm = theta_full / full_row_sums[:, None]
     spectral_total_tci = float(100.0 * (theta_full_norm.sum() - np.trace(theta_full_norm)) / k)
 
-    assets = list(z.columns)
     band_rows: list[dict] = []
     directional_rows: list[dict] = []
     long_rows: list[dict] = []
@@ -339,19 +604,40 @@ def spectral_connectedness(
                     "Normalized contribution": float(100.0 * theta_band_norm[i, j]),
                 })
 
-    stable = None
-    try:
-        stable = bool(fit.is_stable(verbose=False))
-    except Exception:
-        pass
+    spectral_checks = _matrix_validation(theta_full_norm, expected_row_sum=1.0, prefix="spectral_fevd")
+    band_values = pd.DataFrame(band_rows)
+    band_finite = bool(
+        not band_values.empty
+        and np.isfinite(
+            band_values[[
+                "Within-band connectedness",
+                "Absolute TCI contribution",
+                "Band variance mass",
+            ]].to_numpy(dtype=float)
+        ).all()
+    )
+    spectral_tci_valid = bool(np.isfinite(spectral_total_tci) and -1e-8 <= spectral_total_tci <= 100.0 + 1e-8)
+    spectral_checks.update({
+        "spectral_band_values_finite": band_finite,
+        "spectral_total_tci_bounded": spectral_tci_valid,
+    })
+    if not spectral_checks["spectral_fevd_checks_pass"] or not band_finite or not spectral_tci_valid:
+        meta = _fail_closed_meta(
+            "invalid_spectral_fevd",
+            "Spectral FEVD failed finite, boundedness, or row-normalization checks.",
+            obs=len(z), assets=len(assets), lag=lag, lag_meta=lag_meta,
+            diagnostics={**fit_diagnostics, **spectral_checks},
+        )
+        meta["matrix_long"] = pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame(), meta
 
     recon_error = float(absolute_sum - spectral_total_tci)
     meta = {
         "status": "ok",
+        "authoritative": True,
         "obs": int(len(z)),
         "assets": int(k),
         "VAR lag": int(lag),
-        "VAR stable": stable,
         "bands": [r["Band"] for r in band_rows],
         "spectral_total_TCI": spectral_total_tci,
         "sum_absolute_band_contributions": float(absolute_sum),
@@ -361,8 +647,10 @@ def spectral_connectedness(
         "normalization": "full-spectrum generalized FEVD row normalization",
         "matrix_long": pd.DataFrame(long_rows),
         **lag_meta,
+        **fit_diagnostics,
+        **spectral_checks,
     }
-    return pd.DataFrame(band_rows), pd.DataFrame(directional_rows), meta
+    return band_values, pd.DataFrame(directional_rows), meta
 
 def frequency_connectedness_from_changes(
     changes: pd.DataFrame,
@@ -393,7 +681,6 @@ def partial_network_stability(
     x=trailing(changes[cols],days).dropna(how="any")
     if len(x)<80 or len(cols)<3:
         return pd.DataFrame(),{"status":"insufficient_data","obs":len(x),"assets":len(cols)}
-    from .estimators import correlation_matrix
     rng=np.random.default_rng(seed)
     n=len(x); b=max(2,min(int(block),max(2,n//10)))
     starts=np.arange(0,max(1,n-b+1))

@@ -100,12 +100,13 @@ def _render_overview(b: PairDependencyAnalysis):
     lag = s.get("best_nonzero_lag_days")
     lag_label = "N/A" if lag is None else f"{int(lag):+d}D"
     lag_corr = s.get("best_nonzero_lag_corr")
+    lag_inference_corr = s.get("best_nonzero_lag_inference_corr")
     lag_ev = s.get("best_nonzero_lag_evidence") or "Unassessed"
-    c6.metric("Strongest non-zero lag", lag_label, f"{_fmt(lag_corr)} · {lag_ev}")
+    c6.metric("Strongest non-zero lag", lag_label, f"prewhite {_fmt(lag_inference_corr)} · {lag_ev}")
     lag_lo, lag_hi, lag_p = s.get("best_nonzero_lag_ci_low"), s.get("best_nonzero_lag_ci_high"), s.get("best_nonzero_lag_p")
     st.caption(
         f"Synchronous pair correlation: {_fmt(s.get('synchronous_corr'), 3)}. "
-        f"Selected non-zero lag CI [{_fmt(lag_lo, 3)}, {_fmt(lag_hi, 3)}], max-stat p={_fmt(lag_p, 3)}. "
+        f"Selected lag raw corr={_fmt(lag_corr, 3)}; prewhitened CI [{_fmt(lag_lo, 3)}, {_fmt(lag_hi, 3)}], max-stat p={_fmt(lag_p, 3)}. "
         "Lag association is post-selection adjusted and is not causality."
     )
     st.caption("Residual dependency is conditional on the active force set. It is not a metaphysical 'true correlation' and must not be interpreted as causal evidence.")
@@ -115,13 +116,13 @@ def render_dependency_intelligence_tab(bundle: Any, primary: str, analysis: dict
                                        portfolio_weights: dict[str, float] | None = None):
     """Render the multi-force layer inside the Correlation Matrix section.
 
-    `bundle` is the frozen V3.1.1 AnalysisBundle. This function does not mutate it.
+    `bundle` is the governed V4.1 AnalysisBundle. This function does not mutate it.
     """
     analysis = analysis or {}
     changes = getattr(bundle, "changes", pd.DataFrame())
     ranking = getattr(bundle, "ranking", pd.DataFrame())
     if changes is None or changes.empty or primary not in changes.columns:
-        st.info("Dependency Drivers unavailable: frozen core changes are missing.")
+        st.info("Dependency Drivers unavailable: governed core returns are missing.")
         return
 
     peers = [x for x in changes.columns if x != primary]
@@ -132,7 +133,7 @@ def render_dependency_intelligence_tab(bundle: Any, primary: str, analysis: dict
         return
 
     st.subheader("Multi-Force Dependency Intelligence")
-    st.caption("This layer explains mechanisms that can generate or alter dependence: fundamentals, macro/policy, FX, flows, ownership, liquidity, derivatives, information, events and structural measurement. The statistical core V3.1.1 remains frozen underneath.")
+    st.caption("This layer explains mechanisms that can generate or alter dependence: fundamentals, macro/policy, FX, flows, ownership, liquidity, derivatives, information, events and structural measurement. The governed V4.1 statistical core remains authoritative underneath.")
 
     left, mid, right = st.columns([1.2, .9, 2.0])
     with left:
@@ -239,11 +240,14 @@ def render_dependency_intelligence_tab(bundle: Any, primary: str, analysis: dict
         _lead_lag_chart(dep.lead_lag, primary, peer)
         ll = dep.lead_lag.copy()
         if not ll.empty:
-            for c in ["Correlation", "Abs correlation", "CI low", "CI high", "Selection-adjusted p"]:
+            for c in [
+                "Correlation", "Abs correlation", "Prewhitened correlation", "Abs inference correlation",
+                "CI low", "CI high", "Inference CI low", "Inference CI high", "Selection-adjusted p",
+            ]:
                 if c in ll:
                     ll[c] = ll[c].map(lambda z: _fmt(z, 3))
             st.dataframe(ll, use_container_width=True, hide_index=True)
-        st.caption("Positive lag means primary_t is compared with a later peer return. V4.0.2 reports a moving-block CI for the selected lag and a max-stat p-value across all non-zero lags under a synchronous-pair-preserving temporal-null permutation. Association only; not causality.")
+        st.caption("Positive lag means primary_t is compared with a later peer return. V4.1 selection, interval and p-value share the same AR(1)-prewhitened estimand: aligned-pair moving-block CI plus circular-shift max-stat null across all non-zero lags. Raw correlation remains descriptive. Association only; not causality.")
 
         st.markdown("### Daily extreme-move / co-extreme dependency")
         if dep.extremes.empty:
@@ -270,7 +274,7 @@ def render_dependency_intelligence_tab(bundle: Any, primary: str, analysis: dict
             if "Sign stability" in hm:
                 hm["Sign stability"] = hm["Sign stability"].map(_pct)
             st.dataframe(hm, use_container_width=True, hide_index=True)
-            st.caption("Correlation is only a second-moment object. Coskewness and co-kurtosis are materially noisier, so V4.0.2 reports moving-block bootstrap intervals, sign stability and Supported/Inconclusive status rather than point estimates alone.")
+            st.caption("Correlation is only a second-moment object. Coskewness and co-kurtosis are materially noisier, so V4.1 reports moving-block bootstrap intervals, sign stability and Supported/Inconclusive status rather than point estimates alone.")
 
         st.markdown("### Event-force dependency shifts")
         if dep.events.empty:
@@ -384,7 +388,7 @@ analysis['dependency_relationship_table'] = relationship_df
         st.download_button(
             "Download Dependency Intelligence Research Pack",
             data=pack,
-            file_name=f"{primary}_{peer}_dependency_intelligence_v4_0_2.zip",
+            file_name=f"{primary}_{peer}_dependency_intelligence_v4_1_0.zip",
             mime="application/zip",
             key=f"depv402_export_{primary}_{peer}",
         )

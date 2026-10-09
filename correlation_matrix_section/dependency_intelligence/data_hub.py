@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Dependency Data Hub V4.0.2.
+"""Dependency Data Hub V4.1.0.
 
 Best-effort enrichment layer for the Multi-Force Dependency engine.
 
@@ -20,7 +20,6 @@ from dataclasses import dataclass, field
 from io import StringIO
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-import hashlib
 import json
 import math
 import os

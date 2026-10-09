@@ -30,9 +30,39 @@ def _corr_distance_array(a: np.ndarray, b: np.ndarray) -> float:
 
 def _candidate_shifts(arr: np.ndarray, w: int, step: int) -> tuple[np.ndarray, np.ndarray]:
     splits = np.arange(w, len(arr) - w + 1, max(1, int(step)), dtype=int)
-    vals = np.empty(len(splits), dtype=float)
-    for ii, split in enumerate(splits):
-        vals[ii] = _corr_distance_array(arr[split - w:split], arr[split:split + w])
+    if len(splits) == 0 or arr.ndim != 2 or arr.shape[1] < 2:
+        return splits, np.empty(len(splits), dtype=float)
+
+    # Exact rolling sample correlations from cumulative first and second
+    # moments.  This is algebraically equivalent to calling ``np.corrcoef`` on
+    # every pre/post window, but removes tens of thousands of tiny Python-level
+    # matrix constructions inside the max-stat bootstrap.
+    prefix_sum = np.vstack([np.zeros((1, arr.shape[1])), np.cumsum(arr, axis=0)])
+    outer = arr[:, :, None] * arr[:, None, :]
+    prefix_cross = np.concatenate(
+        [np.zeros((1, arr.shape[1], arr.shape[1])), np.cumsum(outer, axis=0)],
+        axis=0,
+    )
+
+    def rolling_corr(starts: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        ends = starts + w
+        sums = prefix_sum[ends] - prefix_sum[starts]
+        cross = prefix_cross[ends] - prefix_cross[starts]
+        centered = cross - np.einsum("bi,bj->bij", sums, sums) / float(w)
+        variance = np.diagonal(centered, axis1=1, axis2=2)
+        scale = np.sqrt(np.clip(variance, 0.0, None))
+        denom = scale[:, :, None] * scale[:, None, :]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            corr = centered / denom
+        valid = np.isfinite(corr).all(axis=(1, 2)) & (variance > 0.0).all(axis=1)
+        return corr, valid
+
+    pre, pre_valid = rolling_corr(splits - w)
+    post, post_valid = rolling_corr(splits)
+    tri = np.triu_indices(arr.shape[1], 1)
+    delta = pre[:, tri[0], tri[1]] - post[:, tri[0], tri[1]]
+    vals = np.sqrt(np.mean(delta * delta, axis=1))
+    vals[~(pre_valid & post_valid)] = np.nan
     return splits, vals
 
 

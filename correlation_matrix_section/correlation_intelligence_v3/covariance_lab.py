@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable
-import warnings
 
 import numpy as np
 import pandas as pd
-from sklearn.covariance import GraphicalLassoCV, LedoitWolf, OAS
-from sklearn.exceptions import ConvergenceWarning
+from sklearn.covariance import LedoitWolf, OAS
 
+from .precision import temporal_graphical_lasso
 from .utils import nearest_psd, safe_float
 
 try:  # Optional adapter only; V3.1 does not require this package.
@@ -109,7 +108,7 @@ def poet_covariance(x: pd.DataFrame, n_factors: int | None = None, threshold_sca
 
 
 def factor_graphical_covariance(x: pd.DataFrame, n_factors: int | None = None) -> tuple[pd.DataFrame, dict]:
-    """Low-rank factor component + sparse residual precision covariance."""
+    """Low-rank factor component + temporally selected sparse residual precision."""
     if x is None or x.empty or x.shape[1] < 2:
         return pd.DataFrame(), {"status": "unavailable"}
     arr = x.to_numpy(dtype=float)
@@ -123,20 +122,56 @@ def factor_graphical_covariance(x: pd.DataFrame, n_factors: int | None = None) -
     k = max(1, min(k, x.shape[1] - 1))
     load = vecs[:, :k]
     scores = xc @ load
-    common = scores @ load.T
-    residual = xc - common
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", ConvergenceWarning)
-            gl = GraphicalLassoCV(cv=min(5, max(2, len(x) // 40)), max_iter=200).fit(residual)
-        resid_cov = gl.covariance_
-        alpha = safe_float(gl.alpha_)
-    except Exception:
-        resid_cov = np.cov(residual, rowvar=False, ddof=1)
-        alpha = None
+
+    def residualise_train_only(
+        train: np.ndarray, test: np.ndarray | None
+    ) -> tuple[np.ndarray, np.ndarray | None]:
+        """Fit PCA on the fold's train block and only project its future test block."""
+
+        train_mean = np.mean(train, axis=0, keepdims=True)
+        train_centered = train - train_mean
+        train_cov = np.cov(train_centered, rowvar=False, ddof=1)
+        fold_vals, fold_vecs = np.linalg.eigh(train_cov)
+        fold_order = np.argsort(fold_vals)[::-1]
+        fold_k = int(n_factors or _poet_factor_count(pd.DataFrame(train)))
+        fold_k = max(1, min(fold_k, train.shape[1] - 1))
+        fold_load = fold_vecs[:, fold_order[:fold_k]]
+        train_residual = train_centered - (train_centered @ fold_load) @ fold_load.T
+        if test is None:
+            return train_residual, None
+        test_centered = test - train_mean
+        test_residual = test_centered - (test_centered @ fold_load) @ fold_load.T
+        return train_residual, test_residual
+
+    sparse_fit = temporal_graphical_lasso(
+        arr,
+        # The outer covariance walk-forward already re-estimates this model on
+        # every forecast origin.  A compact, log-spaced inner grid keeps that
+        # nested validation leakage-safe without multiplying near-duplicate
+        # Graphical Lasso fits.  The standalone Partial estimator deliberately
+        # retains the denser eight-point/four-fold search.
+        alpha_grid=(0.01, 0.04, 0.16, 0.64),
+        n_splits=3,
+        # Non-converged inner candidates are ineligible by construction, so a
+        # bounded iteration budget rejects them promptly instead of spending the
+        # outer walk-forward budget repeatedly on the same pathological alpha.
+        max_iter=150,
+        temporal_preprocessor=residualise_train_only,
+        preprocessor_name="train-only PCA residualisation",
+    )
+    resid_cov = sparse_fit.covariance
     factor_cov = load @ np.cov(scores, rowvar=False, ddof=1) @ load.T if k > 1 else np.outer(load[:, 0], load[:, 0]) * float(np.var(scores[:, 0], ddof=1))
     out = _psd_cov(factor_cov + resid_cov, list(x.columns))
-    return out, {"status": "ok", "factors": k, "graphical_alpha": alpha, "method": "Factor + Graphical Lasso residual"}
+    metadata = {
+        **sparse_fit.metadata,
+        "factors": k,
+        "graphical_alpha": sparse_fit.metadata.get("alpha"),
+        "method": "Factor + Temporal Graphical Lasso residual",
+        "factor_selection_scope": "train-only per temporal fold; full sample for final fit",
+        "nested_search_policy": "4 log-spaced alphas x 3 expanding forward folds; 150-iteration fail-closed cap",
+        "condition_number": float(np.linalg.cond(out.to_numpy(dtype=float))),
+    }
+    return out, metadata
 
 
 def rmt_spectral_covariance(x: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
@@ -237,9 +272,9 @@ def _paired_champion_inference(
 
     A per-fold composite loss is built from cross-model percentile ranks of QLIKE,
     relative Frobenius error, realized GMV volatility and turnover. Lower is better.
-    The paired bootstrap resamples common forecast folds and therefore measures whether
-    the selected champion's OOS edge over the runner-up is persistent rather than a
-    consequence of one or two favorable folds.
+    A paired circular moving-block bootstrap resamples common chronological forecast
+    folds and therefore measures whether the selected champion's OOS edge over the
+    runner-up is persistent rather than a consequence of one or two favorable folds.
     """
     if fold_records is None or fold_records.empty or not runner_up:
         return {"champion_status": "Single model", "runner_up": runner_up}
@@ -279,8 +314,18 @@ def _paired_champion_inference(
     observed = float(np.mean(diff))
     rng = np.random.default_rng(seed)
     bcount = max(500, int(bootstrap_samples))
-    idx = rng.integers(0, len(diff), size=(bcount, len(diff)))
-    boot = diff[idx].mean(axis=1)
+    # OOS forecast blocks are chronological and can remain serially dependent even
+    # when they do not overlap.  Resample contiguous circular blocks rather than iid
+    # fold labels.  This is still conditional top-two inference, not a familywise
+    # reality check across every challenger.
+    block = max(2, min(5, int(round(len(diff) ** (1.0 / 3.0)))))
+    n_blocks = int(np.ceil(len(diff) / block))
+    offsets = np.arange(block)
+    boot = np.empty(bcount, dtype=float)
+    for draw in range(bcount):
+        starts = rng.integers(0, len(diff), size=n_blocks)
+        ix = np.concatenate([(int(s) + offsets) % len(diff) for s in starts])[: len(diff)]
+        boot[draw] = float(np.mean(diff[ix]))
     prob = float(np.mean(boot > 0.0))
     ci_low, ci_high = [float(v) for v in np.quantile(boot, [0.025, 0.975])]
 
@@ -300,6 +345,9 @@ def _paired_champion_inference(
         "composite_loss_edge_ci_low": ci_low,
         "composite_loss_edge_ci_high": ci_high,
         "champion_bootstrap_samples": int(bcount),
+        "champion_bootstrap_method": "paired circular moving-block bootstrap over chronological OOS folds",
+        "champion_bootstrap_block": int(block),
+        "inference_scope": "conditional top-two comparison; not familywise across all challengers",
     }
 
 
@@ -343,6 +391,8 @@ def covariance_model_validation(
         turns: list[float] = []
         prev_w = None
         skipped = 0
+        fit_fallbacks = 0
+        fit_warnings = 0
         for fold_no, end in enumerate(starts):
             train = x.iloc[max(0, end - train_days):end]
             test = x.iloc[end:end + h]
@@ -353,6 +403,8 @@ def covariance_model_validation(
                 train, model, days=len(train), min_obs=min_train,
                 ewma_lambda=ewma_lambda, external_nls=external_nls,
             )
+            fit_fallbacks += int(bool(fit.metadata.get("fallback_used", False)))
+            fit_warnings += int(fit.metadata.get("warning_count", 0) or 0)
             if fit.covariance.empty:
                 skipped += 1
                 continue
@@ -386,6 +438,11 @@ def covariance_model_validation(
                 "Relative Frobenius": float(fv),
                 "OOS GMV ann. vol": float(vol),
                 "GMV turnover": None if not np.isfinite(turn) else float(turn),
+                "Fit status": fit.metadata.get("status"),
+                "Fit alpha": fit.metadata.get("alpha"),
+                "Fit converged": fit.metadata.get("converged"),
+                "Fit fallback": fit.metadata.get("fallback"),
+                "Fit warning count": int(fit.metadata.get("warning_count", 0) or 0),
             })
 
         if qlikes:
@@ -397,6 +454,8 @@ def covariance_model_validation(
                 "OOS GMV ann. vol": float(np.mean(vols)),
                 "GMV turnover": float(np.mean(turns)) if turns else None,
                 "Skipped": skipped,
+                "Fit fallbacks": int(fit_fallbacks),
+                "Fit warnings": int(fit_warnings),
             })
 
     if not rows:

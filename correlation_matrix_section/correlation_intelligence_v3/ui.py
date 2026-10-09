@@ -11,6 +11,7 @@ from .data import default_peer_universe
 from .dynamics import dcc_pair_series, ewma_corr_series, rolling_corr_series
 from .engine import CorrelationEngine
 from .export import research_pack_zip
+from .provenance import research_pack_manifest
 from .tail import bootstrap_tail_uncertainty, fit_copulas
 from .utils import fmt_corr, fmt_num, fmt_pct, fmt_pvalue, fmt_score, html_safe, parse_ticker_text, table_height
 from ..dependency_intelligence.ui import render_dependency_intelligence_tab
@@ -70,18 +71,19 @@ def _heatmap(corr: pd.DataFrame, title: str, order: list[str] | None = None):
             c = c.loc[order, order]
     show_text = len(c) <= 22
     text = np.vectorize(lambda x: f"{x:.2f}")(c.values) if show_text else None
+    nonlinear = "distance correlation" in str(title).lower()
     fig = go.Figure(go.Heatmap(
         z=c.values,
         x=c.columns,
         y=c.index,
-        zmin=-1,
+        zmin=0 if nonlinear else -1,
         zmax=1,
-        colorscale="RdBu",
-        reversescale=True,
+        colorscale="Viridis" if nonlinear else "RdBu",
+        reversescale=False if nonlinear else True,
         text=text,
         texttemplate="%{text}" if show_text else None,
-        hovertemplate="%{y} vs %{x}<br>ρ=%{z:.3f}<extra></extra>",
-        colorbar=dict(title="ρ"),
+        hovertemplate=("%{y} vs %{x}<br>dCor=%{z:.3f}<extra></extra>" if nonlinear else "%{y} vs %{x}<br>ρ=%{z:.3f}<extra></extra>"),
+        colorbar=dict(title="dCor" if nonlinear else "ρ"),
     ))
     fig.update_layout(
         height=max(520, min(880, 120 + 34 * len(c))),
@@ -383,6 +385,29 @@ def _frequency_chart(df: pd.DataFrame):
     st.plotly_chart(fig, use_container_width=True)
 
 
+def _consensus_heatmap(matrix: pd.DataFrame):
+    if matrix is None or matrix.empty:
+        return
+    fig = go.Figure(go.Heatmap(
+        z=matrix.values,
+        x=matrix.columns,
+        y=matrix.index,
+        zmin=0,
+        zmax=1,
+        colorscale="Viridis",
+        hovertemplate="%{y} / %{x}<br>co-cluster frequency=%{z:.1%}<extra></extra>",
+        colorbar=dict(title="Stability"),
+    ))
+    fig.update_layout(
+        height=max(480, 35 * len(matrix) + 130),
+        title="Moving-block bootstrap cluster consensus",
+        template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(10,14,22,.55)",
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
 def _tail_surface_heatmap(df: pd.DataFrame):
     if df is None or df.empty:
         return
@@ -422,7 +447,12 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
     analysis = analysis or {}
     cfg = CorrelationConfig()
     _inject_css()
-    st.subheader(f"Correlation Intelligence V4.0.2 — {ticker}")
+    st.subheader(f"Correlation Intelligence V4.1.0 — {ticker}")
+    st.info(
+        "**Workspace boundary · RESEARCH_ONLY.** Les éventuels scores ou labels BUY/SELL du bandeau global "
+        "JARVIS ne sont pas produits par Correlation Intelligence. Cette section mesure dépendance, "
+        "incertitude et risque de diversification; elle n'autorise aucune transaction."
+    )
 
     with st.expander("Universe & methodology", expanded=False):
         default_text = ", ".join(default_peer_universe(ticker))
@@ -442,7 +472,7 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
             weights_text = st.text_input("Portfolio weights (optional)", value=_format_weights(existing_weights), key=f"corrv31_weights_{ticker}", placeholder="NVDA:0.30, QQQ:0.30, TLT:0.20, GLD:0.20")
             if not str(weights_text).strip():
                 st.caption("Le texte grisé est uniquement un exemple : aucun portefeuille n’est actif tant que des poids ne sont pas réellement saisis ou injectés.")
-        st.caption("V3.1.1 FINAL: fréquence BK normalisée/réconciliée, break sup-bootstrap post-sélection, incertitude champion OOS et réseau bootstrap haute précision. Aucun forward-fill cross-market.")
+        st.caption("V4.1: provenance reproductible, précision sparse à CV temporelle, Tyler robuste, dépendance non linéaire, consensus clusters, allocation OOS et inférence block-bootstrap. Aucun forward-fill cross-market.")
 
     tickers = parse_ticker_text(universe_text, ticker)
     analysis_local = dict(analysis)
@@ -451,7 +481,7 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
     if parsed_weights:
         analysis_local["portfolio_weights"] = parsed_weights
     engine = CorrelationEngine(cfg)
-    with st.spinner("Estimation V4.0.2: covariance OOS, sup-break, connectedness spectral et portfolio risk…"):
+    with st.spinner("Estimation V4.1.0: robust covariance, inférence temporelle, consensus clusters et allocation OOS…"):
         if _contains_callable(analysis_local):
             bundle = engine.analyse(ticker, tickers, price_data, int(selected_days), period, analysis_local)
         else:
@@ -517,6 +547,19 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
                 cstate = f"{cstate} ≈ {s.get('covariance_runner_up')}"
             cmetric = f"{bundle.covariance_meta.get('forecast_horizon','N/A')}D · {s.get('covariance_champion_status') or 'selected'}"
             exec_rows.append(["Covariance forecast selection", cstate, cmetric, "Walk-forward OOS selection plus paired-bootstrap uncertainty versus runner-up"])
+        if s.get("allocation_champion"):
+            exec_rows.append([
+                "Allocation challenger",
+                s.get("allocation_champion"),
+                f"{s.get('allocation_folds', 0)} OOS folds",
+                "Research-only HRP / inverse-vol / 1/N / long-only minimum-variance comparison with turnover cost",
+            ])
+        exec_rows.append([
+            "Robust dependence",
+            "Tyler + distance correlation",
+            f"Tyler converged={s.get('tyler_converged')} · cluster stability {fmt_pct(s.get('cluster_stability'))}",
+            "Heavy-tail robust signed matrix plus a separate non-signed nonlinear-dependence diagnostic",
+        ])
         if s.get("break_date") is not None:
             exec_rows.append(["Dependency break", str(pd.Timestamp(s.get("break_date")).date()), f"p={_break_p_label(bundle.break_meta)}", "Max-stat dependency shift with post-selection supremum moving-block bootstrap"])
         if s.get("connectedness_tci") is not None:
@@ -530,20 +573,59 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
     with tabs[1]:
         c1, _ = st.columns([1, 2])
         with c1:
-            matrix_mode = st.radio("Matrix", ["Selected estimator", "Champion forecast", "Raw Pearson", "Ledoit-Wolf", "Partial", "RMT-cleaned full"], index=0, key=f"corrv31_matrixmode_{ticker}")
+            matrix_mode = st.radio(
+                "Matrix",
+                ["Selected estimator", "Champion forecast", "Raw Pearson", "Ledoit-Wolf", "Tyler robust", "Partial", "RMT-cleaned full", "Distance correlation"],
+                index=0,
+                key=f"corrv31_matrixmode_{ticker}",
+            )
             reorder = st.checkbox("Hierarchical ordering", value=True, key=f"corrv31_clusterorder_{ticker}")
         matrix = {
             "Raw Pearson": bundle.corr_raw,
             "Ledoit-Wolf": bundle.corr_shrunk,
+            "Tyler robust": bundle.corr_tyler,
             "Partial": bundle.corr_partial,
             "RMT-cleaned full": bundle.corr_rmt_cleaned_full,
+            "Distance correlation": bundle.corr_distance,
             "Champion forecast": bundle.corr_forecast,
         }.get(matrix_mode)
         if matrix_mode == "Selected estimator":
-            from .estimators import correlation_matrix
-            matrix = correlation_matrix(bundle.changes, int(selected_days), estimator, cfg.min_matrix_obs if estimator in {"Ledoit-Wolf", "OAS", "Partial"} else cfg.min_pair_obs)
+            cached_selected = {
+                "Pearson": bundle.corr_raw,
+                "Ledoit-Wolf": bundle.corr_shrunk,
+                "Partial": bundle.corr_partial,
+                "Tyler robust": bundle.corr_tyler,
+                "Distance correlation": bundle.corr_distance,
+            }
+            matrix = cached_selected.get(estimator)
+            if matrix is None:
+                from .estimators import correlation_matrix
+                matrix = correlation_matrix(bundle.changes, int(selected_days), estimator, cfg.min_matrix_obs if estimator in {"Ledoit-Wolf", "OAS", "Partial"} else cfg.min_pair_obs)
         order = bundle.cluster_order if reorder else None
-        _heatmap(matrix, f"{matrix_mode} — {selected_days}D", order)
+        matrix_title = estimator if matrix_mode == "Selected estimator" else matrix_mode
+        _heatmap(matrix, f"{matrix_title} — {selected_days}D", order)
+        if matrix_mode == "Tyler robust" or (matrix_mode == "Selected estimator" and estimator == "Tyler robust"):
+            tm = bundle.tyler_meta
+            st.caption(
+                f"Regularized Tyler · convergence={tm.get('converged')} · iterations={tm.get('iterations','N/A')} · "
+                f"shrinkage={fmt_num(tm.get('shrinkage'))} · min eigenvalue={fmt_num(tm.get('min_eigenvalue'))}. "
+                "Estimateur elliptique robuste aux observations radiales extrêmes."
+            )
+        if matrix_mode == "Distance correlation" or (matrix_mode == "Selected estimator" and estimator == "Distance correlation"):
+            st.warning("Distance correlation mesure une dépendance non linéaire non signée. Cette matrice n'est ni une covariance ni une entrée autorisée pour l'optimisation ou le hedge.")
+        if matrix_mode == "Partial" or (matrix_mode == "Selected estimator" and estimator == "Partial"):
+            pm = bundle.partial_meta
+            fallback = pm.get("fallback") or "None"
+            message = (
+                f"Temporal Graphical Lasso · α={fmt_num(pm.get('alpha'))} · folds={pm.get('fold_count',0)} · "
+                f"no-future-leakage={pm.get('no_future_leakage')} · converged={pm.get('converged')} · "
+                f"fallback={fallback} · captured warnings={pm.get('warning_count',0)}. "
+                "Matrice d'associations conditionnelles: aucune projection PSD et aucune autorité covariance/portefeuille."
+            )
+            if pm.get("fallback_used") or not pm.get("converged"):
+                st.warning(message)
+            else:
+                st.caption(message)
         if not bundle.term_structure.empty:
             st.subheader("Correlation change monitor")
             show = bundle.term_structure.copy().head(15)
@@ -557,7 +639,7 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
         available = [x for x in bundle.changes.columns if x != ticker]
         defaults = bundle.ranking["Ticker"].head(4).tolist() if not bundle.ranking.empty else available[:4]
         peers = st.multiselect("Pairs", available, default=[x for x in defaults if x in available], key=f"corrv31_dynpeers_{ticker}")
-        method = st.radio("Dynamic estimator", ["Rolling", "EWMA", "DCC(1,1)"], horizontal=True, key=f"corrv31_dynmethod_{ticker}")
+        method = st.radio("Dynamic estimator", ["Rolling", "EWMA", "Quasi-DCC (EWMA innovations)"], horizontal=True, key=f"corrv31_dynmethod_{ticker}")
         fig = go.Figure()
         metas = []
         for peer in peers[:6]:
@@ -579,6 +661,7 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
             st.info("Pas assez d'observations pour l'estimateur sélectionné.")
         if metas:
             st.dataframe(pd.DataFrame(metas), use_container_width=True, hide_index=True)
+            st.caption("Quasi-DCC(1,1) utilise des innovations standardisées EWMA; il n'est pas présenté comme un DCC-GARCH Student-t complet. Les paramètres et le statut d'optimisation sont exposés ci-dessus.")
 
         st.subheader("Conditional correlation by regime")
         if bundle.regime_table.empty:
@@ -604,6 +687,7 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
                     if c != "Ticker":
                         ci[c] = ci[c].map(fmt_corr)
                 st.dataframe(ci, use_container_width=True, hide_index=True)
+            st.caption("V4.1 définit les régimes par tendance marché 20D × volatilité 20D et estime les intervalles par moving-block bootstrap; Fisher-z iid n'est plus utilisé ici.")
 
         st.subheader("Dependency break detector")
         bm=bundle.break_meta
@@ -621,7 +705,7 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
                 for c in ["Pre corr","Post corr","Δ corr"]:
                     if c in bx: bx[c]=bx[c].map(fmt_corr)
                 st.dataframe(bx,use_container_width=True,hide_index=True)
-            st.caption(f"Diagnostic de rupture, pas test causal. Le p-value est post-sélection: chaque moving-block bootstrap refait toute la recherche du maximum ({bm.get('null_samples',0)} réplications; méthode {bm.get('selection_adjustment','max-stat')}).")
+            st.caption(f"Diagnostic de rupture, pas test causal. Univers fixé ex ante, jamais choisi sur le classement réalisé. Le p-value est post-sélection sur les dates: chaque moving-block bootstrap refait toute la recherche du maximum ({bm.get('null_samples',0)} réplications; méthode {bm.get('selection_adjustment','max-stat')}).")
 
     with tabs[3]:
         st.subheader("Multivariate factor attribution")
@@ -651,10 +735,12 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
                     x[c] = x[c].map(fmt_num)
             if "p-value" in x:
                 x["p-value"] = x["p-value"].map(fmt_pvalue)
+            if "BH q-value" in x:
+                x["BH q-value"] = x["BH q-value"].map(fmt_pvalue)
             if "Incremental R²" in x:
                 x["Incremental R²"] = x["Incremental R²"].map(fmt_pct)
             st.dataframe(x, use_container_width=True, hide_index=True)
-            st.caption("Standardized beta compare les facteurs sur une échelle commune; Incremental R² mesure leur apport marginal. VIF et condition number diagnostiquent la multicolinéarité.")
+            st.caption("Standardized beta compare les facteurs sur une échelle commune; Incremental R² mesure leur apport marginal. Les facteurs suivent une priorité ex ante et le filtre de collinéarité n'inspecte pas la cible; les q-values BH contrôlent ensuite le FDR entre tests retenus. VIF et condition number diagnostiquent la multicolinéarité.")
             with st.expander("Factor model audit", expanded=False):
                 audit = pd.DataFrame([
                     ["Raw condition #", fmt_num(meta.get("Condition number raw"))],
@@ -662,6 +748,8 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
                     ["Max VIF", fmt_num(meta.get("Max VIF"))],
                     ["Factors used", ", ".join(meta.get("factors_used", []))],
                     ["Dropped pair-collinear factors", ", ".join(meta.get("factors_dropped", [])) or "None"],
+                    ["Selection order", meta.get("selection_order", "N/A")],
+                    ["Multiple testing", meta.get("multiple_testing", "N/A")],
                 ], columns=["Diagnostic", "Value"])
                 st.dataframe(audit, use_container_width=True, hide_index=True)
 
@@ -669,6 +757,17 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
         default_cols = ["Ticker", "Type", "Corr", "ΔCorr 30D-1Y", "Beta ticker vs peer", "Worst 20% corr", "Stress lift", "CI low", "CI high", "Stability", "Obs"]
         x = _fmt_ranking(bundle.ranking[[c for c in default_cols if c in bundle.ranking.columns]])
         st.dataframe(x, use_container_width=True, hide_index=True, height=table_height(x, max_height=650))
+
+        st.subheader("Nonlinear dependence screen")
+        if bundle.nonlinear_ranking.empty:
+            st.info("Distance-correlation ranking unavailable on the current sample.")
+        else:
+            nl = bundle.nonlinear_ranking.head(20).copy()
+            for c in ["Distance correlation", "Abs Pearson", "Nonlinear excess"]:
+                if c in nl:
+                    nl[c] = nl[c].map(fmt_num)
+            st.dataframe(nl, use_container_width=True, hide_index=True)
+            st.caption("Distance correlation detects nonlinear association. It is non-negative and does not provide a hedge direction; Nonlinear excess compares dCor to |Pearson| as a screening diagnostic only.")
 
     with tabs[4]:
         st.subheader("Adaptive tail dependence with uncertainty")
@@ -716,7 +815,7 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
                         if c in y:
                             y[c] = y[c].map(fmt_pct)
                     st.dataframe(y, use_container_width=True, hide_index=True)
-                    st.caption("Pseudo-vraisemblance sur pseudo-observations; AIC compare Gaussian, Student-t, Clayton et Gumbel. Diagnostic de structure, pas certitude de modèle.")
+                    st.caption("Pseudo-vraisemblance sur pseudo-observations; AIC compare Gaussian, Student-t, Clayton/Gumbel et leurs versions survival afin de séparer asymétrie lower/upper tail. Diagnostic de structure, pas certitude de modèle.")
 
                 with st.expander("Moving-block bootstrap tail uncertainty", expanded=False):
                     boot = bootstrap_tail_uncertainty(
@@ -795,6 +894,24 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
             with st.expander("MST edge table", expanded=False):
                 st.dataframe(bundle.mst_table, use_container_width=True, hide_index=True, height=table_height(bundle.mst_table, max_height=560))
 
+        st.subheader("Cluster stability / consensus")
+        csm = bundle.cluster_stability_meta
+        if csm.get("status") != "ok" or bundle.cluster_consensus.empty:
+            st.info(f"Cluster bootstrap unavailable: {csm.get('status','N/A')}")
+        else:
+            cs1, cs2, cs3, cs4 = st.columns(4)
+            cs1.metric("Clusters", str(csm.get("n_clusters", "N/A")))
+            cs2.metric("Valid bootstraps", str(csm.get("bootstrap_valid", 0)))
+            cs3.metric("Block length", str(csm.get("block_length", "N/A")))
+            cs4.metric("Mean within stability", fmt_pct(csm.get("mean_base_within_cluster_stability")))
+            _consensus_heatmap(bundle.cluster_consensus)
+            with st.expander("Pairwise cluster stability", expanded=False):
+                cs = bundle.cluster_stability.copy()
+                if "Co-cluster frequency" in cs:
+                    cs["Co-cluster frequency"] = cs["Co-cluster frequency"].map(fmt_pct)
+                st.dataframe(cs, use_container_width=True, hide_index=True)
+            st.caption("Le dendrogramme n'est plus traité comme certain: la fréquence de co-clustering est estimée par moving-block bootstrap sur une corrélation Ledoit-Wolf.")
+
         st.subheader("Partial-correlation network")
         if bundle.partial_network_edges.empty:
             st.info("Réseau partiel trop sparse ou indisponible sur la fenêtre sélectionnée.")
@@ -824,13 +941,20 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
         st.subheader("Directional connectedness")
         cm = bundle.connectedness_meta
         if cm.get("status") != "ok" or bundle.connectedness_matrix.empty:
-            st.info(f"Connectedness VAR/FEVD indisponible: {cm.get('status','N/A')} · obs {cm.get('obs','N/A')}")
+            st.warning(
+                f"Connectedness VAR/FEVD fail-closed: {cm.get('status','N/A')} · obs {cm.get('obs','N/A')} · "
+                f"{cm.get('non_authoritative_reason','aucun résultat exploitable publié')}"
+            )
         else:
-            k1,k2,k3,k4 = st.columns(4)
+            k1,k2,k3,k4,k5,k6 = st.columns(6)
             k1.metric("Total connectedness", f"{fmt_num(cm.get('TCI'))}%")
             k2.metric("VAR lag", str(cm.get("VAR lag", "N/A")))
             k3.metric("FEVD horizon", str(cm.get("forecast_horizon", "N/A")))
             k4.metric("VAR stable", str(cm.get("VAR stable", "N/A")))
+            k5.metric("VAR whiteness p", fmt_pvalue(cm.get("residual_portmanteau_pvalue")))
+            k6.metric("Authoritative", str(cm.get("authoritative", False)))
+            if cm.get("diagnostic_warnings"):
+                st.warning("VAR diagnostic warnings: " + ", ".join(map(str, cm.get("diagnostic_warnings", []))))
             st.caption("Universe: " + ", ".join(bundle.connectedness_universe))
             _connectedness_graph(bundle.connectedness_matrix, bundle.connectedness_table, ticker)
             ct = bundle.connectedness_table.copy()
@@ -841,7 +965,20 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
             with st.expander("Generalized FEVD matrix", expanded=False):
                 m = bundle.connectedness_matrix.copy()
                 st.dataframe(m.style.format("{:.2f}%"), use_container_width=True)
-            st.caption("Rows receive shocks and columns transmit shocks. NET = TO − FROM; a positive NET identifies a net shock transmitter in the selected VAR universe.")
+            with st.expander("VAR lag publication gate", expanded=False):
+                candidates = cm.get("lag_candidates", [])
+                if candidates:
+                    st.dataframe(pd.DataFrame(candidates), use_container_width=True, hide_index=True)
+                st.caption(
+                    "Le BIC ne choisit qu'entre les lags qui passent stabilité, covariance résiduelle et blancheur multivariée. "
+                    "Si aucun candidat ne passe, les résultats FEVD/TCI sont supprimés."
+                )
+            st.caption(
+                "Rows receive shocks and columns transmit shocks. NET = TO − FROM. Publication is fail-closed on stabilité VAR non vérifiée, résidus autocorrélés, covariance résiduelle invalide, FEVD non finie ou défaut de normalisation. "
+                f"Adjusted multivariate Portmanteau p={fmt_pvalue(cm.get('residual_portmanteau_pvalue'))}; "
+                f"min univariate Ljung–Box p={fmt_pvalue(cm.get('residual_ljung_box_min_pvalue'))}; "
+                f"residual covariance condition={fmt_num(cm.get('residual_covariance_condition'))}; FEVD max row error={fmt_num(cm.get('fevd_row_sum_max_error'))}."
+            )
 
         st.subheader("Frequency connectedness")
         if bundle.frequency_connectedness.empty:
@@ -852,6 +989,8 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
             f1.metric("Spectral total TCI", f"{fmt_num(fm.get('spectral_total_TCI'))}%")
             f2.metric("Sum absolute bands", f"{fmt_num(fm.get('sum_absolute_band_contributions'))}%")
             f3.metric("Reconciliation error", f"{fmt_num(fm.get('reconciliation_error'))} pp")
+            if not fm.get("authoritative", False):
+                st.warning("Spectral connectedness is non-authoritative under the current diagnostics.")
             _frequency_chart(bundle.frequency_connectedness)
             fc=bundle.frequency_connectedness.copy()
             for c in ["Within-band connectedness","Absolute TCI contribution","Band variance mass"]:
@@ -907,6 +1046,33 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
                         elif c.startswith("Vol reduction"):
                             ww[c] = ww[c].map(fmt_pct)
                     st.dataframe(ww, use_container_width=True, hide_index=True)
+
+        st.subheader("Allocation challenger lab — HRP vs baselines")
+        am = bundle.allocation_meta
+        if bundle.allocation_validation.empty:
+            st.info(f"Allocation walk-forward unavailable: {am.get('status','N/A')} · obs {am.get('obs','N/A')}")
+        else:
+            a1, a2, a3, a4, a5 = st.columns(5)
+            a1.metric("OOS leader (vol)", str(bundle.allocation_validation.iloc[0].get("Method", "N/A")))
+            a2.metric("Folds", str(am.get("folds", "N/A")))
+            a3.metric("Train / test", f"{am.get('train_days','N/A')}D / {am.get('test_days','N/A')}D")
+            a4.metric("Cost assumption", f"{fmt_num(am.get('transaction_cost_bps'))} bps")
+            a5.metric("Fallbacks", str(am.get("fallback_count", 0)))
+            av = bundle.allocation_validation.copy()
+            for c in ["OOS ann. vol", "OOS mean ann.", "OOS CVaR95 daily", "Worst max drawdown", "Mean turnover", "Mean max weight"]:
+                if c in av:
+                    av[c] = av[c].map(fmt_pct)
+            if "Mean effective N" in av:
+                av["Mean effective N"] = av["Mean effective N"].map(fmt_num)
+            st.dataframe(av, use_container_width=True, hide_index=True)
+            if not bundle.allocation_weights.empty:
+                weights = bundle.allocation_weights.pivot(index="Asset", columns="Method", values="Weight")
+                st.dataframe(weights.style.format("{:.2%}"), use_container_width=True)
+            with st.expander("Allocation fold ledger", expanded=False):
+                folds = am.get("fold_results")
+                if isinstance(folds, pd.DataFrame) and not folds.empty:
+                    st.dataframe(folds, use_container_width=True, hide_index=True)
+            st.caption("Comparaison chronologique sans look-ahead: univers fixé ex ante selon l'ordre du registre, 1/N, inverse-vol, HRP et minimum-variance long-only, covariance Ledoit-Wolf, blocs OOS non chevauchants et coût linéaire de turnover. RESEARCH_ONLY: aucune allocation n'est exécutée.")
 
         st.subheader("Portfolio dependency & risk decomposition")
         if bundle.portfolio_table.empty:
@@ -1031,7 +1197,7 @@ analysis['correlation_implied_skew'] = {'Put OTM':0.60, 'ATM':0.52, 'Call OTM':0
                 if c in cv: cv[c]=cv[c].map(fmt_pct)
             if "Validation score" in cv: cv["Validation score"]=cv["Validation score"].map(fmt_score)
             st.dataframe(cv,use_container_width=True,hide_index=True)
-            st.caption("Champion/challenger walk-forward: QLIKE + relative Frobenius + realized GMV risk + turnover. La sélection opérationnelle est ensuite comparée au runner-up par paired bootstrap sur les folds OOS; un tie statistique est explicitement conservé.")
+            st.caption("Champion/challenger walk-forward sur univers fixé ex ante: QLIKE + relative Frobenius + realized GMV risk + turnover. Le champion est comparé au runner-up par bootstrap circulaire en blocs sur les folds OOS; un tie est conservé. Cette inférence top-two est conditionnelle et n'est pas présentée comme familywise sur tous les challengers.")
             _heatmap(bundle.corr_forecast,f"Operational forecast correlation — {cm.get('champion','N/A')}")
             with st.expander("Model definitions / optional nonlinear shrinkage",expanded=False):
                 st.markdown("**POET-style** = PCA low-rank + residual thresholding. **Factor-GLasso** = low-rank factors + sparse residual precision. **RMT spectral** = constant-residual-eigenvalue cleaning. Analytical nonlinear shrinkage is an optional adapter only and is never silently approximated.")
@@ -1047,19 +1213,35 @@ analysis['correlation_implied_skew'] = {'Put OTM':0.60, 'ATM':0.52, 'Call OTM':0
     with tabs[9]:
         st.subheader("Data quality & audit")
         q = bundle.quality.copy()
-        for c in ["Coverage %", "Internal missing %"]:
+        for c in [
+            "Coverage %", "Observed grid coverage %", "Within-history coverage %",
+            "Relative history depth %", "Requested period depth %", "Internal missing %",
+        ]:
             if c in q:
                 q[c] = q[c].map(fmt_pct)
         st.dataframe(q, use_container_width=True, hide_index=True, height=table_height(q, max_height=650))
-        st.caption("Coverage mesure la profondeur historique demandée; Internal missing % et Largest internal gap ne comptent plus l'historique antérieur indisponible comme des trous internes. Provider est suivi série par série.")
+        st.caption("Coverage % est désormais conservateur: minimum entre complétude de la grille observée et profondeur calendaire de la période demandée. Relative history depth % conserve l'ancien ratio cross-sectionnel sans le présenter comme couverture absolue. Leading, internal et trailing missing sont séparés.")
         st.subheader("Market synchronization audit")
         if bundle.synchronization.empty:
             st.info("Aucune métadonnée de session injectée. Les returns restent alignés par observations communes sans forward-fill.")
         else:
             st.dataframe(bundle.synchronization,use_container_width=True,hide_index=True)
             st.caption("Pour les marchés à closes non synchrones, fournis analysis['correlation_market_metadata'] et analysis['correlation_alignment_lags']. Hayashi-Yoshida est exposé dans synchronization.py pour un futur adapter intraday asynchrone; il n'est jamais appliqué à des closes daily par défaut.")
-        pack = research_pack_zip(bundle, cfg, {"ticker": ticker, "selected_days": selected_days, "data_source": bundle.data_source, "engine_version": "4.0"})
-        st.download_button("Télécharger le Research Pack ZIP", data=pack, file_name=f"{ticker}_correlation_research_pack_v4_0_{selected_days}D.zip", mime="application/zip", key=f"corrv31_export_{ticker}_{selected_days}")
+        export_meta = {"ticker": ticker, "selected_days": selected_days, "data_source": bundle.data_source, "engine_version": "4.1.0", "authority": "RESEARCH_ONLY"}
+        manifest = research_pack_manifest(bundle, cfg, export_meta)
+        with st.expander("Reproducibility manifest", expanded=False):
+            st.json({
+                "schema": manifest.get("schema"),
+                "as_of": manifest.get("as_of"),
+                "data_source": manifest.get("data_source"),
+                "ranges": manifest.get("ranges"),
+                "shape": manifest.get("shape"),
+                "hashes": manifest.get("hashes"),
+                "authority": "RESEARCH_ONLY",
+            })
+            st.caption("Les hashes SHA-256 portent sur schéma, ordre, index et valeurs exactes. Le ZIP utilise un ordre, des timestamps et une sérialisation déterministes.")
+        pack = research_pack_zip(bundle, cfg, export_meta)
+        st.download_button("Télécharger le Research Pack ZIP", data=pack, file_name=f"{ticker}_correlation_research_pack_v4_1_0_{selected_days}D.zip", mime="application/zip", key=f"corrv31_export_{ticker}_{selected_days}")
 
 
 # Backward-compatible public entry points. Existing app.py can keep the old import/call.

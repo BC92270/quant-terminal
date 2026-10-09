@@ -1,7 +1,7 @@
-"""Institutional correlation/dependency engine for Quant Terminal V3.1.1."""
+"""Institutional correlation/dependency engine for Quant Terminal V4.1.0."""
 
 from .config import CorrelationConfig
 from .engine import CorrelationEngine, AnalysisBundle
 
-__version__ = "3.1.1"
+__version__ = "4.1.0"
 __all__ = ["CorrelationConfig", "CorrelationEngine", "AnalysisBundle"]

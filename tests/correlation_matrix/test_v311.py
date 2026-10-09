@@ -68,6 +68,9 @@ def test_covariance_champion_reports_runner_up_uncertainty():
     if meta.get('champion_probability') is not None:
         assert 0.0 <= meta['champion_probability'] <= 1.0
         assert meta['paired_folds'] >= 6
+        assert 'moving-block' in meta['champion_bootstrap_method']
+        assert meta['champion_bootstrap_block'] >= 2
+        assert meta['inference_scope'].startswith('conditional top-two')
 
 
 def test_network_high_precision_can_run_500_bootstraps():

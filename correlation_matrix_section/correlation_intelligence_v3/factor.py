@@ -7,6 +7,19 @@ import statsmodels.api as sm
 from .utils import safe_float
 
 
+def _bh_qvalues(values: list[float | None]) -> list[float | None]:
+    raw = np.array([np.nan if v is None else float(v) for v in values], dtype=float)
+    valid = np.where(np.isfinite(raw))[0]
+    out = np.full(len(raw), np.nan, dtype=float)
+    if not len(valid):
+        return [None] * len(raw)
+    order = valid[np.argsort(raw[valid])]
+    ranked = raw[order] * len(valid) / np.arange(1, len(valid) + 1)
+    ranked = np.minimum.accumulate(ranked[::-1])[::-1]
+    out[order] = np.clip(ranked, 0.0, 1.0)
+    return [None if not np.isfinite(x) else float(x) for x in out]
+
+
 def _greedy_drop_collinear(x: pd.DataFrame, threshold: float = 0.92) -> tuple[pd.DataFrame, list[str]]:
     keep: list[str] = []
     dropped: list[str] = []
@@ -83,7 +96,12 @@ def multivariate_factor_model(
     if len(df) < max(40, len(available) * 8):
         return pd.DataFrame(), {"status": "insufficient_data", "obs": len(df)}
 
-    x_raw, dropped = _greedy_drop_collinear(df[available].copy(), threshold=pair_collinear_threshold)
+    # Retain the caller's ex-ante economic priority.  The collinearity screen only
+    # compares factor against factor and never inspects the target, so the reported
+    # HAC p-values and BH q-values are not contaminated by target-driven screening.
+    x_raw, dropped = _greedy_drop_collinear(
+        df[available].copy(), threshold=pair_collinear_threshold
+    )
     if x_raw.empty:
         return pd.DataFrame(), {"status": "collinear", "factors_dropped": dropped}
 
@@ -131,7 +149,13 @@ def multivariate_factor_model(
             "VIF": safe_float(vif.get(factor)),
         })
 
-    table = pd.DataFrame(rows).sort_values("Incremental R²", ascending=False, na_position="last")
+    table = pd.DataFrame(rows)
+    if not table.empty:
+        table["BH q-value"] = _bh_qvalues(table["p-value"].tolist())
+        table["FDR supported 10%"] = table["BH q-value"].map(
+            lambda q: bool(q <= 0.10) if q is not None and np.isfinite(float(q)) else False
+        )
+        table = table.sort_values("Incremental R²", ascending=False, na_position="last")
     meta = {
         "status": "ok",
         "obs": int(model.nobs),
@@ -146,5 +170,7 @@ def multivariate_factor_model(
         "Multicollinearity message": col_message,
         "factors_used": list(x_raw.columns),
         "factors_dropped": dropped,
+        "selection_order": "caller-supplied ex-ante priority; factor-only collinearity screen",
+        "multiple_testing": "Benjamini-Hochberg q-values across retained HAC factor tests",
     }
     return table.reset_index(drop=True), meta

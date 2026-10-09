@@ -179,6 +179,13 @@ def _clayton_fit(uv: np.ndarray) -> dict:
     return {"Model": "Clayton", "Param 1": theta, "Param 2": None, "LogLik": ll, "AIC": 2 - 2 * ll, "λL": lam_l, "λU": 0.0}
 
 
+def _survival_clayton_fit(uv: np.ndarray) -> dict:
+    fit = _clayton_fit(1.0 - uv)
+    fit["Model"] = "Survival Clayton"
+    fit["λL"], fit["λU"] = 0.0, fit["λL"]
+    return fit
+
+
 def _gumbel_log_density(uv: np.ndarray, theta: float) -> np.ndarray:
     u, v = uv[:, 0], uv[:, 1]
     x, y = -np.log(u), -np.log(v)
@@ -202,13 +209,27 @@ def _gumbel_fit(uv: np.ndarray) -> dict:
     return {"Model": "Gumbel", "Param 1": theta, "Param 2": None, "LogLik": ll, "AIC": 2 - 2 * ll, "λL": 0.0, "λU": lam_u}
 
 
+def _survival_gumbel_fit(uv: np.ndarray) -> dict:
+    fit = _gumbel_fit(1.0 - uv)
+    fit["Model"] = "Survival Gumbel"
+    fit["λL"], fit["λU"] = fit["λU"], 0.0
+    return fit
+
+
 def fit_copulas(primary: str, peer: str, changes: pd.DataFrame, days: int) -> pd.DataFrame:
     df = pair_frame(changes, primary, peer, days)
     if len(df) < 60:
         return pd.DataFrame()
     uv = _pseudo_obs(df, primary, peer)
     fits = []
-    for fn in (_gaussian_copula_fit, _student_t_copula_fit, _clayton_fit, _gumbel_fit):
+    for fn in (
+        _gaussian_copula_fit,
+        _student_t_copula_fit,
+        _clayton_fit,
+        _survival_clayton_fit,
+        _gumbel_fit,
+        _survival_gumbel_fit,
+    ):
         try:
             fits.append(fn(uv))
         except Exception:
