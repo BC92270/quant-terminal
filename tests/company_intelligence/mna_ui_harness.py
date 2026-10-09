@@ -66,7 +66,7 @@ analysis = {
             "peer_intelligence": {"table": peer_table, "summary": pd.DataFrame()},
             "what_changed": {
                 "table": pd.DataFrame(
-                    [{"Class": "Operating", "Dimension": "Growth", "Window": "TTM", "Direction": "Positive", "Materiality": 80, "Signal": "Growth", "Detail": "Improved", "Confidence": 90, "Source": "Fixture"}]
+                    [{"Class": "Operating", "Dimension": "Growth", "Window": "TTM", "Direction": "Positive", "Materiality": 3, "Signal": "Growth", "Detail": "Improved", "Confidence": 90, "Source": "Fixture"}]
                 ),
                 "summary": {"bias": "Positive", "material": 1, "structural_risks": 0, "confidence": 90},
             },

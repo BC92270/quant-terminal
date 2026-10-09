@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
+
+import company_intelligence.mna_workbench as mna_workbench
 
 from company_intelligence.mna_workbench import (
     accretion_dilution_case,
@@ -536,6 +539,272 @@ def test_calculation_engines_do_not_mutate_caller_inputs():
     pd.testing.assert_frame_equal(peers, snapshots["peers"])
 
 
+def test_scoped_scenario_defaults_refresh_active_conditional_view(monkeypatch):
+    state = {
+        "mna_profile_loaded_NVDA": "Base",
+        "mna_buy_cash_pct_NVDA": 35,
+        "mna_buy_debt_pct_NVDA": 35,
+        "mna_target_premium_NVDA": 99,
+    }
+    monkeypatch.setattr(mna_workbench, "st", SimpleNamespace(session_state=state))
+    facts = {
+        "market_cap": 5_570_000_000_000.0,
+        "cash": 34_650_000_000.0,
+        "revenue": 215_940_000_000.0,
+        "ebitda": 144_550_000_000.0,
+        "revenue_growth": 0.65,
+    }
+
+    mna_workbench._sync_scenario_defaults("NVDA", facts, "Base", "acquirer")
+
+    assert state["mna_buy_cash_pct_NVDA"] == 5
+    assert state["mna_buy_debt_pct_NVDA"] == 35
+    assert state["mna_target_premium_NVDA"] == 99
+    assert state["mna_profile_loaded_NVDA_acquirer"] == f"{mna_workbench.SCENARIO_PROFILE_SCHEMA_VERSION} · Base"
+    assert state["mna_buy_cash_pct_NVDA__persisted"] == 5
+    assert state["mna_buy_debt_pct_NVDA__persisted"] == 35
+
+    # A normal rerun preserves edits already present in the active view.
+    state["mna_buy_cash_pct_NVDA"] = 0
+    state["mna_buy_debt_pct_NVDA"] = 70
+    mna_workbench._sync_scenario_defaults("NVDA", facts, "Base", "acquirer")
+    assert state["mna_buy_cash_pct_NVDA"] == 0
+    assert state["mna_buy_debt_pct_NVDA"] == 70
+
+    # Leaving the view captures the edits; re-entering after Streamlit's widget
+    # cleanup restores them from non-widget backing keys.
+    mna_workbench._persist_scenario_inputs("NVDA")
+    del state["mna_buy_cash_pct_NVDA"]
+    del state["mna_buy_debt_pct_NVDA"]
+    mna_workbench._sync_scenario_defaults("NVDA", facts, "Base", "acquirer")
+    assert state["mna_buy_cash_pct_NVDA"] == 0
+    assert state["mna_buy_debt_pct_NVDA"] == 70
+
+    # If no analyst-backed value exists, the same-profile re-entry still
+    # repopulates capacity-aware defaults instead of widget literals.
+    for suffix in ("buy_cash_pct", "buy_debt_pct"):
+        del state[f"mna_{suffix}_NVDA"]
+        del state[f"mna_{suffix}_NVDA__persisted"]
+    mna_workbench._sync_scenario_defaults("NVDA", facts, "Base", "acquirer")
+    assert state["mna_buy_cash_pct_NVDA"] == 5
+    assert state["mna_buy_debt_pct_NVDA"] == 35
+
+    mna_workbench._sync_scenario_defaults("NVDA", facts, "Base", "target")
+    assert state["mna_target_premium_NVDA"] == 30
+
+
+def test_linked_valuation_anchor_survives_target_widget_cleanup(monkeypatch):
+    state: dict[str, object] = {}
+    monkeypatch.setattr(mna_workbench, "st", SimpleNamespace(session_state=state))
+    facts = {
+        "market_cap": 5_570_000_000_000.0,
+        "cash": 34_650_000_000.0,
+        "revenue": 215_940_000_000.0,
+        "ebitda": 144_550_000_000.0,
+        "revenue_growth": 0.65,
+    }
+
+    # The Apply handlers first synchronize the complete target profile, then
+    # override only the linked valuation anchor. This prevents hybrid profiles.
+    mna_workbench._sync_scenario_defaults("NVDA", facts, "Bull", "target")
+    assert state["mna_target_discount_NVDA"] == 9.5
+    mna_workbench._sync_scenario_defaults("NVDA", facts, "Base", "target")
+    mna_workbench._set_scenario_input("NVDA", "target_premium", 42)
+    del state["mna_target_premium_NVDA"]
+    mna_workbench._sync_scenario_defaults("NVDA", facts, "Base", "target")
+
+    assert state["mna_target_premium_NVDA"] == 42
+    assert state["mna_target_premium_NVDA__persisted"] == 42
+    assert state["mna_target_discount_NVDA"] == 11.0
+    assert state["mna_target_probability_NVDA"] == 70
+    assert state["mna_profile_loaded_NVDA_target"] == f"{mna_workbench.SCENARIO_PROFILE_SCHEMA_VERSION} · Base"
+
+    state["mna_ctx_anchor_NVDA"] = "RV · EV / EBITDA Median"
+    mna_workbench._sync_scenario_defaults("NVDA", facts, "Bull", "target")
+    assert state["mna_target_premium_NVDA"] == 45
+    assert state["mna_ctx_anchor_NVDA"] == "Scenario profile · Bull"
+
+
+def test_non_profile_inputs_restore_for_every_conditional_scope(monkeypatch):
+    signature = f"{mna_workbench.SCENARIO_PROFILE_SCHEMA_VERSION} · Base"
+    state: dict[str, object] = {
+        "mna_profile_loaded_TST_target": signature,
+        "mna_profile_loaded_TST_fa": signature,
+        "mna_profile_loaded_TST_acquirer": signature,
+        "mna_target_tax_TST": 27.0,
+        "mna_fa_fcf_TST": 4.2,
+        "mna_buy_target_equity_TST": 12.5,
+        "mna_ppa_book_TST": 3.3,
+    }
+    monkeypatch.setattr(mna_workbench, "st", SimpleNamespace(session_state=state))
+    facts = {
+        "market_cap": 100_000_000_000.0,
+        "cash": 10_000_000_000.0,
+        "revenue": 20_000_000_000.0,
+        "ebitda": 5_000_000_000.0,
+        "revenue_growth": 0.15,
+    }
+
+    mna_workbench._persist_scenario_inputs("TST")
+    for key in (
+        "mna_target_tax_TST",
+        "mna_fa_fcf_TST",
+        "mna_buy_target_equity_TST",
+        "mna_ppa_book_TST",
+    ):
+        del state[key]
+
+    for scope in ("target", "fa", "acquirer"):
+        mna_workbench._sync_scenario_defaults("TST", facts, "Base", scope)
+
+    assert state["mna_target_tax_TST"] == 27.0
+    assert state["mna_fa_fcf_TST"] == 4.2
+    assert state["mna_buy_target_equity_TST"] == 12.5
+    assert state["mna_ppa_book_TST"] == 3.3
+
+
+def test_cross_ticker_capture_and_conditional_option_reconciliation(monkeypatch):
+    signature = f"{mna_workbench.SCENARIO_PROFILE_SCHEMA_VERSION} · Base"
+    state: dict[str, object] = {
+        "mna_profile_loaded_NVDA_target": signature,
+        "mna_target_tax_NVDA": 29.0,
+        "mna_deal_lens_NVDA": "Acquirer / accretion case",
+        "mna_rv_peers_NVDA": ["AAA", "STALE"],
+        "mna_ctx_owner_NVDA": "Deal team A",
+        "mna_command_NVDA": "DOWW · Deal Watch",
+    }
+    monkeypatch.setattr(mna_workbench, "st", SimpleNamespace(session_state=state))
+
+    mna_workbench._persist_all_scenario_inputs()
+    mna_workbench._persist_conditional_view_inputs()
+    del state["mna_target_tax_NVDA"]
+    del state["mna_deal_lens_NVDA"]
+    del state["mna_rv_peers_NVDA"]
+    del state["mna_ctx_owner_NVDA"]
+    del state["mna_command_NVDA"]
+
+    facts = {
+        "market_cap": 5_570_000_000_000.0,
+        "cash": 34_650_000_000.0,
+        "revenue": 215_940_000_000.0,
+        "ebitda": 144_550_000_000.0,
+        "revenue_growth": 0.65,
+    }
+    mna_workbench._sync_scenario_defaults("NVDA", facts, "Base", "target")
+    mna_workbench._restore_conditional_widget(
+        "mna_deal_lens_NVDA",
+        "Target / takeover screen",
+        options=["Target / takeover screen", "Acquirer / accretion case"],
+    )
+    mna_workbench._restore_conditional_widget(
+        "mna_rv_peers_NVDA",
+        ["AAA", "BBB"],
+        options=["AAA", "BBB"],
+        multiple=True,
+    )
+    mna_workbench._restore_conditional_widget("mna_ctx_owner_NVDA", "Unassigned")
+    mna_workbench._restore_conditional_widget(
+        "mna_command_NVDA",
+        "DES · Company 360",
+        options=["DES · Company 360", "DOWW · Deal Watch"],
+    )
+    state["mna_rv_anchor_choice_NVDA"] = "Stale implied-price label"
+    mna_workbench._restore_conditional_widget(
+        "mna_rv_anchor_choice_NVDA",
+        "EV / EBITDA · Median",
+        options=["EV / EBITDA · Median", "P/E · Median"],
+    )
+    state["mna_bi_classes_NVDA"] = ["Stale class"]
+    mna_workbench._restore_conditional_widget(
+        "mna_bi_classes_NVDA",
+        ["Operating"],
+        options=["Operating", "Structural"],
+        multiple=True,
+    )
+
+    assert state["mna_target_tax_NVDA"] == 29.0
+    assert state["mna_deal_lens_NVDA"] == "Acquirer / accretion case"
+    assert state["mna_rv_peers_NVDA"] == ["AAA"]
+    assert state["mna_ctx_owner_NVDA"] == "Deal team A"
+    assert state["mna_command_NVDA"] == "DOWW · Deal Watch"
+    assert state["mna_rv_anchor_choice_NVDA"] == "EV / EBITDA · Median"
+    assert state["mna_bi_classes_NVDA"] == ["Operating"]
+
+
+def test_acquirer_funding_restore_is_normalized_before_slider_render(monkeypatch):
+    signature = f"{mna_workbench.SCENARIO_PROFILE_SCHEMA_VERSION} · Base"
+    state: dict[str, object] = {
+        "mna_profile_loaded_TST_acquirer": signature,
+        "mna_buy_cash_pct_TST__persisted": 80,
+        "mna_buy_debt_pct_TST__persisted": 35,
+    }
+    monkeypatch.setattr(mna_workbench, "st", SimpleNamespace(session_state=state))
+    facts = {
+        "market_cap": 100_000_000_000.0,
+        "cash": 10_000_000_000.0,
+        "revenue": 20_000_000_000.0,
+        "ebitda": 5_000_000_000.0,
+        "revenue_growth": 0.15,
+    }
+
+    mna_workbench._sync_scenario_defaults("TST", facts, "Base", "acquirer")
+
+    assert state["mna_buy_cash_pct_TST"] == 80
+    assert state["mna_buy_debt_pct_TST"] == 20
+    assert state["mna_buy_debt_pct_TST__persisted"] == 20
+
+
+def test_diligence_routing_is_workstream_specific_and_fail_closed():
+    facts = {
+        "coverage": 100.0,
+        "price": 100.0,
+        "shares": 1_000_000_000.0,
+        "market_cap": 100_000_000_000.0,
+        "debt": 15_000_000_000.0,
+        "cash": 10_000_000_000.0,
+        "revenue": 20_000_000_000.0,
+        "ebitda": 5_000_000_000.0,
+        "net_income": 3_000_000_000.0,
+        "free_cash_flow": 3_500_000_000.0,
+    }
+    unrelated = pd.DataFrame(
+        [{"Class": "Ownership", "Dimension": "Insider sale", "Signal": "Filed", "Detail": "Form 4"}]
+    )
+    empty_relationships = {
+        "summary": {
+            "max_customer_concentration": None,
+            "max_supplier_concentration": None,
+            "single_source_count": 0,
+            "customer_confidence": 0,
+            "supplier_confidence": 0,
+        }
+    }
+    context = {"scenario": "Base", "owner": "Analyst", "valuation_anchor": "Standalone market price"}
+
+    routing = mna_workbench._build_diligence_routing(facts, unrelated, empty_relationships, context).set_index("Workstream")
+
+    assert routing.loc["Commercial & market", "State"] == "DATA GAP"
+    assert routing.loc["Customer & supplier dependencies", "State"] == "DATA GAP"
+    assert routing.loc["Financial & quality of earnings", "State"] == "LIMITED"
+    assert "no QoE" in routing.loc["Financial & quality of earnings", "Current evidence"]
+    assert routing.loc["Valuation & synergies", "Current evidence"].startswith("Base case · Standalone market price")
+    assert "AVAILABLE" not in set(routing["State"])
+
+    operating = pd.DataFrame([{"Class": "Operating", "Dimension": "Growth", "Signal": "Revenue growth"}])
+    substantive_relationships = {"summary": {"max_customer_concentration": 0.22, "single_source_count": 0}}
+    routing = mna_workbench._build_diligence_routing(
+        facts,
+        operating,
+        substantive_relationships,
+        context,
+    ).set_index("Workstream")
+    assert routing.loc["Commercial & market", "State"] == "LIMITED"
+    assert routing.loc["Customer & supplier dependencies", "State"] == "LIMITED"
+
+    blocked = mna_workbench._build_diligence_routing({}, pd.DataFrame(), {}, context).set_index("Workstream")
+    assert blocked.loc["Valuation & synergies", "State"] == "DATA GAP"
+
+
 def test_all_five_workflows_and_both_deal_lenses_render_offline():
     app = AppTest.from_file(
         "tests/company_intelligence/mna_ui_harness.py",
@@ -558,11 +827,62 @@ def test_all_five_workflows_and_both_deal_lenses_render_offline():
         app.radio[0].set_value(command).run()
         assert not app.exception, command
 
+    assert {metric.label for metric in app.metric}.issuperset(
+        {
+            "Overall evidence bias",
+            "Overall material observations",
+            "Overall structural risks",
+            "Overall evidence confidence",
+        }
+    )
+    assert {widget.label for widget in app.multiselect}.issuperset({"Evidence classes", "Directions"})
+    assert any("Transaction diligence routing" in element.value for element in app.markdown)
+    assert any("Evidence map · confidence × materiality" in element.value for element in app.markdown)
+    assert any("Bull · Scenario profile · Bull" in element.value for element in app.markdown)
+    assert not any("Bull · None" in element.value for element in app.markdown)
+
+    app.radio[0].set_value("RV · Relative Value").run()
+    next(widget for widget in app.multiselect if widget.label == "Included comparable companies").set_value(
+        ["AAA", "BBB", "CCC"]
+    ).run()
+    next(widget for widget in app.text_input if widget.label == "Exclusion rationale").set_value(
+        "DDD excluded as an outlier"
+    ).run()
+    next(widget for widget in app.selectbox if widget.label == "Information density").set_value("Executive").run()
+    assert any("At least four valid current peers" in element.value for element in app.info)
+    next(widget for widget in app.selectbox if widget.label == "Information density").set_value("Analyst").run()
+    assert next(widget for widget in app.multiselect if widget.label == "Included comparable companies").value == [
+        "AAA",
+        "BBB",
+        "CCC",
+    ]
+    assert next(widget for widget in app.text_input if widget.label == "Exclusion rationale").value == "DDD excluded as an outlier"
+
+    app.radio[0].set_value("FA · Financial Analysis").run()
+    next(widget for widget in app.number_input if widget.label == "Base FCF proxy · bn").set_value(4.2).run()
+    app.radio[0].set_value("DES · Company 360").run()
+    app.radio[0].set_value("FA · Financial Analysis").run()
+    assert next(widget for widget in app.number_input if widget.label == "Base FCF proxy · bn").value == 4.2
+
     app.radio[0].set_value("DOWW · Deal Watch").run()
+    next(widget for widget in app.number_input if widget.label == "Tax rate · %").set_value(27.0).run()
+    app.radio[0].set_value("DES · Company 360").run()
+    app.radio[0].set_value("DOWW · Deal Watch").run()
+    assert next(widget for widget in app.number_input if widget.label == "Tax rate · %").value == 27.0
+
     app.radio[1].set_value("Acquirer / accretion case").run()
     assert not app.exception
+    next(widget for widget in app.number_input if widget.label == "Target equity value · bn").set_value(12.5).run()
+    app.radio[1].set_value("Target / takeover screen").run()
+    app.radio[1].set_value("Acquirer / accretion case").run()
+    assert next(widget for widget in app.number_input if widget.label == "Target equity value · bn").value == 12.5
+    next(widget for widget in app.text_input if widget.label == "Scenario label").set_value("Persistent acquisition case").run()
+    app.radio[0].set_value("DES · Company 360").run()
+    app.radio[0].set_value("DOWW · Deal Watch").run()
+    assert app.radio[1].value == "Acquirer / accretion case"
+    assert next(widget for widget in app.number_input if widget.label == "Target equity value · bn").value == 12.5
     assert any(metric.label == "PF net leverage" for metric in app.metric)
     scenario_label = next(widget for widget in app.text_input if widget.label == "Scenario label")
-    assert scenario_label.value == "TST · Acquirer / accretion case"
+    assert scenario_label.value == "Persistent acquisition case"
     assert next(widget for widget in app.selectbox if widget.label == "Scenario profile").value == "Bull"
     assert next(widget for widget in app.selectbox if widget.label == "Information density").value == "Analyst"

@@ -30,8 +30,9 @@ from .mna_scenarios import (
 )
 
 
-MNA_VERSION = "M&A LAB · 8.1"
+MNA_VERSION = "M&A LAB · 8.2"
 RESEARCH_ONLY = "RESEARCH_ONLY · HUMAN REVIEW REQUIRED"
+SCENARIO_PROFILE_SCHEMA_VERSION = "MNA-PROFILE-SCHEMA-1"
 
 SCENARIO_PROFILES: dict[str, dict[str, float]] = {
     "Bear": {
@@ -80,6 +81,70 @@ SCENARIO_PROFILES: dict[str, dict[str, float]] = {
         "run_rate_synergy_pct_target_ebitda": 0.120,
     },
 }
+
+# Streamlit removes state for widgets that are not rendered on the current run.
+# Keep the analyst's transaction inputs in durable, non-widget backing keys so
+# switching commands or deal lenses never silently resets a live case.
+SCENARIO_INPUT_SUFFIXES: tuple[str, ...] = (
+    "target_premium",
+    "target_discount",
+    "target_tax",
+    "target_probability",
+    "target_cost_syn",
+    "target_rev_syn",
+    "target_syn_margin",
+    "target_integration",
+    "target_ramp",
+    "fa_fcf",
+    "fa_growth",
+    "fa_wacc",
+    "fa_terminal",
+    "buy_target_equity",
+    "buy_target_debt",
+    "buy_target_cash",
+    "buy_target_ebitda",
+    "buy_target_ni",
+    "buy_target_fcf",
+    "buy_cash_pct",
+    "buy_debt_pct",
+    "buy_synergy",
+    "buy_integration",
+    "buy_debt_rate",
+    "buy_tax",
+    "buy_refi",
+    "buy_fees",
+    "buy_paydown",
+    "ppa_book",
+    "ppa_intangibles",
+    "ppa_ppe",
+    "ppa_life",
+)
+SCENARIO_SCOPE_SUFFIXES: dict[str, tuple[str, ...]] = {
+    "target": tuple(suffix for suffix in SCENARIO_INPUT_SUFFIXES if suffix.startswith("target_")),
+    "fa": tuple(suffix for suffix in SCENARIO_INPUT_SUFFIXES if suffix.startswith("fa_")),
+    "acquirer": tuple(
+        suffix for suffix in SCENARIO_INPUT_SUFFIXES if suffix.startswith("buy_") or suffix.startswith("ppa_")
+    ),
+}
+CONDITIONAL_VIEW_PREFIXES: tuple[str, ...] = (
+    "mna_command_",
+    "mna_ctx_counterparty_",
+    "mna_ctx_date_",
+    "mna_ctx_currency_",
+    "mna_ctx_stage_",
+    "mna_ctx_owner_",
+    "mna_ctx_reviewer_",
+    "mna_ctx_review_",
+    "mna_ctx_scenario_",
+    "mna_ctx_density_",
+    "mna_deal_lens_",
+    "mna_scenario_label_",
+    "mna_rv_peers_",
+    "mna_rv_exclusion_",
+    "mna_rv_anchor_choice_",
+    "mna_bi_classes_",
+    "mna_bi_directions_",
+)
 
 
 def _mapping(value: Any) -> Mapping[str, Any]:
@@ -1242,12 +1307,12 @@ def _inject_css() -> None:
         """
 <style>
 .mna-shell{margin:2px 0 14px;padding:22px 24px;border:1px solid rgba(103,181,204,.28);border-radius:18px;background:radial-gradient(circle at 88% 12%,rgba(49,199,212,.14),transparent 30%),linear-gradient(135deg,#0c2130,#06131e 58%,#091826);box-shadow:0 22px 56px rgba(0,0,0,.24)}
-.mna-top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.mna-code{color:#e5c36c;font-size:.62rem;letter-spacing:.20em;text-transform:uppercase;font-weight:900}.mna-policy{padding:5px 9px;border:1px solid rgba(104,214,154,.28);border-radius:999px;color:#9ce6bb;font-size:.58rem;letter-spacing:.11em;text-transform:uppercase;font-weight:900}.mna-title{margin-top:17px;color:#f6f9fb;font:800 clamp(1.8rem,3.5vw,2.8rem)/1.05 Georgia,serif}.mna-title span{color:#65d7e7}.mna-sub{margin-top:7px;color:#91a9bb;font-size:.75rem;line-height:1.5;max-width:920px}.mna-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:18px}.mna-stat{padding:11px 12px;border:1px solid rgba(121,162,190,.20);border-radius:11px;background:rgba(7,22,34,.76)}.mna-stat .k{font-size:.54rem;letter-spacing:.15em;text-transform:uppercase;color:#7991a5;font-weight:900}.mna-stat .v{font:800 1.16rem Georgia,serif;color:#f1f6f9;margin-top:5px}.mna-stat .s{font-size:.59rem;color:#7890a3;margin-top:3px}.mna-note{padding:13px 15px;border-left:3px solid #e5c36c;border-radius:8px;background:rgba(229,195,108,.07);color:#b3c1cc;font-size:.72rem;line-height:1.55}.mna-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:10px 0}.mna-card{padding:14px;border:1px solid rgba(121,162,190,.19);border-radius:13px;background:linear-gradient(145deg,rgba(10,31,45,.86),rgba(5,17,27,.90))}.mna-card .k{font-size:.55rem;letter-spacing:.15em;text-transform:uppercase;color:#e5c36c;font-weight:900}.mna-card h4{font:800 1rem Georgia,serif;color:#eef5fa;margin:7px 0}.mna-card p{font-size:.70rem;color:#94aabc;line-height:1.5;margin:0}.mna-pass{color:#68d69a}.mna-watch{color:#e5c36c}.mna-block{color:#ff7c80}
+.mna-top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.mna-code{color:#e5c36c;font-size:.62rem;letter-spacing:.20em;text-transform:uppercase;font-weight:900}.mna-policy{padding:5px 9px;border:1px solid rgba(104,214,154,.28);border-radius:999px;color:#9ce6bb;font-size:.58rem;letter-spacing:.11em;text-transform:uppercase;font-weight:900}.mna-title{margin-top:17px;color:#f6f9fb;font:800 clamp(1.8rem,3.5vw,2.8rem)/1.05 Georgia,serif}.mna-title span{color:#65d7e7}.mna-sub{margin-top:7px;color:#91a9bb;font-size:.75rem;line-height:1.5;max-width:920px}.mna-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:18px}.mna-stat{padding:11px 12px;border:1px solid rgba(121,162,190,.20);border-radius:11px;background:rgba(7,22,34,.76)}.mna-stat .k{font-size:.54rem;letter-spacing:.15em;text-transform:uppercase;color:#7991a5;font-weight:900}.mna-stat .v{font:800 1.16rem Georgia,serif;color:#f1f6f9;margin-top:5px}.mna-stat .s{font-size:.59rem;color:#7890a3;margin-top:3px}.mna-note{padding:13px 15px;border-left:3px solid #e5c36c;border-radius:8px;background:rgba(229,195,108,.07);color:#b3c1cc;font-size:.72rem;line-height:1.55}.mna-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:10px 0}.mna-card{padding:14px;border:1px solid rgba(121,162,190,.19);border-radius:13px;background:linear-gradient(145deg,rgba(10,31,45,.86),rgba(5,17,27,.90))}.mna-card .k{font-size:.55rem;letter-spacing:.15em;text-transform:uppercase;color:#e5c36c;font-weight:900}.mna-card h4{font:800 1rem Georgia,serif;color:#eef5fa;margin:7px 0}.mna-card p{font-size:.70rem;color:#94aabc;line-height:1.5;margin:0}.mna-title,.mna-context-main,.mna-card h4,.mna-card p{overflow-wrap:anywhere}.mna-pass{color:#68d69a}.mna-watch{color:#e5c36c}.mna-block{color:#ff7c80}
 .mna-context{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:11px 13px;border:1px solid rgba(121,162,190,.20);border-radius:13px;background:linear-gradient(90deg,rgba(13,38,54,.88),rgba(7,21,32,.80))}.mna-context-main{color:#eef5fa;font:800 .88rem Georgia,serif}.mna-context-meta{display:flex;gap:6px;flex-wrap:wrap}.mna-chip{padding:4px 8px;border:1px solid rgba(121,162,190,.24);border-radius:999px;color:#9db2c1;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase}.mna-chip.active{border-color:rgba(99,215,231,.45);color:#79deeb;background:rgba(37,143,160,.10)}
 .mna-section-head{margin:6px 0 12px;padding-bottom:10px;border-bottom:1px solid rgba(121,162,190,.15)}.mna-section-code{font-size:.57rem;letter-spacing:.18em;color:#e5c36c;text-transform:uppercase;font-weight:900}.mna-section-title{font:800 1.24rem Georgia,serif;color:#edf4f8;margin-top:4px}.mna-section-sub{font-size:.68rem;line-height:1.5;color:#8fa5b5;margin-top:4px}.mna-rail-label{font-size:.56rem;letter-spacing:.18em;color:#6f899d;text-transform:uppercase;font-weight:900;margin:7px 0 5px}.mna-mini{padding:10px;border:1px solid rgba(121,162,190,.16);border-radius:11px;background:rgba(5,17,27,.68);color:#8fa5b5;font-size:.62rem;line-height:1.55}.mna-mini b{color:#e8f1f6}.mna-audit-ok{color:#68d69a}.mna-audit-warn{color:#e5c36c}
 [class*="st-key-mna_command_"] div[role="radiogroup"]{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid rgba(121,162,190,.20);border-radius:14px;background:rgba(5,16,26,.80)}[class*="st-key-mna_command_"] div[role="radiogroup"] label{min-height:39px;padding:7px 10px!important;border:1px solid transparent;border-radius:9px;background:rgba(13,35,50,.68)}[class*="st-key-mna_command_"] div[role="radiogroup"] label:has(input:checked){border-color:rgba(99,215,231,.55);background:linear-gradient(90deg,rgba(36,120,140,.30),rgba(36,120,140,.10))}
-@media(max-width:900px){.mna-shell{padding:18px}.mna-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.mna-grid{grid-template-columns:1fr}[class*="st-key-mna_command_"] div[role="radiogroup"]{flex-direction:row;flex-wrap:wrap}.mna-context{align-items:flex-start}}
-@media(max-width:520px){.mna-strip{grid-template-columns:1fr}.mna-shell{padding:15px}.mna-title{font-size:1.55rem}.mna-context-meta{width:100%}.mna-chip{font-size:.50rem}}
+@media(max-width:900px){.mna-shell{padding:18px}.mna-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.mna-grid{grid-template-columns:1fr}.mna-context{align-items:flex-start}div[data-testid="stHorizontalBlock"]:has(>div[data-testid="stColumn"] [class*="st-key-mna_command_"]){flex-direction:column;gap:.75rem!important}div[data-testid="stHorizontalBlock"]:has(>div[data-testid="stColumn"] [class*="st-key-mna_command_"])>div[data-testid="stColumn"]{width:100%!important;flex:1 1 100%!important}[class*="st-key-mna_command_"] div[role="radiogroup"]{flex-direction:row;flex-wrap:wrap}[class*="st-key-mna_command_"] div[role="radiogroup"] label{flex:1 1 130px}}
+@media(max-width:520px){.mna-strip{grid-template-columns:1fr}.mna-shell{padding:15px}.mna-title{font-size:1.55rem}.mna-context-meta{width:100%}.mna-chip{font-size:.50rem}[class*="st-key-mna_command_"] div[role="radiogroup"] label{flex:1 1 100%}}
 </style>
 """,
         unsafe_allow_html=True,
@@ -1305,12 +1370,82 @@ def _section_heading(code: str, title: str, subtitle: str) -> None:
     )
 
 
-def _sync_scenario_defaults(ticker: str, facts: Mapping[str, Any], scenario: str) -> None:
-    """Load a scenario profile only when the active profile changes."""
-    marker = f"mna_profile_loaded_{ticker}"
-    profile_signature = f"{MNA_VERSION} · {scenario}"
-    if st.session_state.get(marker) == profile_signature:
-        return
+def _scenario_input_key(ticker: str, suffix: str) -> str:
+    return f"mna_{suffix}_{ticker}"
+
+
+def _scenario_backing_key(ticker: str, suffix: str) -> str:
+    return f"{_scenario_input_key(ticker, suffix)}__persisted"
+
+
+def _set_scenario_input(ticker: str, suffix: str, value: Any) -> None:
+    """Set a conditional widget value and its durable cross-view backing."""
+    if suffix not in SCENARIO_INPUT_SUFFIXES:
+        raise ValueError(f"Unsupported M&A scenario input: {suffix}")
+    st.session_state[_scenario_input_key(ticker, suffix)] = value
+    st.session_state[_scenario_backing_key(ticker, suffix)] = value
+
+
+def _persist_scenario_inputs(ticker: str) -> None:
+    """Capture rendered widget values before Streamlit's orphan cleanup."""
+    for suffix in SCENARIO_INPUT_SUFFIXES:
+        key = _scenario_input_key(ticker, suffix)
+        if key in st.session_state:
+            st.session_state[_scenario_backing_key(ticker, suffix)] = st.session_state[key]
+
+
+def _persist_all_scenario_inputs() -> None:
+    """Capture every ticker's live case before a security switch cleans widgets."""
+    keys = list(st.session_state.keys())
+    for suffix in SCENARIO_INPUT_SUFFIXES:
+        prefix = f"mna_{suffix}_"
+        for key in keys:
+            if key.startswith(prefix) and not key.endswith("__persisted"):
+                st.session_state[f"{key}__persisted"] = st.session_state[key]
+
+
+def _persist_conditional_view_inputs() -> None:
+    """Capture non-model view controls that disappear outside their command."""
+    for key in list(st.session_state.keys()):
+        if key.endswith("__persisted"):
+            continue
+        if any(key.startswith(prefix) for prefix in CONDITIONAL_VIEW_PREFIXES):
+            st.session_state[f"{key}__persisted"] = st.session_state[key]
+
+
+def _restore_conditional_widget(
+    key: str,
+    default: Any,
+    *,
+    options: Sequence[Any] | None = None,
+    multiple: bool = False,
+) -> None:
+    """Restore a conditional control, reconciling stale values with live options."""
+    persisted_key = f"{key}__persisted"
+    value = st.session_state.get(key, st.session_state.get(persisted_key, default))
+    if options is not None:
+        available = list(options)
+        if multiple:
+            if isinstance(value, (list, tuple, set)):
+                requested = list(value)
+                reconciled = [item for item in requested if item in available]
+                value = reconciled if reconciled or not requested else list(default)
+            else:
+                value = list(default)
+        elif value not in available:
+            value = default
+    st.session_state[key] = value
+    st.session_state[persisted_key] = value
+
+
+def _sync_scenario_defaults(ticker: str, facts: Mapping[str, Any], scenario: str, scope: str) -> None:
+    """Load profile defaults or restore durable inputs for a conditional view."""
+    normalized_scope = str(scope).strip().lower()
+    if normalized_scope not in {"target", "fa", "acquirer"}:
+        raise ValueError(f"Unsupported M&A scenario scope: {scope}")
+    marker = f"mna_profile_loaded_{ticker}_{normalized_scope}"
+    profile_signature = f"{SCENARIO_PROFILE_SCHEMA_VERSION} · {scenario}"
+    profile_changed = st.session_state.get(marker) != profile_signature
     profile = SCENARIO_PROFILES.get(scenario, SCENARIO_PROFILES["Base"])
     revenue = max(0.0, _finite(facts.get("revenue")) or 0.0)
     ebitda = max(0.0, _finite(facts.get("ebitda")) or 0.0)
@@ -1335,8 +1470,41 @@ def _sync_scenario_defaults(ticker: str, facts: Mapping[str, Any], scenario: str
         f"mna_buy_cash_pct_{ticker}": cash_funding_pct,
         f"mna_buy_debt_pct_{ticker}": debt_funding_pct,
     }
-    for key, value in values.items():
-        st.session_state[key] = value
+    defaults_by_suffix = {
+        suffix: values[_scenario_input_key(ticker, suffix)]
+        for suffix in SCENARIO_SCOPE_SUFFIXES[normalized_scope]
+        if _scenario_input_key(ticker, suffix) in values
+    }
+    for suffix in SCENARIO_SCOPE_SUFFIXES[normalized_scope]:
+        key = _scenario_input_key(ticker, suffix)
+        backing_key = _scenario_backing_key(ticker, suffix)
+        has_profile_default = suffix in defaults_by_suffix
+        if profile_changed and has_profile_default:
+            value = defaults_by_suffix[suffix]
+            st.session_state[key] = value
+            st.session_state[backing_key] = value
+        elif key not in st.session_state:
+            if backing_key in st.session_state:
+                st.session_state[key] = st.session_state[backing_key]
+            elif has_profile_default:
+                st.session_state[key] = defaults_by_suffix[suffix]
+                st.session_state[backing_key] = st.session_state[key]
+        else:
+            st.session_state.setdefault(backing_key, st.session_state[key])
+    if normalized_scope == "acquirer":
+        cash_key = _scenario_input_key(ticker, "buy_cash_pct")
+        debt_key = _scenario_input_key(ticker, "buy_debt_pct")
+        cash_value = _finite(st.session_state.get(cash_key))
+        debt_value = _finite(st.session_state.get(debt_key))
+        cash_pct = int(round(_clip(cash_value, 0.0, 100.0, 0.0) / 5.0) * 5)
+        debt_pct = int(round(_clip(debt_value, 0.0, 100.0 - cash_pct, 0.0) / 5.0) * 5)
+        debt_pct = min(debt_pct, 100 - cash_pct)
+        st.session_state[cash_key] = cash_pct
+        st.session_state[debt_key] = debt_pct
+        st.session_state[_scenario_backing_key(ticker, "buy_cash_pct")] = cash_pct
+        st.session_state[_scenario_backing_key(ticker, "buy_debt_pct")] = debt_pct
+    if normalized_scope == "target" and profile_changed:
+        st.session_state[f"mna_ctx_anchor_{ticker}"] = f"Scenario profile · {scenario}"
     st.session_state[marker] = profile_signature
 
 
@@ -1344,32 +1512,48 @@ def _render_context_editor(facts: Mapping[str, Any], ticker: str, scenario: str,
     """Render and return the persistent, cross-view deal context."""
     with st.expander("Deal context · ownership, perimeter & review state", expanded=False):
         c1, c2, c3, c4 = st.columns(4)
+        counterparty_key = f"mna_ctx_counterparty_{ticker}"
+        _restore_conditional_widget(counterparty_key, "Unspecified")
         counterparty = c1.text_input(
             "Counterparty / target",
             value="Unspecified",
-            key=f"mna_ctx_counterparty_{ticker}",
+            key=counterparty_key,
             help="Name or identifier supplied by the analyst; no entity match is inferred.",
         )
+        date_key = f"mna_ctx_date_{ticker}"
+        _restore_conditional_widget(date_key, date.today())
         valuation_date = c2.date_input(
             "Valuation date",
             value=date.today(),
-            key=f"mna_ctx_date_{ticker}",
+            key=date_key,
             help="Scenario valuation date, not a claim that every source is point-in-time complete.",
         )
         currencies = list(dict.fromkeys([str(facts.get("currency") or "USD").upper(), "USD", "EUR", "GBP", "JPY"]))
-        currency = c3.selectbox("Presentation currency", currencies, key=f"mna_ctx_currency_{ticker}")
+        currency_key = f"mna_ctx_currency_{ticker}"
+        _restore_conditional_widget(currency_key, currencies[0], options=currencies)
+        currency = c3.selectbox("Presentation currency", currencies, key=currency_key)
+        stage_options = ["Screening", "Indicative", "Diligence", "IC review"]
+        stage_key = f"mna_ctx_stage_{ticker}"
+        _restore_conditional_widget(stage_key, stage_options[0], options=stage_options)
         stage = c4.selectbox(
             "Deal stage",
-            ["Screening", "Indicative", "Diligence", "IC review"],
-            key=f"mna_ctx_stage_{ticker}",
+            stage_options,
+            key=stage_key,
         )
         d1, d2, d3 = st.columns(3)
-        owner = d1.text_input("Case owner", value="Unassigned", key=f"mna_ctx_owner_{ticker}")
-        reviewer = d2.text_input("Human reviewer", value="Unassigned", key=f"mna_ctx_reviewer_{ticker}")
+        owner_key = f"mna_ctx_owner_{ticker}"
+        reviewer_key = f"mna_ctx_reviewer_{ticker}"
+        _restore_conditional_widget(owner_key, "Unassigned")
+        _restore_conditional_widget(reviewer_key, "Unassigned")
+        owner = d1.text_input("Case owner", value="Unassigned", key=owner_key)
+        reviewer = d2.text_input("Human reviewer", value="Unassigned", key=reviewer_key)
+        review_options = ["DRAFT", "EVIDENCE PENDING", "READY FOR HUMAN REVIEW"]
+        review_key = f"mna_ctx_review_{ticker}"
+        _restore_conditional_widget(review_key, review_options[0], options=review_options)
         review_status = d3.selectbox(
             "Review status",
-            ["DRAFT", "EVIDENCE PENDING", "READY FOR HUMAN REVIEW"],
-            key=f"mna_ctx_review_{ticker}",
+            review_options,
+            key=review_key,
         )
         st.caption("Context persists across DES, RV, FA, DOWW and BI for this browser session; governed snapshots persist in the append-only scenario ledger.")
     return {
@@ -1576,22 +1760,32 @@ def _render_rv(facts: Mapping[str, Any], ticker: str, density: str, context: Map
                 .tolist()
             )
         )
-    selected_symbols = available_symbols
-    rationale = ""
+    peer_key = f"mna_rv_peers_{ticker}"
+    _restore_conditional_widget(
+        peer_key,
+        available_symbols,
+        options=available_symbols,
+        multiple=True,
+    )
+    selected_symbols = list(st.session_state.get(peer_key, available_symbols))
+    excluded = [symbol for symbol in available_symbols if symbol not in selected_symbols]
+    exclusion_key = f"mna_rv_exclusion_{ticker}"
+    _restore_conditional_widget(exclusion_key, "")
+    rationale = str(st.session_state.get(exclusion_key) or "")
     if available_symbols and density != "Executive":
         with st.expander("Comparable-universe controls", expanded=density == "Audit"):
             selected_symbols = st.multiselect(
                 "Included comparable companies",
                 available_symbols,
                 default=available_symbols,
-                key=f"mna_rv_peers_{ticker}",
+                key=peer_key,
                 help="At least four positive observations per metric are required.",
             )
             excluded = [symbol for symbol in available_symbols if symbol not in selected_symbols]
             rationale = st.text_input(
                 "Exclusion rationale",
                 value="",
-                key=f"mna_rv_exclusion_{ticker}",
+                key=exclusion_key,
                 placeholder="Required when one or more peers are excluded",
                 disabled=not excluded,
             )
@@ -1629,7 +1823,10 @@ def _render_rv(facts: Mapping[str, Any], ticker: str, density: str, context: Map
         }
         if anchor_options:
             a1, a2 = st.columns([2, 1])
-            choice = a1.selectbox("Live valuation anchor", list(anchor_options), key=f"mna_rv_anchor_choice_{ticker}")
+            anchor_labels = list(anchor_options)
+            anchor_key = f"mna_rv_anchor_choice_{ticker}"
+            _restore_conditional_widget(anchor_key, anchor_labels[0], options=anchor_labels)
+            choice = a1.selectbox("Live valuation anchor", anchor_labels, key=anchor_key)
             chosen = anchor_options[choice]
             current_price = _finite(facts.get("price"))
             implied_price = _finite(chosen.get("Implied price"))
@@ -1641,7 +1838,13 @@ def _render_rv(facts: Mapping[str, Any], ticker: str, density: str, context: Map
                 disabled=premium is None or has_ungoverned_exclusion,
                 help="Writes the selected implied premium into the target deal case.",
             ):
-                st.session_state[f"mna_target_premium_{ticker}"] = int(round(100 * _clip(premium, 0.0, 1.0, 0.0)))
+                active_scenario = str(context.get("scenario") or "Base")
+                _sync_scenario_defaults(ticker, facts, active_scenario, "target")
+                _set_scenario_input(
+                    ticker,
+                    "target_premium",
+                    int(round(100 * _clip(premium, 0.0, 1.0, 0.0))),
+                )
                 st.session_state[f"mna_ctx_anchor_{ticker}"] = f"RV · {chosen['Method']} {chosen['Statistic']}"
                 st.success("RV anchor linked to DOWW. Open Deal Watch to inspect the resulting transaction case.")
     else:
@@ -1730,7 +1933,7 @@ def _render_rv(facts: Mapping[str, Any], ticker: str, density: str, context: Map
             _dataframe(pd.DataFrame(premiums), formats={"Premium": "{:.0%}", "Offer price": "{:,.2f}", "Equity purchase price": "{:,.0f}", "Transaction EV": "{:,.0f}", "EV / Revenue": "{:.2f}x", "EV / EBITDA": "{:.2f}x", "P / E": "{:.2f}x"})
 
 
-def _render_fa(facts: Mapping[str, Any], ticker: str, density: str) -> None:
+def _render_fa(facts: Mapping[str, Any], ticker: str, density: str, scenario: str) -> None:
     _section_heading(
         "FA · FINANCIAL ANALYSIS",
         "DCF, reverse DCF & financial diagnostics",
@@ -1786,7 +1989,12 @@ def _render_fa(facts: Mapping[str, Any], ticker: str, density: str) -> None:
             help="Converts the active DCF value per share into a live target premium for Deal Watch.",
         ):
             premium = dcf_price / current_price - 1
-            st.session_state[f"mna_target_premium_{ticker}"] = int(round(100 * _clip(premium, 0.0, 1.0, 0.0)))
+            _sync_scenario_defaults(ticker, facts, scenario, "target")
+            _set_scenario_input(
+                ticker,
+                "target_premium",
+                int(round(100 * _clip(premium, 0.0, 1.0, 0.0))),
+            )
             st.session_state[f"mna_ctx_anchor_{ticker}"] = "FA · active DCF"
             st.success("DCF anchor linked to DOWW.")
         implied_growth = reverse_dcf_growth(facts, assumptions)
@@ -2266,19 +2474,25 @@ def _render_doww(
                 "Terminal growth": "{:.1%}",
             },
         )
+    lens_options = ["Target / takeover screen", "Acquirer / accretion case"]
+    deal_lens_key = f"mna_deal_lens_{ticker}"
+    _restore_conditional_widget(deal_lens_key, lens_options[0], options=lens_options)
     lens = st.radio(
         "Transaction lens",
-        ["Target / takeover screen", "Acquirer / accretion case"],
+        lens_options,
         horizontal=True,
-        key=f"mna_deal_lens_{ticker}",
+        key=deal_lens_key,
     )
+    lens_key = "target" if lens.startswith("Target") else "acquirer"
+    _sync_scenario_defaults(ticker, facts, str(context.get("scenario") or "Base"), lens_key)
     payload = _render_target_watch(facts, ticker, density) if lens.startswith("Target") else _render_acquirer_watch(facts, ticker, density)
     c1, c2 = st.columns([1, 2])
-    lens_key = "target" if lens.startswith("Target") else "acquirer"
+    scenario_label_key = f"mna_scenario_label_{ticker}_{lens_key}"
+    _restore_conditional_widget(scenario_label_key, f"{ticker} · {lens}")
     label = c1.text_input(
         "Scenario label",
         value=f"{ticker} · {lens}",
-        key=f"mna_scenario_label_{ticker}_{lens_key}",
+        key=scenario_label_key,
     )
     if c1.button("Save governed snapshot", key=f"mna_save_scenario_{ticker}", width="stretch"):
         try:
@@ -2329,7 +2543,155 @@ def _render_doww(
             st.caption("Append-only: revisions are never edited or deleted. Any byte-level change breaks the SHA-256 chain and blocks the next save.")
 
 
-def _render_bi(facts: Mapping[str, Any], density: str) -> None:
+def _build_diligence_routing(
+    facts: Mapping[str, Any],
+    evidence_table: pd.DataFrame,
+    relationships: Mapping[str, Any],
+    context: Mapping[str, Any],
+) -> pd.DataFrame:
+    """Map only workstream-specific evidence to fail-closed diligence states."""
+    table = _frame(evidence_table)
+    commercial_blob = ""
+    if not table.empty:
+        commercial_columns = [column for column in ("Class", "Dimension", "Signal", "Detail") if column in table.columns]
+        if commercial_columns:
+            commercial_blob = " ".join(
+                table[commercial_columns].fillna("").astype(str).to_numpy().ravel().tolist()
+            ).lower()
+    commercial_terms = (
+        "commercial",
+        "market",
+        "operating",
+        "growth",
+        "revenue",
+        "segment",
+        "customer",
+        "supplier",
+        "pricing",
+        "volume",
+        "demand",
+    )
+    commercial_available = any(term in commercial_blob for term in commercial_terms)
+
+    rel_summary = _mapping(relationships.get("summary"))
+    rel_disclosures = _frame(relationships.get("disclosures"))
+    concentration_available = any(
+        _finite(rel_summary.get(key)) is not None
+        for key in ("max_customer_concentration", "max_supplier_concentration")
+    )
+    relationship_available = (
+        not rel_disclosures.empty
+        or concentration_available
+        or (_finite(rel_summary.get("single_source_count")) or 0.0) > 0
+        or any(
+            _finite(rel_summary.get(key)) is not None
+            for key in ("customer_risk_score", "supplier_risk_score", "ecosystem_risk_score")
+        )
+    )
+
+    reported_financials = sum(
+        _finite(facts.get(key)) is not None
+        for key in ("revenue", "ebitda", "net_income", "free_cash_flow")
+    )
+    financial_available = reported_financials >= 2
+    target_status = target_deal_case(
+        facts,
+        {
+            "premium": SCENARIO_PROFILES["Base"]["premium"],
+            "discount_rate": SCENARIO_PROFILES["Base"]["synergy_discount_rate"],
+            "synergy_probability": SCENARIO_PROFILES["Base"]["synergy_probability"],
+        },
+    )
+    dcf_status = dcf_valuation(
+        facts,
+        {
+            "base_fcf": facts.get("free_cash_flow"),
+            "initial_growth": _clip(facts.get("revenue_growth"), -0.50, 1.50, 0.08),
+            "wacc": SCENARIO_PROFILES["Base"]["wacc"],
+            "terminal_growth": SCENARIO_PROFILES["Base"]["terminal_growth"],
+            "years": 5,
+        },
+    )
+    active_models = [
+        label
+        for label, status in (
+            ("offer / EV bridge", target_status),
+            ("DCF", dcf_status),
+        )
+        if status.get("status") != "BLOCKED"
+    ]
+    valuation_available = bool(active_models)
+    owner = str(context.get("owner") or "Unassigned")
+    scenario = str(context.get("scenario") or "Base")
+    anchor = str(context.get("valuation_anchor") or "Standalone market price")
+    return pd.DataFrame(
+        [
+            {
+                "Workstream": "Commercial & market",
+                "State": "LIMITED" if commercial_available else "DATA GAP",
+                "Current evidence": (
+                    "Issuer operating/market signals only; counterparty evidence absent"
+                    if commercial_available
+                    else "No workstream-specific commercial evidence"
+                ),
+                "Required next evidence": "Counterparty commercial diligence, market sizing and overlap",
+                "Owner": owner,
+            },
+            {
+                "Workstream": "Customer & supplier dependencies",
+                "State": "LIMITED" if relationship_available else "DATA GAP",
+                "Current evidence": "Issuer relationship disclosures only" if relationship_available else "No explicit relationship disclosure",
+                "Required next evidence": "Contract-level concentration, change-of-control and single-source exposure",
+                "Owner": owner,
+            },
+            {
+                "Workstream": "Financial & quality of earnings",
+                "State": "LIMITED" if financial_available else "DATA GAP",
+                "Current evidence": (
+                    "Reported issuer financials only; no QoE adjustments"
+                    if financial_available
+                    else "Insufficient issuer financial statements; no QoE evidence"
+                ),
+                "Required next evidence": "QoE adjustments, working-capital peg and debt-like items",
+                "Owner": owner,
+            },
+            {
+                "Workstream": "Valuation & synergies",
+                "State": "MODELED" if valuation_available else "DATA GAP",
+                "Current evidence": (
+                    f"{scenario} case · {anchor} · {', '.join(active_models)}"
+                    if valuation_available
+                    else "Required market-cap / balance-sheet bridge or positive-FCF DCF inputs are incomplete"
+                ),
+                "Required next evidence": "Point-in-time precedents and bottom-up synergy validation",
+                "Owner": owner,
+            },
+            {
+                "Workstream": "Regulatory & antitrust",
+                "State": "DATA GAP",
+                "Current evidence": "No deal-specific conclusion",
+                "Required next evidence": "Jurisdictions, market definition, overlap, remedies and timetable",
+                "Owner": owner,
+            },
+            {
+                "Workstream": "Legal, tax & people",
+                "State": "DATA GAP",
+                "Current evidence": "No deal-specific conclusion",
+                "Required next evidence": "Agreements, tax attributes, awards, pensions and change-of-control terms",
+                "Owner": owner,
+            },
+            {
+                "Workstream": "Integration & execution",
+                "State": "DATA GAP",
+                "Current evidence": "Scenario assumptions only",
+                "Required next evidence": "Day-1 plan, TSA, milestones, costs, owners and benefits tracking",
+                "Owner": owner,
+            },
+        ]
+    )
+
+
+def _render_bi(facts: Mapping[str, Any], density: str, context: Mapping[str, Any]) -> None:
     _section_heading(
         "BI · SOURCED INTELLIGENCE",
         "Company, sector & deal evidence center",
@@ -2341,10 +2703,10 @@ def _render_bi(facts: Mapping[str, Any], density: str) -> None:
     table = _frame(what_changed.get("table"))
     summary = _mapping(what_changed.get("summary"))
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Evidence bias", str(summary.get("bias") or "N/A"))
-    c2.metric("Material observations", str(summary.get("material", 0)))
-    c3.metric("Structural risks", str(summary.get("structural_risks", 0)))
-    c4.metric("Evidence confidence", f"{_finite(summary.get('confidence')):.0f}/100" if _finite(summary.get("confidence")) is not None else "N/A")
+    c1.metric("Overall evidence bias", str(summary.get("bias") or "N/A"))
+    c2.metric("Overall material observations", str(summary.get("material", 0)))
+    c3.metric("Overall structural risks", str(summary.get("structural_risks", 0)))
+    c4.metric("Overall evidence confidence", f"{_finite(summary.get('confidence')):.0f}/100" if _finite(summary.get("confidence")) is not None else "N/A")
 
     relationships = _mapping(inst.get("relationships"))
     rel_summary = _mapping(relationships.get("summary"))
@@ -2355,11 +2717,20 @@ def _render_bi(facts: Mapping[str, Any], density: str) -> None:
   <div class="mna-card"><div class="k">Industry structure</div><h4>{escape(str(facts.get('sector')))} · {escape(str(facts.get('industry')))}</h4><p>Current company and peer evidence; no proprietary industry forecast is inferred.</p></div>
   <div class="mna-card"><div class="k">Dependency map</div><h4>Customer {escape(_percent(rel_summary.get('max_customer_concentration')))}</h4><p>Largest explicit supplier {escape(_percent(rel_summary.get('max_supplier_concentration')))} · single-source flags {escape(str(rel_summary.get('single_source_count', 'N/A')))}.</p></div>
   <div class="mna-card"><div class="k">Institutional overlay</div><h4>{escape(str(round(_finite(overlay.get('score')) or 0)) if _finite(overlay.get('score')) is not None else 'N/A')}/100</h4><p>Coverage {escape(_percent((_finite(overlay.get('coverage')) or 0) / 100.0) if _finite(overlay.get('coverage')) is not None else 'N/A')} · kept separate from transaction valuation.</p></div>
+  <div class="mna-card"><div class="k">Deal perimeter</div><h4>{escape(str(context.get('company')))} ↔ {escape(str(context.get('counterparty')))}</h4><p>{escape(str(context.get('stage')))} · {escape(str(context.get('review_status')))} · owner {escape(str(context.get('owner')))}.</p></div>
+  <div class="mna-card"><div class="k">Decision link</div><h4>{escape(str(context.get('scenario') or 'Base'))} · {escape(str(context.get('valuation_anchor') or 'Standalone market price'))}</h4><p>Active transaction context shared with RV, FA and DOWW.</p></div>
+  <div class="mna-card"><div class="k">Evidence linkage</div><h4>Issuer mapped · counterparty pending</h4><p>Deal-specific conclusions remain blocked until counterparty, legal and regulatory evidence is loaded.</p></div>
 </div>
 """,
         unsafe_allow_html=True,
     )
-    st.markdown("##### Evidence timeline")
+
+    diligence_routing = _build_diligence_routing(facts, table, relationships, context)
+    st.markdown("##### Transaction diligence routing")
+    _dataframe(diligence_routing, height=300)
+    st.caption("Routing states describe evidence readiness, not investment approval or deal probability.")
+
+    st.markdown("##### Evidence map · confidence × materiality")
     if table.empty:
         st.info("No material delta table is available; BI remains evidence-pending.")
     else:
@@ -2368,11 +2739,15 @@ def _render_bi(facts: Mapping[str, Any], density: str) -> None:
             f1, f2 = st.columns(2)
             if "Class" in filtered.columns:
                 classes = sorted(filtered["Class"].dropna().astype(str).unique().tolist())
-                selected_classes = f1.multiselect("Evidence classes", classes, default=classes, key=f"mna_bi_classes_{facts.get('ticker')}")
+                class_key = f"mna_bi_classes_{facts.get('ticker')}"
+                _restore_conditional_widget(class_key, classes, options=classes, multiple=True)
+                selected_classes = f1.multiselect("Evidence classes", classes, default=classes, key=class_key)
                 filtered = filtered[filtered["Class"].astype(str).isin(selected_classes)]
             if "Direction" in filtered.columns:
                 directions = sorted(filtered["Direction"].dropna().astype(str).unique().tolist())
-                selected_directions = f2.multiselect("Directions", directions, default=directions, key=f"mna_bi_directions_{facts.get('ticker')}")
+                direction_key = f"mna_bi_directions_{facts.get('ticker')}"
+                _restore_conditional_widget(direction_key, directions, options=directions, multiple=True)
+                selected_directions = f2.multiselect("Directions", directions, default=directions, key=direction_key)
                 filtered = filtered[filtered["Direction"].astype(str).isin(selected_directions)]
         if {"Materiality", "Confidence"}.issubset(filtered.columns) and not filtered.empty:
             chart_frame = filtered.copy(deep=True)
@@ -2395,17 +2770,35 @@ def _render_bi(facts: Mapping[str, Any], density: str) -> None:
                             hovertemplate="%{text}<br>Confidence %{x:.0f}<br>Materiality %{y:.0f}<br>%{customdata}<extra></extra>",
                         )
                     )
+                ordinal_materiality = bool(chart_frame["Materiality"].max() <= 3.0)
+                materiality_axis = (
+                    {
+                        "title": "Materiality",
+                        "range": [0.5, 3.5],
+                        "tickmode": "array",
+                        "tickvals": [1, 2, 3],
+                        "ticktext": ["Low", "Medium", "High"],
+                        "gridcolor": "rgba(130,160,180,.12)",
+                    }
+                    if ordinal_materiality
+                    else {"title": "Materiality", "range": [0, 105], "gridcolor": "rgba(130,160,180,.12)"}
+                )
                 figure.update_layout(
-                    height=330,
-                    margin=dict(l=8, r=8, t=25, b=20),
+                    height=360,
+                    margin=dict(l=8, r=8, t=55, b=20),
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
                     font_color="#a9bdcb",
-                    legend={"orientation": "h", "y": 1.08},
+                    legend={"orientation": "h", "y": 1.18, "x": 0.0},
                     xaxis={"title": "Evidence confidence", "range": [0, 105], "gridcolor": "rgba(130,160,180,.12)"},
-                    yaxis={"title": "Materiality", "range": [0, 105], "gridcolor": "rgba(130,160,180,.12)"},
+                    yaxis=materiality_axis,
                 )
-                st.plotly_chart(figure, width="stretch", config={"displayModeBar": False}, key=f"mna_bi_map_{facts.get('ticker')}")
+                st.plotly_chart(
+                    figure,
+                    width="stretch",
+                    config={"displayModeBar": False, "responsive": True},
+                    key=f"mna_bi_map_{facts.get('ticker')}",
+                )
         display = filtered[[column for column in ("Class", "Dimension", "Window", "Direction", "Materiality", "Signal", "Detail", "Confidence", "Source") if column in filtered.columns]]
         if density == "Executive":
             display = display.head(10)
@@ -2430,36 +2823,51 @@ def render_mna_workbench(ticker: str, analysis: Mapping[str, Any]) -> None:
     facts = extract_mna_facts(ticker, analysis)
     _hero(facts)
     normalized_ticker = str(facts.get("ticker"))
+    _persist_all_scenario_inputs()
+    _persist_conditional_view_inputs()
     rail, canvas = st.columns([0.22, 0.78], gap="large")
     with rail:
         st.markdown('<div class="mna-rail-label">Command rail</div>', unsafe_allow_html=True)
+        command_options = [
+            "DES · Company 360",
+            "RV · Relative Value",
+            "FA · Financial Analysis",
+            "DOWW · Deal Watch",
+            "BI · Intelligence",
+        ]
+        command_key = f"mna_command_{normalized_ticker}"
+        _restore_conditional_widget(command_key, command_options[0], options=command_options)
         command = st.radio(
             "M&A command workflow",
-            [
-                "DES · Company 360",
-                "RV · Relative Value",
-                "FA · Financial Analysis",
-                "DOWW · Deal Watch",
-                "BI · Intelligence",
-            ],
+            command_options,
             horizontal=False,
-            key=f"mna_command_{normalized_ticker}",
+            key=command_key,
             label_visibility="collapsed",
         )
         st.markdown('<div class="mna-rail-label">Live case</div>', unsafe_allow_html=True)
+        scenario_options = ["Bear", "Base", "Bull"]
+        scenario_key = f"mna_ctx_scenario_{normalized_ticker}"
+        _restore_conditional_widget(scenario_key, "Base", options=scenario_options)
         scenario = st.selectbox(
             "Scenario profile",
-            ["Bear", "Base", "Bull"],
+            scenario_options,
             index=1,
-            key=f"mna_ctx_scenario_{normalized_ticker}",
+            key=scenario_key,
         )
+        density_options = ["Executive", "Analyst", "Audit"]
+        density_key = f"mna_ctx_density_{normalized_ticker}"
+        _restore_conditional_widget(density_key, "Analyst", options=density_options)
         density = st.selectbox(
             "Information density",
-            ["Executive", "Analyst", "Audit"],
+            density_options,
             index=1,
-            key=f"mna_ctx_density_{normalized_ticker}",
+            key=density_key,
         )
-        _sync_scenario_defaults(normalized_ticker, facts, scenario)
+        active_scenario_marker = f"mna_active_scenario_{normalized_ticker}"
+        previous_scenario = st.session_state.get(active_scenario_marker)
+        if previous_scenario is not None and previous_scenario != scenario:
+            st.session_state[f"mna_ctx_anchor_{normalized_ticker}"] = f"Scenario profile · {scenario}"
+        st.session_state[active_scenario_marker] = scenario
         coverage = _finite(facts.get("coverage")) or 0.0
         anchor = st.session_state.get(f"mna_ctx_anchor_{normalized_ticker}", "Standalone market price")
         st.markdown(
@@ -2474,16 +2882,18 @@ def render_mna_workbench(ticker: str, analysis: Mapping[str, Any]) -> None:
         elif command.startswith("RV"):
             _render_rv(facts, normalized_ticker, density, context)
         elif command.startswith("FA"):
-            _render_fa(facts, normalized_ticker, density)
+            _sync_scenario_defaults(normalized_ticker, facts, scenario, "fa")
+            _render_fa(facts, normalized_ticker, density, scenario)
         elif command.startswith("DOWW"):
             _render_doww(facts, normalized_ticker, density, context)
         else:
-            _render_bi(facts, density)
+            _render_bi(facts, density, context)
 
 
 __all__ = [
     "MNA_VERSION",
     "RESEARCH_ONLY",
+    "SCENARIO_PROFILE_SCHEMA_VERSION",
     "SCENARIO_PROFILES",
     "accretion_dilution_case",
     "build_acquirer_scenario_comparison",
