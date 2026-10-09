@@ -192,7 +192,7 @@ def _save_fred_disk_series(series_id: str, series: pd.Series, source: str) -> No
         meta = {
             "series_id": series_id,
             "source": source,
-            "fetched_at_utc": pd.Timestamp.utcnow().isoformat(),
+            "fetched_at_utc": pd.Timestamp.now(tz="UTC").isoformat(),
             "last_observation": pd.Timestamp(s.index.max()).isoformat(),
             "observations": int(s.notna().sum()),
         }
