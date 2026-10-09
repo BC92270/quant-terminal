@@ -9,13 +9,22 @@ from streamlit.testing.v1 import AppTest
 
 from company_intelligence.mna_workbench import (
     accretion_dilution_case,
+    build_acquirer_scenario_comparison,
+    build_eps_bridge,
+    build_football_field,
+    build_leverage_trajectory,
+    build_scenario_comparison,
+    build_sources_uses_bridge,
+    build_synergy_ramp,
     dcf_valuation,
     enterprise_value_bridge,
+    filter_peer_universe,
     relative_valuation_ranges,
     reverse_dcf_growth,
     simplified_ppa,
     synergy_npv,
     target_deal_case,
+    validate_deal_identities,
     extract_mna_facts,
 )
 
@@ -100,6 +109,7 @@ def _financing_assumptions(**overrides):
         "pre_tax_synergies": 100.0,
         "incremental_amortization": 20.0,
         "integration_cost": 50.0,
+        "cash_available": 500.0,
     }
     assumptions.update(overrides)
     return assumptions
@@ -348,6 +358,129 @@ def test_ppa_flags_negative_goodwill_for_bargain_purchase_review():
     assert provisional["annual_intangible_amortization"] == pytest.approx(10.0)
 
 
+def test_peer_filter_is_immutable_and_records_exclusion_rationale():
+    peers = pd.DataFrame(
+        [
+            {"Symbol": "TGT", "Peer Type": "Target", "EV/EBITDA": 20.0},
+            {"Symbol": "AAA", "Peer Type": "Peer", "EV/EBITDA": 10.0},
+            {"Symbol": "BBB", "Peer Type": "Peer", "EV/EBITDA": 12.0},
+        ]
+    )
+    before = peers.copy(deep=True)
+
+    selected, audit = filter_peer_universe(peers, ["AAA"], exclusion_rationale="Different end market")
+
+    assert selected["Symbol"].tolist() == ["TGT", "AAA"]
+    assert audit.set_index("Symbol").loc["BBB", "Decision"] == "EXCLUDED"
+    assert audit.set_index("Symbol").loc["BBB", "Rationale"] == "Different end market"
+    pd.testing.assert_frame_equal(peers, before)
+
+
+def test_scenario_comparison_and_football_field_keep_ordered_explicit_ranges():
+    facts = _target_facts(revenue_growth=0.10, currency="USD")
+    scenarios = build_scenario_comparison(facts)
+    peer_ranges = pd.DataFrame(
+        [
+            {"Method": "EV/EBITDA", "Statistic": "25th", "Implied price": 8.0},
+            {"Method": "EV/EBITDA", "Statistic": "Median", "Implied price": 10.0},
+            {"Method": "EV/EBITDA", "Statistic": "75th", "Implied price": 12.0},
+        ]
+    )
+    sensitivity = pd.DataFrame([{"WACC": 0.09, "g 2.0%": 9.0, "g 3.0%": 11.0}])
+
+    field = build_football_field(facts, peer_ranges, scenarios, sensitivity)
+
+    assert scenarios["Scenario"].tolist() == ["Bear", "Base", "Bull"]
+    assert scenarios["Offer price"].is_monotonic_increasing
+    assert scenarios["Offer premium"].tolist() == pytest.approx([0.15, 0.30, 0.45])
+    assert {"Peer EV/EBITDA", "DCF sensitivity", "Control premium"}.issubset(set(field["Method"]))
+    assert (field["Low"] <= field["Mid"]).all()
+    assert (field["Mid"] <= field["High"]).all()
+
+
+def test_transaction_bridges_reconcile_and_leverage_rolls_down():
+    acquirer = _acquirer()
+    target = _transaction_target()
+    assumptions = _financing_assumptions(
+        debt_refinanced=200.0,
+        transaction_fees=100.0,
+        cash_available=1_000.0,
+    )
+    result = accretion_dilution_case(acquirer, target, assumptions)
+
+    sources_uses = build_sources_uses_bridge(target, result)
+    eps_bridge = build_eps_bridge(acquirer, target, result)
+    leverage = build_leverage_trajectory(result, annual_paydown=200.0, years=3)
+    scenario_matrix = build_acquirer_scenario_comparison(acquirer, target, assumptions)
+    identities = validate_deal_identities(acquirer, target, result)
+
+    assert result["status"] == "READY_FOR_HUMAN_REVIEW"
+    relative_sources_uses = sources_uses[sources_uses["Measure"].eq("relative")]["Bridge value"].sum()
+    assert relative_sources_uses == pytest.approx(-result["sources_uses_gap"])
+    recurring_steps = eps_bridge.iloc[:6]["Value"].sum()
+    assert recurring_steps == pytest.approx(result["recurring_net_income"])
+    assert result["recurring_net_income"] - result["after_tax_integration"] == pytest.approx(result["year_one_net_income"])
+    assert leverage["Net debt"].is_monotonic_decreasing
+    assert leverage["Reported leverage"].is_monotonic_decreasing
+    assert (leverage["Net debt"] >= 0).all()
+    assert scenario_matrix["Scenario"].tolist() == ["Bear", "Base", "Bull"]
+    assert set(identities["State"]) == {"PASS"}
+
+    tampered = dict(result)
+    tampered["proforma_shares"] = result["proforma_shares"] + 1.0
+    tampered_identities = validate_deal_identities(acquirer, target, tampered)
+    assert tampered_identities.set_index("Identity").loc["Share roll-forward", "State"] == "BLOCKED"
+
+
+def test_cash_capacity_and_non_reconciling_financing_mix_fail_closed():
+    cash_blocked = accretion_dilution_case(
+        _acquirer(),
+        _transaction_target(),
+        _financing_assumptions(cash_available=100.0),
+    )
+    mix_blocked = accretion_dilution_case(
+        _acquirer(),
+        _transaction_target(),
+        _financing_assumptions(cash_pct=0.20, debt_pct=0.30, stock_pct=0.40),
+    )
+
+    assert cash_blocked["status"] == "BLOCKED"
+    assert cash_blocked["liquidity_ok"] is False
+    assert cash_blocked["cash_shortfall"] == pytest.approx(300.0)
+    assert "cash_funding_capacity" in cash_blocked["missing"]
+    assert mix_blocked["status"] == "BLOCKED"
+    assert mix_blocked["missing"] == ["financing_mix_total"]
+
+
+def test_ppa_amortization_flows_into_eps_and_synergy_schedule_reconciles_npv():
+    no_amortization = accretion_dilution_case(
+        _acquirer(),
+        _transaction_target(),
+        _financing_assumptions(incremental_amortization=0.0),
+    )
+    with_amortization = accretion_dilution_case(
+        _acquirer(),
+        _transaction_target(),
+        _financing_assumptions(incremental_amortization=40.0),
+    )
+    synergy = synergy_npv(
+        cost_synergy_run_rate=100.0,
+        revenue_synergy_run_rate=100.0,
+        contribution_margin=0.50,
+        tax_rate=0.20,
+        integration_cost=25.0,
+        discount_rate=0.10,
+        probability=0.75,
+        ramp=(0.25, 0.75, 1.0),
+    )
+    schedule = build_synergy_ramp(synergy)
+
+    assert no_amortization["recurring_net_income"] - with_amortization["recurring_net_income"] == pytest.approx(30.0)
+    assert with_amortization["after_tax_amortization"] == pytest.approx(30.0)
+    assert schedule["Present value"].sum() - synergy["integration_cost"] == pytest.approx(synergy["npv"])
+    assert schedule["Cumulative synergy FCF"].iloc[-1] == pytest.approx(schedule["After-tax risk-adjusted FCF"].sum())
+
+
 def test_calculation_engines_do_not_mutate_caller_inputs():
     target_facts = _target_facts()
     target_assumptions = {
@@ -411,6 +544,11 @@ def test_all_five_workflows_and_both_deal_lenses_render_offline():
 
     assert not app.exception
     assert app.radio[0].value == "DES · Company 360"
+    next(widget for widget in app.selectbox if widget.label == "Information density").set_value("Audit").run()
+    assert not app.exception
+    next(widget for widget in app.selectbox if widget.label == "Scenario profile").set_value("Bull").run()
+    assert not app.exception
+    next(widget for widget in app.selectbox if widget.label == "Information density").set_value("Analyst").run()
     for command in (
         "RV · Relative Value",
         "FA · Financial Analysis",
@@ -424,4 +562,7 @@ def test_all_five_workflows_and_both_deal_lenses_render_offline():
     app.radio[1].set_value("Acquirer / accretion case").run()
     assert not app.exception
     assert any(metric.label == "PF net leverage" for metric in app.metric)
-    assert app.text_input[0].value == "TST · Acquirer / accretion case"
+    scenario_label = next(widget for widget in app.text_input if widget.label == "Scenario label")
+    assert scenario_label.value == "TST · Acquirer / accretion case"
+    assert next(widget for widget in app.selectbox if widget.label == "Scenario profile").value == "Bull"
+    assert next(widget for widget in app.selectbox if widget.label == "Information density").value == "Analyst"

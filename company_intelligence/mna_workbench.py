@@ -11,7 +11,7 @@ not reproduce proprietary Bloomberg data, research or interface layouts.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date
 from html import escape
 import json
 import math
@@ -22,10 +22,64 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from .common import fmt_large_number, safe_float
+from .mna_scenarios import (
+    ScenarioLedgerError,
+    append_scenario,
+    load_scenarios,
+    verify_ledger,
+)
 
 
-MNA_VERSION = "M&A LAB · 8.0"
+MNA_VERSION = "M&A LAB · 8.1"
 RESEARCH_ONLY = "RESEARCH_ONLY · HUMAN REVIEW REQUIRED"
+
+SCENARIO_PROFILES: dict[str, dict[str, float]] = {
+    "Bear": {
+        "premium": 0.15,
+        "synergy_probability": 0.45,
+        "synergy_discount_rate": 0.13,
+        "cost_synergy_pct_ebitda": 0.020,
+        "revenue_synergy_pct_revenue": 0.005,
+        "revenue_synergy_margin": 0.25,
+        "integration_pct_ebitda": 0.030,
+        "dcf_growth_adjustment": -0.04,
+        "wacc": 0.115,
+        "terminal_growth": 0.020,
+        "cash_pct": 0.20,
+        "debt_pct": 0.50,
+        "run_rate_synergy_pct_target_ebitda": 0.050,
+    },
+    "Base": {
+        "premium": 0.30,
+        "synergy_probability": 0.70,
+        "synergy_discount_rate": 0.11,
+        "cost_synergy_pct_ebitda": 0.030,
+        "revenue_synergy_pct_revenue": 0.010,
+        "revenue_synergy_margin": 0.30,
+        "integration_pct_ebitda": 0.020,
+        "dcf_growth_adjustment": 0.0,
+        "wacc": 0.100,
+        "terminal_growth": 0.030,
+        "cash_pct": 0.35,
+        "debt_pct": 0.35,
+        "run_rate_synergy_pct_target_ebitda": 0.080,
+    },
+    "Bull": {
+        "premium": 0.45,
+        "synergy_probability": 0.85,
+        "synergy_discount_rate": 0.095,
+        "cost_synergy_pct_ebitda": 0.045,
+        "revenue_synergy_pct_revenue": 0.020,
+        "revenue_synergy_margin": 0.35,
+        "integration_pct_ebitda": 0.015,
+        "dcf_growth_adjustment": 0.04,
+        "wacc": 0.090,
+        "terminal_growth": 0.035,
+        "cash_pct": 0.40,
+        "debt_pct": 0.25,
+        "run_rate_synergy_pct_target_ebitda": 0.120,
+    },
+}
 
 
 def _mapping(value: Any) -> Mapping[str, Any]:
@@ -348,16 +402,37 @@ def synergy_npv(
         return {"status": "BLOCKED", "npv": None, "cash_flows": []}
     normalized_ramp = [max(0.0, min(1.0, _finite(x) or 0.0)) for x in ramp]
     cash_flows: list[float] = []
+    schedule_rows: list[dict[str, float]] = []
     npv = -integration
     pre_tax_run_rate = cost + revenue * margin
     for year, factor in enumerate(normalized_ramp, start=1):
-        cash_flow = pre_tax_run_rate * factor * probability_value * (1.0 - tax)
+        cost_contribution = cost * factor
+        revenue_contribution = revenue * margin * factor
+        pre_tax_cash_flow = cost_contribution + revenue_contribution
+        cash_flow = pre_tax_cash_flow * probability_value * (1.0 - tax)
+        discount_factor = (1.0 + discount) ** year
+        present_value = cash_flow / discount_factor
         cash_flows.append(cash_flow)
-        npv += cash_flow / ((1.0 + discount) ** year)
+        npv += present_value
+        schedule_rows.append(
+            {
+                "Year": float(year),
+                "Ramp": factor,
+                "Cost synergy contribution": cost_contribution,
+                "Revenue synergy contribution": revenue_contribution,
+                "Pre-tax synergy": pre_tax_cash_flow,
+                "Probability": probability_value,
+                "After-tax risk-adjusted FCF": cash_flow,
+                "Discount factor": discount_factor,
+                "Present value": present_value,
+            }
+        )
     return {
         "status": "READY_FOR_HUMAN_REVIEW",
         "npv": npv,
         "cash_flows": cash_flows,
+        "schedule": pd.DataFrame(schedule_rows),
+        "integration_cost": integration,
         "pre_tax_run_rate": pre_tax_run_rate,
         "probability": probability_value,
         "horizon_years": len(normalized_ramp),
@@ -597,10 +672,21 @@ def accretion_dilution_case(
     total_weight = sum(weights.values())
     if total_weight <= 0:
         return {"status": "BLOCKED", "missing": ["financing_mix"], "publishable": False}
-    weights = {key: value / total_weight for key, value in weights.items()}
+    if abs(total_weight - 1.0) > 1e-6:
+        return {
+            "status": "BLOCKED",
+            "missing": ["financing_mix_total"],
+            "publishable": False,
+            "financing_mix_total": total_weight,
+        }
     equity_value = required_target["equity_value"]
-    funding = {key: equity_value * weight for key, weight in weights.items()}
-    sources_uses_gap = sum(funding.values()) - equity_value
+    debt_refinanced = min(required_target["debt"], max(0.0, _finite(assumptions.get("debt_refinanced")) or 0.0))
+    transaction_fees = max(0.0, _finite(assumptions.get("transaction_fees")) or 0.0)
+    other_uses = max(0.0, _finite(assumptions.get("other_uses")) or 0.0)
+    total_uses = equity_value + debt_refinanced + transaction_fees + other_uses
+    funding = {key: total_uses * weight for key, weight in weights.items()}
+    total_sources = sum(funding.values())
+    sources_uses_gap = total_sources - total_uses
 
     tax = _clip(assumptions.get("tax_rate"), 0.0, 0.60, 0.21)
     interest_rate = max(0.0, _finite(assumptions.get("debt_interest_rate")) or 0.0)
@@ -642,7 +728,7 @@ def accretion_dilution_case(
         if standalone_fcf_share not in (None, 0):
             fcf_accretion = recurring_fcf_share / standalone_fcf_share - 1
 
-    pf_gross_debt = required_acquirer["debt"] + required_target["debt"] + funding["debt"]
+    pf_gross_debt = required_acquirer["debt"] + (required_target["debt"] - debt_refinanced) + funding["debt"]
     pf_cash = max(0.0, required_acquirer["cash"] + required_target["cash"] - funding["cash"])
     pf_net_debt = pf_gross_debt - pf_cash
     pf_ebitda_reported = required_acquirer["ebitda"] + required_target["ebitda"]
@@ -653,25 +739,52 @@ def accretion_dilution_case(
     acquirer_market_cap = _finite(acquirer.get("market_cap"))
     transaction_to_market_cap = equity_value / acquirer_market_cap if acquirer_market_cap not in (None, 0) else None
     target_ownership = (new_shares or 0.0) / proforma_shares if proforma_shares else None
-    identity_tolerance = max(1.0, 1e-6 * abs(equity_value))
+    identity_tolerance = max(1.0, 1e-6 * abs(total_uses))
     identity_ok = abs(sources_uses_gap) <= identity_tolerance
+    cash_available = max(0.0, _finite(assumptions.get("cash_available")) if _finite(assumptions.get("cash_available")) is not None else required_acquirer["cash"])
+    cash_shortfall = max(0.0, funding["cash"] - cash_available)
+    liquidity_ok = cash_shortfall <= identity_tolerance
+    hard_failures = []
+    if not identity_ok:
+        hard_failures.append("sources_uses_identity")
+    if not liquidity_ok:
+        hard_failures.append("cash_funding_capacity")
     return {
-        "status": "READY_FOR_HUMAN_REVIEW" if identity_ok else "BLOCKED",
-        "publishable": identity_ok,
-        "missing": [],
+        "status": "READY_FOR_HUMAN_REVIEW" if identity_ok and liquidity_ok else "BLOCKED",
+        "publishable": identity_ok and liquidity_ok,
+        "missing": hard_failures,
         "weights": weights,
         "funding": funding,
+        "uses": {
+            "equity_purchase_price": equity_value,
+            "target_debt_refinanced": debt_refinanced,
+            "transaction_fees": transaction_fees,
+            "other_uses": other_uses,
+        },
+        "total_sources": total_sources,
+        "total_uses": total_uses,
         "sources_uses_gap": sources_uses_gap,
+        "cash_available": cash_available,
+        "cash_shortfall": cash_shortfall,
+        "liquidity_ok": liquidity_ok,
         "target_ev": target_ev,
         "new_shares": new_shares,
         "proforma_shares": proforma_shares,
         "standalone_eps": standalone_eps,
+        "recurring_net_income": recurring_ni,
+        "year_one_net_income": year_one_ni,
+        "after_tax_synergy": after_tax_synergy,
+        "after_tax_interest": after_tax_interest,
+        "after_tax_cash_drag": after_tax_cash_drag,
+        "after_tax_amortization": after_tax_amortization,
+        "after_tax_integration": integration * (1.0 - tax),
         "recurring_eps": recurring_eps,
         "year_one_eps": year_one_eps,
         "eps_accretion": eps_accretion,
         "year_one_eps_accretion": year_one_accretion,
         "standalone_fcf_per_share": standalone_fcf_share,
         "recurring_fcf_per_share": recurring_fcf_share,
+        "recurring_free_cash_flow": recurring_fcf,
         "fcf_accretion": fcf_accretion,
         "pf_gross_debt": pf_gross_debt,
         "pf_cash": pf_cash,
@@ -741,14 +854,400 @@ def screening_gates(facts: Mapping[str, Any]) -> pd.DataFrame:
     )
 
 
+def filter_peer_universe(
+    peer_table: pd.DataFrame,
+    selected_symbols: Sequence[str] | None,
+    *,
+    exclusion_rationale: str = "",
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return an immutable peer subset and an explicit inclusion/exclusion audit."""
+    if not isinstance(peer_table, pd.DataFrame) or peer_table.empty:
+        return pd.DataFrame(), pd.DataFrame()
+    peers = peer_table.copy(deep=True)
+    symbol_column = next((column for column in ("Symbol", "symbol", "Ticker", "ticker") if column in peers.columns), None)
+    if symbol_column is None:
+        return peers, pd.DataFrame()
+    selected = None if selected_symbols is None else {str(value).upper().strip() for value in selected_symbols}
+    rows: list[dict[str, Any]] = []
+    keep_mask: list[bool] = []
+    for _, row in peers.iterrows():
+        symbol = str(row.get(symbol_column) or "").upper().strip()
+        is_target = str(row.get("Peer Type") or "").lower() == "target"
+        included = is_target or selected is None or symbol in selected
+        keep_mask.append(included)
+        rows.append(
+            {
+                "Symbol": symbol,
+                "Peer type": row.get("Peer Type", "Peer"),
+                "Decision": "INCLUDED" if included else "EXCLUDED",
+                "Rationale": "Target retained" if is_target else "Selected comparable" if included else exclusion_rationale.strip() or "RATIONALE REQUIRED",
+            }
+        )
+    return peers.loc[keep_mask].reset_index(drop=True), pd.DataFrame(rows)
+
+
+def build_scenario_comparison(facts: Mapping[str, Any]) -> pd.DataFrame:
+    """Build linked Bear/Base/Bull deal and standalone valuation cases."""
+    base_growth = _clip(facts.get("revenue_growth"), -0.20, 0.45, 0.08)
+    base_fcf = max(0.0, _finite(facts.get("free_cash_flow")) or 0.0)
+    revenue = max(0.0, _finite(facts.get("revenue")) or 0.0)
+    ebitda = max(0.0, _finite(facts.get("ebitda")) or 0.0)
+    price = _finite(facts.get("price"))
+    rows: list[dict[str, Any]] = []
+    for name, profile in SCENARIO_PROFILES.items():
+        target = target_deal_case(
+            facts,
+            {
+                "premium": profile["premium"],
+                "discount_rate": profile["synergy_discount_rate"],
+                "tax_rate": 0.21,
+                "synergy_probability": profile["synergy_probability"],
+                "cost_synergy_run_rate": ebitda * profile["cost_synergy_pct_ebitda"],
+                "revenue_synergy_run_rate": revenue * profile["revenue_synergy_pct_revenue"],
+                "contribution_margin": profile["revenue_synergy_margin"],
+                "integration_cost": ebitda * profile["integration_pct_ebitda"],
+            },
+        )
+        dcf = dcf_valuation(
+            facts,
+            {
+                "base_fcf": base_fcf,
+                "initial_growth": _clip(base_growth + profile["dcf_growth_adjustment"], -0.50, 1.50, base_growth),
+                "wacc": profile["wacc"],
+                "terminal_growth": profile["terminal_growth"],
+                "years": 5,
+            },
+        )
+        dcf_price = _finite(dcf.get("value_per_share"))
+        rows.append(
+            {
+                "Scenario": name,
+                "Offer premium": profile["premium"],
+                "Offer price": target.get("offer_price"),
+                "Transaction EV": target.get("transaction_ev"),
+                "EV / EBITDA": target.get("ev_ebitda"),
+                "Synergy confidence": profile["synergy_probability"],
+                "Synergy NPV": target.get("synergy_npv"),
+                "Buyer retained value": target.get("buyer_retained_value"),
+                "DCF value / share": dcf_price,
+                "DCF upside / downside": dcf_price / price - 1 if dcf_price is not None and price not in (None, 0) else None,
+                "WACC": profile["wacc"],
+                "Terminal growth": profile["terminal_growth"],
+                "Review state": target.get("status"),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def build_acquirer_scenario_comparison(
+    acquirer: Mapping[str, Any],
+    target: Mapping[str, Any],
+    base_assumptions: Mapping[str, Any],
+) -> pd.DataFrame:
+    """Stress a live acquirer case across explicit Bear/Base/Bull profiles."""
+    earnings_factors = {"Bear": 0.80, "Base": 1.00, "Bull": 1.10}
+    ebitda_factors = {"Bear": 0.90, "Base": 1.00, "Bull": 1.10}
+    rate_adjustments = {"Bear": 0.020, "Base": 0.0, "Bull": -0.010}
+    base_rate = max(0.0, _finite(base_assumptions.get("debt_interest_rate")) or 0.0)
+    target_ebitda = _finite(target.get("ebitda")) or 0.0
+    rows: list[dict[str, Any]] = []
+    for name, profile in SCENARIO_PROFILES.items():
+        stressed_target = dict(target)
+        for field in ("net_income", "free_cash_flow"):
+            value = _finite(target.get(field))
+            stressed_target[field] = value * earnings_factors[name] if value is not None else value
+        stressed_target["ebitda"] = target_ebitda * ebitda_factors[name]
+        cash_pct = profile["cash_pct"]
+        debt_pct = profile["debt_pct"]
+        assumptions = {
+            **dict(base_assumptions),
+            "cash_pct": cash_pct,
+            "debt_pct": debt_pct,
+            "stock_pct": 1.0 - cash_pct - debt_pct,
+            "pre_tax_synergies": target_ebitda * profile["run_rate_synergy_pct_target_ebitda"],
+            "debt_interest_rate": max(0.0, base_rate + rate_adjustments[name]),
+        }
+        result = accretion_dilution_case(acquirer, stressed_target, assumptions)
+        rows.append(
+            {
+                "Scenario": name,
+                "Target earnings factor": earnings_factors[name],
+                "Target EBITDA factor": ebitda_factors[name],
+                "Cash funding": cash_pct,
+                "Debt funding": debt_pct,
+                "Stock funding": 1.0 - cash_pct - debt_pct,
+                "Debt cost": assumptions["debt_interest_rate"],
+                "Run-rate synergies": assumptions["pre_tax_synergies"],
+                "Recurring EPS accretion": result.get("eps_accretion"),
+                "Year-one EPS accretion": result.get("year_one_eps_accretion"),
+                "FCF/share accretion": result.get("fcf_accretion"),
+                "Net leverage": result.get("net_leverage_reported"),
+                "Synergy-adjusted leverage": result.get("net_leverage_adjusted"),
+                "Cash shortfall": result.get("cash_shortfall"),
+                "Review state": result.get("status"),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def validate_deal_identities(
+    acquirer: Mapping[str, Any],
+    target: Mapping[str, Any],
+    result: Mapping[str, Any],
+) -> pd.DataFrame:
+    """Recompute the hard accounting identities exposed by the deal model."""
+    funding = _mapping(result.get("funding"))
+    price = _finite(acquirer.get("price"))
+    acquirer_shares = _finite(acquirer.get("shares"))
+    target_net_income = _finite(target.get("net_income"))
+    expected_recurring_ni = None
+    if _finite(acquirer.get("net_income")) is not None and target_net_income is not None:
+        expected_recurring_ni = (
+            (_finite(acquirer.get("net_income")) or 0.0)
+            + target_net_income
+            + (_finite(result.get("after_tax_synergy")) or 0.0)
+            - (_finite(result.get("after_tax_interest")) or 0.0)
+            - (_finite(result.get("after_tax_cash_drag")) or 0.0)
+            - (_finite(result.get("after_tax_amortization")) or 0.0)
+        )
+    identities = [
+        ("Sources = uses", _finite(result.get("total_uses")), _finite(result.get("total_sources"))),
+        (
+            "Stock proceeds = new shares × price",
+            _finite(funding.get("stock")),
+            (_finite(result.get("new_shares")) or 0.0) * price if price is not None else None,
+        ),
+        (
+            "Share roll-forward",
+            (acquirer_shares or 0.0) + (_finite(result.get("new_shares")) or 0.0) if acquirer_shares is not None else None,
+            _finite(result.get("proforma_shares")),
+        ),
+        ("Recurring net-income bridge", expected_recurring_ni, _finite(result.get("recurring_net_income"))),
+        (
+            "Year-one net-income bridge",
+            expected_recurring_ni - (_finite(result.get("after_tax_integration")) or 0.0) if expected_recurring_ni is not None else None,
+            _finite(result.get("year_one_net_income")),
+        ),
+        (
+            "Net debt = gross debt − cash",
+            (_finite(result.get("pf_gross_debt")) or 0.0) - (_finite(result.get("pf_cash")) or 0.0),
+            _finite(result.get("pf_net_debt")),
+        ),
+        (
+            "Reported EBITDA bridge",
+            (_finite(acquirer.get("ebitda")) or 0.0) + (_finite(target.get("ebitda")) or 0.0),
+            _finite(result.get("pf_ebitda_reported")),
+        ),
+    ]
+    rows: list[dict[str, Any]] = []
+    for name, expected, actual in identities:
+        gap = actual - expected if expected is not None and actual is not None else None
+        tolerance = max(1e-8, 1e-8 * max(abs(expected or 0.0), abs(actual or 0.0), 1.0))
+        rows.append(
+            {
+                "Identity": name,
+                "Expected": expected,
+                "Actual": actual,
+                "Gap": gap,
+                "Tolerance": tolerance,
+                "State": "PASS" if gap is not None and abs(gap) <= tolerance else "BLOCKED",
+            }
+        )
+    rows.append(
+        {
+            "Identity": "Cash funding capacity",
+            "Expected": 0.0,
+            "Actual": _finite(result.get("cash_shortfall")),
+            "Gap": _finite(result.get("cash_shortfall")),
+            "Tolerance": max(1.0, 1e-6 * abs(_finite(result.get("total_uses")) or 0.0)),
+            "State": "PASS" if result.get("liquidity_ok") else "BLOCKED",
+        }
+    )
+    return pd.DataFrame(rows)
+
+
+def build_football_field(
+    facts: Mapping[str, Any],
+    peer_ranges: pd.DataFrame,
+    scenario_comparison: pd.DataFrame,
+    dcf_sensitivity: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """Normalize comparable, DCF and control-premium outputs into price ranges."""
+    rows: list[dict[str, Any]] = []
+    if isinstance(peer_ranges, pd.DataFrame) and not peer_ranges.empty:
+        for method, group in peer_ranges.groupby("Method", sort=False):
+            points = {
+                str(item.get("Statistic")): _finite(item.get("Implied price"))
+                for _, item in group.iterrows()
+            }
+            if all(points.get(label) is not None for label in ("25th", "Median", "75th")):
+                rows.append(
+                    {
+                        "Method": f"Peer {method}",
+                        "Low": points["25th"],
+                        "Mid": points["Median"],
+                        "High": points["75th"],
+                        "Evidence": "Current comparable-company quartiles",
+                    }
+                )
+    if isinstance(dcf_sensitivity, pd.DataFrame) and not dcf_sensitivity.empty:
+        values = pd.to_numeric(dcf_sensitivity.drop(columns=["WACC"], errors="ignore").stack(), errors="coerce").dropna()
+        values = values[values > 0]
+        if not values.empty:
+            rows.append(
+                {
+                    "Method": "DCF sensitivity",
+                    "Low": float(values.min()),
+                    "Mid": float(values.median()),
+                    "High": float(values.max()),
+                    "Evidence": "Documented WACC × terminal-growth grid",
+                }
+            )
+    if isinstance(scenario_comparison, pd.DataFrame) and not scenario_comparison.empty:
+        lookup = {
+            str(item.get("Scenario")): _finite(item.get("Offer price"))
+            for _, item in scenario_comparison.iterrows()
+        }
+        if all(lookup.get(label) is not None for label in ("Bear", "Base", "Bull")):
+            rows.append(
+                {
+                    "Method": "Control premium",
+                    "Low": lookup["Bear"],
+                    "Mid": lookup["Base"],
+                    "High": lookup["Bull"],
+                    "Evidence": "User-reviewable Bear / Base / Bull profiles",
+                }
+            )
+    return pd.DataFrame(rows, columns=["Method", "Low", "Mid", "High", "Evidence"])
+
+
+def build_sources_uses_bridge(target: Mapping[str, Any], result: Mapping[str, Any]) -> pd.DataFrame:
+    """Build a waterfall-ready sources-and-uses identity without a hidden plug."""
+    funding = _mapping(result.get("funding"))
+    uses = _mapping(result.get("uses"))
+    equity_value = _finite(uses.get("equity_purchase_price"))
+    if equity_value is None:
+        equity_value = _finite(target.get("equity_value")) or 0.0
+    rows = [
+        {"Item": "Target equity purchase price", "Side": "Use", "Amount": equity_value, "Bridge value": equity_value, "Measure": "relative"},
+    ]
+    for item, key in (
+        ("Target debt refinancing", "target_debt_refinanced"),
+        ("Transaction fees", "transaction_fees"),
+        ("Other uses", "other_uses"),
+    ):
+        value = _finite(uses.get(key)) or 0.0
+        if value:
+            rows.append({"Item": item, "Side": "Use", "Amount": value, "Bridge value": value, "Measure": "relative"})
+    rows.extend(
+        [
+            {"Item": "Acquirer cash", "Side": "Source", "Amount": _finite(funding.get("cash")) or 0.0, "Bridge value": -(_finite(funding.get("cash")) or 0.0), "Measure": "relative"},
+            {"Item": "New debt", "Side": "Source", "Amount": _finite(funding.get("debt")) or 0.0, "Bridge value": -(_finite(funding.get("debt")) or 0.0), "Measure": "relative"},
+            {"Item": "Stock consideration", "Side": "Source", "Amount": _finite(funding.get("stock")) or 0.0, "Bridge value": -(_finite(funding.get("stock")) or 0.0), "Measure": "relative"},
+            {"Item": "Uses less sources", "Side": "Reconciliation", "Amount": -(_finite(result.get("sources_uses_gap")) or 0.0), "Bridge value": -(_finite(result.get("sources_uses_gap")) or 0.0), "Measure": "total"},
+        ]
+    )
+    return pd.DataFrame(rows)
+
+
+def build_eps_bridge(
+    acquirer: Mapping[str, Any],
+    target: Mapping[str, Any],
+    result: Mapping[str, Any],
+) -> pd.DataFrame:
+    """Build an auditable net-income bridge underlying EPS accretion/dilution."""
+    rows = [
+        ("Acquirer standalone net income", _finite(acquirer.get("net_income")) or 0.0, "relative"),
+        ("Target net income", _finite(target.get("net_income")) or 0.0, "relative"),
+        ("After-tax synergies", _finite(result.get("after_tax_synergy")) or 0.0, "relative"),
+        ("New debt interest", -(_finite(result.get("after_tax_interest")) or 0.0), "relative"),
+        ("Foregone cash yield", -(_finite(result.get("after_tax_cash_drag")) or 0.0), "relative"),
+        ("Incremental amortization", -(_finite(result.get("after_tax_amortization")) or 0.0), "relative"),
+        ("Recurring pro forma net income", _finite(result.get("recurring_net_income")) or 0.0, "total"),
+        ("Year-one integration cost", -(_finite(result.get("after_tax_integration")) or 0.0), "relative"),
+        ("Year-one pro forma net income", _finite(result.get("year_one_net_income")) or 0.0, "total"),
+    ]
+    return pd.DataFrame([{"Item": item, "Value": value, "Measure": measure} for item, value, measure in rows])
+
+
+def build_leverage_trajectory(
+    result: Mapping[str, Any],
+    *,
+    annual_paydown: Any = None,
+    years: int = 3,
+) -> pd.DataFrame:
+    """Illustrate deleveraging under an explicit annual debt-paydown assumption."""
+    starting_debt = _finite(result.get("pf_net_debt"))
+    reported_ebitda = _finite(result.get("pf_ebitda_reported"))
+    adjusted_ebitda = _finite(result.get("pf_ebitda_adjusted"))
+    if starting_debt is None or reported_ebitda is None or reported_ebitda <= 0:
+        return pd.DataFrame()
+    default_paydown = max(0.0, (_finite(result.get("recurring_free_cash_flow")) or 0.0) * 0.50)
+    paydown = max(0.0, _finite(annual_paydown) if _finite(annual_paydown) is not None else default_paydown)
+    horizon = max(1, min(10, int(years)))
+    rows: list[dict[str, Any]] = []
+    for year in range(0, horizon + 1):
+        net_debt = max(0.0, starting_debt - paydown * year)
+        rows.append(
+            {
+                "Year": "Close" if year == 0 else f"Year {year}",
+                "Net debt": net_debt,
+                "Reported leverage": net_debt / reported_ebitda,
+                "Synergy-adjusted leverage": net_debt / adjusted_ebitda if adjusted_ebitda not in (None, 0) and adjusted_ebitda > 0 else None,
+                "Annual paydown": 0.0 if year == 0 else paydown,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def build_synergy_ramp(synergy: Mapping[str, Any]) -> pd.DataFrame:
+    """Return annual and cumulative risk-adjusted synergy cash flows."""
+    schedule = _frame(synergy.get("schedule"))
+    if not schedule.empty and "After-tax risk-adjusted FCF" in schedule.columns:
+        output = schedule.copy(deep=True)
+        output["Cumulative synergy FCF"] = pd.to_numeric(output["After-tax risk-adjusted FCF"], errors="coerce").fillna(0.0).cumsum()
+        return output
+    cash_flows = [_finite(value) or 0.0 for value in list(synergy.get("cash_flows") or [])]
+    cumulative = 0.0
+    rows: list[dict[str, Any]] = []
+    for year, cash_flow in enumerate(cash_flows, start=1):
+        cumulative += cash_flow
+        rows.append({"Year": year, "Risk-adjusted after-tax synergy FCF": cash_flow, "Cumulative synergy FCF": cumulative})
+    return pd.DataFrame(rows)
+
+
+def build_peer_scatter(peer_table: pd.DataFrame) -> pd.DataFrame:
+    """Normalize the growth-versus-margin peer map when those fields exist."""
+    required = {"Revenue Growth", "EBITDA Margin"}
+    if not isinstance(peer_table, pd.DataFrame) or peer_table.empty or not required.issubset(peer_table.columns):
+        return pd.DataFrame()
+    output = peer_table.copy(deep=True)
+    label_column = next((column for column in ("Symbol", "Company", "Ticker") if column in output.columns), None)
+    if label_column is None:
+        output["Label"] = "Peer"
+    else:
+        output["Label"] = output[label_column].astype(str)
+    output["Revenue Growth"] = pd.to_numeric(output["Revenue Growth"], errors="coerce")
+    output["EBITDA Margin"] = pd.to_numeric(output["EBITDA Margin"], errors="coerce")
+    if "EV/EBITDA" in output.columns:
+        output["EV/EBITDA"] = pd.to_numeric(output["EV/EBITDA"], errors="coerce")
+    else:
+        output["EV/EBITDA"] = math.nan
+    output["Peer Type"] = output.get("Peer Type", pd.Series("Peer", index=output.index)).fillna("Peer").astype(str)
+    return output[["Label", "Peer Type", "Revenue Growth", "EBITDA Margin", "EV/EBITDA"]].dropna(subset=["Revenue Growth", "EBITDA Margin"]).reset_index(drop=True)
+
+
 def _inject_css() -> None:
     st.markdown(
         """
 <style>
 .mna-shell{margin:2px 0 14px;padding:22px 24px;border:1px solid rgba(103,181,204,.28);border-radius:18px;background:radial-gradient(circle at 88% 12%,rgba(49,199,212,.14),transparent 30%),linear-gradient(135deg,#0c2130,#06131e 58%,#091826);box-shadow:0 22px 56px rgba(0,0,0,.24)}
 .mna-top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.mna-code{color:#e5c36c;font-size:.62rem;letter-spacing:.20em;text-transform:uppercase;font-weight:900}.mna-policy{padding:5px 9px;border:1px solid rgba(104,214,154,.28);border-radius:999px;color:#9ce6bb;font-size:.58rem;letter-spacing:.11em;text-transform:uppercase;font-weight:900}.mna-title{margin-top:17px;color:#f6f9fb;font:800 clamp(1.8rem,3.5vw,2.8rem)/1.05 Georgia,serif}.mna-title span{color:#65d7e7}.mna-sub{margin-top:7px;color:#91a9bb;font-size:.75rem;line-height:1.5;max-width:920px}.mna-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:18px}.mna-stat{padding:11px 12px;border:1px solid rgba(121,162,190,.20);border-radius:11px;background:rgba(7,22,34,.76)}.mna-stat .k{font-size:.54rem;letter-spacing:.15em;text-transform:uppercase;color:#7991a5;font-weight:900}.mna-stat .v{font:800 1.16rem Georgia,serif;color:#f1f6f9;margin-top:5px}.mna-stat .s{font-size:.59rem;color:#7890a3;margin-top:3px}.mna-note{padding:13px 15px;border-left:3px solid #e5c36c;border-radius:8px;background:rgba(229,195,108,.07);color:#b3c1cc;font-size:.72rem;line-height:1.55}.mna-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:10px 0}.mna-card{padding:14px;border:1px solid rgba(121,162,190,.19);border-radius:13px;background:linear-gradient(145deg,rgba(10,31,45,.86),rgba(5,17,27,.90))}.mna-card .k{font-size:.55rem;letter-spacing:.15em;text-transform:uppercase;color:#e5c36c;font-weight:900}.mna-card h4{font:800 1rem Georgia,serif;color:#eef5fa;margin:7px 0}.mna-card p{font-size:.70rem;color:#94aabc;line-height:1.5;margin:0}.mna-pass{color:#68d69a}.mna-watch{color:#e5c36c}.mna-block{color:#ff7c80}
-[class*="st-key-mna_command_"] div[role="radiogroup"]{display:flex;flex-wrap:wrap;gap:7px;padding:8px;border:1px solid rgba(121,162,190,.20);border-radius:14px;background:rgba(5,16,26,.80)}[class*="st-key-mna_command_"] div[role="radiogroup"] label{min-height:40px;padding:7px 12px!important;border:1px solid transparent;border-radius:9px;background:rgba(13,35,50,.68)}[class*="st-key-mna_command_"] div[role="radiogroup"] label:has(input:checked){border-color:rgba(99,215,231,.55);background:rgba(36,120,140,.22)}
-@media(max-width:900px){.mna-shell{padding:18px}.mna-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.mna-grid{grid-template-columns:1fr}}
+.mna-context{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:11px 13px;border:1px solid rgba(121,162,190,.20);border-radius:13px;background:linear-gradient(90deg,rgba(13,38,54,.88),rgba(7,21,32,.80))}.mna-context-main{color:#eef5fa;font:800 .88rem Georgia,serif}.mna-context-meta{display:flex;gap:6px;flex-wrap:wrap}.mna-chip{padding:4px 8px;border:1px solid rgba(121,162,190,.24);border-radius:999px;color:#9db2c1;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase}.mna-chip.active{border-color:rgba(99,215,231,.45);color:#79deeb;background:rgba(37,143,160,.10)}
+.mna-section-head{margin:6px 0 12px;padding-bottom:10px;border-bottom:1px solid rgba(121,162,190,.15)}.mna-section-code{font-size:.57rem;letter-spacing:.18em;color:#e5c36c;text-transform:uppercase;font-weight:900}.mna-section-title{font:800 1.24rem Georgia,serif;color:#edf4f8;margin-top:4px}.mna-section-sub{font-size:.68rem;line-height:1.5;color:#8fa5b5;margin-top:4px}.mna-rail-label{font-size:.56rem;letter-spacing:.18em;color:#6f899d;text-transform:uppercase;font-weight:900;margin:7px 0 5px}.mna-mini{padding:10px;border:1px solid rgba(121,162,190,.16);border-radius:11px;background:rgba(5,17,27,.68);color:#8fa5b5;font-size:.62rem;line-height:1.55}.mna-mini b{color:#e8f1f6}.mna-audit-ok{color:#68d69a}.mna-audit-warn{color:#e5c36c}
+[class*="st-key-mna_command_"] div[role="radiogroup"]{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid rgba(121,162,190,.20);border-radius:14px;background:rgba(5,16,26,.80)}[class*="st-key-mna_command_"] div[role="radiogroup"] label{min-height:39px;padding:7px 10px!important;border:1px solid transparent;border-radius:9px;background:rgba(13,35,50,.68)}[class*="st-key-mna_command_"] div[role="radiogroup"] label:has(input:checked){border-color:rgba(99,215,231,.55);background:linear-gradient(90deg,rgba(36,120,140,.30),rgba(36,120,140,.10))}
+@media(max-width:900px){.mna-shell{padding:18px}.mna-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.mna-grid{grid-template-columns:1fr}[class*="st-key-mna_command_"] div[role="radiogroup"]{flex-direction:row;flex-wrap:wrap}.mna-context{align-items:flex-start}}
+@media(max-width:520px){.mna-strip{grid-template-columns:1fr}.mna-shell{padding:15px}.mna-title{font-size:1.55rem}.mna-context-meta{width:100%}.mna-chip{font-size:.50rem}}
 </style>
 """,
         unsafe_allow_html=True,
@@ -792,9 +1291,203 @@ def _dataframe(frame: pd.DataFrame, *, height: int | None = None, formats: Mappi
     st.dataframe(styler, **kwargs)
 
 
-def _render_des(facts: Mapping[str, Any]) -> None:
-    st.markdown("#### DES · Company & transaction description")
-    st.caption("Independent Company 360 workflow. Identity resolution, business profile, capital structure and screening evidence.")
+def _section_heading(code: str, title: str, subtitle: str) -> None:
+    anchor = f"mna-{str(code).lower().replace(' ', '-')}"
+    st.markdown(
+        f"""
+<section id="{escape(anchor)}" class="mna-section-head" aria-labelledby="{escape(anchor)}-title">
+  <div class="mna-section-code">{escape(code)}</div>
+  <div id="{escape(anchor)}-title" class="mna-section-title">{escape(title)}</div>
+  <div class="mna-section-sub">{escape(subtitle)}</div>
+</section>
+""",
+        unsafe_allow_html=True,
+    )
+
+
+def _sync_scenario_defaults(ticker: str, facts: Mapping[str, Any], scenario: str) -> None:
+    """Load a scenario profile only when the active profile changes."""
+    marker = f"mna_profile_loaded_{ticker}"
+    if st.session_state.get(marker) == scenario:
+        return
+    profile = SCENARIO_PROFILES.get(scenario, SCENARIO_PROFILES["Base"])
+    revenue = max(0.0, _finite(facts.get("revenue")) or 0.0)
+    ebitda = max(0.0, _finite(facts.get("ebitda")) or 0.0)
+    base_growth = _clip(facts.get("revenue_growth"), -0.20, 0.45, 0.08)
+    market_cap = max(1.0, _finite(facts.get("market_cap")) or 1e9)
+    cash_available = max(0.0, _finite(facts.get("cash")) or 0.0)
+    indicative_uses = max(1.0, market_cap * 0.111)
+    capacity_pct = max(0, min(100, int((100.0 * cash_available / indicative_uses) // 5 * 5)))
+    cash_funding_pct = min(int(round(profile["cash_pct"] * 100)), capacity_pct)
+    debt_funding_pct = min(int(round(profile["debt_pct"] * 100)), 100 - cash_funding_pct)
+    values = {
+        f"mna_target_premium_{ticker}": int(round(profile["premium"] * 100)),
+        f"mna_target_discount_{ticker}": profile["synergy_discount_rate"] * 100.0,
+        f"mna_target_probability_{ticker}": int(round(profile["synergy_probability"] * 100)),
+        f"mna_target_cost_syn_{ticker}": ebitda * profile["cost_synergy_pct_ebitda"] / 1e9,
+        f"mna_target_rev_syn_{ticker}": revenue * profile["revenue_synergy_pct_revenue"] / 1e9,
+        f"mna_target_syn_margin_{ticker}": profile["revenue_synergy_margin"] * 100.0,
+        f"mna_target_integration_{ticker}": ebitda * profile["integration_pct_ebitda"] / 1e9,
+        f"mna_fa_growth_{ticker}": 100.0 * _clip(base_growth + profile["dcf_growth_adjustment"], -0.50, 1.50, base_growth),
+        f"mna_fa_wacc_{ticker}": profile["wacc"] * 100.0,
+        f"mna_fa_terminal_{ticker}": profile["terminal_growth"] * 100.0,
+        f"mna_buy_cash_pct_{ticker}": cash_funding_pct,
+        f"mna_buy_debt_pct_{ticker}": debt_funding_pct,
+    }
+    for key, value in values.items():
+        st.session_state[key] = value
+    st.session_state[marker] = scenario
+
+
+def _render_context_editor(facts: Mapping[str, Any], ticker: str, scenario: str, density: str) -> dict[str, Any]:
+    """Render and return the persistent, cross-view deal context."""
+    with st.expander("Deal context · ownership, perimeter & review state", expanded=False):
+        c1, c2, c3, c4 = st.columns(4)
+        counterparty = c1.text_input(
+            "Counterparty / target",
+            value="Unspecified",
+            key=f"mna_ctx_counterparty_{ticker}",
+            help="Name or identifier supplied by the analyst; no entity match is inferred.",
+        )
+        valuation_date = c2.date_input(
+            "Valuation date",
+            value=date.today(),
+            key=f"mna_ctx_date_{ticker}",
+            help="Scenario valuation date, not a claim that every source is point-in-time complete.",
+        )
+        currencies = list(dict.fromkeys([str(facts.get("currency") or "USD").upper(), "USD", "EUR", "GBP", "JPY"]))
+        currency = c3.selectbox("Presentation currency", currencies, key=f"mna_ctx_currency_{ticker}")
+        stage = c4.selectbox(
+            "Deal stage",
+            ["Screening", "Indicative", "Diligence", "IC review"],
+            key=f"mna_ctx_stage_{ticker}",
+        )
+        d1, d2, d3 = st.columns(3)
+        owner = d1.text_input("Case owner", value="Unassigned", key=f"mna_ctx_owner_{ticker}")
+        reviewer = d2.text_input("Human reviewer", value="Unassigned", key=f"mna_ctx_reviewer_{ticker}")
+        review_status = d3.selectbox(
+            "Review status",
+            ["DRAFT", "EVIDENCE PENDING", "READY FOR HUMAN REVIEW"],
+            key=f"mna_ctx_review_{ticker}",
+        )
+        st.caption("Context persists across DES, RV, FA, DOWW and BI for this browser session; governed snapshots persist in the append-only scenario ledger.")
+    return {
+        "ticker": ticker,
+        "company": str(facts.get("name") or ticker),
+        "counterparty": counterparty.strip() or "Unspecified",
+        "valuation_date": valuation_date.isoformat() if hasattr(valuation_date, "isoformat") else str(valuation_date),
+        "currency": currency,
+        "stage": stage,
+        "owner": owner.strip() or "Unassigned",
+        "reviewer": reviewer.strip() or "Unassigned",
+        "review_status": review_status,
+        "scenario": scenario,
+        "density": density,
+        "valuation_anchor": st.session_state.get(f"mna_ctx_anchor_{ticker}", "Standalone market price"),
+    }
+
+
+def _render_context_ribbon(context: Mapping[str, Any]) -> None:
+    st.markdown(
+        f"""
+<div class="mna-context" role="status" aria-label="Active deal context">
+  <div class="mna-context-main">{escape(str(context.get('company')))} ↔ {escape(str(context.get('counterparty')))}</div>
+  <div class="mna-context-meta">
+    <span class="mna-chip active">{escape(str(context.get('scenario')))}</span>
+    <span class="mna-chip">{escape(str(context.get('stage')))}</span>
+    <span class="mna-chip">{escape(str(context.get('valuation_date')))}</span>
+    <span class="mna-chip">{escape(str(context.get('currency')))}</span>
+    <span class="mna-chip">{escape(str(context.get('review_status')))}</span>
+  </div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+
+def _render_football_field(field: pd.DataFrame, facts: Mapping[str, Any], *, key: str) -> None:
+    if not isinstance(field, pd.DataFrame) or field.empty:
+        st.info("Football field pending: current peers, DCF inputs or control-premium cases are incomplete.")
+        return
+    figure = go.Figure()
+    palette = ["#63d7e7", "#e5c36c", "#7fa8ff", "#68d69a", "#d593ff"]
+    for index, (_, row) in enumerate(field.iterrows()):
+        low, mid, high = (_finite(row.get(column)) for column in ("Low", "Mid", "High"))
+        if low is None or mid is None or high is None:
+            continue
+        method = str(row.get("Method"))
+        color = palette[index % len(palette)]
+        figure.add_trace(
+            go.Scatter(
+                x=[low, high],
+                y=[method, method],
+                mode="lines",
+                line={"color": color, "width": 10},
+                hovertemplate=f"{escape(method)}<br>Low %{{x:,.2f}}<extra></extra>",
+                showlegend=False,
+            )
+        )
+        figure.add_trace(
+            go.Scatter(
+                x=[mid],
+                y=[method],
+                mode="markers",
+                marker={"color": "#f5f8fa", "size": 10, "symbol": "diamond", "line": {"color": color, "width": 2}},
+                hovertemplate="Mid %{x:,.2f}<extra></extra>",
+                showlegend=False,
+            )
+        )
+    current_price = _finite(facts.get("price"))
+    if current_price is not None:
+        figure.add_vline(x=current_price, line_dash="dash", line_color="#ff8589", annotation_text="Current price")
+    figure.update_layout(
+        height=max(270, 62 * len(field) + 90),
+        margin=dict(l=8, r=18, t=30, b=12),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color="#a9bdcb",
+        xaxis={"title": f"Price per share · {facts.get('currency', '')}", "gridcolor": "rgba(130,160,180,.12)"},
+        yaxis={"title": None},
+    )
+    st.plotly_chart(figure, width="stretch", config={"displayModeBar": False, "responsive": True}, key=key)
+
+
+def _render_waterfall(frame: pd.DataFrame, *, value_column: str, title: str, key: str) -> None:
+    if not isinstance(frame, pd.DataFrame) or frame.empty:
+        st.info(f"{title} unavailable because required inputs are incomplete.")
+        return
+    figure = go.Figure(
+        go.Waterfall(
+            name=title,
+            orientation="v",
+            measure=frame["Measure"].tolist(),
+            x=frame["Item"].tolist(),
+            y=pd.to_numeric(frame[value_column], errors="coerce").fillna(0.0).tolist(),
+            connector={"line": {"color": "rgba(150,175,190,.35)"}},
+            increasing={"marker": {"color": "#63d7e7"}},
+            decreasing={"marker": {"color": "#ff8589"}},
+            totals={"marker": {"color": "#e5c36c"}},
+            hovertemplate="%{x}<br>%{y:,.0f}<extra></extra>",
+        )
+    )
+    figure.update_layout(
+        height=360,
+        margin=dict(l=8, r=8, t=35, b=80),
+        title={"text": title, "font": {"size": 13}},
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color="#a9bdcb",
+        showlegend=False,
+    )
+    st.plotly_chart(figure, width="stretch", config={"displayModeBar": False, "responsive": True}, key=key)
+
+
+def _render_des(facts: Mapping[str, Any], density: str) -> None:
+    _section_heading(
+        "DES · COMPANY 360",
+        "Company & transaction description",
+        "Identity resolution, business perimeter, capital structure and transaction-screening evidence.",
+    )
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Market capitalization", _money(facts.get("market_cap"), str(facts.get("currency"))))
     c2.metric("Cash", _money(facts.get("cash"), str(facts.get("currency"))))
@@ -816,82 +1509,232 @@ def _render_des(facts: Mapping[str, Any]) -> None:
     components = _mapping(bridge.get("components"))
     st.markdown("##### Equity value → enterprise value")
     if components:
-        bridge_df = pd.DataFrame([{"Bridge item": key, "Value": value} for key, value in components.items()])
-        bridge_df.loc[len(bridge_df)] = {"Bridge item": "Derived enterprise value", "Value": bridge.get("enterprise_value")}
-        _dataframe(bridge_df, formats={"Value": "{:,.0f}"})
+        bridge_df = pd.DataFrame(
+            [{"Item": key, "Value": value, "Measure": "relative"} for key, value in components.items()]
+            + [{"Item": "Derived enterprise value", "Value": bridge.get("enterprise_value"), "Measure": "total"}]
+        )
+        _render_waterfall(
+            bridge_df,
+            value_column="Value",
+            title="Equity value → enterprise value",
+            key=f"mna_des_ev_bridge_{facts.get('ticker')}",
+        )
+        if density == "Audit":
+            _dataframe(bridge_df[["Item", "Value"]], formats={"Value": "{:,.0f}"})
     else:
         st.warning("EV bridge blocked: equity value, debt and cash are required.")
 
-    st.markdown("##### Transaction screening gates")
-    _dataframe(screening_gates(facts))
-    with st.expander("Evidence contract · field-level audit", expanded=False):
-        _dataframe(_frame(facts.get("evidence")), formats={"Value": "{:,.2f}"})
-        gap = _finite(facts.get("ev_reconciliation_gap"))
-        if gap is not None:
-            st.caption(f"Observed-versus-derived EV reconciliation gap: {_money(gap, str(facts.get('currency')))}.")
+    gates = screening_gates(facts)
+    blocked_count = int(gates["State"].eq("BLOCKED").sum()) if not gates.empty else 0
+    if density == "Executive":
+        tone = "mna-audit-ok" if blocked_count == 0 else "mna-audit-warn"
+        st.markdown(
+            f'<div class="mna-mini"><b class="{tone}">{len(gates) - blocked_count}/{len(gates)} screening gates pass</b><br>Switch to Analyst or Audit density for the field-level contract.</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown("##### Transaction screening gates")
+        _dataframe(gates)
+    if density == "Audit":
+        with st.expander("Evidence contract · field-level audit", expanded=True):
+            _dataframe(_frame(facts.get("evidence")), formats={"Value": "{:,.2f}"})
+            gap = _finite(facts.get("ev_reconciliation_gap"))
+            if gap is not None:
+                st.caption(f"Observed-versus-derived EV reconciliation gap: {_money(gap, str(facts.get('currency')))}.")
 
 
-def _render_rv(facts: Mapping[str, Any]) -> None:
-    st.markdown("#### RV · Relative valuation & offer range")
-    st.caption("Current comparable-company snapshot. It is not point-in-time precedent-transaction evidence.")
+def _render_rv(facts: Mapping[str, Any], ticker: str, density: str, context: Mapping[str, Any]) -> None:
+    _section_heading(
+        "RV · RELATIVE VALUE",
+        "Valuation range & offer anchor",
+        "Current comparable-company evidence, DCF sensitivity and control-premium scenarios in one decision field.",
+    )
+    st.markdown(
+        '<div class="mna-note"><b>Evidence boundary.</b> Current trading comparables are not point-in-time precedent transactions. No precedent range is manufactured until dated transaction data are connected.</div>',
+        unsafe_allow_html=True,
+    )
     company = _mapping(facts.get("company"))
     inst = _mapping(company.get("institutional"))
     peer = _mapping(inst.get("peer_intelligence"))
     peer_table = _frame(peer.get("table"))
     summary = _frame(peer.get("summary"))
-    ranges = relative_valuation_ranges(facts, peer_table)
 
-    if peer_table.empty:
-        st.warning("Comparable universe is unavailable. No quartile is manufactured from missing peers.")
-    else:
-        columns = [
-            column
-            for column in ("Symbol", "Company", "Peer Type", "Similarity", "Revenue Growth", "EBITDA Margin", "Operating Margin", "FCF Margin", "ROIC", "P/E TTM", "Forward P/E", "EV/Sales", "EV/EBITDA", "Source")
-            if column in peer_table.columns
-        ]
-        _dataframe(peer_table[columns], height=420)
-    if not summary.empty:
-        with st.expander("Peer median, percentile and premium audit", expanded=False):
-            _dataframe(summary, formats={"Target": "{:.2f}", "Peer Median": "{:.2f}", "Target Percentile": "{:.1f}", "Premium / Discount": "{:.1%}"})
+    symbol_column = next((column for column in ("Symbol", "symbol", "Ticker", "ticker") if column in peer_table.columns), None)
+    available_symbols: list[str] = []
+    if symbol_column is not None:
+        available_symbols = list(
+            dict.fromkeys(
+                peer_table.loc[
+                    ~peer_table.get("Peer Type", pd.Series("Peer", index=peer_table.index)).astype(str).str.lower().eq("target"),
+                    symbol_column,
+                ]
+                .dropna()
+                .astype(str)
+                .str.upper()
+                .str.strip()
+                .tolist()
+            )
+        )
+    selected_symbols = available_symbols
+    rationale = ""
+    if available_symbols and density != "Executive":
+        with st.expander("Comparable-universe controls", expanded=density == "Audit"):
+            selected_symbols = st.multiselect(
+                "Included comparable companies",
+                available_symbols,
+                default=available_symbols,
+                key=f"mna_rv_peers_{ticker}",
+                help="At least four positive observations per metric are required.",
+            )
+            excluded = [symbol for symbol in available_symbols if symbol not in selected_symbols]
+            rationale = st.text_input(
+                "Exclusion rationale",
+                value="",
+                key=f"mna_rv_exclusion_{ticker}",
+                placeholder="Required when one or more peers are excluded",
+                disabled=not excluded,
+            )
+            if excluded and not rationale.strip():
+                st.warning("Peer exclusions are visible but cannot become the live deal anchor until a rationale is recorded.")
+    filtered_peers, peer_audit = filter_peer_universe(peer_table, selected_symbols, exclusion_rationale=rationale)
+    has_ungoverned_exclusion = not peer_audit.empty and peer_audit["Rationale"].eq("RATIONALE REQUIRED").any()
+    ranges = relative_valuation_ranges(facts, filtered_peers)
+    scenario_comparison = build_scenario_comparison(facts)
+    profile = SCENARIO_PROFILES.get(str(context.get("scenario")), SCENARIO_PROFILES["Base"])
+    dcf_assumptions = {
+        "base_fcf": max(0.0, _finite(facts.get("free_cash_flow")) or 0.0),
+        "initial_growth": _clip(
+            (_finite(facts.get("revenue_growth")) or 0.08) + profile["dcf_growth_adjustment"],
+            -0.50,
+            1.50,
+            0.08,
+        ),
+        "wacc": profile["wacc"],
+        "terminal_growth": profile["terminal_growth"],
+        "years": 5,
+    }
+    sensitivity = dcf_sensitivity_table(facts, dcf_assumptions)
+    football_field = build_football_field(facts, ranges, scenario_comparison, sensitivity)
 
-    st.markdown("##### Implied standalone valuation range")
+    st.markdown("##### Valuation football field")
+    _render_football_field(football_field, facts, key=f"mna_football_{ticker}_{context.get('scenario')}")
+    if not football_field.empty and density == "Audit":
+        _dataframe(football_field, formats={"Low": "{:,.2f}", "Mid": "{:,.2f}", "High": "{:,.2f}"})
+
     if not ranges.empty:
-        _dataframe(
-            ranges,
-            formats={"Reference multiple": "{:.2f}x", "Implied EV": "{:,.0f}", "Implied equity": "{:,.0f}", "Implied price": "{:,.2f}", "Upside / downside": "{:+.1%}"},
-        )
-        chart = ranges[ranges["Statistic"].eq("Median")].dropna(subset=["Implied price"])
-        if not chart.empty:
-            figure = go.Figure()
-            figure.add_trace(go.Bar(x=chart["Implied price"], y=chart["Method"], orientation="h", marker_color="#63d7e7", name="Peer median implied price"))
-            if _finite(facts.get("price")) is not None:
-                figure.add_vline(x=facts.get("price"), line_dash="dash", line_color="#e5c36c", annotation_text="Current price")
-            figure.update_layout(height=280, margin=dict(l=10, r=10, t=25, b=10), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#a9bdcb", showlegend=False)
-            st.plotly_chart(figure, width="stretch", config={"displayModeBar": False})
+        anchor_options = {
+            f"{row['Method']} · {row['Statistic']} · {row['Implied price']:,.2f}": row
+            for _, row in ranges.dropna(subset=["Implied price"]).iterrows()
+        }
+        if anchor_options:
+            a1, a2 = st.columns([2, 1])
+            choice = a1.selectbox("Live valuation anchor", list(anchor_options), key=f"mna_rv_anchor_choice_{ticker}")
+            chosen = anchor_options[choice]
+            current_price = _finite(facts.get("price"))
+            implied_price = _finite(chosen.get("Implied price"))
+            premium = implied_price / current_price - 1 if implied_price is not None and current_price not in (None, 0) else None
+            if a2.button(
+                "Apply to DOWW",
+                key=f"mna_rv_apply_{ticker}",
+                width="stretch",
+                disabled=premium is None or has_ungoverned_exclusion,
+                help="Writes the selected implied premium into the target deal case.",
+            ):
+                st.session_state[f"mna_target_premium_{ticker}"] = int(round(100 * _clip(premium, 0.0, 1.0, 0.0)))
+                st.session_state[f"mna_ctx_anchor_{ticker}"] = f"RV · {chosen['Method']} {chosen['Statistic']}"
+                st.success("RV anchor linked to DOWW. Open Deal Watch to inspect the resulting transaction case.")
     else:
-        st.info("At least four valid current peers per metric are required for an implied range.")
+        st.info("At least four valid current peers per metric are required for a comparable-company range.")
 
-    premiums = []
-    for premium in (0.0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60):
-        case = target_deal_case(facts, {"premium": premium})
-        premiums.append(
-            {
-                "Premium": premium,
-                "Offer price": case.get("offer_price"),
-                "Equity purchase price": case.get("offer_equity_value"),
-                "Transaction EV": case.get("transaction_ev"),
-                "EV / Revenue": case.get("ev_revenue"),
-                "EV / EBITDA": case.get("ev_ebitda"),
-                "P / E": case.get("price_earnings"),
-            }
-        )
-    st.markdown("##### Control-premium ladder")
-    _dataframe(pd.DataFrame(premiums), formats={"Premium": "{:.0%}", "Offer price": "{:,.2f}", "Equity purchase price": "{:,.0f}", "Transaction EV": "{:,.0f}", "EV / Revenue": "{:.2f}x", "EV / EBITDA": "{:.2f}x", "P / E": "{:.2f}x"})
+    st.markdown("##### Bear / Base / Bull decision matrix")
+    _dataframe(
+        scenario_comparison,
+        formats={
+            "Offer premium": "{:.0%}",
+            "Offer price": "{:,.2f}",
+            "Transaction EV": "{:,.0f}",
+            "EV / EBITDA": "{:.2f}x",
+            "Synergy confidence": "{:.0%}",
+            "Synergy NPV": "{:,.0f}",
+            "Buyer retained value": "{:,.0f}",
+            "DCF value / share": "{:,.2f}",
+            "DCF upside / downside": "{:+.1%}",
+            "WACC": "{:.1%}",
+            "Terminal growth": "{:.1%}",
+        },
+    )
+
+    if density != "Executive":
+        st.markdown("##### Comparable universe")
+        if filtered_peers.empty:
+            st.warning("Comparable universe is unavailable. No quartile is manufactured from missing peers.")
+        else:
+            columns = [
+                column
+                for column in ("Symbol", "Company", "Peer Type", "Similarity", "Revenue Growth", "EBITDA Margin", "Operating Margin", "FCF Margin", "ROIC", "P/E TTM", "Forward P/E", "EV/Sales", "EV/EBITDA", "Source")
+                if column in filtered_peers.columns
+            ]
+            _dataframe(filtered_peers[columns], height=420)
+        scatter = build_peer_scatter(filtered_peers)
+        if not scatter.empty:
+            figure = go.Figure()
+            for peer_type, group in scatter.groupby("Peer Type", sort=False):
+                figure.add_trace(
+                    go.Scatter(
+                        x=group["Revenue Growth"],
+                        y=group["EBITDA Margin"],
+                        text=group["Label"],
+                        customdata=group[["EV/EBITDA"]].to_numpy(),
+                        mode="markers+text",
+                        textposition="top center",
+                        marker={"size": 12, "color": "#e5c36c" if str(peer_type).lower() == "target" else "#63d7e7"},
+                        name=str(peer_type),
+                        hovertemplate="%{text}<br>Growth %{x:.1%}<br>EBITDA margin %{y:.1%}<br>EV/EBITDA %{customdata[0]:.2f}x<extra></extra>",
+                    )
+                )
+            figure.update_layout(
+                height=360,
+                margin=dict(l=8, r=8, t=25, b=15),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font_color="#a9bdcb",
+                xaxis={"title": "Revenue growth", "tickformat": ".0%", "gridcolor": "rgba(130,160,180,.12)"},
+                yaxis={"title": "EBITDA margin", "tickformat": ".0%", "gridcolor": "rgba(130,160,180,.12)"},
+            )
+            st.plotly_chart(figure, width="stretch", config={"displayModeBar": False}, key=f"mna_peer_map_{ticker}")
+        if not summary.empty:
+            with st.expander("Peer median, percentile and premium audit", expanded=density == "Audit"):
+                _dataframe(summary, formats={"Target": "{:.2f}", "Peer Median": "{:.2f}", "Target Percentile": "{:.1f}", "Premium / Discount": "{:.1%}"})
+        if density == "Audit" and not peer_audit.empty:
+            with st.expander("Peer selection audit", expanded=True):
+                _dataframe(peer_audit)
+                st.caption("Selection affects only this research scenario; the source universe is never overwritten.")
+
+    if density == "Audit":
+        premiums = []
+        for premium_value in (0.0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60):
+            case = target_deal_case(facts, {"premium": premium_value})
+            premiums.append(
+                {
+                    "Premium": premium_value,
+                    "Offer price": case.get("offer_price"),
+                    "Equity purchase price": case.get("offer_equity_value"),
+                    "Transaction EV": case.get("transaction_ev"),
+                    "EV / Revenue": case.get("ev_revenue"),
+                    "EV / EBITDA": case.get("ev_ebitda"),
+                    "P / E": case.get("price_earnings"),
+                }
+            )
+        with st.expander("Control-premium ladder · formula audit", expanded=False):
+            _dataframe(pd.DataFrame(premiums), formats={"Premium": "{:.0%}", "Offer price": "{:,.2f}", "Equity purchase price": "{:,.0f}", "Transaction EV": "{:,.0f}", "EV / Revenue": "{:.2f}x", "EV / EBITDA": "{:.2f}x", "P / E": "{:.2f}x"})
 
 
-def _render_fa(facts: Mapping[str, Any], ticker: str) -> None:
-    st.markdown("#### FA · Financial analysis, DCF & reverse DCF")
-    st.caption("Reported history and deterministic valuation remain separate from editable analyst assumptions.")
+def _render_fa(facts: Mapping[str, Any], ticker: str, density: str) -> None:
+    _section_heading(
+        "FA · FINANCIAL ANALYSIS",
+        "DCF, reverse DCF & financial diagnostics",
+        "Reported financial evidence and deterministic valuation remain separate from editable analyst assumptions.",
+    )
     ratios = pd.DataFrame(
         [
             {"Metric": "Revenue growth", "Value": facts.get("revenue_growth"), "Basis": "TTM / latest provider"},
@@ -904,7 +1747,8 @@ def _render_fa(facts: Mapping[str, Any], ticker: str) -> None:
             {"Metric": "Forward P/E", "Value": facts.get("forward_pe"), "Basis": "Provider consensus"},
         ]
     )
-    _dataframe(ratios, formats={"Value": "{:.2f}"})
+    if density != "Executive":
+        _dataframe(ratios, formats={"Value": "{:.2f}"})
 
     base_fcf = max(0.0, _finite(facts.get("free_cash_flow")) or 0.0)
     default_growth = 100.0 * _clip(facts.get("revenue_growth"), -0.20, 0.45, 0.08)
@@ -932,38 +1776,65 @@ def _render_fa(facts: Mapping[str, Any], ticker: str) -> None:
         terminal_share = _finite(result.get("terminal_value_share"))
         x4.metric("Terminal value share", _percent(terminal_share), "High concentration" if terminal_share is not None and terminal_share > 0.75 else "")
         st.caption(str(result.get("reason") or "Illustrative valuation assumptions require human review."))
+        current_price = _finite(facts.get("price"))
+        dcf_price = _finite(result.get("value_per_share"))
+        if st.button(
+            "Use DCF as DOWW valuation anchor",
+            key=f"mna_fa_apply_{ticker}",
+            disabled=current_price in (None, 0) or dcf_price is None,
+            help="Converts the active DCF value per share into a live target premium for Deal Watch.",
+        ):
+            premium = dcf_price / current_price - 1
+            st.session_state[f"mna_target_premium_{ticker}"] = int(round(100 * _clip(premium, 0.0, 1.0, 0.0)))
+            st.session_state[f"mna_ctx_anchor_{ticker}"] = "FA · active DCF"
+            st.success("DCF anchor linked to DOWW.")
         implied_growth = reverse_dcf_growth(facts, assumptions)
         if implied_growth is None:
             st.warning("Reverse DCF is infeasible inside the documented -50% to +150% growth bracket.")
         else:
             st.info(f"Reverse DCF: the current price implies approximately {implied_growth:.1%} initial FCF growth under the active WACC and terminal assumptions.")
-        with st.expander("DCF cash-flow bridge", expanded=False):
-            _dataframe(_frame(result.get("forecast")), formats={"Growth": "{:.1%}", "FCF": "{:,.0f}", "Present Value": "{:,.0f}"})
+        forecast = _frame(result.get("forecast"))
+        if not forecast.empty:
+            figure = go.Figure()
+            figure.add_trace(go.Bar(x=forecast["Year"], y=forecast["FCF"], name="Forecast FCF", marker_color="#63d7e7"))
+            figure.add_trace(go.Scatter(x=forecast["Year"], y=forecast["Present Value"], name="Present value", mode="lines+markers", line={"color": "#e5c36c", "width": 3}))
+            figure.update_layout(
+                height=310,
+                margin=dict(l=8, r=8, t=25, b=10),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font_color="#a9bdcb",
+                legend={"orientation": "h", "y": 1.08},
+                xaxis={"title": "Forecast year", "gridcolor": "rgba(130,160,180,.08)"},
+                yaxis={"title": str(facts.get("currency") or ""), "gridcolor": "rgba(130,160,180,.12)"},
+            )
+            st.plotly_chart(figure, width="stretch", config={"displayModeBar": False}, key=f"mna_dcf_forecast_{ticker}")
+        if density == "Audit":
+            with st.expander("DCF cash-flow bridge", expanded=False):
+                _dataframe(forecast, formats={"Growth": "{:.1%}", "FCF": "{:,.0f}", "Present Value": "{:,.0f}"})
         st.markdown("##### WACC × terminal-growth sensitivity · value per share")
         sensitivity = dcf_sensitivity_table(facts, assumptions)
         indexed = sensitivity.copy()
         indexed["WACC"] = indexed["WACC"].map(lambda value: f"{value:.1%}")
         _dataframe(indexed, formats={column: "{:,.2f}" for column in indexed.columns if column != "WACC"})
-    with st.expander("Reported financial statements", expanded=False):
-        for label, frame in _mapping(facts.get("raw_frames")).items():
-            st.markdown(f"**{label}**")
-            if isinstance(frame, pd.DataFrame) and not frame.empty:
-                st.dataframe(frame, width="stretch", height=300)
-            else:
-                st.caption("Unavailable")
+    if density == "Audit":
+        with st.expander("Reported financial statements", expanded=False):
+            for label, frame in _mapping(facts.get("raw_frames")).items():
+                st.markdown(f"**{label}**")
+                if isinstance(frame, pd.DataFrame) and not frame.empty:
+                    st.dataframe(frame, width="stretch", height=300)
+                else:
+                    st.caption("Unavailable")
 
 
-def _save_scenario(ticker: str, label: str, payload: Mapping[str, Any]) -> None:
-    key = f"mna_saved_scenarios_{ticker}"
-    snapshots = st.session_state.setdefault(key, [])
-    snapshots.append(
-        {
-            "label": label,
-            "saved_at": datetime.now(timezone.utc).isoformat(),
-            "policy": RESEARCH_ONLY,
-            "payload": {key: value for key, value in payload.items() if isinstance(value, (str, int, float, bool, type(None)))},
-        }
-    )
+def _save_scenario(
+    ticker: str,
+    label: str,
+    payload: Mapping[str, Any],
+    context: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Persist a new immutable revision in the governed local ledger."""
+    return append_scenario(ticker, label, payload, context=context)
 
 
 def _hypothesis_board(rows: Sequence[Mapping[str, Any]]) -> None:
@@ -977,7 +1848,7 @@ def _hypothesis_board(rows: Sequence[Mapping[str, Any]]) -> None:
     st.markdown(f'<div class="mna-grid">{"".join(cards)}</div>', unsafe_allow_html=True)
 
 
-def _render_target_watch(facts: Mapping[str, Any], ticker: str) -> dict[str, Any]:
+def _render_target_watch(facts: Mapping[str, Any], ticker: str, density: str) -> dict[str, Any]:
     st.markdown("##### Hypothetical target case")
     st.caption("No deal is asserted. Every term below is a user-editable scenario assumption.")
     a, b, c, d = st.columns(4)
@@ -993,6 +1864,18 @@ def _render_target_watch(facts: Mapping[str, Any], ticker: str) -> dict[str, Any
     revenue_synergy_bn = f.number_input("Revenue synergy run-rate · bn", min_value=0.0, value=float(revenue * 0.01 / 1e9), step=0.05, key=f"mna_target_rev_syn_{ticker}")
     contribution_margin = g.number_input("Revenue synergy margin · %", min_value=0.0, max_value=100.0, value=30.0, step=1.0, key=f"mna_target_syn_margin_{ticker}") / 100.0
     integration_bn = h.number_input("Integration cost · bn", min_value=0.0, value=float(ebitda * 0.02 / 1e9), step=0.05, key=f"mna_target_integration_{ticker}")
+    ramp_name = st.selectbox(
+        "Synergy realization curve",
+        ["Slow · 15 / 45 / 75 / 100 / 85", "Base · 25 / 65 / 100 / 100 / 85", "Fast · 45 / 85 / 100 / 100 / 85"],
+        index=1,
+        key=f"mna_target_ramp_{ticker}",
+        help="Five-year finite ramp. No terminal synergy value is included.",
+    )
+    ramp = {
+        "Slow": (0.15, 0.45, 0.75, 1.0, 0.85),
+        "Base": (0.25, 0.65, 1.0, 1.0, 0.85),
+        "Fast": (0.45, 0.85, 1.0, 1.0, 0.85),
+    }[ramp_name.split(" · ", 1)[0]]
     assumptions = {
         "premium": premium,
         "discount_rate": discount_rate,
@@ -1002,6 +1885,7 @@ def _render_target_watch(facts: Mapping[str, Any], ticker: str) -> dict[str, Any
         "revenue_synergy_run_rate": revenue_synergy_bn * 1e9,
         "contribution_margin": contribution_margin,
         "integration_cost": integration_bn * 1e9,
+        "synergy_ramp": ramp,
     }
     result = target_deal_case(facts, assumptions)
     if result.get("status") == "BLOCKED":
@@ -1037,16 +1921,78 @@ def _render_target_watch(facts: Mapping[str, Any], ticker: str) -> dict[str, Any
         },
     ]
     _hypothesis_board(hypotheses)
-    with st.expander("Transaction EV bridge & synergy cash flows", expanded=False):
-        bridge = _mapping(result.get("bridge"))
-        _dataframe(pd.DataFrame([{"Item": key, "Value": value} for key, value in _mapping(bridge.get("components")).items()]), formats={"Value": "{:,.0f}"})
-        cash_flows = list(_mapping(result.get("synergy")).get("cash_flows") or [])
-        if cash_flows:
-            _dataframe(pd.DataFrame({"Year": range(1, len(cash_flows) + 1), "Risk-adjusted after-tax synergy FCF": cash_flows}), formats={"Risk-adjusted after-tax synergy FCF": "{:,.0f}"})
+    bridge = _mapping(result.get("bridge"))
+    bridge_components = _mapping(bridge.get("components"))
+    synergy_schedule = build_synergy_ramp(_mapping(result.get("synergy")))
+    visual_left, visual_right = st.columns(2)
+    with visual_left:
+        if bridge_components:
+            bridge_frame = pd.DataFrame(
+                [
+                    {"Item": key, "Value": value, "Measure": "relative"}
+                    for key, value in bridge_components.items()
+                ]
+                + [{"Item": "Transaction EV", "Value": bridge.get("enterprise_value"), "Measure": "total"}]
+            )
+            _render_waterfall(
+                bridge_frame,
+                value_column="Value",
+                title="Offer equity → transaction EV",
+                key=f"mna_target_ev_waterfall_{ticker}",
+            )
+    with visual_right:
+        if not synergy_schedule.empty:
+            figure = go.Figure()
+            figure.add_trace(
+                go.Bar(
+                    x=synergy_schedule["Year"],
+                    y=synergy_schedule["After-tax risk-adjusted FCF"],
+                    name="Annual synergy FCF",
+                    marker_color="#63d7e7",
+                )
+            )
+            figure.add_trace(
+                go.Scatter(
+                    x=synergy_schedule["Year"],
+                    y=synergy_schedule["Cumulative synergy FCF"],
+                    name="Cumulative",
+                    mode="lines+markers",
+                    line={"color": "#e5c36c", "width": 3},
+                )
+            )
+            figure.update_layout(
+                height=360,
+                title={"text": "Risk-adjusted synergy ramp", "font": {"size": 13}},
+                margin=dict(l=8, r=8, t=35, b=20),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font_color="#a9bdcb",
+                legend={"orientation": "h", "y": 1.08},
+                xaxis={"title": "Year", "gridcolor": "rgba(130,160,180,.08)"},
+                yaxis={"title": str(facts.get("currency") or ""), "gridcolor": "rgba(130,160,180,.12)"},
+            )
+            st.plotly_chart(figure, width="stretch", config={"displayModeBar": False}, key=f"mna_target_synergy_{ticker}")
+    if density == "Audit":
+        with st.expander("Transaction EV bridge & synergy schedule audit", expanded=False):
+            _dataframe(pd.DataFrame([{"Item": key, "Value": value} for key, value in bridge_components.items()]), formats={"Value": "{:,.0f}"})
+            _dataframe(
+                synergy_schedule,
+                formats={
+                    "Ramp": "{:.0%}",
+                    "Probability": "{:.0%}",
+                    "Cost synergy contribution": "{:,.0f}",
+                    "Revenue synergy contribution": "{:,.0f}",
+                    "Pre-tax synergy": "{:,.0f}",
+                    "After-tax risk-adjusted FCF": "{:,.0f}",
+                    "Discount factor": "{:.3f}",
+                    "Present value": "{:,.0f}",
+                    "Cumulative synergy FCF": "{:,.0f}",
+                },
+            )
     return {**assumptions, **{key: value for key, value in result.items() if isinstance(value, (str, int, float, bool, type(None)))}}
 
 
-def _render_acquirer_watch(facts: Mapping[str, Any], ticker: str) -> dict[str, Any]:
+def _render_acquirer_watch(facts: Mapping[str, Any], ticker: str, density: str) -> dict[str, Any]:
     st.markdown("##### Hypothetical acquirer case")
     st.caption(f"{facts.get('ticker')} is treated as the acquirer; target inputs are manual assumptions, not observed deal terms.")
     currency = str(facts.get("currency"))
@@ -1070,6 +2016,16 @@ def _render_acquirer_watch(facts: Mapping[str, Any], ticker: str) -> dict[str, A
     debt_rate_pct = k.number_input("New debt cost · %", min_value=0.0, max_value=30.0, value=6.0, step=0.25, key=f"mna_buy_debt_rate_{ticker}")
     tax_pct = l.number_input("Tax rate · %", min_value=0.0, max_value=60.0, value=21.0, step=0.5, key=f"mna_buy_tax_{ticker}")
 
+    with st.expander("Close mechanics & linked purchase price allocation", expanded=density == "Audit"):
+        m1, m2, m3, m4 = st.columns(4)
+        debt_refi_pct = m1.slider("Target debt refinanced · %", 0, 100, 100, 5, key=f"mna_buy_refi_{ticker}")
+        fees_bn = m2.number_input("Transaction fees · bn", min_value=0.0, value=float(target_equity_bn * 0.01), step=0.05, key=f"mna_buy_fees_{ticker}")
+        book_equity_bn = m3.number_input("Target book equity · bn", value=float(max(0.0, target_equity_bn * 0.35)), step=0.1, key=f"mna_ppa_book_{ticker}")
+        intangibles_bn = m4.number_input("Identifiable intangibles · bn", min_value=0.0, value=float(target_equity_bn * 0.15), step=0.1, key=f"mna_ppa_intangibles_{ticker}")
+        n1, n2 = st.columns(2)
+        ppe_bn = n1.number_input("PP&E step-up · bn", value=0.0, step=0.1, key=f"mna_ppa_ppe_{ticker}")
+        life = n2.number_input("Intangible life · years", min_value=1.0, max_value=30.0, value=10.0, step=1.0, key=f"mna_ppa_life_{ticker}")
+
     target = {
         "equity_value": target_equity_bn * 1e9,
         "debt": target_debt_bn * 1e9,
@@ -1078,6 +2034,14 @@ def _render_acquirer_watch(facts: Mapping[str, Any], ticker: str) -> dict[str, A
         "net_income": target_ni_bn * 1e9,
         "free_cash_flow": target_fcf_bn * 1e9,
     }
+    ppa = simplified_ppa(
+        consideration=target["equity_value"],
+        target_book_equity=book_equity_bn * 1e9,
+        identifiable_intangibles_step_up=intangibles_bn * 1e9,
+        ppe_step_up=ppe_bn * 1e9,
+        tax_rate=tax_pct / 100.0,
+        intangible_life_years=life,
+    )
     assumptions = {
         "cash_pct": cash_pct / 100.0,
         "debt_pct": debt_pct / 100.0,
@@ -1087,12 +2051,20 @@ def _render_acquirer_watch(facts: Mapping[str, Any], ticker: str) -> dict[str, A
         "debt_interest_rate": debt_rate_pct / 100.0,
         "cash_yield": 0.03,
         "tax_rate": tax_pct / 100.0,
-        "incremental_amortization": 0.0,
+        "incremental_amortization": ppa.get("annual_intangible_amortization", 0.0),
+        "debt_refinanced": target["debt"] * debt_refi_pct / 100.0,
+        "transaction_fees": fees_bn * 1e9,
+        "cash_available": max(0.0, _finite(facts.get("cash")) or 0.0),
     }
     result = accretion_dilution_case(facts, target, assumptions)
-    if result.get("status") == "BLOCKED":
+    if result.get("status") == "BLOCKED" and not result.get("funding"):
         st.error(f"Accretion model blocked: {', '.join(result.get('missing', []))}")
         return result
+    if result.get("status") == "BLOCKED":
+        st.error(
+            f"Hard gate blocked: {', '.join(result.get('missing', []))}. "
+            f"Cash funding exceeds available balance-sheet cash by {_money(result.get('cash_shortfall'), currency)}."
+        )
     x1, x2, x3, x4, x5 = st.columns(5)
     x1.metric("Recurring EPS", _money(result.get("recurring_eps"), currency), _percent(result.get("eps_accretion")))
     x2.metric("Year-one EPS", _money(result.get("year_one_eps"), currency), _percent(result.get("year_one_eps_accretion")))
@@ -1100,16 +2072,74 @@ def _render_acquirer_watch(facts: Mapping[str, Any], ticker: str) -> dict[str, A
     x4.metric("PF net leverage", _multiple(result.get("net_leverage_reported")), "reported EBITDA")
     x5.metric("Synergy-adjusted leverage", _multiple(result.get("net_leverage_adjusted")))
 
-    sources_uses = pd.DataFrame(
-        [
-            {"Type": "Use", "Item": "Target equity purchase price", "Value": target["equity_value"]},
-            {"Type": "Source", "Item": "Acquirer cash", "Value": result.get("funding", {}).get("cash")},
-            {"Type": "Source", "Item": "New debt", "Value": result.get("funding", {}).get("debt")},
-            {"Type": "Source", "Item": "Stock consideration", "Value": result.get("funding", {}).get("stock")},
-            {"Type": "Reconciliation", "Item": "Sources less uses", "Value": result.get("sources_uses_gap")},
-        ]
+    acquirer_scenarios = build_acquirer_scenario_comparison(facts, target, assumptions)
+    scenario_figure = go.Figure()
+    scenario_figure.add_trace(
+        go.Bar(
+            x=acquirer_scenarios["Scenario"],
+            y=acquirer_scenarios["Recurring EPS accretion"],
+            name="Recurring EPS",
+            marker_color="#63d7e7",
+        )
     )
-    _dataframe(sources_uses, formats={"Value": "{:,.0f}"})
+    scenario_figure.add_trace(
+        go.Bar(
+            x=acquirer_scenarios["Scenario"],
+            y=acquirer_scenarios["Year-one EPS accretion"],
+            name="Year-one EPS",
+            marker_color="#e5c36c",
+        )
+    )
+    scenario_figure.add_hline(y=0, line_color="#ff8589", line_dash="dash")
+    scenario_figure.update_layout(
+        height=310,
+        barmode="group",
+        margin=dict(l=8, r=8, t=25, b=15),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color="#a9bdcb",
+        legend={"orientation": "h", "y": 1.08},
+        yaxis={"title": "EPS accretion / dilution", "tickformat": ".1%", "gridcolor": "rgba(130,160,180,.12)"},
+    )
+    st.plotly_chart(scenario_figure, width="stretch", config={"displayModeBar": False}, key=f"mna_acquirer_scenarios_{ticker}")
+    with st.expander("Acquirer Bear / Base / Bull matrix", expanded=density == "Audit"):
+        _dataframe(
+            acquirer_scenarios,
+            formats={
+                "Target earnings factor": "{:.2f}x",
+                "Target EBITDA factor": "{:.2f}x",
+                "Cash funding": "{:.0%}",
+                "Debt funding": "{:.0%}",
+                "Stock funding": "{:.0%}",
+                "Debt cost": "{:.1%}",
+                "Run-rate synergies": "{:,.0f}",
+                "Recurring EPS accretion": "{:+.1%}",
+                "Year-one EPS accretion": "{:+.1%}",
+                "FCF/share accretion": "{:+.1%}",
+                "Net leverage": "{:.2f}x",
+                "Synergy-adjusted leverage": "{:.2f}x",
+                "Cash shortfall": "{:,.0f}",
+            },
+        )
+
+    sources_uses = build_sources_uses_bridge(target, result)
+    eps_bridge = build_eps_bridge(facts, target, result)
+    identity_audit = validate_deal_identities(facts, target, result)
+    visual_left, visual_right = st.columns(2)
+    with visual_left:
+        _render_waterfall(
+            sources_uses,
+            value_column="Bridge value",
+            title="Sources & uses · no hidden plug",
+            key=f"mna_sources_uses_{ticker}",
+        )
+    with visual_right:
+        _render_waterfall(
+            eps_bridge,
+            value_column="Value",
+            title="Net-income bridge underlying EPS",
+            key=f"mna_eps_bridge_{ticker}",
+        )
     hypotheses = [
         {
             "Hypothesis": "The deal is recurring EPS accretive.",
@@ -1125,49 +2155,123 @@ def _render_acquirer_watch(facts: Mapping[str, Any], ticker: str) -> dict[str, A
         },
         {
             "Hypothesis": "Sources and uses reconcile without a hidden plug.",
-            "State": "PASS" if result.get("publishable") else "BLOCKED",
+            "State": "PASS" if abs(_finite(result.get("sources_uses_gap")) or 0.0) <= max(1.0, 1e-6 * abs(_finite(result.get("total_uses")) or 0.0)) else "BLOCKED",
             "Evidence": f"Sources less uses {_money(result.get('sources_uses_gap'), currency)}.",
             "Falsifier": "Any unmodelled fee, refinancing or award cash-out creates an unexplained funding gap.",
+        },
+        {
+            "Hypothesis": "Balance-sheet cash can fund the modeled cash consideration.",
+            "State": "PASS" if result.get("liquidity_ok") else "BLOCKED",
+            "Evidence": f"Available cash {_money(result.get('cash_available'), currency)}; shortfall {_money(result.get('cash_shortfall'), currency)}.",
+            "Falsifier": "Minimum cash, trapped cash, covenants or settlement timing reduce deployable liquidity.",
         },
     ]
     _hypothesis_board(hypotheses)
 
-    with st.expander("Research-only purchase price allocation", expanded=False):
-        p1, p2, p3, p4 = st.columns(4)
-        book_equity_bn = p1.number_input("Target book equity · bn", value=float(max(0.0, target_equity_bn * 0.35)), step=0.1, key=f"mna_ppa_book_{ticker}")
-        intangibles_bn = p2.number_input("Identifiable intangible step-up · bn", min_value=0.0, value=float(target_equity_bn * 0.15), step=0.1, key=f"mna_ppa_intangibles_{ticker}")
-        ppe_bn = p3.number_input("PP&E step-up · bn", value=0.0, step=0.1, key=f"mna_ppa_ppe_{ticker}")
-        life = p4.number_input("Intangible life · years", min_value=1.0, max_value=30.0, value=10.0, step=1.0, key=f"mna_ppa_life_{ticker}")
-        ppa = simplified_ppa(
-            consideration=target["equity_value"],
-            target_book_equity=book_equity_bn * 1e9,
-            identifiable_intangibles_step_up=intangibles_bn * 1e9,
-            ppe_step_up=ppe_bn * 1e9,
-            tax_rate=tax_pct / 100.0,
-            intangible_life_years=life,
+    st.markdown("##### Deleveraging trajectory")
+    paydown_pct = st.slider(
+        "Recurring pro forma FCF applied to annual debt paydown · %",
+        0,
+        100,
+        50,
+        5,
+        key=f"mna_buy_paydown_{ticker}",
+        help="Illustrative policy only; minimum cash, dividends and capex priorities are not inferred.",
+    )
+    annual_paydown = max(0.0, (_finite(result.get("recurring_free_cash_flow")) or 0.0) * paydown_pct / 100.0)
+    leverage = build_leverage_trajectory(result, annual_paydown=annual_paydown, years=3)
+    if not leverage.empty:
+        figure = go.Figure()
+        figure.add_trace(go.Bar(x=leverage["Year"], y=leverage["Net debt"], name="Net debt", marker_color="#284f68", yaxis="y"))
+        figure.add_trace(go.Scatter(x=leverage["Year"], y=leverage["Reported leverage"], name="Reported leverage", mode="lines+markers", line={"color": "#e5c36c", "width": 3}, yaxis="y2"))
+        figure.add_trace(go.Scatter(x=leverage["Year"], y=leverage["Synergy-adjusted leverage"], name="Synergy-adjusted", mode="lines+markers", line={"color": "#63d7e7", "width": 3, "dash": "dot"}, yaxis="y2"))
+        figure.update_layout(
+            height=350,
+            margin=dict(l=8, r=8, t=30, b=15),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font_color="#a9bdcb",
+            legend={"orientation": "h", "y": 1.10},
+            yaxis={"title": f"Net debt · {currency}", "gridcolor": "rgba(130,160,180,.12)"},
+            yaxis2={"title": "Net leverage", "overlaying": "y", "side": "right", "ticksuffix": "x", "showgrid": False},
         )
-        q1, q2, q3, q4 = st.columns(4)
-        q1.metric("Provisional goodwill", _money(ppa.get("goodwill"), currency))
-        q2.metric("FV identifiable net assets", _money(ppa.get("fair_value_net_assets"), currency))
-        q3.metric("Deferred tax liability", _money(ppa.get("deferred_tax_liability"), currency))
-        q4.metric("Annual amortization", _money(ppa.get("annual_intangible_amortization"), currency), str(ppa.get("status")))
-        st.caption("This bridge is a research estimate, not an audited ASC 805 or IFRS 3 allocation.")
-    return {**target, **assumptions, **{key: value for key, value in result.items() if isinstance(value, (str, int, float, bool, type(None)))}}
+        st.plotly_chart(figure, width="stretch", config={"displayModeBar": False}, key=f"mna_leverage_path_{ticker}")
+
+    st.markdown("##### Linked research-only PPA")
+    q1, q2, q3, q4 = st.columns(4)
+    q1.metric("Provisional goodwill", _money(ppa.get("goodwill"), currency))
+    q2.metric("FV identifiable net assets", _money(ppa.get("fair_value_net_assets"), currency))
+    q3.metric("Deferred tax liability", _money(ppa.get("deferred_tax_liability"), currency))
+    q4.metric("Annual amortization", _money(ppa.get("annual_intangible_amortization"), currency), "Linked to EPS")
+    st.caption(f"{ppa.get('status')} · Research estimate only, not an audited ASC 805 or IFRS 3 allocation. The modeled amortization is included in recurring and year-one EPS.")
+
+    if density == "Audit":
+        with st.expander("Model identity audit", expanded=True):
+            _dataframe(identity_audit, formats={"Expected": "{:,.4f}", "Actual": "{:,.4f}", "Gap": "{:,.4f}", "Tolerance": "{:,.4f}"})
+            _dataframe(sources_uses[["Side", "Item", "Amount", "Bridge value"]], formats={"Amount": "{:,.0f}", "Bridge value": "{:,.0f}"})
+            _dataframe(eps_bridge, formats={"Value": "{:,.0f}"})
+            _dataframe(leverage, formats={"Net debt": "{:,.0f}", "Reported leverage": "{:.2f}x", "Synergy-adjusted leverage": "{:.2f}x", "Annual paydown": "{:,.0f}"})
+            st.caption(
+                f"Sources {_money(result.get('total_sources'), currency)} · uses {_money(result.get('total_uses'), currency)} · "
+                f"gap {_money(result.get('sources_uses_gap'), currency)} · cash capacity {'PASS' if result.get('liquidity_ok') else 'BLOCKED'}."
+            )
+    ppa_payload = {f"ppa_{key}": value for key, value in ppa.items() if isinstance(value, (str, int, float, bool, type(None)))}
+    return {
+        **target,
+        **assumptions,
+        **ppa_payload,
+        **{key: value for key, value in result.items() if isinstance(value, (str, int, float, bool, type(None)))},
+    }
 
 
-def _render_doww(facts: Mapping[str, Any], ticker: str) -> None:
-    st.markdown("#### DOWW · Deal & Opportunity Watch Workbench")
+def _render_doww(
+    facts: Mapping[str, Any],
+    ticker: str,
+    density: str,
+    context: Mapping[str, Any],
+) -> None:
+    _section_heading(
+        "DOWW · QNTM LOCAL",
+        "Deal & Opportunity Watch Workbench",
+        "Living target and acquirer cases with explicit assumptions, hard gates, linked valuation and immutable revisions.",
+    )
     st.markdown(
         '<div class="mna-note"><b>QNTM local workflow.</b> DOWW could not be verified in public Bloomberg documentation as an analytical function. Here it is deliberately defined as the living M&A hypothesis, deal-model and scenario workspace.</div>',
         unsafe_allow_html=True,
     )
+    scenario_comparison = build_scenario_comparison(facts)
+    active_case = scenario_comparison[scenario_comparison["Scenario"].eq(str(context.get("scenario")))]
+    if not active_case.empty:
+        row = active_case.iloc[0]
+        s1, s2, s3, s4 = st.columns(4)
+        s1.metric("Active offer profile", str(row.get("Scenario")), _percent(row.get("Offer premium")))
+        s2.metric("Profile offer price", _money(row.get("Offer price"), str(facts.get("currency"))))
+        s3.metric("Profile transaction EV", _money(row.get("Transaction EV"), str(facts.get("currency"))))
+        s4.metric("Profile synergy confidence", _percent(row.get("Synergy confidence")))
+    with st.expander("Compare Bear / Base / Bull profiles", expanded=False):
+        _dataframe(
+            scenario_comparison,
+            formats={
+                "Offer premium": "{:.0%}",
+                "Offer price": "{:,.2f}",
+                "Transaction EV": "{:,.0f}",
+                "EV / EBITDA": "{:.2f}x",
+                "Synergy confidence": "{:.0%}",
+                "Synergy NPV": "{:,.0f}",
+                "Buyer retained value": "{:,.0f}",
+                "DCF value / share": "{:,.2f}",
+                "DCF upside / downside": "{:+.1%}",
+                "WACC": "{:.1%}",
+                "Terminal growth": "{:.1%}",
+            },
+        )
     lens = st.radio(
         "Transaction lens",
         ["Target / takeover screen", "Acquirer / accretion case"],
         horizontal=True,
         key=f"mna_deal_lens_{ticker}",
     )
-    payload = _render_target_watch(facts, ticker) if lens.startswith("Target") else _render_acquirer_watch(facts, ticker)
+    payload = _render_target_watch(facts, ticker, density) if lens.startswith("Target") else _render_acquirer_watch(facts, ticker, density)
     c1, c2 = st.columns([1, 2])
     lens_key = "target" if lens.startswith("Target") else "acquirer"
     label = c1.text_input(
@@ -1176,25 +2280,60 @@ def _render_doww(facts: Mapping[str, Any], ticker: str) -> None:
         key=f"mna_scenario_label_{ticker}_{lens_key}",
     )
     if c1.button("Save governed snapshot", key=f"mna_save_scenario_{ticker}", width="stretch"):
-        _save_scenario(ticker, label, payload)
-        st.success("Scenario saved in the current research session.")
-    scenarios = st.session_state.get(f"mna_saved_scenarios_{ticker}", [])
+        try:
+            saved = _save_scenario(ticker, label, payload, {**dict(context), "lens": lens})
+            st.success(f"Immutable revision #{saved.get('sequence')} saved · {str(saved.get('scenario_id'))[:8]}.")
+        except ScenarioLedgerError as exc:
+            st.error(f"Governed save blocked: {exc}")
+    try:
+        scenarios = load_scenarios(ticker)
+        integrity = verify_ledger(ticker)
+    except ScenarioLedgerError as exc:
+        scenarios = []
+        integrity = {"valid": False, "count": 0, "reason": str(exc), "head_hash": None}
+        st.error(f"Scenario ledger unavailable: {exc}")
+    integrity_tone = "mna-audit-ok" if integrity.get("valid") else "mna-block"
+    c2.markdown(
+        f'<div class="mna-mini"><b class="{integrity_tone}">Ledger {"VERIFIED" if integrity.get("valid") else "BLOCKED"}</b><br>{integrity.get("count", 0)} immutable revision(s) · head {escape(str(integrity.get("head_hash") or "GENESIS")[:12])}</div>',
+        unsafe_allow_html=True,
+    )
     if scenarios:
         c2.download_button(
-            "Export scenario audit JSON",
+            "Export verified scenario audit JSON",
             data=json.dumps(scenarios, indent=2, default=str),
             file_name=f"{ticker.lower()}_mna_scenarios.json",
             mime="application/json",
             key=f"mna_download_scenarios_{ticker}_{len(scenarios)}",
             width="stretch",
         )
-        with st.expander(f"Saved scenario ledger · {len(scenarios)}", expanded=False):
-            _dataframe(pd.DataFrame([{"Label": item.get("label"), "Saved at": item.get("saved_at"), "Policy": item.get("policy")} for item in scenarios]))
+        with st.expander(f"Append-only scenario ledger · {len(scenarios)} revision(s)", expanded=density == "Audit"):
+            _dataframe(
+                pd.DataFrame(
+                    [
+                        {
+                            "Revision": item.get("sequence"),
+                            "Scenario ID": str(item.get("scenario_id"))[:12],
+                            "Label": item.get("label"),
+                            "Lens": _mapping(item.get("context")).get("lens"),
+                            "Profile": _mapping(item.get("context")).get("scenario"),
+                            "Owner": item.get("owner"),
+                            "Review status": item.get("review_status"),
+                            "Saved at": item.get("saved_at"),
+                            "Record hash": str(item.get("record_hash"))[:16],
+                        }
+                        for item in scenarios
+                    ]
+                )
+            )
+            st.caption("Append-only: revisions are never edited or deleted. Any byte-level change breaks the SHA-256 chain and blocks the next save.")
 
 
-def _render_bi(facts: Mapping[str, Any]) -> None:
-    st.markdown("#### BI · Sourced company, sector & deal intelligence")
-    st.caption("Independent evidence center using the current public/licensed provider bundle; it does not reproduce Bloomberg Intelligence research.")
+def _render_bi(facts: Mapping[str, Any], density: str) -> None:
+    _section_heading(
+        "BI · SOURCED INTELLIGENCE",
+        "Company, sector & deal evidence center",
+        "Current public or licensed provider evidence; no Bloomberg Intelligence research or proprietary taxonomy is reproduced.",
+    )
     company = _mapping(facts.get("company"))
     inst = _mapping(company.get("institutional"))
     what_changed = _mapping(inst.get("what_changed"))
@@ -1223,7 +2362,52 @@ def _render_bi(facts: Mapping[str, Any]) -> None:
     if table.empty:
         st.info("No material delta table is available; BI remains evidence-pending.")
     else:
-        display = table[[column for column in ("Class", "Dimension", "Window", "Direction", "Materiality", "Signal", "Detail", "Confidence", "Source") if column in table.columns]]
+        filtered = table.copy(deep=True)
+        if density != "Executive":
+            f1, f2 = st.columns(2)
+            if "Class" in filtered.columns:
+                classes = sorted(filtered["Class"].dropna().astype(str).unique().tolist())
+                selected_classes = f1.multiselect("Evidence classes", classes, default=classes, key=f"mna_bi_classes_{facts.get('ticker')}")
+                filtered = filtered[filtered["Class"].astype(str).isin(selected_classes)]
+            if "Direction" in filtered.columns:
+                directions = sorted(filtered["Direction"].dropna().astype(str).unique().tolist())
+                selected_directions = f2.multiselect("Directions", directions, default=directions, key=f"mna_bi_directions_{facts.get('ticker')}")
+                filtered = filtered[filtered["Direction"].astype(str).isin(selected_directions)]
+        if {"Materiality", "Confidence"}.issubset(filtered.columns) and not filtered.empty:
+            chart_frame = filtered.copy(deep=True)
+            chart_frame["Materiality"] = pd.to_numeric(chart_frame["Materiality"], errors="coerce")
+            chart_frame["Confidence"] = pd.to_numeric(chart_frame["Confidence"], errors="coerce")
+            chart_frame = chart_frame.dropna(subset=["Materiality", "Confidence"])
+            if not chart_frame.empty:
+                figure = go.Figure()
+                direction_series = chart_frame.get("Direction", pd.Series("Evidence", index=chart_frame.index)).astype(str)
+                for direction, group in chart_frame.groupby(direction_series, sort=False):
+                    figure.add_trace(
+                        go.Scatter(
+                            x=group["Confidence"],
+                            y=group["Materiality"],
+                            text=group.get("Dimension", pd.Series("Evidence", index=group.index)).astype(str),
+                            customdata=group.get("Detail", pd.Series("", index=group.index)).astype(str).to_numpy(),
+                            mode="markers",
+                            marker={"size": 13, "opacity": 0.78},
+                            name=str(direction),
+                            hovertemplate="%{text}<br>Confidence %{x:.0f}<br>Materiality %{y:.0f}<br>%{customdata}<extra></extra>",
+                        )
+                    )
+                figure.update_layout(
+                    height=330,
+                    margin=dict(l=8, r=8, t=25, b=20),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font_color="#a9bdcb",
+                    legend={"orientation": "h", "y": 1.08},
+                    xaxis={"title": "Evidence confidence", "range": [0, 105], "gridcolor": "rgba(130,160,180,.12)"},
+                    yaxis={"title": "Materiality", "range": [0, 105], "gridcolor": "rgba(130,160,180,.12)"},
+                )
+                st.plotly_chart(figure, width="stretch", config={"displayModeBar": False}, key=f"mna_bi_map_{facts.get('ticker')}")
+        display = filtered[[column for column in ("Class", "Dimension", "Window", "Direction", "Materiality", "Signal", "Detail", "Confidence", "Source") if column in filtered.columns]]
+        if density == "Executive":
+            display = display.head(10)
         _dataframe(display, height=440)
 
     sentiment = _mapping(company.get("sentiment"))
@@ -1231,7 +2415,7 @@ def _render_bi(facts: Mapping[str, Any]) -> None:
     if not news.empty:
         with st.expander("Current news evidence", expanded=False):
             _dataframe(news.head(20), height=360)
-    with st.expander("BI evidence boundaries", expanded=False):
+    with st.expander("BI evidence boundaries", expanded=density == "Audit"):
         st.markdown(
             "- Facts and provider observations are separated from derived transaction scenarios.\n"
             "- No deal probability, antitrust outcome or management intention is inferred from missing evidence.\n"
@@ -1244,39 +2428,76 @@ def render_mna_workbench(ticker: str, analysis: Mapping[str, Any]) -> None:
     _inject_css()
     facts = extract_mna_facts(ticker, analysis)
     _hero(facts)
-    command = st.radio(
-        "M&A command workflow",
-        [
-            "DES · Company 360",
-            "RV · Relative Value",
-            "FA · Financial Analysis",
-            "DOWW · Deal Watch",
-            "BI · Intelligence",
-        ],
-        horizontal=True,
-        key=f"mna_command_{facts.get('ticker')}",
-        label_visibility="collapsed",
-    )
-    if command.startswith("DES"):
-        _render_des(facts)
-    elif command.startswith("RV"):
-        _render_rv(facts)
-    elif command.startswith("FA"):
-        _render_fa(facts, str(facts.get("ticker")))
-    elif command.startswith("DOWW"):
-        _render_doww(facts, str(facts.get("ticker")))
-    else:
-        _render_bi(facts)
+    normalized_ticker = str(facts.get("ticker"))
+    rail, canvas = st.columns([0.22, 0.78], gap="large")
+    with rail:
+        st.markdown('<div class="mna-rail-label">Command rail</div>', unsafe_allow_html=True)
+        command = st.radio(
+            "M&A command workflow",
+            [
+                "DES · Company 360",
+                "RV · Relative Value",
+                "FA · Financial Analysis",
+                "DOWW · Deal Watch",
+                "BI · Intelligence",
+            ],
+            horizontal=False,
+            key=f"mna_command_{normalized_ticker}",
+            label_visibility="collapsed",
+        )
+        st.markdown('<div class="mna-rail-label">Live case</div>', unsafe_allow_html=True)
+        scenario = st.selectbox(
+            "Scenario profile",
+            ["Bear", "Base", "Bull"],
+            index=1,
+            key=f"mna_ctx_scenario_{normalized_ticker}",
+        )
+        density = st.selectbox(
+            "Information density",
+            ["Executive", "Analyst", "Audit"],
+            index=1,
+            key=f"mna_ctx_density_{normalized_ticker}",
+        )
+        _sync_scenario_defaults(normalized_ticker, facts, scenario)
+        coverage = _finite(facts.get("coverage")) or 0.0
+        anchor = st.session_state.get(f"mna_ctx_anchor_{normalized_ticker}", "Standalone market price")
+        st.markdown(
+            f'<div class="mna-mini"><b>{escape(scenario)} · {escape(density)}</b><br>Evidence {coverage:.0f}%<br>Anchor: {escape(str(anchor))}<br><br><span class="mna-audit-warn">RESEARCH_ONLY</span></div>',
+            unsafe_allow_html=True,
+        )
+    with canvas:
+        context = _render_context_editor(facts, normalized_ticker, scenario, density)
+        _render_context_ribbon(context)
+        if command.startswith("DES"):
+            _render_des(facts, density)
+        elif command.startswith("RV"):
+            _render_rv(facts, normalized_ticker, density, context)
+        elif command.startswith("FA"):
+            _render_fa(facts, normalized_ticker, density)
+        elif command.startswith("DOWW"):
+            _render_doww(facts, normalized_ticker, density, context)
+        else:
+            _render_bi(facts, density)
 
 
 __all__ = [
     "MNA_VERSION",
     "RESEARCH_ONLY",
+    "SCENARIO_PROFILES",
     "accretion_dilution_case",
+    "build_acquirer_scenario_comparison",
+    "build_eps_bridge",
+    "build_football_field",
+    "build_leverage_trajectory",
+    "build_peer_scatter",
+    "build_scenario_comparison",
+    "build_sources_uses_bridge",
+    "build_synergy_ramp",
     "dcf_sensitivity_table",
     "dcf_valuation",
     "enterprise_value_bridge",
     "extract_mna_facts",
+    "filter_peer_universe",
     "relative_valuation_ranges",
     "render_mna_workbench",
     "reverse_dcf_growth",
@@ -1284,4 +2505,5 @@ __all__ = [
     "simplified_ppa",
     "synergy_npv",
     "target_deal_case",
+    "validate_deal_identities",
 ]

@@ -34,6 +34,7 @@ env/
 /.quant_news_archive/
 /.gem_event_cache/
 /.company_intelligence_cache/
+/.company_intelligence_mna/
 /.market_psychology_external_cache/
 /.market_psychology_memory
 /.quant_ai/
