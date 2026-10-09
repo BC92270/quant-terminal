@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Dependency Data Hub V4.0.2.
+"""Dependency Data Hub V4.1.0.
 
 Best-effort enrichment layer for the Multi-Force Dependency engine.
 
@@ -20,7 +20,6 @@ from dataclasses import dataclass, field
 from io import StringIO
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-import hashlib
 import json
 import math
 import os
@@ -193,7 +192,7 @@ def _save_fred_disk_series(series_id: str, series: pd.Series, source: str) -> No
         meta = {
             "series_id": series_id,
             "source": source,
-            "fetched_at_utc": pd.Timestamp.utcnow().isoformat(),
+            "fetched_at_utc": pd.Timestamp.now(tz="UTC").isoformat(),
             "last_observation": pd.Timestamp(s.index.max()).isoformat(),
             "observations": int(s.notna().sum()),
         }

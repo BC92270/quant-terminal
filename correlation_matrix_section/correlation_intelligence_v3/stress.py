@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from .estimators import beta_pair, pair_corr
-from .utils import nearest_psd, safe_float
+from .utils import nearest_psd
 
 
 def build_factor_stress(primary: str, changes: pd.DataFrame, days: int, shocks: dict[str, float] | None = None) -> pd.DataFrame:

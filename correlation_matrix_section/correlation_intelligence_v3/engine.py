@@ -6,6 +6,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from .advanced_estimators import (
+    distance_correlation_matrix,
+    nonlinear_dependency_ranking,
+    regularized_tyler_correlation,
+)
 from .config import CorrelationConfig
 from .connectedness import (
     connectedness_from_changes, partial_network_edges, frequency_connectedness_from_changes, partial_network_stability,
@@ -17,6 +22,7 @@ from .estimators import correlation_matrix, pair_metrics
 from .factor import multivariate_factor_model
 from .forward_corr import forward_correlation_diagnostics
 from .portfolio import (
+    allocation_model_comparison,
     correlation_shock_scenarios,
     hedge_candidates,
     incremental_asset_impact,
@@ -24,10 +30,30 @@ from .portfolio import (
 )
 from .regimes import conditional_pair_table
 from .stress import build_factor_stress
-from .structure import hierarchical_order, mst_edges, rmt_diagnostics
+from .structure import cluster_stability_bootstrap, hierarchical_order, mst_edges, rmt_diagnostics
 from .tail import adaptive_tail_metrics
 from .tail_surface import tail_surface_table
 from .utils import clamp, risk_label, safe_float
+
+
+def governed_universe(
+    primary: str,
+    available: list[str],
+    supplied: Any = None,
+    max_assets: int = 8,
+) -> list[str]:
+    """Return an ex-ante universe without outcome-ranked feature selection.
+
+    Explicit caller order has priority; otherwise the governed input registry order
+    is used.  The primary is always first and duplicates/unavailable symbols are
+    removed.  Crucially, no realized correlation, return or model score is inspected.
+    """
+
+    available_order = list(dict.fromkeys(str(x) for x in available))
+    source = list(supplied) if isinstance(supplied, (list, tuple)) else available_order
+    candidates = [str(x).upper().strip() for x in source]
+    selected = [primary] + [x for x in candidates if x != primary and x in available_order]
+    return list(dict.fromkeys(selected))[: max(2, int(max_assets))]
 
 
 @dataclass
@@ -47,6 +73,12 @@ class AnalysisBundle:
     corr_raw: pd.DataFrame = field(default_factory=pd.DataFrame)
     corr_shrunk: pd.DataFrame = field(default_factory=pd.DataFrame)
     corr_partial: pd.DataFrame = field(default_factory=pd.DataFrame)
+    partial_meta: dict = field(default_factory=dict)
+    corr_tyler: pd.DataFrame = field(default_factory=pd.DataFrame)
+    tyler_meta: dict = field(default_factory=dict)
+    corr_distance: pd.DataFrame = field(default_factory=pd.DataFrame)
+    distance_meta: dict = field(default_factory=dict)
+    nonlinear_ranking: pd.DataFrame = field(default_factory=pd.DataFrame)
     corr_rmt_cleaned: pd.DataFrame = field(default_factory=pd.DataFrame)
     corr_forecast: pd.DataFrame = field(default_factory=pd.DataFrame)
     covariance_validation: pd.DataFrame = field(default_factory=pd.DataFrame)
@@ -70,6 +102,9 @@ class AnalysisBundle:
 
     mst_table: pd.DataFrame = field(default_factory=pd.DataFrame)
     cluster_order: list[str] = field(default_factory=list)
+    cluster_stability: pd.DataFrame = field(default_factory=pd.DataFrame)
+    cluster_consensus: pd.DataFrame = field(default_factory=pd.DataFrame)
+    cluster_stability_meta: dict = field(default_factory=dict)
     partial_network_edges: pd.DataFrame = field(default_factory=pd.DataFrame)
     partial_network_centrality: pd.DataFrame = field(default_factory=pd.DataFrame)
     connectedness_matrix: pd.DataFrame = field(default_factory=pd.DataFrame)
@@ -94,6 +129,9 @@ class AnalysisBundle:
     portfolio_eigen_meta: dict = field(default_factory=dict)
     portfolio_structured_stress: pd.DataFrame = field(default_factory=pd.DataFrame)
     portfolio_meta: dict = field(default_factory=dict)
+    allocation_validation: pd.DataFrame = field(default_factory=pd.DataFrame)
+    allocation_weights: pd.DataFrame = field(default_factory=pd.DataFrame)
+    allocation_meta: dict = field(default_factory=dict)
 
     forward_corr_meta: dict = field(default_factory=dict)
     forward_corr_history: pd.DataFrame = field(default_factory=pd.DataFrame)
@@ -167,12 +205,26 @@ class CorrelationEngine:
 
         b.corr_raw = correlation_matrix(ch, selected_days, "Pearson", self.config.min_pair_obs)
         b.corr_shrunk = correlation_matrix(ch, selected_days, "Ledoit-Wolf", self.config.min_matrix_obs)
-        b.corr_partial = correlation_matrix(ch, selected_days, "Partial", self.config.min_matrix_obs)
+        b.corr_partial, b.partial_meta = correlation_matrix(
+            ch, selected_days, "Partial", self.config.min_matrix_obs, return_metadata=True
+        )
+        tyler = regularized_tyler_correlation(
+            ch, selected_days, self.config.min_matrix_obs,
+            shrinkage=self.config.tyler_shrinkage, max_iter=self.config.tyler_max_iter,
+        )
+        b.corr_tyler, b.tyler_meta = tyler.matrix, tyler.metadata
+        distance = distance_correlation_matrix(ch, selected_days, self.config.min_pair_obs)
+        b.corr_distance, b.distance_meta = distance.matrix, distance.metadata
+        b.nonlinear_ranking = nonlinear_dependency_ranking(primary, ch, selected_days, self.config.min_pair_obs)
 
-        # V3.1 covariance champion/challenger lab. Keep the research universe parsimonious so
-        # walk-forward validation is stable and responsive inside Streamlit.
-        cov_universe = [primary] + [x for x in b.ranking.get("Ticker", pd.Series(dtype=str)).head(7).tolist() if x in ch.columns]
-        cov_universe = list(dict.fromkeys(cov_universe))
+        # The universe is fixed ex ante from caller/registry order.  Selecting it from
+        # the end-sample correlation ranking would leak future information into folds.
+        cov_universe = governed_universe(
+            primary,
+            list(ch.columns),
+            analysis.get("correlation_covariance_universe"),
+            max_assets=8,
+        )
         if len(cov_universe) < 3:
             cov_universe = list(ch.columns)[:8]
         b.covariance_universe = cov_universe
@@ -188,6 +240,9 @@ class CorrelationEngine:
             external_nls=external_nls if callable(external_nls) else None,
             champion_bootstrap_samples=int(analysis.get("correlation_champion_bootstrap_samples", self.config.covariance_champion_bootstrap_samples)),
             seed=self.config.random_seed,
+        )
+        b.covariance_meta["universe_selection"] = (
+            "ex-ante explicit override or governed input order; no outcome ranking"
         )
         champion = b.covariance_meta.get("champion") if b.covariance_meta else None
         if champion:
@@ -234,13 +289,13 @@ class CorrelationEngine:
                 na_position="last",
             ).reset_index(drop=True)
 
-        tail_peers = b.ranking["Ticker"].head(8).tolist() if not b.ranking.empty else peers[:8] if "peers" in locals() else []
+        peers = [x for x in ch.columns if x != primary]
+        tail_peers = b.ranking["Ticker"].head(8).tolist() if not b.ranking.empty else peers[:8]
         b.tail_surface = tail_surface_table(
             ch, primary, tail_peers, days=self.config.tail_surface_days, quantiles=self.config.tail_surface_quantiles
         )
 
         market = next((x for x in self.config.regime_market_candidates if x in ch.columns), None)
-        peers = [x for x in ch.columns if x != primary]
         b.regime_table = conditional_pair_table(
             primary,
             ch,
@@ -249,12 +304,23 @@ class CorrelationEngine:
             max(selected_days, 180),
             self.config.min_regime_compute_obs,
             self.config.reliable_regime_obs,
+            self.config.regime_bootstrap_samples,
+            self.config.regime_bootstrap_block,
+            self.config.random_seed,
         )
         b.stress_table = build_factor_stress(primary, ch, selected_days, analysis.get("correlation_stress_shocks"))
-        break_universe = [primary] + [x for x in b.ranking["Ticker"].head(7).tolist() if x in ch.columns] if not b.ranking.empty else list(ch.columns)[:8]
+        break_universe = governed_universe(
+            primary,
+            list(ch.columns),
+            analysis.get("correlation_break_universe"),
+            max_assets=8,
+        )
         b.break_curve, b.break_links, b.break_meta = dependency_break_detector(
             ch[break_universe], primary, days=self.config.break_detection_days, side_window=self.config.break_side_window,
             step=self.config.break_step, bootstrap_samples=int(analysis.get("correlation_break_bootstrap_samples", self.config.break_bootstrap_samples)), seed=self.config.random_seed,
+        )
+        b.break_meta["universe_selection"] = (
+            "ex-ante explicit override or governed input order; no outcome ranking"
         )
 
         (
@@ -282,6 +348,22 @@ class CorrelationEngine:
         matrix_for_structure = b.corr_shrunk if not b.corr_shrunk.empty else b.corr_raw
         b.cluster_order = hierarchical_order(matrix_for_structure)
         b.mst_table = mst_edges(matrix_for_structure)
+        cluster_universe = governed_universe(
+            primary,
+            list(ch.columns),
+            analysis.get("correlation_cluster_universe"),
+            max_assets=12,
+        )
+        b.cluster_stability, b.cluster_consensus, b.cluster_stability_meta = cluster_stability_bootstrap(
+            ch[cluster_universe], days=max(selected_days, 252), min_obs=max(60, self.config.min_matrix_obs),
+            bootstrap_samples=int(analysis.get("correlation_cluster_bootstrap_samples", self.config.cluster_bootstrap_samples)),
+            block=self.config.pair_bootstrap_block,
+            stability_threshold=self.config.cluster_stability_threshold,
+            seed=self.config.random_seed,
+        )
+        b.cluster_stability_meta["universe_selection"] = (
+            "ex-ante explicit override or governed input order; no outcome ranking"
+        )
         b.partial_network_edges, b.partial_network_centrality = partial_network_edges(
             b.corr_partial,
             b.asset_type_map,
@@ -323,6 +405,25 @@ class CorrelationEngine:
 
         hedge_type_map = {p: b.asset_type_map.get(p, "Unknown") for p in peers}
         b.hedges = hedge_candidates(primary, ch, peers, selected_days, self.config.hedge_windows, hedge_type_map)
+
+        allocation_universe = governed_universe(
+            primary,
+            list(ch.columns),
+            analysis.get("correlation_allocation_universe"),
+            max_assets=8,
+        )
+        b.allocation_validation, b.allocation_weights, b.allocation_meta = allocation_model_comparison(
+            ch,
+            allocation_universe,
+            train_days=self.config.allocation_train_days,
+            test_days=self.config.allocation_test_days,
+            min_train=self.config.covariance_min_train,
+            max_folds=self.config.allocation_max_folds,
+            transaction_cost_bps=self.config.allocation_cost_bps,
+        )
+        b.allocation_meta["universe_selection"] = (
+            "ex-ante explicit override or governed input order; no outcome ranking"
+        )
 
         weights = analysis.get("portfolio_weights") or {}
         if isinstance(weights, dict) and weights:
@@ -498,6 +599,12 @@ class CorrelationEngine:
             "portfolio_annualized_vol": safe_float(b.portfolio_meta.get("annualized_vol")) if b.portfolio_meta else None,
             "portfolio_cvar95": safe_float(b.portfolio_meta.get("CVaR95 daily")) if b.portfolio_meta else None,
             "portfolio_diversification_ratio": safe_float(b.portfolio_meta.get("diversification_ratio")) if b.portfolio_meta else None,
+            "allocation_champion": (
+                str(b.allocation_validation.iloc[0]["Method"]) if not b.allocation_validation.empty else None
+            ),
+            "allocation_folds": int(b.allocation_meta.get("folds", 0)) if b.allocation_meta else 0,
+            "cluster_stability": safe_float(b.cluster_stability_meta.get("mean_base_within_cluster_stability")) if b.cluster_stability_meta else None,
+            "tyler_converged": bool(b.tyler_meta.get("converged")) if b.tyler_meta else False,
             "confidence_score": confidence,
             "confidence_label": "Bonne" if confidence >= 75 else "Correcte" if confidence >= 60 else "Limitée" if confidence >= 40 else "Fragile",
             "n_obs": n,

@@ -46,7 +46,7 @@ class PairDependencyAnalysis:
 class DependencyIntelligence:
     """Multi-force dependency attribution layer.
 
-    It consumes the frozen V3.1.1 correlation-core outputs plus optional external force/event/
+    It consumes the governed V4.1 correlation-core outputs plus optional external force/event/
     metadata feeds. It does *not* alter the core correlation calculations and does not claim
     causality from regressions, correlations, VARs or event windows.
     """
@@ -100,6 +100,7 @@ class DependencyIntelligence:
         force_count = len(fm.factors_used) if fm.status == "ok" else 0
 
         synchronous_corr, best_lag, best_lag_corr = None, None, None
+        best_lag_inference_corr = None
         best_lag_ci_low = best_lag_ci_high = best_lag_p = None
         best_lag_evidence = None
         if not b.lead_lag.empty:
@@ -109,22 +110,36 @@ class DependencyIntelligence:
                 synchronous_corr = float(sync.iloc[0]["Correlation"])
             nz = x[x["Lag days"] != 0]
             if not nz.empty:
-                r = nz.loc[nz["Abs correlation"].idxmax()]
-                best_lag = int(r["Lag days"])
-                best_lag_corr = float(r["Correlation"])
-                for key, dest in [("CI low", "lo"), ("CI high", "hi"), ("Selection-adjusted p", "p")]:
+                selection_col = "Abs inference correlation" if "Abs inference correlation" in nz.columns else "Abs correlation"
+                selection_values = pd.to_numeric(nz[selection_col], errors="coerce")
+                eligible = nz.loc[selection_values.notna()]
+                if eligible.empty and selection_col != "Abs correlation":
+                    selection_col = "Abs correlation"
+                    selection_values = pd.to_numeric(nz[selection_col], errors="coerce")
+                    eligible = nz.loc[selection_values.notna()]
+                if not eligible.empty:
+                    eligible_values = pd.to_numeric(eligible[selection_col], errors="coerce")
+                    r = eligible.loc[eligible_values.idxmax()]
+                    best_lag = int(r["Lag days"])
+                    best_lag_corr = float(r["Correlation"])
                     try:
-                        val = float(r.get(key, np.nan))
+                        candidate = float(r.get("Prewhitened correlation", np.nan))
+                        best_lag_inference_corr = candidate if np.isfinite(candidate) else None
                     except Exception:
-                        val = np.nan
-                    if dest == "lo" and np.isfinite(val):
-                        best_lag_ci_low = val
-                    elif dest == "hi" and np.isfinite(val):
-                        best_lag_ci_high = val
-                    elif dest == "p" and np.isfinite(val):
-                        best_lag_p = val
-                ev = str(r.get("Evidence", "") or "").strip()
-                best_lag_evidence = ev or None
+                        best_lag_inference_corr = None
+                    for key, dest in [("CI low", "lo"), ("CI high", "hi"), ("Selection-adjusted p", "p")]:
+                        try:
+                            val = float(r.get(key, np.nan))
+                        except Exception:
+                            val = np.nan
+                        if dest == "lo" and np.isfinite(val):
+                            best_lag_ci_low = val
+                        elif dest == "hi" and np.isfinite(val):
+                            best_lag_ci_high = val
+                        elif dest == "p" and np.isfinite(val):
+                            best_lag_p = val
+                    ev = str(r.get("Evidence", "") or "").strip()
+                    best_lag_evidence = ev or None
 
         coextreme = None
         if not b.extremes.empty:
@@ -148,6 +163,7 @@ class DependencyIntelligence:
             "synchronous_corr": synchronous_corr,
             "best_nonzero_lag_days": best_lag,
             "best_nonzero_lag_corr": best_lag_corr,
+            "best_nonzero_lag_inference_corr": best_lag_inference_corr,
             "best_nonzero_lag_ci_low": best_lag_ci_low,
             "best_nonzero_lag_ci_high": best_lag_ci_high,
             "best_nonzero_lag_p": best_lag_p,

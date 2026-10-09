@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class CorrelationConfig:
-    """Central configuration for Correlation Intelligence V3.1.1 final hotfix."""
+    """Central configuration for Correlation Intelligence V4.1 institutional hardening."""
 
     selected_days_default: int = 90
     available_windows: tuple[int, ...] = (20, 30, 60, 90, 180, 252)
@@ -15,6 +15,8 @@ class CorrelationConfig:
     min_matrix_obs: int = 40
     min_regime_compute_obs: int = 12
     reliable_regime_obs: int = 30
+    regime_bootstrap_samples: int = 199
+    regime_bootstrap_block: int = 5
 
     # Covariance forecasting / model validation.
     covariance_model_options: tuple[str, ...] = (
@@ -66,6 +68,8 @@ class CorrelationConfig:
     partial_network_max_edges: int = 50
     network_bootstrap_samples: int = 500
     network_selection_threshold: float = 0.65
+    cluster_bootstrap_samples: int = 200
+    cluster_stability_threshold: float = 0.70
     frequency_connectedness_days: int = 504
     frequency_connectedness_min_obs: int = 120
 
@@ -81,6 +85,14 @@ class CorrelationConfig:
     incremental_add_weight: float = 0.05
     forward_realized_days: int = 63
 
+    # Robust/nonlinear dependency and allocation challengers.
+    tyler_shrinkage: float | None = None
+    tyler_max_iter: int = 300
+    allocation_train_days: int = 252
+    allocation_test_days: int = 21
+    allocation_max_folds: int = 8
+    allocation_cost_bps: float = 10.0
+
     data_period_options: tuple[str, ...] = ("6mo", "1y", "2y", "5y")
     default_data_period: str = "2y"
     default_estimator: str = "Ledoit-Wolf"
@@ -91,6 +103,8 @@ class CorrelationConfig:
         "Ledoit-Wolf",
         "OAS",
         "Partial",
+        "Tyler robust",
+        "Distance correlation",
     )
     regime_market_candidates: tuple[str, ...] = ("SPY", "QQQ", "IWM", "DIA")
     factor_candidates: tuple[str, ...] = (
@@ -102,4 +116,8 @@ class CorrelationConfig:
     )
     pair_bootstrap_block: int = 5
     ui_card_count: int = 6
-    metadata: dict[str, str] = field(default_factory=lambda: {"engine_version": "3.1.1"})
+    metadata: dict[str, str] = field(default_factory=lambda: {
+        "engine_version": "4.1.0",
+        "authority": "RESEARCH_ONLY",
+        "release_doctrine": "fail-closed numerical and provenance gates",
+    })

@@ -1,7 +1,8 @@
-"""Quant Terminal Correlation Matrix Section V4.0.2.
+"""Quant Terminal Correlation Matrix Section V4.1.0.
 
-The V3.1.1 statistical core is frozen. V4.0.2 adds an orthogonal multi-force dependency
-attribution layer without changing core matrix, tail, RMT, connectedness or covariance logic.
+V4.1.0 hardens provenance and time-series inference and adds robust/nonlinear dependence,
+cluster-consensus and allocation challenger tools alongside the multi-force dependency
+attribution layer while keeping legacy public render entry points compatible.
 """
 
-__version__ = "4.0.2"
+__version__ = "4.1.0"

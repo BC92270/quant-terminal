@@ -82,6 +82,38 @@ def _lag_corr(a: np.ndarray, b: np.ndarray, lag: int, min_obs: int) -> tuple[flo
     return _safe_corr(aa[mask], bb[mask]), int(mask.sum())
 
 
+def _aligned_lag_values(a: np.ndarray, b: np.ndarray, lag: int) -> np.ndarray:
+    n = min(len(a), len(b))
+    if n <= abs(lag):
+        return np.empty((0, 2), dtype=float)
+    if lag > 0:
+        aa, bb = a[:-lag], b[lag:]
+    elif lag < 0:
+        width = -lag
+        aa, bb = a[width:], b[:-width]
+    else:
+        aa, bb = a, b
+    mask = np.isfinite(aa) & np.isfinite(bb)
+    return np.column_stack([aa[mask], bb[mask]])
+
+
+def _ar1_residuals(x: np.ndarray) -> tuple[np.ndarray, dict]:
+    """Causal AR(1) pre-whitening with an explicit leading missing residual."""
+
+    values = np.asarray(x, dtype=float)
+    residuals = np.full(len(values), np.nan, dtype=float)
+    if len(values) < 12 or not np.isfinite(values).all():
+        return values - np.nanmean(values), {"status": "demean_fallback", "phi": None}
+    design = np.column_stack([np.ones(len(values) - 1), values[:-1]])
+    target = values[1:]
+    try:
+        coef, *_ = np.linalg.lstsq(design, target, rcond=None)
+        residuals[1:] = target - design @ coef
+        return residuals, {"status": "ok", "intercept": float(coef[0]), "phi": float(coef[1])}
+    except Exception:
+        return values - np.nanmean(values), {"status": "demean_fallback", "phi": None}
+
+
 def lead_lag_table(
     primary: str,
     peer: str,
@@ -90,19 +122,16 @@ def lead_lag_table(
     min_obs: int = 30,
     cfg: DependencyConfig | None = None,
 ) -> pd.DataFrame:
-    """Lead/lag cross-correlation with post-selection-aware inference.
+    """Raw cross-correlation plus coherent pre-whitened max-stat inference.
 
-    The displayed lag statistic is still descriptive: ``corr(primary_t, peer_{t+lag})``.
-    V4.0.2 adds two uncertainty layers:
+    ``Correlation`` remains the descriptive ``corr(primary_t, peer_{t+lag})``.  Lag
+    selection, its moving-block interval and the max-stat null all use the *same*
+    pre-whitened correlation estimand.  Circular shifts preserve each residual series'
+    marginal temporal structure while destroying cross-series timing.  This avoids the
+    former mix of a raw selected point, a boundary-biased bootstrap interval and an iid
+    row-permutation null.
 
-    * a joint moving-block bootstrap CI for the *selected* non-zero lag; and
-    * a synchronous-pair-preserving row-permutation max-stat p-value that controls the
-      search over all non-zero lags.  The null keeps each day's contemporaneous pair
-      together while destroying temporal ordering, so it asks whether the strongest
-      non-zero lag exceeds what can arise from the same synchronous joint distribution
-      without temporal structure.
-
-    This is an association diagnostic, not Granger/structural causality.
+    The diagnostic remains predictive association, never structural causality.
     """
     if primary not in changes.columns or peer not in changes.columns:
         return pd.DataFrame()
@@ -115,51 +144,74 @@ def lead_lag_table(
         return pd.DataFrame()
     a = frame["a"].to_numpy(float)
     b = frame["b"].to_numpy(float)
+    a_resid, a_meta = _ar1_residuals(a)
+    b_resid, b_meta = _ar1_residuals(b)
     rows: list[dict[str, Any]] = []
     for lag in range(-max_lag, max_lag + 1):
         c, n = _lag_corr(a, b, lag, min_obs)
+        infer_c, infer_n = _lag_corr(a_resid, b_resid, lag, min_obs)
         rows.append({
             "Lag days": lag,
             "Correlation": c,
             "Obs": n,
+            "Prewhitened correlation": infer_c,
+            "Inference obs": infer_n,
             "Interpretation": "Primary leads peer" if lag > 0 else "Peer leads primary" if lag < 0 else "Synchronous",
         })
     out = pd.DataFrame(rows)
     out["Abs correlation"] = out["Correlation"].abs()
+    out["Abs inference correlation"] = out["Prewhitened correlation"].abs()
     out["CI low"] = np.nan
     out["CI high"] = np.nan
+    out["Inference CI low"] = np.nan
+    out["Inference CI high"] = np.nan
     out["Selection-adjusted p"] = np.nan
     out["Evidence"] = ""
     out["Inference reps"] = 0
+    out["CI contains estimate"] = False
+    out["Bootstrap bias alert"] = False
+    out["Inference method"] = ""
 
-    nz = out[(out["Lag days"] != 0) & out["Correlation"].notna()]
+    nz = out[(out["Lag days"] != 0) & out["Prewhitened correlation"].notna()]
     if nz.empty:
         return out
-    selected_idx = nz["Abs correlation"].idxmax()
+    selected_idx = nz["Abs inference correlation"].idxmax()
     selected_lag = int(out.loc[selected_idx, "Lag days"])
-    observed_max = float(out.loc[selected_idx, "Abs correlation"])
+    observed = float(out.loc[selected_idx, "Prewhitened correlation"])
+    observed_max = abs(observed)
 
     rng = np.random.default_rng(cfg.random_seed + 2718)
-    # Fixed-selected-lag uncertainty under the observed temporal process.
+    # Bootstrap the already aligned pair, so block boundaries cannot change the lag
+    # definition.  The interval and point estimate now share exactly one estimand.
+    aligned = _aligned_lag_values(a_resid, b_resid, selected_lag)
     boots: list[float] = []
     for _ in range(int(cfg.lead_lag_bootstrap_samples)):
-        ix = _moving_block_indices(len(frame), cfg.lead_lag_block_length, rng)
-        c, _ = _lag_corr(a[ix], b[ix], selected_lag, max(20, min_obs // 2))
+        ix = _moving_block_indices(len(aligned), cfg.lead_lag_block_length, rng)
+        c = _safe_corr(aligned[ix, 0], aligned[ix, 1]) if len(ix) else np.nan
         if np.isfinite(c):
             boots.append(float(c))
     lo, hi, valid = _quantile_ci(boots, cfg.lead_lag_ci_level)
 
-    # Max-stat null: preserve same-day pair distribution but destroy temporal ordering.
+    # Circular-shift max-stat null: preserve each pre-whitened series and its remaining
+    # temporal pattern, but destroy their relative timing.  Exclude tiny shifts that
+    # would mechanically reproduce one of the searched lags.
     null_max: list[float] = []
-    base = np.column_stack([a, b])
+    residual_mask = np.isfinite(a_resid) & np.isfinite(b_resid)
+    finite_a = a_resid[residual_mask]
+    finite_b = b_resid[residual_mask]
+    allowed_shifts = np.arange(
+        max_lag + 1, max(max_lag + 2, len(finite_a) - max_lag)
+    )
     for _ in range(int(cfg.lead_lag_bootstrap_samples)):
-        perm = rng.permutation(len(base))
-        p = base[perm]
+        if not len(allowed_shifts):
+            break
+        shift = int(rng.choice(allowed_shifts))
+        shifted_b = np.roll(finite_b, shift)
         vals = []
         for lag in range(-max_lag, max_lag + 1):
             if lag == 0:
                 continue
-            c, _ = _lag_corr(p[:, 0], p[:, 1], lag, max(20, min_obs // 2))
+            c, _ = _lag_corr(finite_a, shifted_b, lag, max(20, min_obs // 2))
             if np.isfinite(c):
                 vals.append(abs(float(c)))
         if vals:
@@ -170,18 +222,28 @@ def lead_lag_table(
         p_adj = np.nan
 
     excludes_zero = np.isfinite(lo) and np.isfinite(hi) and (lo > 0 or hi < 0)
-    if np.isfinite(p_adj) and p_adj <= cfg.lead_lag_support_alpha and excludes_zero:
+    contains_estimate = bool(np.isfinite(lo) and np.isfinite(hi) and lo <= observed <= hi)
+    bias_alert = not contains_estimate
+    if np.isfinite(p_adj) and p_adj <= cfg.lead_lag_support_alpha and excludes_zero and not bias_alert:
         evidence = "Supported"
     elif np.isfinite(p_adj) and p_adj <= cfg.lead_lag_weak_alpha:
-        evidence = "Weak"
+        evidence = "Max-stat only / CI inconclusive"
     else:
         evidence = "Not supported"
 
     out.loc[selected_idx, "CI low"] = lo
     out.loc[selected_idx, "CI high"] = hi
+    out.loc[selected_idx, "Inference CI low"] = lo
+    out.loc[selected_idx, "Inference CI high"] = hi
     out.loc[selected_idx, "Selection-adjusted p"] = p_adj
     out.loc[selected_idx, "Evidence"] = evidence
     out.loc[selected_idx, "Inference reps"] = min(valid, len(null_max)) if null_max else valid
+    out.loc[selected_idx, "CI contains estimate"] = contains_estimate
+    out.loc[selected_idx, "Bootstrap bias alert"] = bias_alert
+    out.loc[selected_idx, "Inference method"] = (
+        f"AR(1) prewhitening; aligned-pair moving-block CI; circular-shift max-stat null; "
+        f"phi=({a_meta.get('phi')},{b_meta.get('phi')})"
+    )
     return out
 
 

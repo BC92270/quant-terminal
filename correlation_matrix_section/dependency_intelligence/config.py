@@ -7,7 +7,7 @@ from dataclasses import dataclass
 class DependencyConfig:
     """Configuration for the multi-force dependency attribution layer.
 
-    V4.0.2 keeps the frozen V3.1.1 correlation core untouched and strengthens the
+    V4.1 strengthens the correlation core and the
     *inference* around lead/lag, extreme-day and higher-comoment diagnostics.  The
     layer remains deliberately conservative: it attributes association and covariance,
     but never upgrades an association to a causal statement unless the caller supplies
@@ -29,6 +29,8 @@ class DependencyConfig:
     lead_lag_block_length: int = 5
     lead_lag_support_alpha: float = 0.05
     lead_lag_weak_alpha: float = 0.10
+    lead_lag_prewhiten_order: int = 1
+    lead_lag_null: str = "circular-shift max-stat"
 
     # Daily extreme-move proxy (not an intraday jump test).
     extreme_z_threshold: float = 3.0

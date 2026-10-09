@@ -46,7 +46,7 @@ def _ewma_standardize(df: pd.DataFrame, lam: float = 0.94) -> np.ndarray:
 
 
 def dcc_pair_series(changes: pd.DataFrame, a: str, b: str, maxiter: int = 250) -> tuple[pd.Series, dict]:
-    """Parsimonious DCC(1,1) for one pair using EWMA-standardised innovations."""
+    """Parsimonious quasi-DCC(1,1) for one pair using EWMA innovations."""
     df = pair_frame(changes, a, b, None)
     if len(df) < 80:
         return pd.Series(dtype=float), {"status": "insufficient_data"}
@@ -87,5 +87,15 @@ def dcc_pair_series(changes: pd.DataFrame, a: str, b: str, maxiter: int = 250) -
         d = np.sqrt(np.clip(np.diag(q), 1e-12, None))
         r = q / np.outer(d, d)
         rhos.append(float(np.clip(r[0, 1], -0.999, 0.999)))
-    meta = {"alpha": float(alpha), "beta": float(beta), "persistence": float(alpha + beta), "success": bool(res.success), "objective": float(res.fun) if np.isfinite(res.fun) else None}
+    meta = {
+        "model": "Quasi-DCC(1,1)",
+        "innovation_standardization": "EWMA variance, lambda implicit 0.94",
+        "full_garch": False,
+        "student_t": False,
+        "alpha": float(alpha),
+        "beta": float(beta),
+        "persistence": float(alpha + beta),
+        "success": bool(res.success),
+        "objective": float(res.fun) if np.isfinite(res.fun) else None,
+    }
     return pd.Series(rhos, index=df.index, name="dcc_corr"), meta
