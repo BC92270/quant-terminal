@@ -1,0 +1,199 @@
+From 4241b24956f61af8fe1b165c7e1dda2f731556cd Mon Sep 17 00:00:00 2001
+From: Achille Lenarduzzi <achillelenarduzzi@mbp-de-achille.home>
+Date: Fri, 9 Oct 2026 23:57:23 +0200
+Subject: [PATCH] perf(correlation): isolate UI reruns and cache injected
+ inputs
+
+---
+ .../correlation_intelligence_v3/ui.py         | 94 ++++++++++++++++---
+ .../correlation_matrix/test_v410_ui_cache.py  | 49 ++++++++++
+ 2 files changed, 128 insertions(+), 15 deletions(-)
+ create mode 100644 tests/correlation_matrix/test_v410_ui_cache.py
+
+diff --git a/correlation_matrix_section/correlation_intelligence_v3/ui.py b/correlation_matrix_section/correlation_intelligence_v3/ui.py
+index 1787708..9d5a05b 100644
+--- a/correlation_matrix_section/correlation_intelligence_v3/ui.py
++++ b/correlation_matrix_section/correlation_intelligence_v3/ui.py
+@@ -1,5 +1,7 @@
+ from __future__ import annotations
+ 
++from hashlib import sha256
++import json
+ import math
+ import numpy as np
+ import pandas as pd
+@@ -11,7 +13,7 @@ from .data import default_peer_universe
+ from .dynamics import dcc_pair_series, ewma_corr_series, rolling_corr_series
+ from .engine import CorrelationEngine
+ from .export import research_pack_zip
+-from .provenance import research_pack_manifest
++from .provenance import dataframe_sha256, research_pack_manifest
+ from .tail import bootstrap_tail_uncertainty, fit_copulas
+ from .utils import fmt_corr, fmt_num, fmt_pct, fmt_pvalue, fmt_score, html_safe, parse_ticker_text, table_height
+ from ..dependency_intelligence.ui import render_dependency_intelligence_tab
+@@ -430,18 +432,76 @@ def _forward_term_chart(meta: dict):
+     st.plotly_chart(fig,use_container_width=True)
+ 
+ 
++def _cache_token(value):
++    """Return a deterministic, JSON-safe token for injected analysis inputs."""
++    if callable(value):
++        return {
++            "callable": f"{getattr(value, '__module__', '')}.{getattr(value, '__qualname__', getattr(value, '__name__', type(value).__name__))}"
++        }
++    if isinstance(value, pd.DataFrame):
++        return {"dataframe": dataframe_sha256(value)}
++    if isinstance(value, pd.Series):
++        return {"series": dataframe_sha256(value.to_frame(name=str(value.name or "value")))}
++    if isinstance(value, np.ndarray):
++        if value.dtype == object:
++            return {"array": [_cache_token(v) for v in value.tolist()], "shape": list(value.shape)}
++        contiguous = np.ascontiguousarray(value)
++        return {
++            "array_sha256": sha256(contiguous.tobytes()).hexdigest(),
++            "dtype": str(contiguous.dtype),
++            "shape": list(contiguous.shape),
++        }
++    if isinstance(value, dict):
++        return {str(k): _cache_token(v) for k, v in sorted(value.items(), key=lambda item: str(item[0]))}
++    if isinstance(value, (list, tuple)):
++        return [_cache_token(v) for v in value]
++    if isinstance(value, set):
++        tokens = [_cache_token(v) for v in value]
++        return sorted(tokens, key=lambda token: json.dumps(token, sort_keys=True, default=str))
++    if isinstance(value, (pd.Timestamp, pd.Timedelta)):
++        return str(value)
++    if isinstance(value, np.generic):
++        return _cache_token(value.item())
++    if isinstance(value, float) and not np.isfinite(value):
++        return str(value)
++    if value is None or isinstance(value, (str, int, float, bool)):
++        return value
++    return {"type": f"{type(value).__module__}.{type(value).__qualname__}", "value": str(value)}
++
++
++def _analysis_signature(analysis_local: dict) -> str:
++    payload = json.dumps(_cache_token(analysis_local or {}), sort_keys=True, separators=(",", ":"), ensure_ascii=True)
++    return sha256(payload.encode("utf-8")).hexdigest()
++
++
+ @st.cache_data(ttl=180, max_entries=8, show_spinner=False)
+-def _cached_engine_analysis(ticker: str, tickers: tuple[str, ...], price_data: pd.DataFrame, selected_days: int, period: str, analysis_local: dict):
+-    return CorrelationEngine(CorrelationConfig()).analyse(ticker, list(tickers), price_data, selected_days, period, analysis_local)
++def _cached_engine_analysis(
++    ticker: str,
++    tickers: tuple[str, ...],
++    price_data: pd.DataFrame,
++    selected_days: int,
++    period: str,
++    analysis_signature: str,
++    _analysis_local: dict,
++):
++    # ``_analysis_local`` can contain injected callables that Streamlit cannot
++    # hash. The explicit deterministic signature above remains part of the key.
++    return CorrelationEngine(CorrelationConfig()).analyse(
++        ticker,
++        list(tickers),
++        price_data,
++        selected_days,
++        period,
++        _analysis_local,
++    )
++
++
++def _section_fragment(func):
++    fragment = getattr(st, "fragment", None)
++    return fragment(func) if callable(fragment) else func
+ 
+-def _contains_callable(d: dict) -> bool:
+-    for v in (d or {}).values():
+-        if callable(v):
+-            return True
+-        if isinstance(v, dict) and any(callable(x) for x in v.values()):
+-            return True
+-    return False
+ 
++@_section_fragment
+ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, analysis: dict | None = None):
+     ticker = str(ticker or "").upper().strip()
+     analysis = analysis or {}
+@@ -480,12 +540,16 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
+     parsed_weights = _parse_weights_text(weights_text)
+     if parsed_weights:
+         analysis_local["portfolio_weights"] = parsed_weights
+-    engine = CorrelationEngine(cfg)
+     with st.spinner("Estimation V4.1.0: robust covariance, inférence temporelle, consensus clusters et allocation OOS…"):
+-        if _contains_callable(analysis_local):
+-            bundle = engine.analyse(ticker, tickers, price_data, int(selected_days), period, analysis_local)
+-        else:
+-            bundle = _cached_engine_analysis(ticker, tuple(tickers), price_data, int(selected_days), period, analysis_local)
++        bundle = _cached_engine_analysis(
++            ticker,
++            tuple(tickers),
++            price_data,
++            int(selected_days),
++            period,
++            _analysis_signature(analysis_local),
++            analysis_local,
++        )
+     s = bundle.summary
+     if s.get("status") != "ok":
+         st.error(s.get("message", "Correlation engine indisponible."))
+diff --git a/tests/correlation_matrix/test_v410_ui_cache.py b/tests/correlation_matrix/test_v410_ui_cache.py
+new file mode 100644
+index 0000000..3bae35b
+--- /dev/null
++++ b/tests/correlation_matrix/test_v410_ui_cache.py
+@@ -0,0 +1,49 @@
++from __future__ import annotations
++
++import numpy as np
++import pandas as pd
++
++from correlation_matrix_section.correlation_intelligence_v3.ui import _analysis_signature
++
++
++def _provider_one():
++    return None
++
++
++def _provider_two():
++    return None
++
++
++def test_analysis_signature_is_deterministic_for_equivalent_inputs():
++    frame = pd.DataFrame(
++        {"NVDA": [100.0, 101.0], "SMH": [200.0, 202.0]},
++        index=pd.to_datetime(["2026-01-02", "2026-01-05"]),
++    )
++    left = {
++        "portfolio_weights": {"NVDA": 0.6, "SMH": 0.4},
++        "provider": _provider_one,
++        "scenario": np.array([0.1, -0.2]),
++        "frame": frame,
++    }
++    right = {
++        "frame": frame.copy(deep=True),
++        "scenario": np.array([0.1, -0.2]),
++        "provider": _provider_one,
++        "portfolio_weights": {"SMH": 0.4, "NVDA": 0.6},
++    }
++
++    assert _analysis_signature(left) == _analysis_signature(right)
++
++
++def test_analysis_signature_invalidates_material_engine_inputs():
++    base = {
++        "correlation_tail_mode": "Adaptive",
++        "portfolio_weights": {"NVDA": 0.6, "SMH": 0.4},
++        "provider": _provider_one,
++    }
++
++    changed_weight = {**base, "portfolio_weights": {"NVDA": 0.5, "SMH": 0.5}}
++    changed_provider = {**base, "provider": _provider_two}
++
++    assert _analysis_signature(base) != _analysis_signature(changed_weight)
++    assert _analysis_signature(base) != _analysis_signature(changed_provider)
+-- 
+2.37.1 (Apple Git-137.1)
+
