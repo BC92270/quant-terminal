@@ -1,0 +1,25 @@
+From 76e2ba24440b8f65cae886acef2c8a69a26ff2b1 Mon Sep 17 00:00:00 2001
+From: Achille Lenarduzzi <achillelenarduzzi@mbp-de-achille.home>
+Date: Fri, 9 Oct 2026 23:44:58 +0200
+Subject: [PATCH] fix(correlation): use timezone-aware cache timestamp
+
+---
+ correlation_matrix_section/dependency_intelligence/data_hub.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/correlation_matrix_section/dependency_intelligence/data_hub.py b/correlation_matrix_section/dependency_intelligence/data_hub.py
+index 35fa7bc..67cf140 100644
+--- a/correlation_matrix_section/dependency_intelligence/data_hub.py
++++ b/correlation_matrix_section/dependency_intelligence/data_hub.py
+@@ -192,7 +192,7 @@ def _save_fred_disk_series(series_id: str, series: pd.Series, source: str) -> No
+         meta = {
+             "series_id": series_id,
+             "source": source,
+-            "fetched_at_utc": pd.Timestamp.utcnow().isoformat(),
++            "fetched_at_utc": pd.Timestamp.now(tz="UTC").isoformat(),
+             "last_observation": pd.Timestamp(s.index.max()).isoformat(),
+             "observations": int(s.notna().sum()),
+         }
+-- 
+2.37.1 (Apple Git-137.1)
+
