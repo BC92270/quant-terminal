@@ -59,16 +59,16 @@ def _ensure_workspace_intelligence(company: dict, ticker: str, workspace: str) -
     """Load expensive V2 layers only when the corresponding workspace needs them."""
     inst = company.setdefault("institutional", {})
 
-    if workspace in {"Peers", "What Changed?"} and not isinstance(inst.get("peer_intelligence"), dict):
+    if workspace in {"Peers", "M&A / Valuation", "What Changed?"} and not isinstance(inst.get("peer_intelligence"), dict):
         inst["peer_intelligence"] = load_peer_intelligence(ticker, _raw_peer_symbols(inst))
 
-    if workspace in {"Capital Allocation", "What Changed?"} and not isinstance(inst.get("capital_allocation"), dict):
+    if workspace in {"Capital Allocation", "M&A / Valuation", "What Changed?"} and not isinstance(inst.get("capital_allocation"), dict):
         inst["capital_allocation"] = load_capital_allocation_intelligence(ticker, company)
 
     if workspace == "Management / Transcripts" and not isinstance(inst.get("management_transcripts"), dict):
         inst["management_transcripts"] = load_management_transcript_intelligence(ticker, company, max_quarters=4)
 
-    if workspace == "What Changed?":
+    if workspace in {"M&A / Valuation", "What Changed?"}:
         # Pure synthesis over already-loaded V2 data. V3 Management / Transcripts remains
         # deliberately outside the frozen V2 thesis engine until historical validation.
         inst["what_changed"] = build_what_changed(company)
@@ -88,6 +88,7 @@ def render_company_intelligence_mode(ticker: str, analysis: dict):
             "Ownership & Positioning",
             "Business / Ecosystem",
             "Peers",
+            "M&A / Valuation",
             "Capital Allocation",
             "Governance / Filings",
             "Management / Transcripts",

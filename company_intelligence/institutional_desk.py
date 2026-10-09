@@ -21,6 +21,7 @@ from .controller import (
     render_institutional_layer,
     render_management_transcripts,
 )
+from .mna_workbench import render_mna_workbench
 
 try:  # The governed Research Lab is an optional live-workspace extension.
     from .research.ui import render_research_lab
@@ -28,7 +29,7 @@ except Exception:  # pragma: no cover - absent from the public base package.
     render_research_lab = None
 
 
-DESK_VERSION = "CI DESK · 7.0"
+DESK_VERSION = "CI DESK · 8.0 M&A"
 
 _BASE_WORKSPACES = (
     "Core Financials",
@@ -36,6 +37,7 @@ _BASE_WORKSPACES = (
     "Ownership & Positioning",
     "Business / Ecosystem",
     "Peers",
+    "M&A / Valuation",
     "Capital Allocation",
     "Governance / Filings",
     "Management / Transcripts",
@@ -67,28 +69,33 @@ _WORKSPACE_META = {
         "Peer intelligence",
         "Comparable-company context with explicit coverage and comparability limits.",
     ),
+    "M&A / Valuation": (
+        "06 · Transaction lab",
+        "M&A & valuation workbench",
+        "DES, relative value, financial analysis, governed deal scenarios and sourced intelligence.",
+    ),
     "Capital Allocation": (
-        "06 · Stewardship",
+        "07 · Stewardship",
         "Capital allocation",
         "Cash deployment, dilution, distributions and balance-sheet discipline.",
     ),
     "Governance / Filings": (
-        "07 · Primary evidence",
+        "08 · Primary evidence",
         "Governance & filings",
         "Filings, governance facts and auditable source-linked disclosures.",
     ),
     "Management / Transcripts": (
-        "08 · Management signal",
+        "09 · Management signal",
         "Management & transcripts",
         "Guidance, language shifts, commitments and transcript evidence.",
     ),
     "Research Lab": (
-        "09 · Governed research",
+        "10 · Governed research",
         "Research lab",
         "Falsifiable hypotheses, controlled evidence and research-only closure state.",
     ),
     "What Changed?": (
-        "10 · Delta monitor",
+        "11 · Delta monitor",
         "What changed?",
         "A synthesis of material changes across the loaded institutional evidence.",
     ),
@@ -394,7 +401,7 @@ def _workspace_options() -> list[str]:
 
 
 def render_company_intelligence_mode(ticker: str, analysis: dict) -> None:
-    """Render the V7 institutional desk while preserving every existing engine."""
+    """Render the V8 institutional desk while preserving every existing engine."""
     analysis = analysis if isinstance(analysis, dict) else {}
     ticker = str(ticker or "N/A").upper().strip()
     _inject_desk_css()
@@ -444,6 +451,8 @@ def render_company_intelligence_mode(ticker: str, analysis: dict) -> None:
     try:
         if workspace == "Management / Transcripts":
             render_management_transcripts(company)
+        elif workspace == "M&A / Valuation":
+            render_mna_workbench(ticker, analysis)
         elif workspace == "Research Lab" and callable(render_research_lab):
             render_research_lab(company, ticker)
         else:
