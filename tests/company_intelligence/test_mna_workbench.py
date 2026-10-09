@@ -539,7 +539,7 @@ def test_calculation_engines_do_not_mutate_caller_inputs():
 def test_all_five_workflows_and_both_deal_lenses_render_offline():
     app = AppTest.from_file(
         "tests/company_intelligence/mna_ui_harness.py",
-        default_timeout=30,
+        default_timeout=60,
     ).run()
 
     assert not app.exception

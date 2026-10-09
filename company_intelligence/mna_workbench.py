@@ -1308,7 +1308,8 @@ def _section_heading(code: str, title: str, subtitle: str) -> None:
 def _sync_scenario_defaults(ticker: str, facts: Mapping[str, Any], scenario: str) -> None:
     """Load a scenario profile only when the active profile changes."""
     marker = f"mna_profile_loaded_{ticker}"
-    if st.session_state.get(marker) == scenario:
+    profile_signature = f"{MNA_VERSION} · {scenario}"
+    if st.session_state.get(marker) == profile_signature:
         return
     profile = SCENARIO_PROFILES.get(scenario, SCENARIO_PROFILES["Base"])
     revenue = max(0.0, _finite(facts.get("revenue")) or 0.0)
@@ -1336,7 +1337,7 @@ def _sync_scenario_defaults(ticker: str, facts: Mapping[str, Any], scenario: str
     }
     for key, value in values.items():
         st.session_state[key] = value
-    st.session_state[marker] = scenario
+    st.session_state[marker] = profile_signature
 
 
 def _render_context_editor(facts: Mapping[str, Any], ticker: str, scenario: str, density: str) -> dict[str, Any]:
