@@ -502,6 +502,82 @@ def _section_fragment(func):
 
 
 @_section_fragment
+def _render_matrix_tab(bundle, ticker: str, selected_days: int, estimator: str, cfg: CorrelationConfig):
+    """Render the matrix workbench in its own rerun boundary.
+
+    Matrix-mode and ordering changes are presentation-only. Keeping those
+    widgets in a focused fragment avoids rebuilding the nine sibling tabs or
+    re-entering the analysis orchestration on every click.
+    """
+    c1, _ = st.columns([1, 2])
+    with c1:
+        matrix_mode = st.radio(
+            "Matrix",
+            ["Selected estimator", "Champion forecast", "Raw Pearson", "Ledoit-Wolf", "Tyler robust", "Partial", "RMT-cleaned full", "Distance correlation"],
+            index=0,
+            key=f"corrv31_matrixmode_{ticker}",
+        )
+        reorder = st.checkbox("Hierarchical ordering", value=True, key=f"corrv31_clusterorder_{ticker}")
+    matrix = {
+        "Raw Pearson": bundle.corr_raw,
+        "Ledoit-Wolf": bundle.corr_shrunk,
+        "Tyler robust": bundle.corr_tyler,
+        "Partial": bundle.corr_partial,
+        "RMT-cleaned full": bundle.corr_rmt_cleaned_full,
+        "Distance correlation": bundle.corr_distance,
+        "Champion forecast": bundle.corr_forecast,
+    }.get(matrix_mode)
+    if matrix_mode == "Selected estimator":
+        cached_selected = {
+            "Pearson": bundle.corr_raw,
+            "Ledoit-Wolf": bundle.corr_shrunk,
+            "Partial": bundle.corr_partial,
+            "Tyler robust": bundle.corr_tyler,
+            "Distance correlation": bundle.corr_distance,
+        }
+        matrix = cached_selected.get(estimator)
+        if matrix is None:
+            from .estimators import correlation_matrix
+            matrix = correlation_matrix(
+                bundle.changes,
+                int(selected_days),
+                estimator,
+                cfg.min_matrix_obs if estimator in {"Ledoit-Wolf", "OAS", "Partial"} else cfg.min_pair_obs,
+            )
+    order = bundle.cluster_order if reorder else None
+    matrix_title = estimator if matrix_mode == "Selected estimator" else matrix_mode
+    _heatmap(matrix, f"{matrix_title} — {selected_days}D", order)
+    if matrix_mode == "Tyler robust" or (matrix_mode == "Selected estimator" and estimator == "Tyler robust"):
+        tm = bundle.tyler_meta
+        st.caption(
+            f"Regularized Tyler · convergence={tm.get('converged')} · iterations={tm.get('iterations','N/A')} · "
+            f"shrinkage={fmt_num(tm.get('shrinkage'))} · min eigenvalue={fmt_num(tm.get('min_eigenvalue'))}. "
+            "Estimateur elliptique robuste aux observations radiales extrêmes."
+        )
+    if matrix_mode == "Distance correlation" or (matrix_mode == "Selected estimator" and estimator == "Distance correlation"):
+        st.warning("Distance correlation mesure une dépendance non linéaire non signée. Cette matrice n'est ni une covariance ni une entrée autorisée pour l'optimisation ou le hedge.")
+    if matrix_mode == "Partial" or (matrix_mode == "Selected estimator" and estimator == "Partial"):
+        pm = bundle.partial_meta
+        fallback = pm.get("fallback") or "None"
+        message = (
+            f"Temporal Graphical Lasso · α={fmt_num(pm.get('alpha'))} · folds={pm.get('fold_count',0)} · "
+            f"no-future-leakage={pm.get('no_future_leakage')} · converged={pm.get('converged')} · "
+            f"fallback={fallback} · captured warnings={pm.get('warning_count',0)}. "
+            "Matrice d'associations conditionnelles: aucune projection PSD et aucune autorité covariance/portefeuille."
+        )
+        if pm.get("fallback_used") or not pm.get("converged"):
+            st.warning(message)
+        else:
+            st.caption(message)
+    if not bundle.term_structure.empty:
+        st.subheader("Correlation change monitor")
+        show = bundle.term_structure.copy().head(15)
+        for c in ["Corr 30D", "Corr 90D", "Corr 180D", "Corr 1Y", "ΔCorr 30D-1Y"]:
+            if c in show:
+                show[c] = show[c].map(fmt_corr)
+        st.dataframe(show, use_container_width=True, hide_index=True, height=table_height(show, max_height=600))
+
+
 def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, analysis: dict | None = None):
     ticker = str(ticker or "").upper().strip()
     analysis = analysis or {}
@@ -635,68 +711,7 @@ def render_correlation_intelligence_v3(ticker: str, price_data: pd.DataFrame, an
         _term_structure_chart(bundle.term_structure, ticker)
 
     with tabs[1]:
-        c1, _ = st.columns([1, 2])
-        with c1:
-            matrix_mode = st.radio(
-                "Matrix",
-                ["Selected estimator", "Champion forecast", "Raw Pearson", "Ledoit-Wolf", "Tyler robust", "Partial", "RMT-cleaned full", "Distance correlation"],
-                index=0,
-                key=f"corrv31_matrixmode_{ticker}",
-            )
-            reorder = st.checkbox("Hierarchical ordering", value=True, key=f"corrv31_clusterorder_{ticker}")
-        matrix = {
-            "Raw Pearson": bundle.corr_raw,
-            "Ledoit-Wolf": bundle.corr_shrunk,
-            "Tyler robust": bundle.corr_tyler,
-            "Partial": bundle.corr_partial,
-            "RMT-cleaned full": bundle.corr_rmt_cleaned_full,
-            "Distance correlation": bundle.corr_distance,
-            "Champion forecast": bundle.corr_forecast,
-        }.get(matrix_mode)
-        if matrix_mode == "Selected estimator":
-            cached_selected = {
-                "Pearson": bundle.corr_raw,
-                "Ledoit-Wolf": bundle.corr_shrunk,
-                "Partial": bundle.corr_partial,
-                "Tyler robust": bundle.corr_tyler,
-                "Distance correlation": bundle.corr_distance,
-            }
-            matrix = cached_selected.get(estimator)
-            if matrix is None:
-                from .estimators import correlation_matrix
-                matrix = correlation_matrix(bundle.changes, int(selected_days), estimator, cfg.min_matrix_obs if estimator in {"Ledoit-Wolf", "OAS", "Partial"} else cfg.min_pair_obs)
-        order = bundle.cluster_order if reorder else None
-        matrix_title = estimator if matrix_mode == "Selected estimator" else matrix_mode
-        _heatmap(matrix, f"{matrix_title} — {selected_days}D", order)
-        if matrix_mode == "Tyler robust" or (matrix_mode == "Selected estimator" and estimator == "Tyler robust"):
-            tm = bundle.tyler_meta
-            st.caption(
-                f"Regularized Tyler · convergence={tm.get('converged')} · iterations={tm.get('iterations','N/A')} · "
-                f"shrinkage={fmt_num(tm.get('shrinkage'))} · min eigenvalue={fmt_num(tm.get('min_eigenvalue'))}. "
-                "Estimateur elliptique robuste aux observations radiales extrêmes."
-            )
-        if matrix_mode == "Distance correlation" or (matrix_mode == "Selected estimator" and estimator == "Distance correlation"):
-            st.warning("Distance correlation mesure une dépendance non linéaire non signée. Cette matrice n'est ni une covariance ni une entrée autorisée pour l'optimisation ou le hedge.")
-        if matrix_mode == "Partial" or (matrix_mode == "Selected estimator" and estimator == "Partial"):
-            pm = bundle.partial_meta
-            fallback = pm.get("fallback") or "None"
-            message = (
-                f"Temporal Graphical Lasso · α={fmt_num(pm.get('alpha'))} · folds={pm.get('fold_count',0)} · "
-                f"no-future-leakage={pm.get('no_future_leakage')} · converged={pm.get('converged')} · "
-                f"fallback={fallback} · captured warnings={pm.get('warning_count',0)}. "
-                "Matrice d'associations conditionnelles: aucune projection PSD et aucune autorité covariance/portefeuille."
-            )
-            if pm.get("fallback_used") or not pm.get("converged"):
-                st.warning(message)
-            else:
-                st.caption(message)
-        if not bundle.term_structure.empty:
-            st.subheader("Correlation change monitor")
-            show = bundle.term_structure.copy().head(15)
-            for c in ["Corr 30D", "Corr 90D", "Corr 180D", "Corr 1Y", "ΔCorr 30D-1Y"]:
-                if c in show:
-                    show[c] = show[c].map(fmt_corr)
-            st.dataframe(show, use_container_width=True, hide_index=True, height=table_height(show, max_height=600))
+        _render_matrix_tab(bundle, ticker, int(selected_days), estimator, cfg)
 
     with tabs[2]:
         st.subheader("Dynamic correlation")
