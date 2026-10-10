@@ -34,6 +34,11 @@ from .structure import cluster_stability_bootstrap, hierarchical_order, mst_edge
 from .tail import adaptive_tail_metrics
 from .tail_surface import tail_surface_table
 from .utils import clamp, risk_label, safe_float
+from .validation_monitor import (
+    correlation_drift_report,
+    independent_validation_status,
+    rolling_correlation_calibration,
+)
 
 
 def governed_universe(
@@ -135,6 +140,13 @@ class AnalysisBundle:
 
     forward_corr_meta: dict = field(default_factory=dict)
     forward_corr_history: pd.DataFrame = field(default_factory=pd.DataFrame)
+    data_contract: dict = field(default_factory=dict)
+    cache_meta: dict = field(default_factory=dict)
+    drift_table: pd.DataFrame = field(default_factory=pd.DataFrame)
+    drift_meta: dict = field(default_factory=dict)
+    calibration_table: pd.DataFrame = field(default_factory=pd.DataFrame)
+    calibration_meta: dict = field(default_factory=dict)
+    independent_validation_meta: dict = field(default_factory=dict)
     summary: dict = field(default_factory=dict)
 
 
@@ -165,6 +177,8 @@ class CorrelationEngine:
             changes=ch,
             quality=db.quality,
             synchronization=db.synchronization,
+            data_contract=db.data_contract,
+            cache_meta=db.cache_meta,
         )
         if ch.empty or primary not in ch.columns:
             b.summary = {"status": "unavailable", "message": "Données insuffisantes."}
@@ -457,6 +471,10 @@ class CorrelationEngine:
             default_realized_days=self.config.forward_realized_days,
         )
 
+        b.drift_table, b.drift_meta = correlation_drift_report(ch)
+        b.calibration_table, b.calibration_meta = rolling_correlation_calibration(ch)
+        b.independent_validation_meta = independent_validation_status(analysis)
+
         b.summary = self._summary(b)
         return b
 
@@ -596,6 +614,13 @@ class CorrelationEngine:
             "forward_implied_corr": forward_imp,
             "forward_realized_corr": forward_realized,
             "forward_corr_premium": forward_premium,
+            "drift_score": safe_float(b.drift_meta.get("severity_score")) if b.drift_meta else None,
+            "drift_severity": b.drift_meta.get("severity") if b.drift_meta else None,
+            "calibration_rmse": safe_float(b.calibration_meta.get("recent_pair_rmse")) if b.calibration_meta else None,
+            "calibration_breach": bool(b.calibration_meta.get("recent_breach")) if b.calibration_meta else False,
+            "data_authority": b.data_contract.get("authority", "RESEARCH_SNAPSHOT") if b.data_contract else "RESEARCH_SNAPSHOT",
+            "persistent_data_cache_hit": bool(b.cache_meta.get("hit")) if b.cache_meta else False,
+            "independent_validation": bool(b.independent_validation_meta.get("independently_validated")) if b.independent_validation_meta else False,
             "portfolio_annualized_vol": safe_float(b.portfolio_meta.get("annualized_vol")) if b.portfolio_meta else None,
             "portfolio_cvar95": safe_float(b.portfolio_meta.get("CVaR95 daily")) if b.portfolio_meta else None,
             "portfolio_diversification_ratio": safe_float(b.portfolio_meta.get("diversification_ratio")) if b.portfolio_meta else None,

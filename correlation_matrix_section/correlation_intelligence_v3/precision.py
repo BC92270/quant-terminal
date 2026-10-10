@@ -178,6 +178,106 @@ def _fallback_estimate(arr: np.ndarray) -> tuple[np.ndarray, np.ndarray, str, li
     return covariance, precision, method, events
 
 
+def fixed_graphical_lasso(
+    values: np.ndarray,
+    alpha: float,
+    *,
+    max_iter: int = 150,
+    tol: float = 1e-4,
+) -> PrecisionEstimate:
+    """Fit one pre-selected Graphical Lasso candidate with fail-closed gates.
+
+    This primitive is used when a hyperparameter was selected at an earlier
+    chronological forecast origin and is deliberately locked for subsequent
+    outer folds. The caller remains responsible for documenting that origin.
+    """
+
+    raw = np.asarray(values, dtype=float)
+    if raw.ndim != 2:
+        raise ValueError("values must be a two-dimensional array")
+    finite_rows = np.isfinite(raw).all(axis=1)
+    arr = raw[finite_rows]
+    selected_alpha = float(alpha)
+    warning_events: list[dict] = []
+    failure_reason: str | None = None
+    model: GraphicalLasso | None = None
+    scale: np.ndarray | None = None
+    if (
+        len(arr) < max(8, raw.shape[1] + 3)
+        or raw.shape[1] < 2
+        or not np.isfinite(selected_alpha)
+        or selected_alpha <= 0.0
+    ):
+        failure_reason = "invalid_fixed_fit_inputs"
+    elif np.any(np.std(arr, axis=0, ddof=1) <= 1e-12):
+        failure_reason = "degenerate_feature_scale"
+    else:
+        try:
+            model, _mean, scale, caught = _fit_standardized(
+                arr, selected_alpha, max_iter=max_iter, tol=tol
+            )
+            warning_events.extend(
+                _warning_rows(caught, stage="fixed_final", alpha=selected_alpha, fold=None)
+            )
+            if any(issubclass(item.category, ConvergenceWarning) for item in caught):
+                failure_reason = "fixed_fit_convergence_warning"
+            elif not (
+                np.isfinite(model.covariance_).all()
+                and np.isfinite(model.precision_).all()
+            ):
+                failure_reason = "non_finite_fixed_fit"
+        except Exception as exc:
+            warning_events.append(
+                {
+                    "stage": "fixed_final",
+                    "alpha": selected_alpha,
+                    "fold": None,
+                    "category": type(exc).__name__,
+                    "message": str(exc)[:500],
+                }
+            )
+            failure_reason = "fixed_fit_failed"
+
+    fallback_method: str | None = None
+    if failure_reason is not None or model is None or scale is None:
+        covariance, precision, fallback_method, fallback_events = _fallback_estimate(arr)
+        warning_events.extend(fallback_events)
+        status, converged = "fallback", False
+    else:
+        covariance = _as_spd(model.covariance_ * np.outer(scale, scale))
+        inv_scale = 1.0 / scale
+        precision = _as_spd(model.precision_ * np.outer(inv_scale, inv_scale))
+        status, converged = "ok", True
+
+    return PrecisionEstimate(
+        covariance,
+        precision,
+        {
+            "status": status,
+            "method": "Fixed-alpha Graphical Lasso",
+            "cv_scheme": "alpha locked by an earlier chronological outer origin",
+            "alpha": selected_alpha,
+            "graphical_alpha": selected_alpha,
+            "alpha_grid": [selected_alpha],
+            "alpha_scores": [],
+            "folds": [],
+            "fold_count": 0,
+            "converged": converged,
+            "fallback": fallback_method,
+            "fallback_used": fallback_method is not None,
+            "fallback_reason": failure_reason,
+            "warnings": warning_events,
+            "warning_count": int(len(warning_events)),
+            "observations": int(len(arr)),
+            "features": int(raw.shape[1]),
+            "dropped_non_finite_rows": int(len(raw) - len(arr)),
+            "max_iter": int(max_iter),
+            "tolerance": float(tol),
+            "alpha_selection_scope": "external chronological lock",
+        },
+    )
+
+
 def temporal_graphical_lasso(
     values: np.ndarray,
     *,

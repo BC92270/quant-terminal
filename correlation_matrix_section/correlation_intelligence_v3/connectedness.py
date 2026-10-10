@@ -684,32 +684,36 @@ def partial_network_stability(
     rng=np.random.default_rng(seed)
     n=len(x); b=max(2,min(int(block),max(2,n//10)))
     starts=np.arange(0,max(1,n-b+1))
-    counts={(cols[i],cols[j]):0 for i in range(len(cols)) for j in range(i+1,len(cols))}
-    values={k:[] for k in counts}
+    pair_left,pair_right=np.triu_indices(len(cols),1)
+    pair_count=len(pair_left)
+    requested=max(0,int(bootstrap_samples))
+    values=np.full((requested,pair_count),np.nan,dtype=float)
+    counts=np.zeros(pair_count,dtype=int)
+    arr=x.to_numpy(dtype=float)
+    blocks=int(np.ceil(n/b))
+    offsets=np.arange(b,dtype=int)
     valid=0
-    for _ in range(int(bootstrap_samples)):
-        pieces=[]
-        while sum(len(p) for p in pieces)<n:
-            s=int(rng.choice(starts)); pieces.append(x.iloc[s:s+b])
-        boot=pd.concat(pieces,axis=0).iloc[:n].copy(); boot.index=pd.RangeIndex(n)
-        arr=boot.to_numpy(dtype=float)
-        cov=np.cov(arr,rowvar=False,ddof=1)
+    for sample in range(requested):
+        sampled_starts=rng.choice(starts,size=blocks,replace=True)
+        indices=(sampled_starts[:,None]+offsets[None,:]).reshape(-1)[:n]
+        boot=arr[indices]
+        cov=np.cov(boot,rowvar=False,ddof=1)
         ridge=max(1e-10,float(np.trace(cov))/max(len(cols),1)*1e-3)
         precision=np.linalg.pinv(cov + ridge*np.eye(len(cols)))
         d=np.sqrt(np.clip(np.diag(precision),1e-18,None))
         parc=-precision/np.outer(d,d); np.fill_diagonal(parc,1.0)
-        pc=pd.DataFrame(parc,index=cols,columns=cols)
+        pair_values=parc[pair_left,pair_right]
+        finite=np.isfinite(pair_values)
+        values[sample,finite]=pair_values[finite]
+        counts[finite]+=np.abs(pair_values[finite])>=threshold
         valid+=1
-        for key in counts:
-            a,bb=key; v=safe_float(pc.loc[a,bb])
-            if v is not None:
-                values[key].append(v)
-                if abs(v)>=threshold: counts[key]+=1
     rows=[]
-    for (a,bb),count in counts.items():
-        vals=np.asarray(values[(a,bb)],dtype=float)
+    for pair_position,(left,right) in enumerate(zip(pair_left,pair_right)):
+        a,bb=cols[int(left)],cols[int(right)]
+        vals=values[:,pair_position]
+        vals=vals[np.isfinite(vals)]
         if len(vals)==0: continue
-        freq=count/max(valid,1)
+        freq=float(counts[pair_position]/max(valid,1))
         # Two-sided bootstrap sign probability; then BH controls edge-wise multiplicity approximately.
         p_sign=float(min(1.0,2*min((np.sum(vals<=0)+1)/(len(vals)+1),(np.sum(vals>=0)+1)/(len(vals)+1))))
         rows.append({"From":a,"To":bb,"Selection frequency":freq,"Median partial corr":float(np.median(vals)),"CI low":float(np.quantile(vals,.025)),"CI high":float(np.quantile(vals,.975)),"Sign p-value":p_sign})

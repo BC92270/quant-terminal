@@ -54,18 +54,27 @@ def _moving_block_corr_ci(
     arr = x.to_numpy(dtype=float)
     rng = np.random.default_rng(seed)
     width = max(2, min(int(block), n))
-    values: list[float] = []
-    for _ in range(int(samples)):
-        starts = rng.integers(0, n, size=int(np.ceil(n / width)))
-        ix = np.concatenate([(s + np.arange(width)) % n for s in starts])[:n]
-        corr = np.corrcoef(arr[ix, 0], arr[ix, 1])[0, 1]
-        if np.isfinite(corr):
-            values.append(float(corr))
+    requested = int(samples)
+    block_count = int(np.ceil(n / width))
+    starts = rng.integers(0, n, size=(requested, block_count))
+    offsets = np.arange(width, dtype=int)
+    indices = ((starts[:, :, None] + offsets[None, None, :]) % n).reshape(requested, -1)[:, :n]
+    left = arr[indices, 0]
+    right = arr[indices, 1]
+    left_centered = left - left.mean(axis=1, keepdims=True)
+    right_centered = right - right.mean(axis=1, keepdims=True)
+    numerator = np.sum(left_centered * right_centered, axis=1)
+    denominator = np.sqrt(
+        np.sum(left_centered * left_centered, axis=1)
+        * np.sum(right_centered * right_centered, axis=1)
+    )
+    values = numerator / np.where(denominator > 1e-18, denominator, np.nan)
+    values = values[np.isfinite(values)]
     if len(values) < max(30, samples // 3):
-        return None, None, len(values)
+        return None, None, int(len(values))
     alpha = (1.0 - float(level)) / 2.0
     lo, hi = np.quantile(values, [alpha, 1.0 - alpha])
-    return float(lo), float(hi), len(values)
+    return float(lo), float(hi), int(len(values))
 
 
 def _quality(n: int, reliable_obs: int) -> str:

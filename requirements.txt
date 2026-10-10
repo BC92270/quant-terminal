@@ -6,6 +6,11 @@ cryptography>=41,<47
 # routers. ThetaData's direct v3 client is vendor-limited to Python 3.12+.
 databento>=0.82,<0.83
 thetadata>=1.0.9,<1.1; python_version >= "3.12"
+# Correlation Intelligence V5 persistent research cache. Redis is activated
+# only when CORRELATION_REDIS_URL is configured; DuckDB/Arrow remain local.
+duckdb>=1.1,<2
+pyarrow>=16,<27
+redis>=5,<7
 numpy
 pandas
 plotly

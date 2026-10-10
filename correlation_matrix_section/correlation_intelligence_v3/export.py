@@ -87,6 +87,8 @@ def research_pack_zip(bundle, config, metadata: dict | None = None) -> bytes:
             "allocation_current_weights.csv": getattr(bundle, "allocation_weights", pd.DataFrame()),
             "allocation_fold_ledger.csv": getattr(bundle, "allocation_meta", {}).get("fold_results", pd.DataFrame()),
             "synchronization_audit.csv": getattr(bundle, "synchronization", pd.DataFrame()),
+            "correlation_drift_links.csv": getattr(bundle, "drift_table", pd.DataFrame()),
+            "rolling_correlation_calibration.csv": getattr(bundle, "calibration_table", pd.DataFrame()),
             "forward_correlation_history.csv": getattr(bundle, "forward_corr_history", pd.DataFrame()),
             "corr_raw.csv": bundle.corr_raw,
             "corr_shrunk.csv": bundle.corr_shrunk,
@@ -149,6 +151,13 @@ def research_pack_zip(bundle, config, metadata: dict | None = None) -> bytes:
     meta["portfolio_meta"] = _json_safe_meta(getattr(bundle, "portfolio_meta", {}))
     meta["allocation_meta"] = _json_safe_meta(getattr(bundle, "allocation_meta", {}))
     meta["forward_corr_meta"] = _json_safe_meta(getattr(bundle, "forward_corr_meta", {}))
+    meta["data_contract"] = _json_safe_meta(getattr(bundle, "data_contract", {}))
+    meta["cache_meta"] = _json_safe_meta(getattr(bundle, "cache_meta", {}))
+    meta["drift_meta"] = _json_safe_meta(getattr(bundle, "drift_meta", {}))
+    meta["calibration_meta"] = _json_safe_meta(getattr(bundle, "calibration_meta", {}))
+    meta["independent_validation_meta"] = _json_safe_meta(
+        getattr(bundle, "independent_validation_meta", {})
+    )
 
     buf = BytesIO()
     with ZipFile(buf, "w", ZIP_DEFLATED, compresslevel=9) as z:
