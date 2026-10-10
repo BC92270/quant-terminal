@@ -5,6 +5,20 @@ import numpy as np
 import pandas as pd
 
 
+def _datetime_index_nanoseconds(index: pd.Index) -> np.ndarray:
+    """Return a timezone-normalised int64 nanosecond clock across pandas versions.
+
+    Pandas 3 can preserve microsecond-resolution datetime dtypes, so ``asi8`` no
+    longer guarantees that one integer unit is one nanosecond. HY lag offsets
+    are specified in clock seconds and therefore require an explicit unit.
+    """
+
+    timestamps = pd.DatetimeIndex(index)
+    if timestamps.tz is not None:
+        timestamps = timestamps.tz_convert("UTC").tz_localize(None)
+    return timestamps.to_numpy(dtype="datetime64[ns]").astype(np.int64, copy=False)
+
+
 def apply_alignment_lags(changes: pd.DataFrame, lag_map: dict[str, int] | None = None) -> pd.DataFrame:
     """Apply explicit session-alignment lags after return transformation.
 
@@ -62,8 +76,8 @@ def hayashi_yoshida_covariance(a: pd.Series, b: pd.Series) -> float | None:
     # overlaps it. Prefix sums replace the Python two-pointer accumulation and
     # make the max-stat bootstrap practical on intraday panels without changing
     # the Hayashi-Yoshida estimator or its number of resamples.
-    ai = pd.DatetimeIndex(a.index).asi8
-    bi = pd.DatetimeIndex(b.index).asi8
+    ai = _datetime_index_nanoseconds(a.index)
+    bi = _datetime_index_nanoseconds(b.index)
     av = a.to_numpy(dtype=float)
     bv = b.to_numpy(dtype=float)
     a_starts, a_ends, a_values = ai[:-1], ai[1:], av[1:]
@@ -177,8 +191,8 @@ def hayashi_yoshida_lead_lag(
     if len(left) < 30 or len(right) < 30:
         return pd.DataFrame(), {"status": "insufficient_data", "authority": "RESEARCH_ONLY"}
 
-    left_times = pd.DatetimeIndex(left.index).asi8
-    right_times = pd.DatetimeIndex(right.index).asi8
+    left_times = _datetime_index_nanoseconds(left.index)
+    right_times = _datetime_index_nanoseconds(right.index)
     left_valid = left_times[1:] > left_times[:-1]
     right_valid = right_times[1:] > right_times[:-1]
     left_starts = left_times[:-1][left_valid]
