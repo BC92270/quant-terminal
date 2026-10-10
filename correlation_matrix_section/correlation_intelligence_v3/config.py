@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class CorrelationConfig:
-    """Central configuration for Correlation Intelligence V4.1 institutional hardening."""
+    """Central configuration for Correlation Intelligence V5.0."""
 
     selected_days_default: int = 90
     available_windows: tuple[int, ...] = (20, 30, 60, 90, 180, 252)
@@ -117,7 +117,7 @@ class CorrelationConfig:
     pair_bootstrap_block: int = 5
     ui_card_count: int = 6
     metadata: dict[str, str] = field(default_factory=lambda: {
-        "engine_version": "4.1.0",
+        "engine_version": "5.0.0",
         "authority": "RESEARCH_ONLY",
         "release_doctrine": "fail-closed numerical and provenance gates",
     })

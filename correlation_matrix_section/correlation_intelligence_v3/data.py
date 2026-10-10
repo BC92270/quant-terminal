@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
 import re
 from typing import Any
 
@@ -9,6 +10,8 @@ import pandas as pd
 
 from .utils import max_consecutive_missing, normalize_ticker, unique_keep_order
 from .synchronization import apply_alignment_lags, synchronization_audit
+from .institutional_cache import get_correlation_cache
+from .market_data_adapters import download_stooq_daily, validate_point_in_time_contract
 
 try:
     import yfinance as yf
@@ -27,6 +30,8 @@ class DataBundle:
     synchronization: pd.DataFrame = field(default_factory=pd.DataFrame)
     alignment_lag_map: dict[str, int] = field(default_factory=dict)
     market_metadata: dict[str, Any] = field(default_factory=dict)
+    data_contract: dict[str, Any] = field(default_factory=dict)
+    cache_meta: dict[str, Any] = field(default_factory=dict)
 
 
 def default_peer_universe(ticker: str) -> list[str]:
@@ -379,6 +384,12 @@ def load_data_bundle(
     source = "unknown"
     levels = pd.DataFrame()
     provider_map: dict[str, str] = {}
+    data_contract: dict[str, Any] = {
+        "status": "unverified",
+        "authoritative": False,
+        "authority": "RESEARCH_SNAPSHOT",
+    }
+    cache_meta: dict[str, Any] = {"status": "not_used", "hit": False}
 
     supplied = analysis.get("correlation_prices")
     if isinstance(supplied, pd.DataFrame) and not supplied.empty:
@@ -391,6 +402,13 @@ def load_data_bundle(
         levels = _clean_index(levels)
         source = str(analysis.get("correlation_data_source", "Quant Terminal Data Layer"))
         provider_map = {c: source for c in levels.columns}
+        data_contract = validate_point_in_time_contract(
+            levels,
+            analysis.get("correlation_point_in_time_contract")
+            if isinstance(analysis.get("correlation_point_in_time_contract"), dict)
+            else None,
+        )
+        data_contract["authority"] = "POINT_IN_TIME_DECLARED" if data_contract.get("authoritative") else "RESEARCH_SNAPSHOT"
     else:
         loader = analysis.get("correlation_data_loader")
         if callable(loader):
@@ -406,13 +424,84 @@ def load_data_bundle(
                     levels = _clean_index(levels)
                     source = str(analysis.get("correlation_data_source", "Quant Terminal Data Layer"))
                     provider_map = {c: source for c in levels.columns}
+                    data_contract = validate_point_in_time_contract(
+                        levels,
+                        analysis.get("correlation_point_in_time_contract")
+                        if isinstance(analysis.get("correlation_point_in_time_contract"), dict)
+                        else None,
+                    )
+                    data_contract["authority"] = "POINT_IN_TIME_DECLARED" if data_contract.get("authoritative") else "RESEARCH_SNAPSHOT"
             except Exception:
                 levels = pd.DataFrame()
 
     if levels.empty:
-        levels = download_levels_yfinance(tickers, period)
-        source = "yfinance fallback"
-        provider_map = {c: "yfinance fallback" for c in levels.columns}
+        cache = get_correlation_cache()
+        cache_key = json.dumps(
+            {
+                "tickers": tickers,
+                "period": str(period),
+                "as_of_date": pd.Timestamp.now(tz="UTC").date().isoformat(),
+                "interval": "1d",
+                "schema": "free-daily-v1",
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        cached_frame = cache.get_frame("market_data_daily", cache_key)
+        cached_meta = cache.get_object("market_data_daily_meta", cache_key)
+        if cached_frame.hit and isinstance(cached_frame.value, pd.DataFrame):
+            levels = _clean_index(cached_frame.value)
+            meta_value = cached_meta.value if cached_meta.hit and isinstance(cached_meta.value, dict) else {}
+            provider_map = {
+                normalize_ticker(k): str(v)
+                for k, v in (meta_value.get("provider_map", {}) if isinstance(meta_value, dict) else {}).items()
+            }
+            source = str(meta_value.get("source", "Cached free research snapshot"))
+            cache_meta = {
+                "status": "hit",
+                "hit": True,
+                "backend": cached_frame.backend,
+                "age_seconds": cached_frame.age_seconds,
+            }
+        else:
+            levels = download_levels_yfinance(tickers, period)
+            provider_map = {c: "yfinance compatibility fallback" for c in levels.columns}
+            missing = [t for t in tickers if t not in levels.columns or int(levels[t].notna().sum()) < 20]
+            if missing:
+                stooq_levels, stooq_providers = download_stooq_daily(missing, period)
+                if not stooq_levels.empty:
+                    for column in stooq_levels.columns:
+                        if column not in levels.columns or int(levels[column].notna().sum()) < 20:
+                            levels[column] = stooq_levels[column]
+                            provider_map[column] = stooq_providers.get(column, "Stooq public CSV fallback")
+                    levels = _clean_index(levels)
+            providers = set(provider_map.values())
+            source = " + ".join(sorted(providers)) if providers else "free research snapshot unavailable"
+            stored_frame = cache.put_frame(
+                "market_data_daily",
+                cache_key,
+                levels,
+                metadata={"authority": "FREE_RESEARCH_NOT_POINT_IN_TIME"},
+            )
+            cache.put_object(
+                "market_data_daily_meta",
+                cache_key,
+                {"provider_map": provider_map, "source": source},
+                metadata={"authority": "FREE_RESEARCH_NOT_POINT_IN_TIME"},
+            )
+            cache_meta = {
+                "status": "stored" if stored_frame else "bypassed",
+                "hit": False,
+                "backend": cache.status().get("catalog_backend"),
+                "age_seconds": 0.0,
+            }
+        data_contract = {
+            "status": "research_only",
+            "authoritative": False,
+            "authority": "FREE_RESEARCH_NOT_POINT_IN_TIME",
+            "revision_policy": "provider current-history snapshot; vintage reconstruction unavailable",
+            "license_scope": "research compatibility fallback; verify provider terms before redistribution",
+        }
 
     primary_s = primary_levels_from_app(price_data, primary) if isinstance(price_data, pd.DataFrame) else None
     if primary_s is not None and not primary_s.empty:
@@ -422,8 +511,8 @@ def load_data_bundle(
             provider_map[primary] = f"App primary + {fallback_provider} backfill"
         else:
             provider_map[primary] = "App primary"
-        if source == "yfinance fallback":
-            source = "App primary + yfinance peers/backfill"
+        if "yfinance" in source.lower() or "stooq" in source.lower() or "free research" in source.lower():
+            source = f"App primary + {source} peers/backfill"
         elif source not in {"unknown", "App primary"}:
             source = f"App primary + {source}"
 
@@ -467,4 +556,6 @@ def load_data_bundle(
         synchronization=sync,
         alignment_lag_map=alignment_lags,
         market_metadata=normalized_meta,
+        data_contract=data_contract,
+        cache_meta=cache_meta,
     )

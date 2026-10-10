@@ -1,8 +1,8 @@
-"""Quant Terminal Correlation Matrix Section V4.1.0.
+"""Quant Terminal Correlation Matrix Section V5.0.0.
 
-V4.1.0 hardens provenance and time-series inference and adds robust/nonlinear dependence,
-cluster-consensus and allocation challenger tools alongside the multi-force dependency
-attribution layer while keeping legacy public render entry points compatible.
+V5.0.0 adds a lazy institutional cockpit, persistent governed caching, robust
+GARCH-DCC and dynamic copula diagnostics, asynchronous intraday estimators and
+strict-prior validation surveillance while keeping legacy render entry points compatible.
 """
 
-__version__ = "4.1.0"
+__version__ = "5.0.0"

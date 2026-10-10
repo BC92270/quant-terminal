@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from sklearn.covariance import LedoitWolf, OAS
 
-from .precision import temporal_graphical_lasso
+from .precision import fixed_graphical_lasso, temporal_graphical_lasso
 from .utils import nearest_psd, safe_float
 
 try:  # Optional adapter only; V3.1 does not require this package.
@@ -107,7 +107,11 @@ def poet_covariance(x: pd.DataFrame, n_factors: int | None = None, threshold_sca
     return out, {"status": "ok", "factors": k, "residual_sparsity": sparsity, "method": "POET-style PCA + residual threshold"}
 
 
-def factor_graphical_covariance(x: pd.DataFrame, n_factors: int | None = None) -> tuple[pd.DataFrame, dict]:
+def factor_graphical_covariance(
+    x: pd.DataFrame,
+    n_factors: int | None = None,
+    graphical_alpha: float | None = None,
+) -> tuple[pd.DataFrame, dict]:
     """Low-rank factor component + temporally selected sparse residual precision."""
     if x is None or x.empty or x.shape[1] < 2:
         return pd.DataFrame(), {"status": "unavailable"}
@@ -143,22 +147,32 @@ def factor_graphical_covariance(x: pd.DataFrame, n_factors: int | None = None) -
         test_residual = test_centered - (test_centered @ fold_load) @ fold_load.T
         return train_residual, test_residual
 
-    sparse_fit = temporal_graphical_lasso(
-        arr,
-        # The outer covariance walk-forward already re-estimates this model on
-        # every forecast origin.  A compact, log-spaced inner grid keeps that
-        # nested validation leakage-safe without multiplying near-duplicate
-        # Graphical Lasso fits.  The standalone Partial estimator deliberately
-        # retains the denser eight-point/four-fold search.
-        alpha_grid=(0.01, 0.04, 0.16, 0.64),
-        n_splits=3,
-        # Non-converged inner candidates are ineligible by construction, so a
-        # bounded iteration budget rejects them promptly instead of spending the
-        # outer walk-forward budget repeatedly on the same pathological alpha.
-        max_iter=150,
-        temporal_preprocessor=residualise_train_only,
-        preprocessor_name="train-only PCA residualisation",
-    )
+    if graphical_alpha is None:
+        sparse_fit = temporal_graphical_lasso(
+            arr,
+            # The outer covariance walk-forward already re-estimates this model on
+            # every forecast origin.  A compact, log-spaced inner grid keeps that
+            # nested validation leakage-safe without multiplying near-duplicate
+            # Graphical Lasso fits.  The standalone Partial estimator deliberately
+            # retains the denser eight-point/four-fold search.
+            alpha_grid=(0.01, 0.04, 0.16, 0.64),
+            n_splits=3,
+            # Non-converged inner candidates are ineligible by construction, so a
+            # bounded iteration budget rejects them promptly instead of spending the
+            # outer walk-forward budget repeatedly on the same pathological alpha.
+            max_iter=150,
+            temporal_preprocessor=residualise_train_only,
+            preprocessor_name="train-only PCA residualisation",
+        )
+        alpha_policy = "selected by train-only temporal CV"
+    else:
+        residuals, _ = residualise_train_only(arr, None)
+        sparse_fit = fixed_graphical_lasso(
+            residuals,
+            float(graphical_alpha),
+            max_iter=150,
+        )
+        alpha_policy = "locked from the first chronological outer forecast origin"
     resid_cov = sparse_fit.covariance
     factor_cov = load @ np.cov(scores, rowvar=False, ddof=1) @ load.T if k > 1 else np.outer(load[:, 0], load[:, 0]) * float(np.var(scores[:, 0], ddof=1))
     out = _psd_cov(factor_cov + resid_cov, list(x.columns))
@@ -168,7 +182,12 @@ def factor_graphical_covariance(x: pd.DataFrame, n_factors: int | None = None) -
         "graphical_alpha": sparse_fit.metadata.get("alpha"),
         "method": "Factor + Temporal Graphical Lasso residual",
         "factor_selection_scope": "train-only per temporal fold; full sample for final fit",
-        "nested_search_policy": "4 log-spaced alphas x 3 expanding forward folds; 150-iteration fail-closed cap",
+        "nested_search_policy": (
+            "4 log-spaced alphas x 3 expanding forward folds; 150-iteration fail-closed cap"
+            if graphical_alpha is None
+            else "fixed alpha chosen at the first chronological outer forecast origin"
+        ),
+        "alpha_policy": alpha_policy,
         "condition_number": float(np.linalg.cond(out.to_numpy(dtype=float))),
     }
     return out, metadata
@@ -204,6 +223,7 @@ def covariance_estimate(
     min_obs: int = 60,
     ewma_lambda: float = 0.94,
     external_nls: Callable | None = None,
+    factor_glasso_alpha: float | None = None,
 ) -> CovarianceForecast:
     x = _complete(changes, days, min_obs)
     if x.empty or x.shape[1] < 2:
@@ -224,7 +244,7 @@ def covariance_estimate(
     elif key in {"poet", "poet-style"}:
         cov, extra = poet_covariance(x); meta.update(extra)
     elif key in {"factor-glasso", "factor graphical lasso"}:
-        cov, extra = factor_graphical_covariance(x); meta.update(extra)
+        cov, extra = factor_graphical_covariance(x, graphical_alpha=factor_glasso_alpha); meta.update(extra)
     elif key in {"rmt", "rmt spectral"}:
         cov, extra = rmt_spectral_covariance(x); meta.update(extra)
     elif key in {"nonlinear shrinkage", "nls"}:
@@ -384,6 +404,7 @@ def covariance_model_validation(
 
     rows = []
     fold_records: list[dict] = []
+    factor_glasso_lock_meta: dict[str, object] = {}
     for model in models:
         qlikes: list[float] = []
         frobs: list[float] = []
@@ -393,6 +414,8 @@ def covariance_model_validation(
         skipped = 0
         fit_fallbacks = 0
         fit_warnings = 0
+        locked_factor_alpha: float | None = None
+        locked_factor_origin: int | None = None
         for fold_no, end in enumerate(starts):
             train = x.iloc[max(0, end - train_days):end]
             test = x.iloc[end:end + h]
@@ -402,7 +425,13 @@ def covariance_model_validation(
             fit = covariance_estimate(
                 train, model, days=len(train), min_obs=min_train,
                 ewma_lambda=ewma_lambda, external_nls=external_nls,
+                factor_glasso_alpha=locked_factor_alpha,
             )
+            if str(model).lower() in {"factor-glasso", "factor graphical lasso"} and locked_factor_alpha is None:
+                selected = safe_float(fit.metadata.get("graphical_alpha"))
+                if selected is not None and not fit.covariance.empty:
+                    locked_factor_alpha = selected
+                    locked_factor_origin = int(fold_no)
             fit_fallbacks += int(bool(fit.metadata.get("fallback_used", False)))
             fit_warnings += int(fit.metadata.get("warning_count", 0) or 0)
             if fit.covariance.empty:
@@ -457,6 +486,15 @@ def covariance_model_validation(
                 "Fit fallbacks": int(fit_fallbacks),
                 "Fit warnings": int(fit_warnings),
             })
+        if str(model).lower() in {"factor-glasso", "factor graphical lasso"}:
+            factor_glasso_lock_meta = {
+                "factor_glasso_alpha_lock": locked_factor_alpha,
+                "factor_glasso_alpha_selection_fold": locked_factor_origin,
+                "factor_glasso_alpha_policy": (
+                    "selected once using train-only temporal CV at the first chronological outer origin, then locked"
+                ),
+                "factor_glasso_alpha_no_future_leakage": locked_factor_origin is not None,
+            }
 
     if not rows:
         return pd.DataFrame(), {"status": "no_valid_models", "assets": p, "obs": int(len(x))}
@@ -491,6 +529,7 @@ def covariance_model_validation(
         "assets": int(p),
         "obs": int(len(x)),
         "fold_losses": fold_df,
+        **factor_glasso_lock_meta,
         **inference,
     }
     return out, meta

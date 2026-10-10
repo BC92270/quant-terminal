@@ -260,6 +260,14 @@ def apply_terminal_shell_theme() -> None:
                     inset 0 0 16px rgba(255, 255, 255, 0.08) !important;
             }
 
+            div.stButton > button p,
+            div[data-testid="stFormSubmitButton"] button p {
+                white-space: nowrap !important;
+                word-break: normal !important;
+                overflow-wrap: normal !important;
+                line-height: 1.1 !important;
+            }
+
             [data-testid="stMetric"] {
                 border-radius: 15px;
                 border: 1px solid rgba(90, 205, 255, 0.17);
@@ -749,7 +757,7 @@ def render_terminal_command_panel(
     )
 
     c1, c2, c3, c4, c5 = st.columns(
-        [2.25, 0.95, 0.95, 1.70, 1.05],
+        [1.90, 1.00, 1.25, 1.55, 1.35],
         vertical_alignment="bottom",
     )
 
@@ -775,7 +783,7 @@ def render_terminal_command_panel(
     run_analysis = c5.button(
         "Analyser",
         key="terminal_run_analysis_button",
-        use_container_width=True,
+        width="stretch",
     )
 
     tape_ticker = escape(ticker_input or ticker_default)

@@ -66,3 +66,33 @@ def test_matrix_controls_have_a_focused_fragment_boundary():
     assert [ast.unparse(d) for d in matrix_tab.decorator_list] == ["_section_fragment"]
     assert section.decorator_list == []
     assert "_render_matrix_tab(bundle, ticker, int(selected_days), estimator, cfg)" in ast.unparse(section)
+
+
+def test_v500_uses_transactional_controls_and_lazy_desk_routing():
+    ui_path = Path(__file__).parents[2] / "correlation_matrix_section" / "correlation_intelligence_v3" / "ui.py"
+    tree = ast.parse(ui_path.read_text(encoding="utf-8"))
+    section = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "render_correlation_intelligence_v3"
+    )
+    source = ast.unparse(section)
+
+    assert "st.form(key=f'corrv5_control_form_{ticker}')" in source
+    assert "st.form_submit_button('APPLY CONFIGURATION + RUN'" in source
+    assert "active_desk = _desk_selector(ticker)" in source
+    assert "st.tabs(" not in source
+    for desk in (
+        "01 Overview",
+        "02 Matrix Lab",
+        "03 Dynamics",
+        "04 Factors",
+        "05 Tail & Stress",
+        "06 Network / RMT",
+        "07 Portfolio / Forward",
+        "08 Validation",
+        "09 Dependency Drivers",
+        "10 Data / Export",
+        "11 Readiness",
+    ):
+        assert f"active_desk == '{desk}'" in source
