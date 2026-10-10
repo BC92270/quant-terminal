@@ -204,7 +204,7 @@ def test_hayashi_yoshida_matrix_lead_lag_and_epps_curve() -> None:
     right_index = left_index + pd.Timedelta(seconds=30)
     left = pd.Series(latent + rng.normal(0.0, 0.00015, observations), index=left_index)
     right = pd.Series(0.8 * latent + rng.normal(0.0, 0.00015, observations), index=right_index)
-    asynchronous = pd.concat([left.rename("AAA"), right.rename("BBB")], axis=1)
+    asynchronous = pd.concat([left.rename("AAA"), right.rename("BBB")], axis=1, sort=False)
 
     matrix, audit, metadata = hayashi_yoshida_matrix(asynchronous, min_obs=60)
     assert metadata["status"] == "ok"
