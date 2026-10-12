@@ -57,9 +57,26 @@ def test_explicit_run_renders_the_complete_workspace_without_ui_errors() -> None
         "Résultats",
         "Transactions",
         "Validation",
-        "Preuves",
+        "Stress & capacité",
     ]
-    assert labels[5:] == ["Données", "Exécution", "Statistiques", "Gouvernance"]
+    assert labels[5:10] == [
+        "Scénarios extrêmes",
+        "Liquidité & capacité",
+        "Exécution réaliste",
+        "Marge & événements",
+        "Causes & actions",
+    ]
+    assert labels[10] == "Preuves"
+    assert labels[11:] == ["Données", "Exécution", "Statistiques", "Gouvernance"]
+    assert any(
+        "Spirale de liquidité (liquidity trap) calculée" in item.value
+        for item in app.success
+    )
+    automation_messages = [*app.success, *app.warning, *app.error]
+    assert any("Automatisation moteur" in item.value for item in automation_messages)
+    assert any(
+        "Stress de marge désactivé" in item.value for item in app.info
+    )
     assert any("Dernier run exécuté" in item.value for item in app.markdown)
 
 
@@ -78,10 +95,12 @@ def test_draft_change_keeps_the_last_executed_run_and_marks_it_dirty() -> None:
     assert not app.exception
     assert any("Modifications non exécutées" in item.value for item in app.markdown)
     assert any("dernier run exécuté" in item.value.lower() for item in app.warning)
-    assert [tab.label for tab in app.tabs][:5] == [
+    labels = [tab.label for tab in app.tabs]
+    assert labels[:5] == [
         "Synthèse",
         "Résultats",
         "Transactions",
         "Validation",
-        "Preuves",
+        "Stress & capacité",
     ]
+    assert labels[10] == "Preuves"

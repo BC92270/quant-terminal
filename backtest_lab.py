@@ -13494,7 +13494,10 @@ def _test_harness_empty_pack_v1() -> dict[str, Any]:
 
 
 def _test_harness_cases_v1(cfg: BacktestConfig) -> list[tuple[str, BacktestConfig]]:
-    base_kwargs = dict(cfg.__dict__)
+    config_fields = set(getattr(cfg, "__dataclass_fields__", {}))
+    base_kwargs = {
+        key: value for key, value in vars(cfg).items() if key in config_fields
+    }
 
     cases = [
         ("Current configuration", cfg),
@@ -14278,10 +14281,21 @@ def _test_harness_failure_severity_ledger_v14(
     )
 
     if isinstance(failures, pd.DataFrame) and not failures.empty:
+        case_status = (
+            cases.set_index("Case")["Status"].astype(str).str.upper().to_dict()
+            if isinstance(cases, pd.DataFrame)
+            and not cases.empty
+            and {"Case", "Status"}.issubset(cases.columns)
+            else {}
+        )
         for _, row in failures.iterrows():
             check = row.get("Case", row.get("Gate", row.get("Module", "Failure")))
             read = row.get("Failure", row.get("Read", "Critical harness failure."))
-            _add_row("Harness failures", check, "FAIL", "", read)
+            # WARN rows are already represented by the case matrix.  The legacy
+            # failures frame also contains them, so promoting every row to FAIL
+            # would manufacture a false critical duplicate.
+            if case_status.get(str(check), "FAIL") == "FAIL":
+                _add_row("Harness failures", check, "FAIL", "", read)
 
     _add_frame(
         "Module Check Matrix V1.1",
@@ -17706,16 +17720,21 @@ def _live_deployment_readiness_v30_pack(
         )
     )
 
+    harness_level_lower = harness_level.lower()
     harness_ok = (
-        "passed" in harness_level.lower()
-        or "pass" in harness_level.lower()
-        or (pd.notna(harness_score) and harness_score >= 90)
+        any(token in harness_level_lower for token in ("clean", "passed", "pass"))
+        and pd.notna(harness_score)
+        and harness_score >= 90
     )
 
     if harness_ok:
         status, sev = "PASS", "None"
-    elif "not run" in harness_level.lower():
+    elif "warning" in harness_level_lower:
+        status, sev = "WARN", "Medium"
+    elif "not run" in harness_level_lower:
         status, sev = "WARN", "High"
+    elif "critical" in harness_level_lower:
+        status, sev = "FAIL", "Critical"
     else:
         status, sev = "FAIL", "High"
 
@@ -18683,6 +18702,8 @@ def _failure_attribution_redesign_map_v32_pack(
     test_harness_pack: dict[str, Any] | None = None,
     deployment_pack: dict[str, Any] | None = None,
     paper_shadow_pack: dict[str, Any] | None = None,
+    execution_pack: dict[str, Any] | None = None,
+    liquidity_pack: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Failure Attribution / Redesign Map V3.2.
@@ -18744,20 +18765,22 @@ def _failure_attribution_redesign_map_v32_pack(
         except Exception:
             paper_shadow_pack = {}
 
-    try:
-        execution_pack = _execution_realism_layer_v28_pack(
-            bt=bt,
-            trades=trades,
-            cfg=cfg,
-            risk_events=risk_events if isinstance(risk_events, pd.DataFrame) else pd.DataFrame(),
-        )
-    except Exception:
-        execution_pack = {}
+    if not isinstance(execution_pack, dict) or not execution_pack:
+        try:
+            execution_pack = _execution_realism_layer_v28_pack(
+                bt=bt,
+                trades=trades,
+                cfg=cfg,
+                risk_events=risk_events if isinstance(risk_events, pd.DataFrame) else pd.DataFrame(),
+            )
+        except Exception:
+            execution_pack = {}
 
-    try:
-        liquidity_pack = _liquidity_capacity_layer_v29_pack(bt=bt, trades=trades, cfg=cfg)
-    except Exception:
-        liquidity_pack = {}
+    if not isinstance(liquidity_pack, dict) or not liquidity_pack:
+        try:
+            liquidity_pack = _liquidity_capacity_layer_v29_pack(bt=bt, trades=trades, cfg=cfg)
+        except Exception:
+            liquidity_pack = {}
 
     try:
         signal_safety_pack = diagnostics.get("custom_signal_safety_v26", {})
@@ -18837,7 +18860,7 @@ def _failure_attribution_redesign_map_v32_pack(
 
     liquidity_level = str(liquidity_pack.get("level", "N/A")) if isinstance(liquidity_pack, dict) else "N/A"
     liquidity_score = _safe_float(liquidity_pack.get("score"), np.nan) if isinstance(liquidity_pack, dict) else np.nan
-    current_vs_capacity = _safe_float(liquidity_pack.get("current_vs_capacity"), np.nan) if isinstance(liquidity_pack, dict) else np.nan
+    current_vs_capacity = _safe_float(liquidity_pack.get("current_vs_capacity_1pct"), np.nan) if isinstance(liquidity_pack, dict) else np.nan
 
     safety_level = str(signal_safety_pack.get("level", "Not assessed")) if isinstance(signal_safety_pack, dict) else "Not assessed"
     safety_score = _safe_float(signal_safety_pack.get("score"), np.nan) if isinstance(signal_safety_pack, dict) else np.nan
@@ -22144,6 +22167,7 @@ def _leverage_margin_stress_pack(bt: pd.DataFrame, cfg: BacktestConfig) -> dict[
     if bt is None or bt.empty:
         return {
             "enabled": False,
+            "requested": bool(getattr(cfg, "margin_stress_enabled", False)),
             "level": "Unavailable",
             "read": "Backtest vide.",
             "cards": [],
@@ -22158,6 +22182,7 @@ def _leverage_margin_stress_pack(bt: pd.DataFrame, cfg: BacktestConfig) -> dict[
     if not enabled:
         return {
             "enabled": False,
+            "requested": False,
             "level": "Disabled",
             "read": "Leverage / Margin Stress désactivé.",
             "cards": [],
@@ -22182,6 +22207,27 @@ def _leverage_margin_stress_pack(bt: pd.DataFrame, cfg: BacktestConfig) -> dict[
     current_summary = current.get("summary", {})
     path = current.get("path", pd.DataFrame())
     events = current.get("events", pd.DataFrame())
+
+    if current_summary.get("error"):
+        return {
+            "enabled": False,
+            "requested": True,
+            "level": "Unavailable",
+            "read": "Stress de marge indisponible : le chemin de simulation a échoué.",
+            "cards": [],
+            "summary": pd.DataFrame(
+                [
+                    {
+                        "Metric": "Simulation error",
+                        "Value": type(current_summary.get("error")).__name__,
+                        "Read": "Le résultat est fermé; aucun état rassurant n'est produit.",
+                    }
+                ]
+            ),
+            "scenarios": pd.DataFrame(),
+            "path": pd.DataFrame(),
+            "events": pd.DataFrame(),
+        }
 
     levels = sorted(
         set(
@@ -22308,6 +22354,7 @@ def _leverage_margin_stress_pack(bt: pd.DataFrame, cfg: BacktestConfig) -> dict[
 
     return {
         "enabled": True,
+        "requested": True,
         "level": level,
         "read": read,
         "cards": cards,
@@ -30586,6 +30633,222 @@ def _backtest_run_fingerprint(
         json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
     ).hexdigest()
 
+
+def _advanced_stress_capacity_bundle(
+    *,
+    bars: pd.DataFrame,
+    metrics: dict[str, Any],
+    integrity: int,
+    verdict: str,
+    research_label: str,
+    reasons: list[str],
+    notes: list[str],
+    diagnostics: dict[str, Any],
+    bt: pd.DataFrame,
+    trades: pd.DataFrame,
+    comp_df: pd.DataFrame,
+    wf_df: pd.DataFrame,
+    cost_matrix: pd.DataFrame,
+    sens_matrix: pd.DataFrame,
+    risk_events: pd.DataFrame,
+    cfg: BacktestConfig,
+) -> dict[str, Any]:
+    """Build every read-only stress/capacity diagnostic once per explicit run.
+
+    These legacy-frame diagnostics are intentionally ``DIAGNOSTIC_ONLY``.  They
+    can explain execution, liquidity and tail risk, but they never replace the
+    institutional executed ledger or promote its gate.
+    """
+
+    errors: dict[str, str] = {}
+
+    def unavailable(name: str, exc: Exception) -> dict[str, Any]:
+        errors[name] = f"{type(exc).__name__}: {exc}"
+        return {
+            "enabled": False,
+            "level": "Unavailable",
+            "score": 0.0,
+            "read": f"{name} indisponible : {type(exc).__name__}.",
+            "diagnostic_authority": "DIAGNOSTIC_ONLY",
+        }
+
+    try:
+        execution = _execution_realism_layer_v28_pack(
+            bt=bt,
+            trades=trades,
+            cfg=cfg,
+            risk_events=risk_events,
+        )
+    except Exception as exc:
+        execution = unavailable("Execution realism", exc)
+
+    try:
+        liquidity = _liquidity_capacity_layer_v29_pack(
+            bt=bt,
+            trades=trades,
+            cfg=cfg,
+        )
+    except Exception as exc:
+        liquidity = unavailable("Liquidity capacity", exc)
+
+    try:
+        tail_risk = _tail_risk_diagnostics(bt)
+    except Exception as exc:
+        tail_risk = unavailable("Tail risk", exc)
+
+    try:
+        event_stress = _event_stress_table(bt, cfg)
+    except Exception as exc:
+        errors["Event stress"] = f"{type(exc).__name__}: {exc}"
+        event_stress = pd.DataFrame()
+
+    try:
+        margin = _leverage_margin_stress_pack(bt, cfg)
+    except Exception as exc:
+        margin = unavailable("Margin stress", exc)
+        margin["requested"] = bool(getattr(cfg, "margin_stress_enabled", False))
+
+    test_harness = diagnostics.get("test_harness", {})
+    if not isinstance(test_harness, dict) or not test_harness.get("enabled", False):
+        try:
+            test_harness = _run_internal_test_harness_v1(bars, cfg)
+            test_harness["module_checks"] = _test_harness_module_checks_v11(bars, cfg)
+            test_harness["data_integrity_gates"] = _test_harness_data_integrity_gates_v12(bars, cfg)
+            test_harness["causality_guard"] = _test_harness_causality_guard_v13(bars, cfg)
+            test_harness["failure_severity_ledger"] = _test_harness_failure_severity_ledger_v14(
+                test_harness
+            )
+            severity = test_harness["failure_severity_ledger"]
+            test_harness["smoke_level"] = test_harness.get("level")
+            test_harness["smoke_score"] = test_harness.get("score")
+            test_harness["level"] = severity.get("level", "Failed")
+            test_harness["score"] = severity.get("score", 0.0)
+            test_harness["read"] = severity.get(
+                "read", "Le ledger consolidé du harness est indisponible."
+            )
+            test_harness["automation"] = "AUTOMATIC_ON_EXPLICIT_RUN"
+        except Exception as exc:
+            test_harness = unavailable("Internal test harness", exc)
+            test_harness["level"] = "Failed"
+            test_harness["automation"] = "AUTOMATIC_ON_EXPLICIT_RUN"
+        diagnostics["test_harness"] = test_harness
+
+    try:
+        deployment = _live_deployment_readiness_v30_pack(
+            metrics=metrics,
+            integrity=integrity,
+            verdict=verdict,
+            research_label=research_label,
+            diagnostics=diagnostics,
+            bt=bt,
+            trades=trades,
+            wf_df=wf_df,
+            cost_matrix=cost_matrix,
+            risk_events=risk_events,
+            cfg=cfg,
+            test_harness_pack=test_harness,
+            execution_realism_pack=execution,
+            liquidity_capacity_pack=liquidity,
+        )
+    except Exception as exc:
+        deployment = unavailable("Deployment readiness", exc)
+
+    institutional_gate = diagnostics.get("institutional_v7", {})
+    institutional_gate = institutional_gate if isinstance(institutional_gate, dict) else {}
+    institutional_decision = str(
+        institutional_gate.get("decision") or "HOLD — DATA REQUIRED"
+    ).upper()
+    deployment["diagnostic_level"] = deployment.get("level")
+    deployment["diagnostic_decision"] = deployment.get("decision")
+    deployment["institutional_gate_decision"] = institutional_decision
+    deployment["production_authorized"] = False
+    if institutional_decision != "RESEARCH APPROVED":
+        deployment["level"] = "Blocked by institutional gate"
+        deployment["decision"] = "RESEARCH ONLY / DO NOT PAPER / DO NOT LIVE"
+        deployment["score"] = min(_safe_float(deployment.get("score"), 0.0), 30.0)
+        deployment["read"] = (
+            "Le gate du ledger exécuté n'approuve pas le run. Les diagnostics legacy "
+            "ne peuvent autoriser ni paper test ni déploiement."
+        )
+    elif "live" in str(deployment.get("level", "")).lower():
+        deployment["level"] = "Paper review candidate"
+        deployment["decision"] = "HUMAN REVIEW / CONTROLLED PAPER ONLY"
+        deployment["read"] = (
+            "Le gate institutionnel autorise la recherche uniquement. Une revue humaine "
+            "et un protocole paper contrôlé restent obligatoires; le live n'est pas autorisé."
+        )
+
+    try:
+        paper_shadow = _paper_shadow_live_protocol_v31_pack(
+            metrics=metrics,
+            integrity=integrity,
+            verdict=verdict,
+            research_label=research_label,
+            diagnostics=diagnostics,
+            bt=bt,
+            trades=trades,
+            wf_df=wf_df,
+            cost_matrix=cost_matrix,
+            risk_events=risk_events,
+            cfg=cfg,
+            test_harness_pack=test_harness,
+            deployment_pack=deployment,
+        )
+    except Exception as exc:
+        paper_shadow = unavailable("Paper shadow protocol", exc)
+
+    try:
+        failure_attribution = _failure_attribution_redesign_map_v32_pack(
+            metrics=metrics,
+            integrity=integrity,
+            verdict=verdict,
+            research_label=research_label,
+            reasons=reasons,
+            notes=notes,
+            diagnostics=diagnostics,
+            bt=bt,
+            trades=trades,
+            comp_df=comp_df,
+            wf_df=wf_df,
+            cost_matrix=cost_matrix,
+            sens_matrix=sens_matrix,
+            risk_events=risk_events,
+            cfg=cfg,
+            test_harness_pack=test_harness,
+            deployment_pack=deployment,
+            paper_shadow_pack=paper_shadow,
+            execution_pack=execution,
+            liquidity_pack=liquidity,
+        )
+    except Exception as exc:
+        failure_attribution = unavailable("Failure attribution", exc)
+
+    for pack in (
+        execution,
+        liquidity,
+        tail_risk,
+        margin,
+        deployment,
+        paper_shadow,
+        failure_attribution,
+    ):
+        if isinstance(pack, dict):
+            pack.setdefault("diagnostic_authority", "DIAGNOSTIC_ONLY")
+
+    return {
+        "execution": execution,
+        "liquidity": liquidity,
+        "tail_risk": tail_risk,
+        "event_stress": event_stress,
+        "margin": margin,
+        "deployment": deployment,
+        "paper_shadow": paper_shadow,
+        "failure_attribution": failure_attribution,
+        "test_harness": test_harness,
+        "errors": errors,
+        "authority": "DIAGNOSTIC_ONLY",
+    }
+
 def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: dict[str, Any] | None = None) -> None:
     _inject_backtest_css()
 
@@ -31579,6 +31842,29 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
         verdict = cached_analysis["verdict"]
         reasons = cached_analysis["reasons"]
         research_label = cached_analysis["research_label"]
+        advanced_packs = cached_analysis.get("advanced_packs")
+        if not isinstance(advanced_packs, dict):
+            advanced_packs = _advanced_stress_capacity_bundle(
+                bars=df,
+                metrics=metrics,
+                integrity=integrity,
+                verdict=verdict,
+                research_label=research_label,
+                reasons=reasons,
+                notes=notes,
+                diagnostics=diagnostics,
+                bt=bt,
+                trades=trades,
+                comp_df=comp_df,
+                wf_df=wf_df,
+                cost_matrix=cost_matrix,
+                sens_matrix=sens_matrix,
+                risk_events=risk_events,
+                cfg=cfg,
+            )
+            cached_analysis["advanced_packs"] = advanced_packs
+            cached_run["analysis_bundle"] = cached_analysis
+            st.session_state[cache_key] = cached_run
 
         publish_backtest_owner_certificate_v1(
             ticker,
@@ -31611,6 +31897,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             institutional=institutional_run,
             institutional_context=institutional_context,
             engine_error=institutional_engine_error,
+            advanced_packs=advanced_packs,
         )
         return
 
@@ -31715,6 +32002,24 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
 
     verdict, _, reasons = _verdict(metrics, integrity, notes)
     research_label = _research_verdict(diagnostics.get("edge_score", 0), verdict, diagnostics)
+    advanced_packs = _advanced_stress_capacity_bundle(
+        bars=df,
+        metrics=metrics,
+        integrity=integrity,
+        verdict=verdict,
+        research_label=research_label,
+        reasons=reasons,
+        notes=notes,
+        diagnostics=diagnostics,
+        bt=bt,
+        trades=trades,
+        comp_df=comp_df,
+        wf_df=wf_df,
+        cost_matrix=cost_matrix,
+        sens_matrix=sens_matrix,
+        risk_events=risk_events,
+        cfg=cfg,
+    )
 
     cached_run["analysis_bundle"] = {
         "metrics": metrics,
@@ -31733,6 +32038,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
         "verdict": verdict,
         "reasons": reasons,
         "research_label": research_label,
+        "advanced_packs": advanced_packs,
     }
     cached_run["cfg"] = cfg
     st.session_state[cache_key] = cached_run
@@ -31769,6 +32075,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
         institutional=institutional_run,
         institutional_context=institutional_context,
         engine_error=institutional_engine_error,
+        advanced_packs=advanced_packs,
     )
     return
 

@@ -473,6 +473,558 @@ def _robustness_figure(cost_matrix: pd.DataFrame, wf_df: pd.DataFrame) -> go.Fig
     return fig
 
 
+def _public_frame(frame: Any) -> pd.DataFrame:
+    """Return a display-only copy with implementation versions removed."""
+
+    if not isinstance(frame, pd.DataFrame):
+        return pd.DataFrame()
+    clean = frame.copy()
+    clean = clean.rename(columns=lambda value: public_label(value))
+    clean.index = clean.index.map(
+        lambda value: public_label(value) if isinstance(value, str) else value
+    )
+    for column in clean.columns:
+        if clean[column].dtype == object:
+            clean[column] = clean[column].map(
+                lambda value: public_label(value) if isinstance(value, str) else value
+            )
+    return clean
+
+
+def _percent_series(values: pd.Series) -> pd.Series:
+    """Parse numeric or pre-formatted percentages for display charts."""
+
+    if not isinstance(values, pd.Series):
+        return pd.Series(dtype=float)
+    numeric = pd.to_numeric(values, errors="coerce")
+    missing = numeric.isna()
+    if missing.any():
+        parsed = pd.to_numeric(
+            values.astype(str).str.replace("%", "", regex=False).str.replace(",", "", regex=False),
+            errors="coerce",
+        ) / 100.0
+        numeric = numeric.where(~missing, parsed)
+    return numeric
+
+
+_SCENARIO_LABELS = {
+    "Historical bootstrap": "Bootstrap historique",
+    "Multivariate Student-t": "Student-t multivarié",
+    "Markov regime switching": "Régimes de Markov",
+    "EVT empirical tail": "Queue empirique EVT",
+    "Liquidity spiral": "Spirale de liquidité",
+    "Institutional scenario policy": "Politique institutionnelle de scénarios",
+}
+
+
+def _scenario_label(value: Any) -> str:
+    clean = public_label(value)
+    return _SCENARIO_LABELS.get(clean, clean)
+
+
+def _render_scenario_stress(institutional: Any, ticker: str) -> None:
+    scenarios = (
+        getattr(institutional, "scenarios", {}) if institutional is not None else {}
+    )
+    if not isinstance(scenarios, Mapping):
+        scenarios = {}
+    summary = scenarios.get("summary")
+    if not isinstance(summary, pd.DataFrame) or summary.empty:
+        st.warning(
+            "Scénarios indisponibles · le moteur reste fermé tant que les rendements "
+            "exécutés et les observations minimales ne sont pas disponibles."
+        )
+        return
+
+    summary = summary.copy()
+    summary.index = summary.index.map(_scenario_label)
+    availability = scenarios.get("availability", {})
+    availability = availability if isinstance(availability, Mapping) else {}
+    liquidity_state = dict(availability.get("Liquidity spiral") or {})
+    reverse = dict(scenarios.get("reverse_stress") or {})
+    evt = dict(scenarios.get("evt") or {})
+    regime_mix = dict(scenarios.get("regime_mix") or {})
+    policy = dict(scenarios.get("policy") or {})
+
+    expected_shortfall = pd.to_numeric(
+        summary.get("expected_shortfall", pd.Series(dtype=float)), errors="coerce"
+    )
+    worst_expected_shortfall = (
+        float(expected_shortfall.min()) if expected_shortfall.notna().any() else np.nan
+    )
+    _kpis(
+        [
+            (
+                "Spirale de liquidité",
+                str(liquidity_state.get("state") or "INDISPONIBLE"),
+                "liquidity trap explicite",
+            ),
+            (
+                "Perte de queue maximale",
+                _pct(worst_expected_shortfall),
+                "expected shortfall terminal",
+            ),
+            (
+                "Multiplicateur inverse",
+                _num(reverse.get("multiplier")),
+                "seuil de drawdown cible",
+            ),
+            (
+                "Seuil EVT",
+                _pct(evt.get("threshold")),
+                "calibration empirique",
+            ),
+            (
+                "Part du régime de crise",
+                _pct(regime_mix.get("crisis")),
+                "simulation de régimes",
+            ),
+            (
+                "Politique de scénarios",
+                str(policy.get("state") or "NON VÉRIFIÉE"),
+                "gate institutionnel",
+            ),
+        ]
+    )
+
+    if str(liquidity_state.get("state", "")).upper() == "AVAILABLE":
+        st.success(
+            "Spirale de liquidité (liquidity trap) calculée sur les rendements exécutés."
+        )
+    else:
+        st.warning(
+            "Spirale de liquidité non certifiée · "
+            + public_label(liquidity_state.get("reason") or "preuve insuffisante")
+        )
+
+    fig = go.Figure()
+    if "expected_shortfall" in summary:
+        fig.add_trace(
+            go.Bar(
+                x=summary.index,
+                y=pd.to_numeric(summary["expected_shortfall"], errors="coerce"),
+                name="Expected shortfall terminal",
+                marker_color="#fb7185",
+            )
+        )
+    if "median_max_drawdown" in summary:
+        fig.add_trace(
+            go.Bar(
+                x=summary.index,
+                y=pd.to_numeric(summary["median_max_drawdown"], errors="coerce"),
+                name="Drawdown maximal médian",
+                marker_color="#fbbf24",
+            )
+        )
+    fig.update_layout(
+        **_layout("Couverture des scénarios extrêmes"),
+        barmode="group",
+        yaxis_tickformat=".0%",
+    )
+    st.plotly_chart(fig, width="stretch", key=f"bt_stress_scenarios__{ticker}")
+
+    availability_rows = []
+    for name, item in availability.items():
+        record = dict(item) if isinstance(item, Mapping) else {"state": "UNAVAILABLE"}
+        availability_rows.append(
+            {
+                "Scénario": _scenario_label(name),
+                "État": str(record.get("state") or "UNAVAILABLE"),
+                "Justification": public_label(record.get("reason") or "—"),
+            }
+        )
+    with st.expander("Couverture, calibration et stress inversé", expanded=False):
+        if availability_rows:
+            st.dataframe(
+                pd.DataFrame(availability_rows), width="stretch", hide_index=True
+            )
+        st.json(
+            {
+                "stress_inverse": {
+                    public_label(key): (
+                        public_label(value) if isinstance(value, str) else value
+                    )
+                    for key, value in reverse.items()
+                },
+                "graine_reproductible": scenarios.get("seed"),
+            }
+        )
+
+
+def _render_liquidity_capacity(pack: Mapping[str, Any], ticker: str) -> None:
+    pack = dict(pack or {})
+    _kpis(
+        [
+            ("État de capacité", public_label(pack.get("level") or "INDISPONIBLE"), "lecture seule"),
+            ("Score de liquidité", f"{_num(pack.get('score'), 0)}/100", "qualité des preuves"),
+            ("Capacité à 1 % du volume", _money(pack.get("capacity_1pct_adv")), "P10 du volume par barre"),
+            ("Capital / capacité", _pct(pack.get("current_vs_capacity_1pct")), "borne conservatrice"),
+            ("Turnover / volume max", _pct(pack.get("max_trade_adv")), "participation maximale"),
+            ("Décote de liquidité", _pct(pack.get("liquidity_haircut")), "proxy conservateur"),
+        ]
+    )
+    if not pack.get("enabled", False):
+        st.warning(public_label(pack.get("read") or "Diagnostic de capacité indisponible."))
+        return
+    st.info(public_label(pack.get("read") or "Diagnostic de capacité calculé."))
+    if not pack.get("volume_available", False):
+        st.error(
+            "Capacité non calculable · le volume par barre est absent ou insuffisant. "
+            "Aucune courbe de montée en capital ni aucun impact nul implicite n’est affiché."
+        )
+        checks = _public_frame(pack.get("checks"))
+        if not checks.empty:
+            with st.expander("Preuves manquantes et contrôles", expanded=True):
+                st.dataframe(checks, width="stretch", hide_index=True)
+        return
+
+    curve = pack.get("capacity_curve")
+    fig = go.Figure()
+    if isinstance(curve, pd.DataFrame) and not curve.empty:
+        x = pd.to_numeric(curve.get("Target Participation"), errors="coerce")
+        for column, color, label in [
+            ("Conservative Capacity", "#67e8f9", "Capacité conservatrice"),
+            ("Capacity Median ADV", "#a78bfa", "Capacité sur ADV médian"),
+        ]:
+            if column in curve:
+                fig.add_trace(
+                    go.Scatter(
+                        x=x,
+                        y=pd.to_numeric(curve[column], errors="coerce"),
+                        mode="lines+markers",
+                        name=label,
+                        line=dict(color=color, width=2.2),
+                    )
+                )
+    fig.update_layout(
+        **_layout("Capital soutenable selon la participation"),
+        xaxis_tickformat=".1%",
+        yaxis_tickprefix="$",
+    )
+    st.plotly_chart(fig, width="stretch", key=f"bt_stress_capacity__{ticker}")
+
+    impact = pack.get("impact_stress")
+    if isinstance(impact, pd.DataFrame) and not impact.empty:
+        impact_fig = go.Figure()
+        x = pd.to_numeric(impact.get("Capital Multiple"), errors="coerce")
+        for column, color, label in [
+            ("Total Return After Impact", "#34d399", "Rendement après impact"),
+            ("Max DD After Impact", "#fb7185", "Drawdown après impact"),
+        ]:
+            if column in impact:
+                impact_fig.add_trace(
+                    go.Scatter(
+                        x=x,
+                        y=pd.to_numeric(impact[column], errors="coerce"),
+                        mode="lines+markers",
+                        name=label,
+                        line=dict(color=color, width=2.0),
+                    )
+                )
+        impact_fig.update_layout(
+            **_layout("Impact de marché lors de la montée en capital"),
+            xaxis_title="Multiple du capital",
+            yaxis_tickformat=".0%",
+        )
+        st.plotly_chart(impact_fig, width="stretch", key=f"bt_stress_impact__{ticker}")
+
+    with st.expander("Contrôles de liquidité et hypothèses", expanded=False):
+        checks = _public_frame(pack.get("checks"))
+        if not checks.empty:
+            st.dataframe(checks, width="stretch", hide_index=True)
+
+
+def _render_execution_realism(pack: Mapping[str, Any], ticker: str) -> None:
+    pack = dict(pack or {})
+    _kpis(
+        [
+            ("État d’exécution", public_label(pack.get("level") or "INDISPONIBLE"), "lecture seule"),
+            ("Score d’exécution", f"{_num(pack.get('score'), 0)}/100", "gaps, fills et coûts"),
+            ("Pire gap actif", _pct(pack.get("worst_active_gap")), "exposition signée"),
+            ("Turnover / volume max", _pct(pack.get("max_trade_adv")), "participation"),
+            ("Slippage absorbé", f"{int(_number(pack.get('max_extra_bps_survived'), 0))} bps", "rendement encore positif"),
+            ("Volume", "DISPONIBLE" if pack.get("volume_available") else "PREUVE REQUISE", "contrôle ADV"),
+        ]
+    )
+    if not pack.get("enabled", False):
+        st.warning(public_label(pack.get("read") or "Réalisme d’exécution indisponible."))
+        return
+    st.info(public_label(pack.get("read") or "Diagnostic d’exécution calculé."))
+
+    stress = pack.get("stress")
+    fig = go.Figure()
+    if isinstance(stress, pd.DataFrame) and not stress.empty:
+        x = pd.to_numeric(stress.get("Extra Slippage Bps"), errors="coerce")
+        if "Total Return" in stress:
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=pd.to_numeric(stress["Total Return"], errors="coerce"),
+                    mode="lines+markers",
+                    name="Rendement net",
+                    line=dict(color="#67e8f9", width=2.3),
+                )
+            )
+        if "Max DD" in stress:
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=pd.to_numeric(stress["Max DD"], errors="coerce"),
+                    mode="lines+markers",
+                    name="Drawdown maximal",
+                    line=dict(color="#fb7185", width=2.0),
+                )
+            )
+    fig.update_layout(
+        **_layout("Résilience au slippage additionnel"),
+        xaxis_title="Slippage additionnel (bps)",
+        yaxis_tickformat=".0%",
+    )
+    st.plotly_chart(fig, width="stretch", key=f"bt_stress_execution__{ticker}")
+
+    with st.expander("Contrôles d’exécution détaillés", expanded=False):
+        checks = _public_frame(pack.get("checks"))
+        if not checks.empty:
+            st.dataframe(checks, width="stretch", hide_index=True)
+
+
+def _render_margin_and_events(
+    event_stress: Any,
+    margin_pack: Mapping[str, Any],
+    tail_pack: Mapping[str, Any],
+    ticker: str,
+) -> None:
+    events = event_stress if isinstance(event_stress, pd.DataFrame) else pd.DataFrame()
+    margin_pack = dict(margin_pack or {})
+    tail_pack = dict(tail_pack or {})
+    current_impacts = (
+        _percent_series(events["Current Impact"])
+        if "Current Impact" in events
+        else pd.Series(dtype=float)
+    )
+    worst_impacts = (
+        _percent_series(events["Worst Active Impact"])
+        if "Worst Active Impact" in events
+        else pd.Series(dtype=float)
+    )
+    _kpis(
+        [
+            ("Scénarios événementiels", str(len(events)), "gaps, squeeze, halt, borrow"),
+            ("Impact courant minimal", _pct(current_impacts.min()), "exposition actuelle"),
+            ("Impact historique minimal", _pct(worst_impacts.min()), "pire exposition active"),
+            ("Risque de queue", public_label(tail_pack.get("risk_level") or "INDISPONIBLE"), "VaR, CVaR et CDaR"),
+            ("Stress de marge", public_label(margin_pack.get("level") or "INDISPONIBLE"), "simulation séparée"),
+            ("Marge activée", "OUI" if margin_pack.get("requested", margin_pack.get("enabled")) else "NON", "hypothèse du run"),
+        ]
+    )
+
+    tail_table = _public_frame(tail_pack.get("table"))
+    if tail_pack.get("risk_note"):
+        st.info(public_label(tail_pack.get("risk_note")))
+    st.caption(
+        "VaR, CVaR et CDaR restent des diagnostics historiques : une queue à 99 % "
+        "n’est pas certifiée par un échantillon court."
+    )
+    if not tail_table.empty:
+        with st.expander("Risque de queue · VaR, CVaR et drawdown conditionnel", expanded=False):
+            st.dataframe(tail_table, width="stretch", hide_index=True)
+
+    if not events.empty:
+        chart = events.head(12).copy()
+        fig = go.Figure(
+            go.Bar(
+                x=chart["Scenario"].map(public_label),
+                y=_percent_series(chart["Worst Active Impact"]),
+                marker_color="#fb7185",
+                name="Pire impact actif",
+            )
+        )
+        fig.update_layout(
+            **_layout("Chocs de marché et impact sur l’exposition"),
+            yaxis_tickformat=".0%",
+        )
+        st.plotly_chart(fig, width="stretch", key=f"bt_stress_events__{ticker}")
+        with st.expander("Détail des scénarios événementiels", expanded=False):
+            preferred = [
+                "Scenario",
+                "Event Class",
+                "Adverse To",
+                "Current Impact",
+                "Worst Active Impact",
+                "Historical Risk Level",
+                "Stress Read",
+            ]
+            st.dataframe(
+                _public_frame(events[[c for c in preferred if c in events.columns]]),
+                width="stretch",
+                hide_index=True,
+            )
+        st.caption(
+            "Les flags halt et forced cover documentent l’hypothèse; l’impact affiché "
+            "reste un choc mécanique, sans simulation de carnet d’ordres."
+        )
+    else:
+        st.warning("Stress événementiel indisponible pour ce run.")
+
+    if not margin_pack.get("enabled", False):
+        if str(margin_pack.get("level", "")).lower() == "disabled":
+            st.info(
+                "Stress de marge désactivé dans le dernier run. Activez l’hypothèse de levier "
+                "dans les paramètres avancés puis relancez pour simuler financement, breach et liquidation."
+            )
+        else:
+            st.error(
+                public_label(
+                    margin_pack.get("read")
+                    or "Stress de marge indisponible : aucune conclusion rassurante n’est produite."
+                )
+            )
+        return
+    st.warning(public_label(margin_pack.get("read") or "Stress de marge calculé."))
+    scenarios = margin_pack.get("scenarios")
+    if isinstance(scenarios, pd.DataFrame) and not scenarios.empty:
+        fig = go.Figure()
+        for column, color, label in [
+            ("Total Return", "#34d399", "Rendement leveragé"),
+            ("Max DD", "#fb7185", "Drawdown leveragé"),
+        ]:
+            if column in scenarios:
+                fig.add_trace(
+                    go.Scatter(
+                        x=pd.to_numeric(scenarios.get("Leverage"), errors="coerce"),
+                        y=pd.to_numeric(scenarios[column], errors="coerce"),
+                        mode="lines+markers",
+                        name=label,
+                        line=dict(color=color, width=2.1),
+                    )
+                )
+        fig.update_layout(
+            **_layout("Risque de marge selon le levier"),
+            xaxis_title="Levier",
+            yaxis_tickformat=".0%",
+        )
+        st.plotly_chart(fig, width="stretch", key=f"bt_stress_margin__{ticker}")
+        with st.expander("Scénarios de marge détaillés", expanded=False):
+            st.dataframe(_public_frame(scenarios), width="stretch", hide_index=True)
+
+
+def _render_failure_actions(
+    failure_pack: Mapping[str, Any],
+    deployment_pack: Mapping[str, Any],
+    test_harness: Mapping[str, Any],
+) -> None:
+    failure_pack = dict(failure_pack or {})
+    deployment_pack = dict(deployment_pack or {})
+    test_harness = dict(test_harness or {})
+    _kpis(
+        [
+            ("Niveau de redesign", public_label(failure_pack.get("level") or "INDISPONIBLE"), "attribution des causes"),
+            ("Score de redesign", f"{_num(failure_pack.get('score'), 0)}/100", "moins de blocages = plus élevé"),
+            ("Blocage dominant", public_label(failure_pack.get("dominant_blocker") or "—"), "priorité de recherche"),
+            ("Chantier prioritaire", public_label(failure_pack.get("top_redesign_bucket") or "—"), "ordre de travail"),
+            ("Readiness", public_label(deployment_pack.get("level") or "NON ÉVALUÉE"), "recherche uniquement"),
+            ("Décision", public_label(deployment_pack.get("decision") or "BLOQUÉ"), "aucun ordre automatique"),
+        ]
+    )
+    if not failure_pack.get("enabled", False):
+        st.warning("Attribution des causes indisponible · aucune promotion n’est autorisée.")
+        return
+    st.info(public_label(failure_pack.get("read") or "Plan de redesign calculé."))
+    harness_level = public_label(test_harness.get("level") or "NON EXÉCUTÉ")
+    harness_score = _num(test_harness.get("score"), 0)
+    harness_lower = harness_level.lower()
+    if test_harness.get("enabled", False) and not any(
+        token in harness_lower for token in ("failed", "critical", "warning")
+    ):
+        st.success(
+            f"Automatisation moteur · {harness_level} · {harness_score}/100 · "
+            "smoke tests multi-configuration exécutés avec ce run."
+        )
+    elif test_harness.get("enabled", False) and "warning" in harness_lower:
+        st.warning(
+            f"Automatisation moteur · {harness_level} · {harness_score}/100 · "
+            "revue humaine requise avant toute promotion."
+        )
+    else:
+        st.error(
+            f"Automatisation moteur · {harness_level} · {harness_score}/100 · "
+            "la readiness reste fermée jusqu’à correction."
+        )
+    with st.expander("Automatisation et contrôles moteur", expanded=False):
+        cases = _public_frame(test_harness.get("cases"))
+        modules = _public_frame(test_harness.get("module_checks"))
+        causality = _public_frame(test_harness.get("causality_guard"))
+        if not cases.empty:
+            st.markdown("**Configurations contrôlées**")
+            st.dataframe(cases, width="stretch", hide_index=True)
+        if not modules.empty:
+            st.markdown("**Modules appelables**")
+            st.dataframe(modules, width="stretch", hide_index=True)
+        if not causality.empty:
+            st.markdown("**Causalité et look-ahead**")
+            st.dataframe(causality, width="stretch", hide_index=True)
+    action_plan = _public_frame(failure_pack.get("action_plan"))
+    if not action_plan.empty:
+        st.markdown(
+            "<div class='btw-section'>Plan d’action priorisé</div>",
+            unsafe_allow_html=True,
+        )
+        st.dataframe(action_plan, width="stretch", hide_index=True)
+    with st.expander("Carte des causes racines", expanded=False):
+        root_causes = _public_frame(failure_pack.get("root_cause_map"))
+        if not root_causes.empty:
+            st.dataframe(root_causes, width="stretch", hide_index=True)
+    with st.expander("Dépendances et actions interdites", expanded=False):
+        dependencies = _public_frame(failure_pack.get("dependency_map"))
+        if not dependencies.empty:
+            st.dataframe(dependencies, width="stretch", hide_index=True)
+
+
+def _render_stress_capacity(
+    *, ticker: str, institutional: Any, advanced_packs: Mapping[str, Any] | None
+) -> None:
+    packs = dict(advanced_packs or {})
+    errors = packs.get("errors")
+    if isinstance(errors, Mapping) and errors:
+        st.warning(
+            "Certains diagnostics restent indisponibles : "
+            + " · ".join(public_label(name) for name in errors)
+        )
+    st.caption(
+        "Scénarios extrêmes · autorité du ledger exécuté. Exécution, capacité, queues, "
+        "événements, marge et attribution · diagnostics historiques uniquement; ils ne "
+        "peuvent ni remplacer le gate institutionnel ni autoriser un déploiement."
+    )
+    scenario_tab, liquidity_tab, execution_tab, margin_tab, actions_tab = st.tabs(
+        [
+            "Scénarios extrêmes",
+            "Liquidité & capacité",
+            "Exécution réaliste",
+            "Marge & événements",
+            "Causes & actions",
+        ]
+    )
+    with scenario_tab:
+        _render_scenario_stress(institutional, ticker)
+    with liquidity_tab:
+        _render_liquidity_capacity(packs.get("liquidity", {}), ticker)
+    with execution_tab:
+        _render_execution_realism(packs.get("execution", {}), ticker)
+    with margin_tab:
+        _render_margin_and_events(
+            packs.get("event_stress"),
+            packs.get("margin", {}),
+            packs.get("tail_risk", {}),
+            ticker,
+        )
+    with actions_tab:
+        _render_failure_actions(
+            packs.get("failure_attribution", {}),
+            packs.get("deployment", {}),
+            packs.get("test_harness", {}),
+        )
+
+
 def _render_evidence_configuration(
     *,
     bars: pd.DataFrame,
@@ -954,6 +1506,7 @@ def render_backtest_workspace(
     institutional: Any,
     institutional_context: Mapping[str, Any] | None,
     engine_error: str,
+    advanced_packs: Mapping[str, Any] | None = None,
 ) -> None:
     """Render the complete decision-first Backtest Lab workspace."""
 
@@ -1032,12 +1585,13 @@ def render_backtest_workspace(
         ]
     )
 
-    summary_tab, results_tab, trades_tab, validation_tab, evidence_tab = st.tabs(
+    summary_tab, results_tab, trades_tab, validation_tab, stress_tab, evidence_tab = st.tabs(
         [
             "Synthèse",
             "Résultats",
             "Transactions",
             "Validation",
+            "Stress & capacité",
             "Preuves",
         ]
     )
@@ -1216,6 +1770,13 @@ def render_backtest_workspace(
                 st.info("Matrice indisponible pour cette stratégie.")
         st.caption(
             "Les diagnostics historiques n’autorisent jamais le run; seul le gate du ledger exécuté fait autorité."
+        )
+
+    with stress_tab:
+        _render_stress_capacity(
+            ticker=ticker,
+            institutional=institutional,
+            advanced_packs=advanced_packs,
         )
 
     with evidence_tab:
