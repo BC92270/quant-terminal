@@ -1342,7 +1342,13 @@ def _rsi(close: pd.Series, window: int = 14) -> pd.Series:
     avg_loss = loss.ewm(alpha=1 / max(window, 1), adjust=False).mean()
 
     rs = avg_gain / avg_loss.replace(0, np.nan)
-    return (100 - (100 / (1 + rs))).fillna(50)
+    rsi = 100 - (100 / (1 + rs))
+    # Standard Wilder boundaries: gains without any loss imply RSI=100,
+    # while a genuinely flat path remains neutral at 50.  Treating both as
+    # 50 suppresses valid exits in monotonic recoveries.
+    rsi = rsi.mask((avg_loss == 0) & (avg_gain > 0), 100.0)
+    rsi = rsi.mask((avg_loss == 0) & (avg_gain == 0), 50.0)
+    return rsi.fillna(50.0)
 
 
 
@@ -3667,8 +3673,12 @@ def _compute_metrics(bt: pd.DataFrame, cfg: BacktestConfig | None = None) -> dic
     periods_per_year = _annualization_for_frame(bt, cfg)
     years = max(len(daily) / float(periods_per_year), 1 / float(periods_per_year))
 
-    total_return = bt["equity"].iloc[-1] / bt["equity"].iloc[0] - 1
-    benchmark_return = bt["benchmark"].iloc[-1] / bt["benchmark"].iloc[0] - 1
+    configured_capital = _safe_float(getattr(cfg, "capital", np.nan), np.nan) if cfg is not None else np.nan
+    if not np.isfinite(configured_capital) or configured_capital <= 0:
+        first_net = _safe_float(daily.iloc[0], 0.0)
+        configured_capital = bt["equity"].iloc[0] / (1.0 + first_net) if first_net > -1.0 else bt["equity"].iloc[0]
+    total_return = bt["equity"].iloc[-1] / configured_capital - 1
+    benchmark_return = bt["benchmark"].iloc[-1] / configured_capital - 1
 
     cagr = (1 + total_return) ** (1 / years) - 1 if total_return > -1 else -1
     bench_cagr = (1 + benchmark_return) ** (1 / years) - 1 if benchmark_return > -1 else -1
@@ -3700,7 +3710,7 @@ def _compute_metrics(bt: pd.DataFrame, cfg: BacktestConfig | None = None) -> dic
 
     bench_sharpe = bench_daily.mean() / bench_daily.std() * np.sqrt(periods_per_year) if bench_daily.std() > 0 else np.nan
 
-    prev_equity = bt["equity"].shift(1).fillna(bt["equity"].iloc[0])
+    prev_equity = bt["equity"].shift(1).fillna(configured_capital)
     cost_dollars = (bt["costs"].abs() * prev_equity).sum()
 
     var_95 = daily.quantile(0.05)
@@ -30484,13 +30494,105 @@ def _render_institutional_scenario_lab_v60(
     )
     return pack
 
+
+_INSTITUTIONAL_RUN_DEFAULTS: dict[str, Any] = {
+    "bt_v70_execution_model": "square_root",
+    "bt_v70_point_in_time_self_attested": False,
+    "bt_v70_pit_manifest": None,
+    "bt_v70_spread": 2.0,
+    "bt_v70_impact": 0.10,
+    "bt_v70_participation": 0.10,
+    "bt_v70_borrow": 0.0,
+    "bt_v70_paths": 250,
+    "bt_v70_horizon": None,
+    "bt_v70_seed": 41,
+    "bt_v70_confidence": 0.975,
+    "bt_v70_reverse_dd": -0.20,
+    "bt_v70_candidates": None,
+    "bt_v70_candidates_self_attested": False,
+    "bt_v70_factors": None,
+}
+
+
+def _backtest_institutional_draft_state(periods_per_year: int) -> dict[str, Any]:
+    """Snapshot execution/evidence controls so a run cannot change implicitly."""
+
+    state: dict[str, Any] = {}
+    for key, default in _INSTITUTIONAL_RUN_DEFAULTS.items():
+        if key == "bt_v70_horizon" and default is None:
+            default = int(periods_per_year)
+        state[key] = st.session_state.get(key, default)
+    return state
+
+
+def _backtest_fingerprint_value(value: Any) -> Any:
+    """Return a deterministic, compact value suitable for a UI run fingerprint."""
+
+    if isinstance(value, pd.DataFrame):
+        try:
+            payload = pd.util.hash_pandas_object(value, index=True).values.tobytes()
+            return {"kind": "dataframe", "shape": value.shape, "sha256": hashlib.sha256(payload).hexdigest()}
+        except Exception:
+            return {"kind": "dataframe", "shape": value.shape, "repr": repr(value.head(3))}
+    if isinstance(value, pd.Series):
+        try:
+            payload = pd.util.hash_pandas_object(value, index=True).values.tobytes()
+            return {"kind": "series", "size": len(value), "sha256": hashlib.sha256(payload).hexdigest()}
+        except Exception:
+            return {"kind": "series", "size": len(value)}
+    if isinstance(value, (bytes, bytearray)):
+        return {"kind": "bytes", "size": len(value), "sha256": hashlib.sha256(bytes(value)).hexdigest()}
+    if hasattr(value, "getvalue"):
+        try:
+            payload = value.getvalue()
+            if isinstance(payload, str):
+                payload = payload.encode("utf-8")
+            return {
+                "kind": "upload",
+                "name": str(getattr(value, "name", "")),
+                "size": len(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        except Exception:
+            return {"kind": "upload", "name": str(getattr(value, "name", ""))}
+    if isinstance(value, dict):
+        return {str(key): _backtest_fingerprint_value(item) for key, item in sorted(value.items(), key=lambda item: str(item[0]))}
+    if isinstance(value, (list, tuple)):
+        return [_backtest_fingerprint_value(item) for item in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
+
+
+def _backtest_run_fingerprint(
+    df: pd.DataFrame,
+    cfg: BacktestConfig,
+    institutional_state: dict[str, Any],
+) -> str:
+    config_payload = {
+        key: _backtest_fingerprint_value(value)
+        for key, value in sorted(vars(cfg).items())
+    }
+    data_payload = _backtest_fingerprint_value(
+        df[[column for column in ("open", "high", "low", "close", "volume") if column in df.columns]]
+    )
+    payload = {
+        "workspace_contract": "decision-first-explicit-run",
+        "config": config_payload,
+        "data": data_payload,
+        "institutional": _backtest_fingerprint_value(institutional_state),
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()
+
 def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: dict[str, Any] | None = None) -> None:
     _inject_backtest_css()
 
-    st.header(f"Backtest Lab — {ticker}")
+    st.header(f"Backtest Lab · {ticker}")
     st.caption(
-        "Validation stratégique : signal décalé d’un bar, coûts/slippage inclus, benchmark configurable, "
-        "edge quality, PSR/DSR proxy, PBO proxy, walk-forward, bootstrap, régimes et stress coûts."
+        "Définissez l’hypothèse, exécutez-la explicitement, puis suivez une décision unique "
+        "jusqu’aux preuves de reproductibilité."
     )
 
     df = _extract_ohlc(price_data)
@@ -30504,8 +30606,8 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
         st.error("Données insuffisantes pour lancer le Backtest Lab.")
         return
 
-    with st.expander("Paramètres Backtest Lab", expanded=False):
-        st.caption("Core visible · paramètres avancés repliés pour garder une interface dense.")
+    with st.expander("Configurer la stratégie et les hypothèses", expanded=False):
+        st.caption("Réglages essentiels en premier · exécution, risque et sizing disponibles à la demande.")
 
         c1, c2, c3, c4, c5 = st.columns([1.25, 1, 1, 1, 1])
         strategy = c1.selectbox(
@@ -30587,7 +30689,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
         brt_vol_percentile = 80.0
 
         if strategy == "Benchmark-Relative Trend":
-            st.markdown("**Benchmark-Relative Trend V3.5**")
+            st.markdown("**Tendance relative au benchmark**")
             st.caption(
                 "Mutation moteur contrôlée : signal basé sur l'active return vs benchmark. "
                 "Le moteur garde le décalage t+1, les coûts, le sizing et les exits existants."
@@ -30597,7 +30699,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
 
             if benchmark_mode == "Ticker Buy & Hold":
                 st.info(
-                    f"Benchmark auto V3.5 : comme le benchmark sélectionné est Ticker Buy & Hold, "
+                    f"Benchmark automatique : comme la référence sélectionnée est le titre lui-même, "
                     f"la stratégie utilisera automatiquement {auto_benchmark} comme proxy benchmark pour éviter "
                     "une comparaison de l'actif contre lui-même."
                 )
@@ -30670,7 +30772,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             )
 
             brt_vol_window = st.number_input(
-                "Volatility window V3.5",
+                "Fenêtre de volatilité",
                 min_value=5,
                 max_value=100,
                 value=20,
@@ -30679,13 +30781,13 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             )
 
             st.warning(
-                "Règle de prudence V3.5 : ne pas comparer cette stratégie à un paramètre optimisé. "
+                "Règle de prudence : ne pas comparer cette stratégie à un paramètre optimisé. "
                 "On teste une seule mutation research : active momentum vs benchmark. "
                 "Les exits/sizing/costs restent inchangés."
             )
 
         if strategy == "Manual Builder":
-            st.markdown("**Manual Strategy Builder V1**")
+            st.markdown("**Constructeur de stratégie**")
             st.caption(
                 "Construction de stratégie sans code : règles d'entrée/sortie contrôlées, "
                 "pas d'exécution Python utilisateur, signal toujours décalé t+1 par le moteur."
@@ -30783,7 +30885,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
                 )
 
             st.info(
-                "Règle V1 : entrée long si Close > Entry SMA et RSI ≥ seuil. "
+                "Règle : entrée long si Close > moyenne d’entrée et RSI ≥ seuil. "
                 "Sortie si Close < Exit SMA ou RSI < seuil de sortie. "
                 "Breakout et volume sont optionnels. Short symétrique seulement si short autorisé."
             )
@@ -30939,7 +31041,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
                 st.error(overlap_msg)
                 st.info(
                     "Colle un signal avec date et available_at dans la fenêtre affichée. "
-                    "Le mode séquentiel reste diagnostic uniquement et ne peut pas franchir le gate V7."
+                    "Le mode séquentiel reste diagnostique uniquement et ne peut pas franchir le contrôle institutionnel."
                 )
 
             else:
@@ -30964,12 +31066,12 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
         show_advanced = st.toggle("Afficher les paramètres avancés", value=False, key="bt_show_advanced_params")
 
         if show_advanced:
-            st.markdown("**Execution costs**")
+            st.markdown("**Coûts d’exécution**")
             c6, c7 = st.columns(2)
             fee_bps = c6.number_input("Frais bps / trade", min_value=0.0, max_value=100.0, value=float(fee_bps), step=1.0, key="bt_fee_bps")
             slippage_bps = c7.number_input("Slippage bps / trade", min_value=0.0, max_value=100.0, value=float(slippage_bps), step=1.0, key="bt_slippage_bps")
 
-            st.markdown("**Signal parameters**")
+            st.markdown("**Paramètres du signal**")
             c8, c9, c10, c11 = st.columns(4)
             fast_ma = c8.number_input("Fast MA", min_value=2, max_value=250, value=int(fast_ma), step=1, key="bt_fast_ma")
             slow_ma = c9.number_input("Slow MA", min_value=5, max_value=400, value=int(slow_ma), step=5, key="bt_slow_ma")
@@ -30982,10 +31084,10 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             vol_window = c14.number_input("Vol window", min_value=5, max_value=120, value=int(vol_window), step=5, key="bt_vol_window")
             vol_threshold = c15.slider("Vol threshold annualisée", min_value=0.05, max_value=1.50, value=float(vol_threshold), step=0.05, key="bt_vol_threshold")
 
-            st.markdown("**Risk Specification Layer**")
+            st.markdown("**Règles de risque**")
             st.caption(
                 "Overlay de risque appliqué au signal moteur déjà décalé t+1. "
-                "V2 OHLC : stop/take/trailing peuvent utiliser open/high/low/close, "
+                "Les stops, objectifs et stops suiveurs utilisent open/high/low/close, "
                 "avec fill au seuil, respect des gaps adverses à l'open et priorité conservatrice stop-first."
             )
 
@@ -31073,7 +31175,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             r10, r11 = st.columns(2)
 
             risk_use_ohlc_execution = r10.toggle(
-                "OHLC execution V2",
+                "Exécution OHLC",
                 value=True,
                 key="bt_risk_use_ohlc_execution",
             )
@@ -31085,12 +31187,12 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             )
 
             st.info(
-                "Risk Layer V2 : stop/take/trailing utilisent open/high/low/close si disponible. "
+                "Exécution du risque : stops, objectifs et stops suiveurs utilisent open/high/low/close si disponible. "
                 "Les fills sont capés au seuil ; les gaps adverses à l'open sont respectés ; "
                 "priorité conservatrice stop-first si plusieurs seuils sont touchés dans la même barre."
             )
 
-            st.markdown("**Position Sizing / Vol Targeting V1**")
+            st.markdown("**Dimensionnement et cible de volatilité**")
             st.caption(
                 "Sizing dynamique appliqué après le signal : fixed exposure, vol target, risk budget "
                 "et drawdown cut. Le signal reste identique ; seule l'exposition réelle change."
@@ -31190,13 +31292,13 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             )
 
             st.info(
-                "Sizing V1 : Vol Target réduit ou augmente l'exposition selon la volatilité réalisée laggée ; "
+                "Dimensionnement : la cible de volatilité ajuste l'exposition selon la volatilité réalisée décalée ; "
                 "Risk Budget cappe l'exposition selon risk/trade ÷ stop distance ; "
                 "Drawdown cut réduit l'exposition après un drawdown proxy. "
                 "Aucun levier : exposition bornée à 100%."
             )
 
-            st.markdown("**Leverage / Margin Stress V1**")
+            st.markdown("**Stress de levier et de marge**")
             st.caption(
                 "Stress de levier en lecture seule : financing cost, maintenance margin, margin breach, "
                 "forced deleveraging et liquidation proxy. Le levier n'est pas appliqué au moteur principal."
@@ -31284,7 +31386,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             )
 
             st.info(
-                "Margin Stress V1 : simulation uniquement. "
+                "Stress de marge : simulation uniquement. "
                 "Le backtest principal reste sans levier additionnel ; le bloc mesure seulement ce qui arriverait "
                 "avec levier, coût de financement, maintenance margin, breach et liquidation proxy."
             )
@@ -31375,28 +31477,141 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
         periods_per_year=int(df.attrs.get("periods_per_year", _infer_periods_per_year(df.index)[0])),
         interval_label=str(df.attrs.get("interval_label", _infer_periods_per_year(df.index)[1])),
     )
-    
 
-    if cfg.strategy == "Custom Signal Import" and not custom_signal_ready:
+    draft_cfg = cfg
+    draft_df = df
+    draft_institutional_state = _backtest_institutional_draft_state(cfg.periods_per_year)
+    draft_fingerprint = _backtest_run_fingerprint(
+        draft_df,
+        draft_cfg,
+        draft_institutional_state,
+    )
+    cache_key = f"bt_explicit_run__{str(ticker).upper().strip()}"
+    cached_run = st.session_state.get(cache_key)
+    force_run = bool(st.session_state.pop("bt_force_institutional_run", False))
+
+    action_col, status_col = st.columns([0.27, 0.73])
+    run_clicked = action_col.button(
+        "Lancer le backtest",
+        type="primary",
+        width="stretch",
+        key=f"bt_execute__{str(ticker).upper().strip()}",
+    )
+    run_requested = bool(run_clicked or force_run)
+    run_error = ""
+
+    if run_requested:
+        if draft_cfg.strategy == "Custom Signal Import" and not custom_signal_ready:
+            run_error = "Le signal importé est absent ou invalide. Le dernier run n’a pas été remplacé."
+        else:
+            candidate_result = _run_backtest(draft_df, draft_cfg)
+            if "error" in candidate_result:
+                run_error = str(candidate_result["error"])
+            else:
+                cached_run = {
+                    "fingerprint": draft_fingerprint,
+                    "cfg": draft_cfg,
+                    "bars": draft_df.copy(deep=True),
+                    "result": candidate_result,
+                    "institutional_state": dict(draft_institutional_state),
+                    "executed_at": datetime.now(timezone.utc).isoformat(),
+                }
+                st.session_state[cache_key] = cached_run
+
+    if run_error:
+        st.error(run_error)
+        if cached_run is None:
+            publish_backtest_failure_certificate_v1(
+                ticker,
+                run_error,
+                data_as_of=draft_df.index[-1] if not draft_df.empty else None,
+            )
+            return
+
+    if not isinstance(cached_run, dict):
+        status_col.markdown("**Configuration prête**  \nAucun résultat n’est calculé avant votre validation explicite.")
         publish_backtest_failure_certificate_v1(
             ticker,
-            "custom signal is absent or invalid",
-            data_as_of=df.index[-1] if not df.empty else None,
+            "explicit backtest run required",
+            data_as_of=draft_df.index[-1] if not draft_df.empty else None,
         )
         st.info(
-            "Charge ou colle un signal custom valide pour lancer le backtest. "
-            "Le moteur ne lance pas de backtest flat par défaut, afin d'éviter un faux verdict."
+            "Vérifiez la stratégie, le benchmark, les coûts et l’exposition, puis lancez le backtest. "
+            "Le signal sera décalé d’une barre et les coûts seront appliqués au turnover exécuté."
         )
         return
 
-    result = _run_backtest(df, cfg)
-    if "error" in result:
-        publish_backtest_failure_certificate_v1(
-            ticker,
-            str(result["error"]),
-            data_as_of=df.index[-1] if not df.empty else None,
+    dirty = draft_fingerprint != str(cached_run.get("fingerprint", ""))
+    if dirty:
+        status_col.markdown("**Modifications non exécutées**  \nLes résultats ci-dessous restent ceux du dernier run validé.")
+        st.warning(
+            "La configuration en cours diffère du dernier run exécuté. "
+            "Cliquez sur « Lancer le backtest » pour recalculer et remplacer les résultats affichés."
         )
-        st.error(result["error"])
+    else:
+        executed_at = str(cached_run.get("executed_at", ""))
+        status_col.markdown(
+            "**Dernier run exécuté**  \n"
+            + (executed_at.replace("T", " ")[:19] + " UTC" if executed_at else "Configuration synchronisée")
+        )
+
+    cfg = cached_run["cfg"]
+    df = cached_run["bars"]
+    result = cached_run["result"]
+    institutional_state = dict(cached_run.get("institutional_state") or {})
+
+    cached_analysis = cached_run.get("analysis_bundle")
+    if isinstance(cached_analysis, dict):
+        bt = result["data"]
+        metrics = cached_analysis["metrics"]
+        trades = cached_analysis["trades"]
+        risk_events = cached_analysis["risk_events"]
+        integrity = cached_analysis["integrity"]
+        notes = cached_analysis["notes"]
+        cost_matrix = cached_analysis["cost_matrix"]
+        sens_matrix = cached_analysis["sens_matrix"]
+        wf_df = cached_analysis["wf_df"]
+        comp_df = cached_analysis["comp_df"]
+        diagnostics = cached_analysis["diagnostics"]
+        institutional_run = cached_analysis["institutional_run"]
+        institutional_context = cached_analysis["institutional_context"]
+        institutional_engine_error = cached_analysis["institutional_engine_error"]
+        verdict = cached_analysis["verdict"]
+        reasons = cached_analysis["reasons"]
+        research_label = cached_analysis["research_label"]
+
+        publish_backtest_owner_certificate_v1(
+            ticker,
+            cfg=cfg,
+            metrics=metrics,
+            integrity=integrity,
+            diagnostics=diagnostics,
+            verdict=verdict,
+            research_label=research_label,
+            data_as_of=bt.index[-1] if isinstance(bt, pd.DataFrame) and not bt.empty else None,
+        )
+        from backtest_institutional.workspace import render_backtest_workspace
+
+        render_backtest_workspace(
+            ticker=ticker,
+            bars=df,
+            result=result,
+            cfg=cfg,
+            metrics=metrics,
+            trades=trades,
+            risk_events=risk_events,
+            integrity=integrity,
+            diagnostics=diagnostics,
+            reasons=reasons,
+            notes=notes,
+            cost_matrix=cost_matrix,
+            sens_matrix=sens_matrix,
+            wf_df=wf_df,
+            comp_df=comp_df,
+            institutional=institutional_run,
+            institutional_context=institutional_context,
+            engine_error=institutional_engine_error,
+        )
         return
 
     bt = result["data"]
@@ -31467,6 +31682,7 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
             result=result,
             cfg=cfg,
             symbol=ticker,
+            state=institutional_state,
         )
         diagnostics["institutional_v7"] = institutional_gate_summary(
             institutional_run,
@@ -31493,12 +31709,33 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
                 "authoritative_source": "UNAVAILABLE",
                 "fail_closed": True,
                 "production_authorized": False,
-                "blocking_gates": ["Institutional V7 engine"],
+                "blocking_gates": ["Institutional engine"],
                 "engine_error": institutional_engine_error,
             }
 
     verdict, _, reasons = _verdict(metrics, integrity, notes)
     research_label = _research_verdict(diagnostics.get("edge_score", 0), verdict, diagnostics)
+
+    cached_run["analysis_bundle"] = {
+        "metrics": metrics,
+        "trades": trades,
+        "risk_events": risk_events,
+        "integrity": integrity,
+        "notes": notes,
+        "cost_matrix": cost_matrix,
+        "sens_matrix": sens_matrix,
+        "wf_df": wf_df,
+        "comp_df": comp_df,
+        "diagnostics": diagnostics,
+        "institutional_run": institutional_run,
+        "institutional_context": institutional_context,
+        "institutional_engine_error": institutional_engine_error,
+        "verdict": verdict,
+        "reasons": reasons,
+        "research_label": research_label,
+    }
+    cached_run["cfg"] = cfg
+    st.session_state[cache_key] = cached_run
 
     publish_backtest_owner_certificate_v1(
         ticker,
@@ -31510,6 +31747,30 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
         research_label=research_label,
         data_as_of=bt.index[-1] if isinstance(bt, pd.DataFrame) and not bt.empty else None,
     )
+
+    from backtest_institutional.workspace import render_backtest_workspace
+
+    render_backtest_workspace(
+        ticker=ticker,
+        bars=df,
+        result=result,
+        cfg=cfg,
+        metrics=metrics,
+        trades=trades,
+        risk_events=risk_events,
+        integrity=integrity,
+        diagnostics=diagnostics,
+        reasons=reasons,
+        notes=notes,
+        cost_matrix=cost_matrix,
+        sens_matrix=sens_matrix,
+        wf_df=wf_df,
+        comp_df=comp_df,
+        institutional=institutional_run,
+        institutional_context=institutional_context,
+        engine_error=institutional_engine_error,
+    )
+    return
 
     _render_institutional_gate_banner(diagnostics["institutional_v7"])
     _render_backtest_header(ticker, cfg, metrics, integrity, diagnostics, research_label)
