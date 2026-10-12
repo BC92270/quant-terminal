@@ -30,6 +30,8 @@ métier nouvelle doit vivre dans les packages de domaine :
 | Domaine | Package principal |
 | --- | --- |
 | Backtests institutionnels | `backtest_institutional/` |
+| Noyau backtest multi-actifs | `backtest_universal/` |
+| Contrat des stratégies isolées | `backtest_sdk/` |
 | Intelligence entreprise | `company_intelligence/` |
 | Corrélations et dépendances | `correlation_matrix_section/` |
 | Fixed income et crédit | `fixed_income/` |
@@ -92,6 +94,7 @@ une passerelle explicite Twelve Data → Alpha Vantage → source publique adapt
 ## Documentation
 
 - `docs/ARCHITECTURE.md` : frontières, flux et règles de dépendances.
+- `docs/BACKTEST_UNIVERSAL.md` : contrat causal, format multi-actifs, sécurité et gates du Backtest Lab universel.
 - `docs/REPOSITORY_AUDIT.md` : audit structurel et décisions de nettoyage.
 - `docs/WORLDMONITOR_AUDIT.md` : architecture WorldMonitor.
 - `docs/WORLDMONITOR_INSTITUTIONAL_RESEARCH.md` : sources et trajectoire quant.

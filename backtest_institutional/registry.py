@@ -334,6 +334,8 @@ def repository_provenance(
     """
     package = Path(package_path).resolve() if package_path is not None else Path(__file__).resolve().parent
     requested = _resolve_requested_path(code_path, package)
+    universal_package = package.parent / "backtest_universal"
+    strategy_sdk_package = package.parent / "backtest_sdk"
     starts = [package if package.is_dir() else package.parent, requested if requested.is_dir() else requested.parent]
     root: Path | None = None
     for start in starts:
@@ -357,13 +359,36 @@ def repository_provenance(
             return None
 
     scope = sorted({
-        item for item in (relative_scope(package), relative_scope(requested)) if item
+        item
+        for item in (
+            relative_scope(package),
+            relative_scope(requested),
+            relative_scope(universal_package) if universal_package.is_dir() else None,
+            relative_scope(strategy_sdk_package) if strategy_sdk_package.is_dir() else None,
+        )
+        if item
     })
     code_files: set[str] = set()
     if package.is_dir():
         code_files.update(
             relative
             for path in package.rglob("*.py")
+            if "__pycache__" not in path.parts
+            for relative in [relative_scope(path)]
+            if relative
+        )
+    if universal_package.is_dir():
+        code_files.update(
+            relative
+            for path in universal_package.rglob("*.py")
+            if "__pycache__" not in path.parts
+            for relative in [relative_scope(path)]
+            if relative
+        )
+    if strategy_sdk_package.is_dir():
+        code_files.update(
+            relative
+            for path in strategy_sdk_package.rglob("*.py")
             if "__pycache__" not in path.parts
             for relative in [relative_scope(path)]
             if relative
@@ -525,6 +550,16 @@ def _code_snapshot(
         for path in sorted(package.rglob("*.py")):
             if "__pycache__" not in path.parts:
                 files[f"backtest_institutional/{path.relative_to(package).as_posix()}"] = path
+    universal_package = package.parent / "backtest_universal"
+    if universal_package.is_dir():
+        for path in sorted(universal_package.rglob("*.py")):
+            if "__pycache__" not in path.parts:
+                files[f"backtest_universal/{path.relative_to(universal_package).as_posix()}"] = path
+    strategy_sdk_package = package.parent / "backtest_sdk"
+    if strategy_sdk_package.is_dir():
+        for path in sorted(strategy_sdk_package.rglob("*.py")):
+            if "__pycache__" not in path.parts:
+                files[f"backtest_sdk/{path.relative_to(strategy_sdk_package).as_posix()}"] = path
 
     requested = _resolve_requested_path(code_path, package)
     if requested.is_file():

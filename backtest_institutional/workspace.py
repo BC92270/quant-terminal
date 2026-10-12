@@ -1585,7 +1585,15 @@ def render_backtest_workspace(
         ]
     )
 
-    summary_tab, results_tab, trades_tab, validation_tab, stress_tab, evidence_tab = st.tabs(
+    (
+        summary_tab,
+        results_tab,
+        trades_tab,
+        validation_tab,
+        stress_tab,
+        evidence_tab,
+        universal_tab,
+    ) = st.tabs(
         [
             "Synthèse",
             "Résultats",
@@ -1593,6 +1601,7 @@ def render_backtest_workspace(
             "Validation",
             "Stress & capacité",
             "Preuves",
+            "Moteur universel",
         ]
     )
 
@@ -1789,3 +1798,10 @@ def render_backtest_workspace(
             context=institutional_context,
             engine_error=engine_error,
         )
+
+    with universal_tab:
+        # Imported lazily so the mature single-asset workflow remains isolated
+        # from the additive multi-asset kernel and keeps its existing contract.
+        from .universal_workspace import render_universal_workspace
+
+        render_universal_workspace(ticker=ticker, bars=bars, cfg=cfg)

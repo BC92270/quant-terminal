@@ -67,7 +67,8 @@ def test_explicit_run_renders_the_complete_workspace_without_ui_errors() -> None
         "Causes & actions",
     ]
     assert labels[10] == "Preuves"
-    assert labels[11:] == ["Données", "Exécution", "Statistiques", "Gouvernance"]
+    assert labels[11:15] == ["Données", "Exécution", "Statistiques", "Gouvernance"]
+    assert labels[15] == "Moteur universel"
     assert any(
         "Spirale de liquidité (liquidity trap) calculée" in item.value
         for item in app.success
@@ -104,3 +105,4 @@ def test_draft_change_keeps_the_last_executed_run_and_marks_it_dirty() -> None:
         "Stress & capacité",
     ]
     assert labels[10] == "Preuves"
+    assert labels[15] == "Moteur universel"
