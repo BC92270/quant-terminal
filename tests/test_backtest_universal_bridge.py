@@ -118,6 +118,41 @@ def test_bridge_can_approve_research_but_never_production() -> None:
     assert envelope.model_card["authoritative_source"] == "oms_execution_ledger"
 
 
+def test_bridge_rejects_margin_breach_even_when_calculation_is_available() -> None:
+    result, master, market, targets, config = _run()
+    result.diagnostics["margin_calls"] = 1
+    result.diagnostics["unresolved_margin_deficit"] = True
+    result.daily.loc[result.daily.index[-1], "maintenance_excess"] = -1.0
+    envelope = build_universal_institutional_envelope(
+        result=result,
+        security_master=master,
+        market_data=market,
+        target_weights=targets,
+        fx_rates={},
+        cash_rates={"USD": pd.Series(0.0, index=next(iter(market.values())).index)},
+        config=config,
+        strategy_name="Margin breach",
+        strategy_mode="native",
+        point_in_time_authenticated=True,
+        sandbox_attested=False,
+        calendar_authenticated=True,
+        execution_calibrated=True,
+        statistical_validation={
+            "purged_oos_pass": True,
+            "multiple_testing_pass": True,
+            "scenario_resilience_pass": True,
+        },
+    )
+
+    settlement_gate = next(
+        item
+        for item in envelope.gate["checks"]
+        if item["gate"] == "Settlement and margin"
+    )
+    assert settlement_gate["state"] == "FAIL"
+    assert envelope.gate["decision"] == "REJECT / REDESIGN"
+
+
 @pytest.mark.parametrize(
     "mode",
     [

@@ -322,11 +322,91 @@ def test_strategy_policy_accepts_sdk_contract_and_blocks_escape_vectors() -> Non
         "def on_bar(ctx, bar):\n    return ().__class__.__mro__\n",
         "import os\ndef on_bar(ctx, bar):\n    os.system('id')\n",
         "def on_bar(ctx, bar):\n    return open('/etc/passwd').read()\n",
+        "import numpy as np\ndef on_bar(ctx, bar):\n    return np.fromfile('/etc/passwd')\n",
+        "import numpy as np\ndef on_bar(ctx, bar, leak=np.fromfile('/etc/passwd')):\n    pass\n",
+        "import numpy as np\ndef on_bar(ctx: np.fromfile('/etc/passwd'), bar):\n    pass\n",
         "def on_bar(ctx, bar):\n    while True:\n        pass\n",
     ]
     for source in attacks:
         report = validate_strategy_source(source)
         assert not report.passed
+
+
+def test_target_available_at_is_aligned_by_event_identity_not_position() -> None:
+    index = pd.date_range("2025-01-01", periods=3, freq="D", tz="UTC")
+    instrument = Instrument("AAA", AssetClass.EQUITY, "USD", instrument_id="AAA")
+    engine = UniversalBacktestEngine(
+        security_master=SecurityMaster([instrument]), config=_config()
+    )
+    targets = pd.DataFrame({instrument.key: [0.0, 0.5, 0.0]}, index=index)
+    shuffled = pd.Series(
+        [index[2], index[1], index[1]],
+        index=pd.DatetimeIndex([index[2], index[1], index[0]]),
+    )
+
+    _, available = engine._targets(
+        targets, {instrument.key: instrument}, shuffled
+    )
+
+    assert available.loc[index[0]] == index[1]
+    assert available.loc[index[1]] == index[1]
+    assert available.loc[index[2]] == index[2]
+    with pytest.raises(ValueError, match="exactly match"):
+        engine._targets(
+            targets,
+            {instrument.key: instrument},
+            shuffled.drop(index[0]),
+        )
+
+
+def test_option_requires_expiry_and_open_expiry_without_bar_is_fail_closed() -> None:
+    with pytest.raises(ValueError, match="explicit expiry"):
+        Instrument(
+            "NO-EXPIRY",
+            AssetClass.OPTION,
+            "USD",
+            underlying_symbol="AAA",
+            strike=100.0,
+            option_right=OptionRight.CALL,
+        )
+
+    option_index = pd.date_range("2025-01-01", periods=2, freq="D", tz="UTC")
+    portfolio_index = pd.date_range("2025-01-01", periods=4, freq="D", tz="UTC")
+    expiry = portfolio_index[2].to_pydatetime()
+    underlying = Instrument(
+        "AAA", AssetClass.EQUITY, "USD", instrument_id="AAA"
+    )
+    option = Instrument(
+        "AAA-C-100",
+        AssetClass.OPTION,
+        "USD",
+        instrument_id="AAA-C-100",
+        underlying_symbol="AAA",
+        strike=100.0,
+        option_right=OptionRight.CALL,
+        expiry=expiry,
+        multiplier=100.0,
+    )
+    result = UniversalBacktestEngine(
+        security_master=SecurityMaster([underlying, option]), config=_config()
+    ).run(
+        market_data={
+            underlying.key: _bars(
+                portfolio_index, [100.0, 101.0, 102.0, 103.0]
+            ),
+            option.key: _bars(option_index, [5.0, 5.0]),
+        },
+        target_weights=pd.DataFrame(
+            {option.key: [0.01, np.nan]}, index=option_index
+        ),
+    )
+
+    assert result.status == "PARTIAL"
+    assert result.positions.set_index("instrument_id").loc[option.key, "quantity"] > 0
+    assert any(
+        "expired position remains open" in item
+        for item in result.diagnostics["lifecycle_gaps"]
+    )
 
 
 def test_strategy_job_fails_closed_without_attested_oci_sandbox() -> None:
@@ -626,6 +706,7 @@ def test_contract_lots_and_adverse_tick_rounding_are_enforced_by_default() -> No
         lot_size=0.25,
         tick_size=0.25,
         underlying_symbol="UNDERLYING",
+        expiry=(index[-1] + pd.Timedelta(days=30)).to_pydatetime(),
         strike=100.0,
         option_right=OptionRight.CALL,
     )

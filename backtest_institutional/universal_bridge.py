@@ -54,6 +54,20 @@ def _checks(
         not result.daily.empty
         and result.daily.get("margin_available", pd.Series(dtype=bool)).fillna(False).all()
     )
+    margin_breached = bool(
+        int(result.diagnostics.get("margin_calls") or 0) > 0
+        or result.diagnostics.get("portfolio_insolvent")
+        or result.diagnostics.get("unresolved_margin_deficit")
+        or (
+            not result.daily.empty
+            and (
+                pd.to_numeric(
+                    result.daily.get("maintenance_excess"), errors="coerce"
+                ).fillna(float("-inf"))
+                < -1e-8
+            ).any()
+        )
+    )
     normalized_mode = str(strategy_mode).strip().lower()
     code_mode = normalized_mode in {
         "python", "python_strategy", "javascript", "typescript", "cpp",
@@ -150,9 +164,15 @@ def _checks(
         },
         {
             "gate": "Settlement and margin",
-            "state": "PASS" if margin_available else "UNAVAILABLE",
-            "detail": "settlement and margin reconciled"
+            "state": "FAIL"
+            if margin_breached
+            else "PASS"
             if margin_available
+            else "UNAVAILABLE",
+            "detail": "settlement and margin reconciled"
+            if margin_available and not margin_breached
+            else "margin call, insolvency or maintenance deficit detected"
+            if margin_breached
             else "clearing or broker margin evidence incomplete",
         },
         {

@@ -327,9 +327,30 @@ class UniversalBacktestEngine:
         if target_available_at is None:
             available = pd.Series(targets.index, index=targets.index)
         else:
-            raw_available = pd.to_datetime(target_available_at, errors="coerce")
+            if not isinstance(target_available_at, pd.Series):
+                raise TypeError("target_available_at must be a pandas Series")
+            indexed_available = target_available_at.copy()
+            indexed_available.index = _utc_index(
+                indexed_available.index,
+                self.config.data_timezone,
+                label="target available_at event index",
+            )
+            if indexed_available.index.has_duplicates:
+                raise ValueError("target_available_at event index contains duplicates")
+            missing = targets.index.difference(indexed_available.index)
+            extra = indexed_available.index.difference(targets.index)
+            if len(missing) or len(extra):
+                raise ValueError(
+                    "target_available_at index must exactly match target event times"
+                )
+            indexed_available = indexed_available.reindex(targets.index)
+            raw_available = pd.to_datetime(indexed_available, errors="coerce")
             available = pd.Series(
-                _utc_index(raw_available, self.config.data_timezone, label="target available_at"),
+                _utc_index(
+                    raw_available,
+                    self.config.data_timezone,
+                    label="target available_at",
+                ),
                 index=targets.index,
             )
         if available.isna().any():
@@ -399,6 +420,7 @@ class UniversalBacktestEngine:
         timeline_values: set[pd.Timestamp] = set()
         for frame in frames.values():
             timeline_values.update(frame.index)
+        market_horizon = max(frame.index.max() for frame in frames.values())
         timeline_values.update(pd.DatetimeIndex(available))
         for series in normalised_fx.values():
             timeline_values.update(series.index)
@@ -407,6 +429,12 @@ class UniversalBacktestEngine:
         for calendar in calendar_contracts.values():
             timeline_values.add(pd.Timestamp(calendar.exercise_cutoff_at))
             timeline_values.add(pd.Timestamp(calendar.settlement_at))
+        for instrument in instruments.values():
+            if (
+                instrument.expiry is not None
+                and pd.Timestamp(instrument.expiry) <= market_horizon
+            ):
+                timeline_values.add(pd.Timestamp(instrument.expiry))
         for frame in frames.values():
             if "dividend_payable_at" not in frame:
                 continue
@@ -447,6 +475,7 @@ class UniversalBacktestEngine:
         volume_used: dict[tuple[pd.Timestamp, str], float] = {}
         lifecycle_gaps: list[str] = []
         fatal_reasons: list[str] = []
+        risk_failures: list[str] = []
         order_counter = 0
         active_cash_rates: dict[str, float] = {}
         previous_timestamp: pd.Timestamp | None = None
@@ -1973,6 +2002,23 @@ class UniversalBacktestEngine:
                         nav = portfolio.nav(fx, instruments)
                         margin = current_margin(timestamp)
 
+                insolvency_tolerance = max(
+                    1e-8, abs(float(self.config.initial_cash)) * 1e-12
+                )
+                if not np.isfinite(nav) or nav <= insolvency_tolerance:
+                    risk_failures.append(
+                        f"portfolio insolvency at {timestamp.isoformat()} (NAV={nav})"
+                    )
+                if (
+                    margin.available
+                    and margin.maintenance_excess_base < -insolvency_tolerance
+                ):
+                    risk_failures.append(
+                        "unresolved maintenance-margin deficit at "
+                        f"{timestamp.isoformat()} "
+                        f"({margin.maintenance_excess_base})"
+                    )
+
                 last_margin_snapshot = margin
 
                 gross = margin.gross_notional_base / nav if nav > 0 else np.nan
@@ -1992,6 +2038,9 @@ class UniversalBacktestEngine:
                 )
                 if not margin.available:
                     lifecycle_gaps.extend(margin.reasons)
+
+                if risk_failures:
+                    break
 
                 if strategy_runtime is not None and rows_at_time:
                     bars: dict[str, Bar] = {}
@@ -2154,6 +2203,18 @@ class UniversalBacktestEngine:
                 f"{key}: option lifecycle instruction remains unsettled"
                 for key in sorted(pending_option_instructions)
             )
+        final_clock = timeline.max().to_pydatetime() if len(timeline) else None
+        if final_clock is not None:
+            for key, position in sorted(portfolio.positions.items()):
+                instrument = instruments[key]
+                if (
+                    position.quantity
+                    and instrument.expiry is not None
+                    and final_clock >= instrument.expiry
+                ):
+                    lifecycle_gaps.append(
+                        f"{key}: expired position remains open at terminal clock"
+                    )
         oms_events = [
             {
                 "event_id": item.event_id,
@@ -2170,10 +2231,22 @@ class UniversalBacktestEngine:
         terminal_target_changes = sorted(
             key for key in pending if pending_is_change.get(key, False)
         )
-        if fatal_reasons or daily.empty:
+        if risk_failures:
+            status = "UNAVAILABLE"
+            reason = "RISK REJECTED: " + "; ".join(
+                dict.fromkeys(risk_failures)
+            )
+        elif fatal_reasons or daily.empty:
             status = "UNAVAILABLE"
             reason = "DATA REQUIRED: " + "; ".join(dict.fromkeys(fatal_reasons or ["no valuations"]))
-        elif rejections or partial_fills or lifecycle_gaps or terminal_target_changes:
+        elif (
+            rejections
+            or partial_fills
+            or lifecycle_gaps
+            or terminal_target_changes
+            or margin_calls
+            or forced_liquidations
+        ):
             status = "PARTIAL"
             reason = "Run completed with fail-closed limitations"
         else:
@@ -2263,6 +2336,13 @@ class UniversalBacktestEngine:
             "gross_limit_clips": gross_limit_clips,
             "margin_calls": margin_calls,
             "forced_liquidations": forced_liquidations,
+            "risk_failures": list(dict.fromkeys(risk_failures)),
+            "portfolio_insolvent": any(
+                "insolvency" in item for item in risk_failures
+            ),
+            "unresolved_margin_deficit": any(
+                "maintenance-margin deficit" in item for item in risk_failures
+            ),
             "no_trade_targets": no_trade_targets,
             "rebalance_tolerance_weight": self.config.rebalance_tolerance_weight,
             "fx_conversions": list(portfolio.cash.conversions),

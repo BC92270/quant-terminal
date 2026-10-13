@@ -199,6 +199,8 @@ class Instrument:
         if self.asset_class == AssetClass.OPTION:
             if not self.underlying_symbol or self.strike is None or self.option_right is None:
                 raise ValueError("options require underlying_symbol, strike and option_right")
+            if self.expiry is None:
+                raise ValueError("options require an explicit expiry")
         threshold = float(self.automatic_exercise_threshold)
         if not math.isfinite(threshold) or threshold < 0:
             raise ValueError("automatic_exercise_threshold must be finite and non-negative")

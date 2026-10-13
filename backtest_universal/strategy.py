@@ -37,7 +37,7 @@ _FORBIDDEN_NAMES = {
     "help", "type", "object", "memoryview",
 }
 _FORBIDDEN_IO_METHOD = re.compile(
-    r"^(?:read_|to_(?:csv|pickle|parquet|excel|sql|feather|hdf)|load|save|memmap|ctypeslib)"
+    r"^(?:read_|fromfile|genfromtxt|loadtxt|to_(?:csv|pickle|parquet|excel|sql|feather|hdf)|load|save|savez|savetxt|memmap|ctypeslib)"
 )
 _FORBIDDEN_NODES = (
     ast.ClassDef,
@@ -270,6 +270,13 @@ class _PolicyVisitor(ast.NodeVisitor):
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         if node.decorator_list:
             self.issue(node, "decorators are forbidden")
+        # Defaults and annotations execute or resolve at function-definition
+        # time.  They must receive the same capability checks as the body.
+        self.visit(node.args)
+        if node.returns is not None:
+            self.visit(node.returns)
+        for type_parameter in getattr(node, "type_params", ()):  # Python 3.12+
+            self.visit(type_parameter)
         self.function_stack.append(node.name)
         for child in node.body:
             self.visit(child)

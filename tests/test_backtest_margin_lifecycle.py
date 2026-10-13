@@ -515,6 +515,75 @@ def test_engine_fails_closed_when_span_parameters_are_not_point_in_time() -> Non
     )
 
 
+def test_engine_rejects_unresolved_post_settlement_insolvency() -> None:
+    underlying = Instrument(
+        "SPY", AssetClass.ETF, "USD", instrument_id="ARCX:SPY"
+    )
+    expiry = datetime(2025, 1, 3, 21, tzinfo=timezone.utc)
+    option = Instrument(
+        "SPY-C-100",
+        AssetClass.OPTION,
+        "USD",
+        instrument_id="OPRA:SPY-C-100",
+        underlying_symbol=underlying.key,
+        multiplier=100.0,
+        strike=100.0,
+        option_right=OptionRight.CALL,
+        expiry=expiry,
+        settlement_type=SettlementType.CASH,
+        initial_margin_rate=0.01,
+        maintenance_margin_rate=0.01,
+    )
+    index = pd.DatetimeIndex(
+        [
+            datetime(2025, 1, 1, 21, tzinfo=timezone.utc),
+            datetime(2025, 1, 2, 21, tzinfo=timezone.utc),
+            expiry,
+        ]
+    )
+
+    def bars(values: list[float]) -> pd.DataFrame:
+        return pd.DataFrame(
+            {
+                "open": values,
+                "high": values,
+                "low": values,
+                "close": values,
+                "volume": [1_000_000.0] * len(values),
+            },
+            index=index,
+        )
+
+    result = UniversalBacktestEngine(
+        security_master=SecurityMaster([underlying, option]),
+        config=UniversalEngineConfig(
+            initial_cash=100_000.0,
+            allow_short=True,
+            commission_bps=0.0,
+            spread_bps=0.0,
+            slippage_bps=0.0,
+            impact_bps_at_full_participation=0.0,
+            fx_conversion_bps=0.0,
+        ),
+    ).run(
+        market_data={
+            underlying.key: bars([100.0, 100.0, 200.0]),
+            option.key: bars([1.0, 1.0, 100.0]),
+        },
+        target_weights=pd.DataFrame(
+            {option.key: [-3.0, float("nan"), float("nan")]},
+            index=index,
+        ),
+    )
+
+    assert result.status == "UNAVAILABLE"
+    assert result.reason.startswith("RISK REJECTED")
+    assert result.daily.iloc[-1]["nav"] < 0
+    assert result.diagnostics["margin_calls"] >= 1
+    assert result.diagnostics["portfolio_insolvent"] is True
+    assert result.diagnostics["unresolved_margin_deficit"] is True
+
+
 def test_adapters_accept_future_margin_packages_and_option_calendar_contracts() -> None:
     parameter_set = parse_margin_parameter_set(
         {
