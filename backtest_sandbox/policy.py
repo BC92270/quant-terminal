@@ -100,11 +100,11 @@ _RULES: dict[StrategyLanguage, tuple[tuple[str, str], ...]] = {
 }
 
 _ENTRYPOINTS: dict[StrategyLanguage, tuple[str, ...]] = {
-    StrategyLanguage.JAVASCRIPT: (r"\bfunction\s+onBar\s*\(",),
-    StrategyLanguage.TYPESCRIPT: (r"\bfunction\s+onBar\s*\(",),
-    StrategyLanguage.CPP: (r"\bvoid\s+on_bar\s*\(",),
-    StrategyLanguage.RUST: (r"\bfn\s+on_bar\s*\(",),
-    StrategyLanguage.CSHARP: (r"\b(?:static\s+)?void\s+OnBar\s*\(",),
+    StrategyLanguage.JAVASCRIPT: (r"\bfunction\s+(?:onSlice|onBar)\s*\(",),
+    StrategyLanguage.TYPESCRIPT: (r"\bfunction\s+(?:onSlice|onBar)\s*\(",),
+    StrategyLanguage.CPP: (r"\bvoid\s+(?:on_slice|on_bar)\s*\(",),
+    StrategyLanguage.RUST: (r"\bfn\s+(?:on_slice|on_bar)\s*\(",),
+    StrategyLanguage.CSHARP: (r"\b(?:static\s+)?void\s+(?:OnSlice|OnBar)\s*\(",),
 }
 
 
@@ -143,7 +143,7 @@ def validate_source(
             issues.append(message)
     for pattern in _ENTRYPOINTS.get(lang, ()):
         if not re.search(pattern, raw, flags=re.MULTILINE):
-            issues.append("required strategy entrypoint is missing")
+            issues.append("required on_slice/onSlice or on_bar/onBar entrypoint is missing")
     if len(raw.splitlines()) > 10_000:
         issues.append("source exceeds 10,000 lines")
     unique = tuple(dict.fromkeys(issues))

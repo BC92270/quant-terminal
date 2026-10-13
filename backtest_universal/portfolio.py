@@ -306,6 +306,146 @@ class PortfolioLedger:
             }
         )
 
+    def apply_distribution(
+        self,
+        parent: Instrument,
+        distributed: Instrument,
+        ratio: float,
+        at: datetime,
+        *,
+        kind: str,
+        cost_allocation: float = 0.0,
+    ) -> float:
+        """Credit a spin-off or rights instrument without fabricating cash.
+
+        ``ratio`` is expressed in distributed units per parent unit.  Cost
+        allocation is explicit and defaults to zero because historical tax
+        basis allocations are point-in-time reference data, not a safe value
+        to infer.  The market value becomes part of NAV only after the child
+        instrument receives a contemporaneous mark.
+        """
+
+        value = float(ratio)
+        allocation = float(cost_allocation)
+        if not math.isfinite(value) or value <= 0:
+            raise ValueError("distribution ratio must be finite and positive")
+        if not math.isfinite(allocation) or not 0.0 <= allocation <= 1.0:
+            raise ValueError("cost allocation must be in [0, 1]")
+        parent_position = self.position(parent.key)
+        if not parent_position.quantity:
+            return 0.0
+        distributed_quantity = parent_position.quantity * value
+        child = self.position(distributed.key)
+        if abs(child.quantity) > 1e-15:
+            raise ValueError("distribution target already has an open position")
+        child.quantity = distributed_quantity
+        child.average_price = (
+            parent_position.average_price
+            * allocation
+            * float(parent.multiplier)
+            / max(value * float(distributed.multiplier), 1e-15)
+        )
+        child.last_price = 0.0
+        if allocation:
+            parent_position.average_price *= 1.0 - allocation
+        self.realized_events.append(
+            {
+                "timestamp": _utc(at).isoformat(),
+                "symbol": parent.symbol,
+                "instrument_id": parent.key,
+                "kind": kind,
+                "distributed_instrument_id": distributed.key,
+                "ratio": value,
+                "quantity": distributed_quantity,
+                "cost_allocation": allocation,
+            }
+        )
+        return distributed_quantity
+
+    def apply_symbol_change(
+        self,
+        source: Instrument,
+        destination: Instrument,
+        at: datetime,
+        *,
+        ratio: float = 1.0,
+    ) -> float:
+        """Move an open position to a successor security deterministically."""
+
+        value = float(ratio)
+        if not math.isfinite(value) or value <= 0:
+            raise ValueError("symbol-change ratio must be finite and positive")
+        if source.quote_currency != destination.quote_currency:
+            raise ValueError("symbol change across quote currencies requires an adapter")
+        source_position = self.position(source.key)
+        if not source_position.quantity:
+            return 0.0
+        destination_position = self.position(destination.key)
+        if abs(destination_position.quantity) > 1e-15:
+            raise ValueError("symbol-change destination already has an open position")
+        new_quantity = source_position.quantity * value
+        destination_position.quantity = new_quantity
+        destination_position.average_price = (
+            source_position.average_price
+            * float(source.multiplier)
+            / max(value * float(destination.multiplier), 1e-15)
+        )
+        destination_position.last_price = (
+            source_position.last_price
+            * float(source.multiplier)
+            / max(value * float(destination.multiplier), 1e-15)
+        )
+        destination_position.realized_pnl_quote = source_position.realized_pnl_quote
+        source_position.quantity = 0.0
+        source_position.average_price = 0.0
+        source_position.last_price = 0.0
+        source_position.realized_pnl_quote = 0.0
+        self.realized_events.append(
+            {
+                "timestamp": _utc(at).isoformat(),
+                "symbol": source.symbol,
+                "instrument_id": source.key,
+                "kind": "symbol_change",
+                "destination_instrument_id": destination.key,
+                "ratio": value,
+                "quantity": new_quantity,
+            }
+        )
+        return new_quantity
+
+    def apply_cash_merger(
+        self,
+        instrument: Instrument,
+        cash_per_unit: float,
+        at: datetime,
+    ) -> float:
+        """Close a position for explicit merger consideration."""
+
+        consideration = float(cash_per_unit)
+        if not math.isfinite(consideration) or consideration < 0:
+            raise ValueError("merger cash consideration must be finite and non-negative")
+        position = self.position(instrument.key)
+        quantity = float(position.quantity)
+        if not quantity:
+            return 0.0
+        realized = position.trade(-quantity, consideration) * float(instrument.multiplier)
+        amount = quantity * consideration * float(instrument.multiplier)
+        self.cash.deposit(instrument.quote_currency, amount)
+        self.realized_events.append(
+            {
+                "timestamp": _utc(at).isoformat(),
+                "symbol": instrument.symbol,
+                "instrument_id": instrument.key,
+                "kind": "cash_merger",
+                "quantity": quantity,
+                "cash_per_unit": consideration,
+                "amount": amount,
+                "currency": instrument.quote_currency,
+                "realized_pnl": realized,
+            }
+        )
+        return amount
+
     def apply_income(
         self,
         instrument: Instrument,

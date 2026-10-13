@@ -35,6 +35,7 @@ class UniversalEngineConfig:
     auto_fx: bool = True
     allow_short: bool = False
     allow_fractional: bool = True
+    allow_fractional_contracts: bool = False
     require_volume: bool = True
     max_target_weight: float = 3.0
     max_gross_exposure: float = 4.0
@@ -135,6 +136,8 @@ def _normalise_bars(frame: pd.DataFrame, timezone_name: str, symbol: str) -> pd.
     numeric = {
         "open", "high", "low", "close", "volume", "split", "dividend",
         "funding_rate", "rollover_rate", "borrow_rate", "gas_fee",
+        "spinoff_ratio", "spinoff_cost_allocation", "rights_ratio",
+        "rights_cost_allocation", "merger_cash", "symbol_change_ratio",
     }
     for column in numeric.intersection(clean.columns):
         clean[column] = pd.to_numeric(clean[column], errors="coerce")
@@ -160,8 +163,68 @@ def _normalise_series(series: pd.Series, timezone_name: str, label: str) -> pd.S
 
 def _round_lot(quantity: float, lot: float, fractional: bool) -> float:
     effective_lot = float(lot) if not fractional else min(float(lot), 1e-8)
-    units = math.floor(abs(float(quantity)) / effective_lot + 1e-12)
+    raw_units = abs(float(quantity)) / effective_lot
+    nearest_units = round(raw_units)
+    units = (
+        int(nearest_units)
+        if math.isclose(raw_units, nearest_units, rel_tol=2e-14, abs_tol=1e-8)
+        else math.floor(raw_units + 1e-12)
+    )
     return math.copysign(units * effective_lot, quantity) if units else 0.0
+
+
+def _instrument_lot(instrument: Instrument, config: UniversalEngineConfig) -> float:
+    """Return the enforceable quantity increment for an instrument.
+
+    Futures and listed options represent contracts.  They remain integral by
+    default even when the portfolio permits fractional cash assets.  The
+    dedicated opt-in keeps the previous flexibility available for venues that
+    genuinely list fractional contracts.
+    """
+
+    lot = float(instrument.lot_size)
+    if (
+        instrument.asset_class in {AssetClass.FUTURE, AssetClass.OPTION}
+        and not config.allow_fractional_contracts
+    ):
+        return max(lot, 1.0)
+    return lot
+
+
+def _round_instrument_quantity(
+    quantity: float,
+    instrument: Instrument,
+    config: UniversalEngineConfig,
+) -> float:
+    fractional = bool(config.allow_fractional)
+    if instrument.asset_class in {AssetClass.FUTURE, AssetClass.OPTION}:
+        fractional = bool(config.allow_fractional_contracts)
+    return _round_lot(quantity, _instrument_lot(instrument, config), fractional)
+
+
+def _quantity_tolerance(
+    quantity: float,
+    instrument: Instrument,
+    config: UniversalEngineConfig,
+) -> float:
+    return max(
+        1e-12,
+        _instrument_lot(instrument, config) * 1e-6,
+        abs(float(quantity)) * 1e-10,
+    )
+
+
+def _round_fill_price(price: float, tick_size: float, signed_quantity: float) -> float:
+    """Round executions to a valid tick without improving the simulated fill."""
+
+    value = float(price)
+    tick = float(tick_size)
+    ratio = value / tick
+    if signed_quantity > 0:
+        ticks = math.ceil(ratio - 1e-12)
+    else:
+        ticks = math.floor(ratio + 1e-12)
+    return max(float(ticks) * tick, tick)
 
 
 def _settlement_at(timestamp: pd.Timestamp, days: int) -> datetime:
@@ -320,6 +383,7 @@ class UniversalBacktestEngine:
         last_rows: dict[str, pd.Series] = {}
         rejections = 0
         partial_fills = 0
+        gross_limit_clips = 0
         margin_calls = 0
         forced_liquidations = 0
         no_trade_targets = 0
@@ -351,13 +415,13 @@ class UniversalBacktestEngine:
             forced: bool = False,
             reason: str = "target_rebalance",
             reference_field: str = "open",
-        ) -> None:
+        ) -> str:
             nonlocal order_counter, rejections, partial_fills
             instrument = instruments[key]
             position = portfolio.position(key)
             delta = float(desired_quantity) - float(position.quantity)
             if abs(delta) <= 1e-12:
-                return
+                return "NOOP"
             order_counter += 1
             order_id = f"UO-{order_counter:09d}"
             reference_price = float(row[reference_field])
@@ -377,7 +441,7 @@ class UniversalBacktestEngine:
                 order.update(status="REJECTED", rejection_reason="short exposure disabled")
                 orders.append(order)
                 rejections += 1
-                return
+                return "REJECTED"
             available_quantity = abs(delta)
             volume = float(row.get("volume", np.nan))
             # A margin call or expiry does not create infinite liquidity.
@@ -396,20 +460,17 @@ class UniversalBacktestEngine:
                 order.update(status="REJECTED", rejection_reason="causal volume unavailable")
                 orders.append(order)
                 rejections += 1
-                return
-            fill_quantity = _round_lot(
-                available_quantity, instrument.lot_size, self.config.allow_fractional
+                return "REJECTED"
+            fill_quantity = _round_instrument_quantity(
+                available_quantity, instrument, self.config
             )
             if fill_quantity <= 0:
                 order.update(status="REJECTED", rejection_reason="quantity below tradable lot")
                 orders.append(order)
                 rejections += 1
-                return
+                return "REJECTED"
             fill_quantity = math.copysign(fill_quantity, delta)
-            quantity_tolerance = max(
-                min(float(instrument.lot_size), 1e-8) * 1.1,
-                abs(delta) * 1e-10,
-            )
+            quantity_tolerance = _quantity_tolerance(delta, instrument, self.config)
             if abs(fill_quantity) + quantity_tolerance < abs(delta):
                 partial_fills += 1
                 order["status"] = "PARTIAL"
@@ -427,8 +488,11 @@ class UniversalBacktestEngine:
                 + float(self.config.slippage_bps)
                 + impact_bps
             )
-            fill_price = reference_price * (
-                1.0 + math.copysign(all_in_bps / 10_000.0, fill_quantity)
+            fill_price = _round_fill_price(
+                reference_price
+                * (1.0 + math.copysign(all_in_bps / 10_000.0, fill_quantity)),
+                instrument.tick_size,
+                fill_quantity,
             )
             gas_fee = max(float(row.get("gas_fee", 0.0) or 0.0), 0.0)
             if instrument.is_cash_asset and fill_quantity > 0:
@@ -455,10 +519,8 @@ class UniversalBacktestEngine:
                     unit_cost, 1e-12
                 )
                 if abs(fill_quantity) > affordable_quantity + quantity_tolerance:
-                    fill_quantity = _round_lot(
-                        affordable_quantity,
-                        instrument.lot_size,
-                        self.config.allow_fractional,
+                    fill_quantity = _round_instrument_quantity(
+                        affordable_quantity, instrument, self.config
                     )
                     if fill_quantity <= 0:
                         order.update(
@@ -467,7 +529,7 @@ class UniversalBacktestEngine:
                         )
                         orders.append(order)
                         rejections += 1
-                        return
+                        return "REJECTED"
                     partial_fills += 1
                     order["status"] = "PARTIAL"
                     participation = (
@@ -483,8 +545,10 @@ class UniversalBacktestEngine:
                         + float(self.config.slippage_bps)
                         + impact_bps
                     )
-                    fill_price = reference_price * (
-                        1.0 + all_in_bps / 10_000.0
+                    fill_price = _round_fill_price(
+                        reference_price * (1.0 + all_in_bps / 10_000.0),
+                        instrument.tick_size,
+                        fill_quantity,
                     )
             notional_quote = abs(
                 fill_quantity * fill_price * float(instrument.multiplier)
@@ -509,7 +573,7 @@ class UniversalBacktestEngine:
                 order.update(status="REJECTED", rejection_reason=str(exc))
                 orders.append(order)
                 rejections += 1
-                return
+                return "REJECTED"
 
             settle_at = _settlement_at(timestamp, instrument.settlement_days)
             portfolio.apply_fill(
@@ -563,6 +627,7 @@ class UniversalBacktestEngine:
                 price=fill_price,
                 forced=forced,
             )
+            return str(order["status"])
 
         try:
             for timestamp in timeline:
@@ -681,23 +746,144 @@ class UniversalBacktestEngine:
                                 amount_quote=cash,
                                 payable_at=payable_at,
                             )
-                        unsupported_actions: list[str] = []
                         spinoff_ratio = float(row.get("spinoff_ratio", 0.0) or 0.0)
                         rights_ratio = float(row.get("rights_ratio", 0.0) or 0.0)
                         merger_cash = float(row.get("merger_cash", 0.0) or 0.0)
                         if np.isfinite(spinoff_ratio) and spinoff_ratio > 0:
-                            unsupported_actions.append("spinoff")
+                            distributed_id = str(
+                                row.get("spinoff_instrument_id", "") or ""
+                            ).strip()
+                            if distributed_id:
+                                try:
+                                    distributed = self.security_master.get(distributed_id)
+                                    if distributed.key not in instruments:
+                                        raise ValueError("distributed security has no subscribed feed")
+                                    distributed_row = rows_at_time.get(distributed.key)
+                                    if distributed_row is None:
+                                        raise ValueError("distributed security has no contemporaneous mark")
+                                    quantity = portfolio.apply_distribution(
+                                        instrument,
+                                        distributed,
+                                        spinoff_ratio,
+                                        stamp_dt,
+                                        kind="spinoff",
+                                        cost_allocation=float(
+                                            row.get("spinoff_cost_allocation", 0.0) or 0.0
+                                        ),
+                                    )
+                                    if quantity:
+                                        portfolio.mark(
+                                            distributed,
+                                            float(distributed_row["open"]),
+                                            stamp_dt,
+                                        )
+                                    record_event(
+                                        timestamp,
+                                        "spinoff",
+                                        instrument_id=key,
+                                        distributed_instrument_id=distributed.key,
+                                        ratio=spinoff_ratio,
+                                        quantity=quantity,
+                                    )
+                                except (KeyError, ValueError) as exc:
+                                    lifecycle_gaps.append(f"{key}: spinoff incomplete ({exc})")
+                            else:
+                                lifecycle_gaps.append(
+                                    f"{key}: spinoff_instrument_id required"
+                                )
                         if np.isfinite(rights_ratio) and rights_ratio > 0:
-                            unsupported_actions.append("rights issue")
+                            rights_id = str(
+                                row.get("rights_instrument_id", "") or ""
+                            ).strip()
+                            if rights_id:
+                                try:
+                                    rights = self.security_master.get(rights_id)
+                                    if rights.key not in instruments:
+                                        raise ValueError("rights security has no subscribed feed")
+                                    rights_row = rows_at_time.get(rights.key)
+                                    if rights_row is None:
+                                        raise ValueError("rights security has no contemporaneous mark")
+                                    quantity = portfolio.apply_distribution(
+                                        instrument,
+                                        rights,
+                                        rights_ratio,
+                                        stamp_dt,
+                                        kind="rights_distribution",
+                                        cost_allocation=float(
+                                            row.get("rights_cost_allocation", 0.0) or 0.0
+                                        ),
+                                    )
+                                    if quantity:
+                                        portfolio.mark(rights, float(rights_row["open"]), stamp_dt)
+                                    record_event(
+                                        timestamp,
+                                        "rights_distribution",
+                                        instrument_id=key,
+                                        distributed_instrument_id=rights.key,
+                                        ratio=rights_ratio,
+                                        quantity=quantity,
+                                    )
+                                except (KeyError, ValueError) as exc:
+                                    lifecycle_gaps.append(
+                                        f"{key}: rights distribution incomplete ({exc})"
+                                    )
+                            else:
+                                lifecycle_gaps.append(
+                                    f"{key}: rights_instrument_id required"
+                                )
                         if np.isfinite(merger_cash) and merger_cash != 0:
-                            unsupported_actions.append("merger consideration")
-                        if str(row.get("symbol_change_to", "") or "").strip():
-                            unsupported_actions.append("symbol change")
-                        if unsupported_actions:
-                            lifecycle_gaps.append(
-                                f"{key}: dedicated lifecycle adapter required for "
-                                + ", ".join(unsupported_actions)
-                            )
+                            if merger_cash < 0:
+                                lifecycle_gaps.append(
+                                    f"{key}: merger consideration cannot be negative"
+                                )
+                            else:
+                                amount = portfolio.apply_cash_merger(
+                                    instrument, merger_cash, stamp_dt
+                                )
+                                pending.pop(key, None)
+                                pending_is_change.pop(key, None)
+                                record_event(
+                                    timestamp,
+                                    "cash_merger",
+                                    instrument_id=key,
+                                    cash_per_unit=merger_cash,
+                                    amount_quote=amount,
+                                )
+                        symbol_change_to = str(
+                            row.get("symbol_change_to", "") or ""
+                        ).strip()
+                        if symbol_change_to:
+                            try:
+                                destination = self.security_master.get(symbol_change_to)
+                                if destination.key not in instruments:
+                                    raise ValueError("successor security has no subscribed feed")
+                                destination_row = rows_at_time.get(destination.key)
+                                if destination_row is None:
+                                    raise ValueError("successor security has no contemporaneous mark")
+                                ratio = float(row.get("symbol_change_ratio", 1.0) or 1.0)
+                                quantity = portfolio.apply_symbol_change(
+                                    instrument, destination, stamp_dt, ratio=ratio
+                                )
+                                if quantity:
+                                    portfolio.mark(
+                                        destination,
+                                        float(destination_row["open"]),
+                                        stamp_dt,
+                                    )
+                                pending.pop(key, None)
+                                pending_is_change.pop(key, None)
+                                record_event(
+                                    timestamp,
+                                    "symbol_change",
+                                    instrument_id=key,
+                                    destination_instrument_id=destination.key,
+                                    ratio=ratio,
+                                    quantity=quantity,
+                                )
+                            except (KeyError, ValueError) as exc:
+                                lifecycle_gaps.append(
+                                    f"{key}: symbol change incomplete ({exc})"
+                                )
                     # Every position is valued at the executable opening mark before
                     # sizing. Margined derivatives additionally realize variation P&L.
                     portfolio.mark(instrument, float(row["open"]), stamp_dt)
@@ -721,12 +907,64 @@ class UniversalBacktestEngine:
                         * quote_to_base,
                         1e-12,
                     )
-                    desired_quantity = _round_lot(
-                        desired_quantity,
-                        instrument.lot_size,
-                        self.config.allow_fractional,
+                    desired_quantity = _round_instrument_quantity(
+                        desired_quantity, instrument, self.config
                     )
+                    requested_desired_quantity = desired_quantity
                     current = portfolio.position(key).quantity
+                    target_was_clipped = False
+
+                    # Enforce gross exposure against the positions that actually
+                    # persist in the portfolio, not merely the non-null targets
+                    # present on this signal row.
+                    snapshot = current_margin()
+                    current_notional_base = abs(
+                        current
+                        * float(row["open"])
+                        * float(instrument.multiplier)
+                        * quote_to_base
+                    )
+                    other_gross_base = max(
+                        snapshot.gross_notional_base - current_notional_base, 0.0
+                    )
+                    gross_budget_base = max(
+                        max(pretrade_nav, 0.0)
+                        * float(self.config.max_gross_exposure)
+                        - other_gross_base,
+                        0.0,
+                    )
+                    max_gross_quantity = gross_budget_base / max(
+                        float(row["open"])
+                        * float(instrument.multiplier)
+                        * quote_to_base,
+                        1e-12,
+                    )
+                    if (
+                        abs(desired_quantity)
+                        > max_gross_quantity
+                        + _quantity_tolerance(
+                            desired_quantity, instrument, self.config
+                        )
+                    ):
+                        desired_quantity = math.copysign(
+                            _round_instrument_quantity(
+                                max_gross_quantity, instrument, self.config
+                            ),
+                            desired_quantity,
+                        )
+                        target_was_clipped = True
+                        partial_fills += 1
+                        gross_limit_clips += 1
+                        record_event(
+                            timestamp,
+                            "pretrade_gross_clip",
+                            instrument_id=key,
+                            requested_quantity=abs(requested_desired_quantity),
+                            max_quantity=abs(desired_quantity),
+                            other_gross_base=other_gross_base,
+                            gross_limit_base=max(pretrade_nav, 0.0)
+                            * float(self.config.max_gross_exposure),
+                        )
                     delta_notional_base = abs(
                         (desired_quantity - current)
                         * float(row["open"])
@@ -745,7 +983,15 @@ class UniversalBacktestEngine:
                             instrument_id=key,
                             drift_weight=delta_notional_base / pretrade_nav,
                         )
+                        if target_was_clipped and abs(
+                            portfolio.position(key).quantity
+                            - requested_desired_quantity
+                        ) > _quantity_tolerance(
+                            requested_desired_quantity, instrument, self.config
+                        ):
+                            continue
                         pending.pop(key, None)
+                        pending_is_change.pop(key, None)
                         continue
                     if abs(desired_quantity) > abs(current) + 1e-12:
                         try:
@@ -773,13 +1019,12 @@ class UniversalBacktestEngine:
                             )
                             if abs(desired_quantity) > max_quantity + 1e-12:
                                 desired_quantity = math.copysign(
-                                    _round_lot(
-                                        max_quantity,
-                                        instrument.lot_size,
-                                        self.config.allow_fractional,
+                                    _round_instrument_quantity(
+                                        max_quantity, instrument, self.config
                                     ),
                                     desired_quantity,
                                 )
+                                target_was_clipped = True
                                 partial_fills += 1
                                 record_event(
                                     timestamp,
@@ -802,13 +1047,32 @@ class UniversalBacktestEngine:
                             )
                             pending.pop(key, None)
                             continue
-                    execute_delta(
+                    execution_status = execute_delta(
                         key,
                         timestamp,
                         row,
                         desired_quantity,
                         reason="target_rebalance",
                     )
+                    target_complete = abs(
+                        portfolio.position(key).quantity
+                        - requested_desired_quantity
+                    ) <= _quantity_tolerance(
+                        requested_desired_quantity, instrument, self.config
+                    )
+                    if (
+                        execution_status != "REJECTED"
+                        and not target_complete
+                        and (execution_status == "PARTIAL" or target_was_clipped)
+                    ):
+                        record_event(
+                            timestamp,
+                            "target_remainder",
+                            instrument_id=key,
+                            requested_quantity=requested_desired_quantity,
+                            current_quantity=portfolio.position(key).quantity,
+                        )
+                        continue
                     pending.pop(key, None)
                     pending_is_change.pop(key, None)
 
@@ -950,10 +1214,8 @@ class UniversalBacktestEngine:
                                         1e-12,
                                     )
                                 )
-                                desired_new = _round_lot(
-                                    desired_new,
-                                    next_contract.lot_size,
-                                    self.config.allow_fractional,
+                                desired_new = _round_instrument_quantity(
+                                    desired_new, next_contract, self.config
                                 )
                                 execute_delta(
                                     key,
@@ -1151,7 +1413,7 @@ class UniversalBacktestEngine:
             reason = "Universal event ledger complete"
         diagnostics = {
             "engine": "universal_bar_event_kernel",
-            "engine_version": "0.1.0",
+            "engine_version": "0.2.0",
             "research_only": True,
             "automatic_production_authorization": False,
             "base_currency": self.config.base_currency,
@@ -1175,6 +1437,7 @@ class UniversalBacktestEngine:
             "fills": len(fill_frame),
             "rejections": rejections,
             "partial_fills": partial_fills,
+            "gross_limit_clips": gross_limit_clips,
             "margin_calls": margin_calls,
             "forced_liquidations": forced_liquidations,
             "no_trade_targets": no_trade_targets,

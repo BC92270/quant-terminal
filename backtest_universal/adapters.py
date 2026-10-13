@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import timezone
+from datetime import datetime, timezone
 from typing import Mapping
 
 import numpy as np
@@ -72,14 +72,61 @@ def parse_long_dataset(
         )
     clean["timestamp"] = timestamps.dt.tz_convert("UTC")
     clean["symbol"] = clean["symbol"].astype(str).str.strip().str.upper()
-    if clean[["timestamp", "symbol"]].duplicated().any():
-        raise ValueError("duplicate timestamp/symbol rows")
+    if (clean["symbol"] == "").any():
+        raise ValueError("dataset contains an empty symbol")
+    if "instrument_id" in clean:
+        raw_identity = clean["instrument_id"].fillna("").astype(str).str.strip().str.upper()
+        # Missing identifiers remain backward compatible with the historical
+        # symbol-keyed CSV contract.  Explicit identifiers, however, are the
+        # authority for contracts that share a display symbol (options,
+        # futures and multi-venue listings).
+        clean["_instrument_identity"] = raw_identity.where(
+            raw_identity.ne(""), clean["symbol"]
+        )
+    else:
+        clean["_instrument_identity"] = clean["symbol"]
+    if clean[["timestamp", "_instrument_identity"]].duplicated().any():
+        raise ValueError("duplicate timestamp/instrument_id rows")
 
     instruments: list[Instrument] = []
     market_data: dict[str, pd.DataFrame] = {}
     target_rows: list[pd.DataFrame] = []
     availability_by_event: dict[pd.Timestamp, pd.Timestamp] = {}
-    for symbol, group in clean.groupby("symbol", sort=True):
+    for identity, group in clean.groupby("_instrument_identity", sort=True):
+        symbols = tuple(sorted(set(group["symbol"].astype(str))))
+        if len(symbols) != 1:
+            raise ValueError(
+                f"{identity}: one instrument_id maps to multiple symbols"
+            )
+        symbol = symbols[0]
+        invariant_columns = (
+            "asset_class",
+            "quote_currency",
+            "base_currency",
+            "exchange",
+            "multiplier",
+            "lot_size",
+            "tick_size",
+            "settlement_days",
+            "underlying_symbol",
+            "root_symbol",
+            "expiry",
+            "strike",
+            "option_right",
+            "settlement_type",
+        )
+        for column in invariant_columns:
+            if column not in group:
+                continue
+            values = {
+                str(value).strip().upper()
+                for value in group[column].dropna()
+                if str(value).strip()
+            }
+            if len(values) > 1:
+                raise ValueError(
+                    f"{identity}: inconsistent instrument metadata for {column}"
+                )
         asset_value = str(_first(group, "asset_class", "EQUITY")).strip().upper()
         try:
             asset_class = AssetClass(asset_value)
@@ -92,7 +139,7 @@ def parse_long_dataset(
         settlement_raw = str(_first(group, "settlement_type", "CASH")).strip().upper()
         instrument = Instrument(
             symbol=symbol,
-            instrument_id=str(_first(group, "instrument_id", symbol)).strip().upper(),
+            instrument_id=str(identity),
             asset_class=asset_class,
             quote_currency=quote,
             base_currency=str(base).strip().upper() if base is not None and str(base).strip() else None,
@@ -123,7 +170,7 @@ def parse_long_dataset(
             "settlement_days", "initial_margin_rate", "maintenance_margin_rate",
             "underlying_symbol", "root_symbol", "expiry", "strike", "option_right",
             "settlement_type", "fx_to_base", "target_weight", "target_available_at",
-            "cash_rate_annual",
+            "cash_rate_annual", "_instrument_identity",
         }
         bars = group.drop(columns=[c for c in metadata_columns if c in group.columns]).copy()
         bars.index = pd.DatetimeIndex(group["timestamp"])
@@ -210,14 +257,41 @@ def single_asset_dataset(
     currency: str = "USD",
     asset_class: AssetClass = AssetClass.EQUITY,
     settlement_days: int = 1,
+    instrument_id: str | None = None,
+    exchange: str = "UNKNOWN",
+    multiplier: float = 1.0,
+    lot_size: float | None = None,
+    tick_size: float = 0.01,
+    base_currency: str | None = None,
+    underlying_symbol: str | None = None,
+    root_symbol: str | None = None,
+    expiry: datetime | None = None,
+    strike: float | None = None,
+    option_right: OptionRight | None = None,
+    settlement_type: SettlementType = SettlementType.CASH,
+    initial_margin_rate: float | None = None,
+    maintenance_margin_rate: float | None = None,
 ) -> UniversalDataset:
+    derivative_lot = asset_class in {AssetClass.FUTURE, AssetClass.OPTION}
     instrument = Instrument(
         symbol=str(symbol).upper(),
-        instrument_id=str(symbol).upper(),
+        instrument_id=str(instrument_id or symbol).upper(),
         asset_class=asset_class,
         quote_currency=str(currency).upper(),
+        base_currency=(str(base_currency).upper() if base_currency else None),
+        exchange=str(exchange),
+        multiplier=float(multiplier),
         settlement_days=int(settlement_days),
-        lot_size=1e-8,
+        lot_size=float(lot_size if lot_size is not None else (1.0 if derivative_lot else 1e-8)),
+        tick_size=float(tick_size),
+        underlying_symbol=underlying_symbol,
+        root_symbol=root_symbol,
+        expiry=expiry,
+        strike=strike,
+        option_right=option_right,
+        settlement_type=settlement_type,
+        initial_margin_rate=initial_margin_rate,
+        maintenance_margin_rate=maintenance_margin_rate,
     )
     return UniversalDataset(
         SecurityMaster([instrument]),

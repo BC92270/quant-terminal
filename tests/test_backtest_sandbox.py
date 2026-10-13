@@ -101,6 +101,76 @@ def test_controller_attestation_is_signed_for_an_immutable_image(
     assert attestation.no_secrets_mounted
 
 
+def test_run_waits_for_the_configured_compile_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cold Rust/TypeScript compilers may legitimately need over ten seconds."""
+
+    class _Process:
+        def poll(self) -> int:
+            return 0
+
+    class _Session:
+        process = _Process()
+        stderr: list[str] = []
+
+        def __init__(self) -> None:
+            self.timeouts: list[float] = []
+
+        def send(self, payload: object) -> None:
+            return None
+
+        def receive(self, timeout: float) -> dict[str, object]:
+            self.timeouts.append(timeout)
+            if len(self.timeouts) == 1:
+                return {
+                    "type": "ready",
+                    "status": "PASS",
+                    "compiler": "test",
+                    "callback_mode": "on_slice",
+                }
+            if len(self.timeouts) == 2:
+                return {"type": "signals", "sequence": 0, "signals": []}
+            return {"type": "stopped", "status": "PASS"}
+
+        def close(self, *, force: bool = False) -> None:
+            return None
+
+    runner = DockerStrategyRunner(
+        limits=SandboxLimits(
+            wall_seconds=90,
+            compile_seconds=45,
+            callback_seconds=5,
+            max_bars=10,
+        )
+    )
+    session = _Session()
+    monkeypatch.setattr(runner, "image_digest", lambda: "sha256:" + "a" * 64)
+    monkeypatch.setattr(runner, "_session", lambda: session)
+    index = pd.date_range("2025-01-01", periods=1, tz="UTC")
+    market = {
+        "SPY": pd.DataFrame(
+            {
+                "open": [100.0],
+                "high": [101.0],
+                "low": [99.0],
+                "close": [100.0],
+                "volume": [1_000_000.0],
+            },
+            index=index,
+        )
+    }
+
+    result = runner.run(
+        source="def on_slice(ctx, slice):\n    pass\n",
+        language=StrategyLanguage.PYTHON,
+        market_data=market,
+    )
+
+    assert result.passed
+    assert session.timeouts[0] > 50.0
+
+
 def test_python_runtime_reveals_history_only_incrementally() -> None:
     source = """def initialize(ctx):
     ctx.state.count = 0
@@ -212,7 +282,17 @@ def test_docker_executes_every_reference_language_causally(
                 "volume": [1_000_000.0] * 5,
             },
             index=index,
-        )
+        ),
+        "QQQ": pd.DataFrame(
+            {
+                "open": [200.0, 202.0, 204.0, 206.0, 208.0],
+                "high": [201.0, 203.0, 205.0, 207.0, 209.0],
+                "low": [199.0, 201.0, 203.0, 205.0, 207.0],
+                "close": [200.0, 202.0, 204.0, 206.0, 208.0],
+                "volume": [2_000_000.0] * 5,
+            },
+            index=index,
+        ),
     }
 
     result = runner.run(
@@ -224,11 +304,15 @@ def test_docker_executes_every_reference_language_causally(
     )
 
     assert result.passed
-    assert result.bars_processed == 5
-    assert result.signals_emitted == 5
+    assert result.bars_processed == 10
+    assert result.slices_processed == 5
+    assert result.callback_mode == "on_slice"
+    assert result.signals_emitted == 10
     assert result.diagnostics["causal_streaming"] is True
+    assert result.diagnostics["atomic_market_slices"] is True
     assert result.diagnostics["future_data_exposed"] is False
     assert result.attestation.network_disabled
     assert result.attestation.read_only_root
     assert result.attestation.no_secrets_mounted
     assert result.targets.iloc[-1]["SPY"] == 1.0
+    assert result.targets.iloc[-1]["QQQ"] == 1.0

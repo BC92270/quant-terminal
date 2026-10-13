@@ -16,6 +16,6 @@ USER 65532:65532
 WORKDIR /opt/quant-backtest
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 LABEL org.quant-terminal.component="backtest-strategy-sandbox" \
-      org.quant-terminal.protocol="quant-strategy-jsonl-1" \
+      org.quant-terminal.protocol="quant-strategy-jsonl-2" \
       org.quant-terminal.research-only="true"
 ENTRYPOINT ["python3", "/opt/quant-backtest/runner.py"]

@@ -10,6 +10,20 @@ from .engine import UniversalBacktestEngine, UniversalEngineConfig, UniversalRun
 from .events import EventQueue
 from .fx import FXMatrix, MissingFXRate
 from .margin import MarginSnapshot, UniversalMarginModel
+from .orders import (
+    Fill,
+    InvalidOrderTransition,
+    MarketSnapshot,
+    Order,
+    OrderEvent,
+    OrderEventKind,
+    OrderKernel,
+    OrderRequest,
+    OrderSide,
+    OrderStatus,
+    OrderType,
+    TimeInForce,
+)
 from .portfolio import CashBook, PortfolioLedger, Position
 from .security import SecurityMaster
 from .strategy import (
@@ -40,9 +54,19 @@ __all__ = [
     "EventQueue",
     "FXMatrix",
     "Instrument",
+    "InvalidOrderTransition",
     "MarginSnapshot",
+    "MarketSnapshot",
     "MissingFXRate",
     "OptionRight",
+    "Order",
+    "OrderEvent",
+    "OrderEventKind",
+    "OrderKernel",
+    "OrderRequest",
+    "OrderSide",
+    "OrderStatus",
+    "OrderType",
     "PortfolioLedger",
     "Position",
     "SecurityMaster",
@@ -51,6 +75,7 @@ __all__ = [
     "SettlementType",
     "StrategyJobV1",
     "StrategyPolicyReport",
+    "TimeInForce",
     "UniversalBacktestEngine",
     "UniversalEngineConfig",
     "UniversalMarginModel",
@@ -58,6 +83,7 @@ __all__ = [
     "DEFAULT_STRATEGY_TEMPLATE",
     "build_strategy_job",
     "validate_strategy_source",
+    "Fill",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

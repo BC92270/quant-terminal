@@ -127,3 +127,25 @@ def test_draft_change_keeps_the_last_executed_run_and_marks_it_dirty() -> None:
     ]
     assert labels[10] == "Preuves"
     assert len(labels) == 15
+
+
+@pytest.mark.parametrize("asset_class", ["FX", "FUTURE", "OPTION"])
+def test_strategy_studio_collects_required_derivative_contract_metadata(
+    asset_class: str,
+) -> None:
+    app = AppTest.from_string(_APP, default_timeout=120).run()
+    selector = next(
+        item for item in app.selectbox if item.label == "Classe d’actif"
+    )
+    app = selector.set_value(asset_class).run(timeout=120)
+
+    assert not app.exception
+    labels = {item.label for item in app.text_input}
+    if asset_class == "FX":
+        assert "Devise de base FX" in labels
+    elif asset_class == "FUTURE":
+        assert "Racine future" in labels
+        assert any(item.label == "Échéance" for item in app.date_input)
+    else:
+        assert "Sous-jacent" in labels
+        assert any(item.label == "Expiration" for item in app.date_input)

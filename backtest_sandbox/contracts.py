@@ -12,8 +12,13 @@ import pandas as pd
 from backtest_universal.strategy import SandboxAttestation
 
 
-SANDBOX_PROTOCOL_VERSION = "quant-strategy-jsonl-1"
-SANDBOX_POLICY_VERSION = "polyglot-policy-1"
+LEGACY_SANDBOX_PROTOCOL_VERSION = "quant-strategy-jsonl-1"
+SANDBOX_PROTOCOL_VERSION = "quant-strategy-jsonl-2"
+SUPPORTED_SANDBOX_PROTOCOL_VERSIONS = (
+    LEGACY_SANDBOX_PROTOCOL_VERSION,
+    SANDBOX_PROTOCOL_VERSION,
+)
+SANDBOX_POLICY_VERSION = "polyglot-policy-2"
 
 
 class StrategyLanguage(str, Enum):
@@ -144,6 +149,8 @@ class SandboxRunResult:
     duration_ms: int
     bars_processed: int
     signals_emitted: int
+    slices_processed: int = 0
+    callback_mode: str = "on_bar"
     logs: tuple[Mapping[str, Any], ...] = ()
     diagnostics: Mapping[str, Any] = field(default_factory=dict)
     signature: str = ""
@@ -163,7 +170,9 @@ class SandboxRunResult:
             "compiler": self.compiler,
             "duration_ms": int(self.duration_ms),
             "bars_processed": int(self.bars_processed),
+            "slices_processed": int(self.slices_processed),
             "signals_emitted": int(self.signals_emitted),
+            "callback_mode": str(self.callback_mode),
             "diagnostics": dict(self.diagnostics),
             "signature": self.signature,
             "public_key": self.public_key,

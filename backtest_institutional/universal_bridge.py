@@ -264,7 +264,7 @@ def build_universal_institutional_envelope(
         symbol="PORTFOLIO[" + ",".join(symbols) + "]",
         seed=int(seed),
         code_path="backtest_lab.py",
-        engine_version="universal-0.1.0",
+        engine_version="universal-0.2.0",
         tags=("UNIVERSAL_KERNEL", "RESEARCH_ONLY"),
         metadata={
             "base_currency": config.base_currency,
@@ -306,7 +306,7 @@ def build_universal_institutional_envelope(
     )
     model_card = {
         "model": "Universal Backtest Kernel",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "purpose": "Multi-asset and multi-currency research simulation",
         "authoritative_source": "universal_event_ledger",
         "native_capabilities": [
@@ -314,10 +314,12 @@ def build_universal_institutional_envelope(
             "multi-currency cashbook and historical FX conversion",
             "settled and unsettled cash",
             "asset-aware initial and maintenance margin",
-            "variation margin, funding, rollover, borrow, splits and dividends",
+            "variation margin, funding, rollover, borrow and lifecycle accounting",
+            "deterministic L1 order-kernel foundation with price-time priority",
         ],
         "limitations": [
-            "bar-event resolution; no order-book queue replay",
+            "the target-weight engine remains bar-event based; the L1 OMS kernel is not yet its authoritative execution path",
+            "no L2/L3 historical order-book queue replay",
             "exchange holiday calendars require an external calendar adapter",
             "option exercise, assignment and broker portfolio-margin evidence remain fail-closed",
             "user code requires a separately attested OCI sandbox",

@@ -39,7 +39,8 @@ Champs dérivés et cycle de vie :
 root_symbol,expiry,roll_to,underlying_symbol,strike,option_right,
 settlement_type,settlement_price,initial_margin_rate,
 maintenance_margin_rate,funding_rate,rollover_rate,borrow_rate,gas_fee,
-split,dividend,dividend_payable_at,delisted
+split,dividend,dividend_payable_at,spinoff_ratio,spinoff_instrument_id,
+rights_ratio,rights_instrument_id,merger_cash,symbol_change_to,delisted
 ```
 
 Le modèle CSV téléchargeable depuis le cockpit contient deux instruments, deux
@@ -57,25 +58,34 @@ devises, les taux FX, les taux cash et des cibles causales.
 | Options | prime, marge short explicite, règlement cash intrinsèque ou officiel |
 | Cash multi-devises | soldes réglés/non réglés, FX PIT, staleness maximale et taux cash historiques |
 | Exécution | spread, slippage, impact, participation agrégée et bande de non-intervention |
+| Cycle de vie | splits, dividendes, spin-offs, droits, fusions cash et changements d’identifiant explicites |
+| OMS autonome | ordres market/limit/stop/stop-limit, GTC/IOC/FOK/DAY, amend/cancel, fills partiels et priorité prix-temps L1 |
 
-Les spin-offs, droits, fusions, changements d’identifiant et assignments
-physiques sont détectés mais restent fermés tant qu’un adaptateur spécialisé et
-ses données point-in-time ne sont pas fournis.
+Les événements de cycle de vie ne sont comptabilisés que si leurs champs et les
+marks contemporains requis sont présents. Les assignments/exercices physiques
+et restructurations complexes restent fermés tant qu’un adaptateur spécialisé
+et ses données point-in-time ne sont pas fournis. Le noyau OMS autonome est une
+fondation testée mais n’est pas encore la voie d’exécution autoritaire du moteur
+de poids cibles.
 
 ## Strategy Studio et code de stratégie
 
 Le code est le point d’entrée principal du Backtest Lab. Six runtimes sont
 supportés par le même contrat fonctionnel : Python 3, JavaScript, TypeScript,
-C++20, Rust et C#. Chaque langage expose `initialize` et `on_bar`/`onBar`, un
-historique limité aux observations déjà reçues, des paramètres numériques, un
-état persistant et une primitive `target_percent`.
+C++20, Rust et C#. Chaque langage expose `initialize` et `on_slice`/`onSlice`
+pour recevoir en une fois tous les instruments ayant les mêmes horloges
+économique et de disponibilité. Le callback historique `on_bar`/`onBar` reste
+compatible. L’historique est limité aux observations déjà reçues ; paramètres
+numériques, état persistant et primitive `target_percent` sont communs.
 
 L’éditeur et le processus Streamlit ne chargent jamais le source. Le contrôleur
 envoie le code au conteneur par `stdin`, sans volume, sans secret et sans réseau.
-Le contrôleur conserve le dataset complet et ne transmet qu’une barre déjà
-disponible à la fois. Il attend la réponse de la stratégie avant de transmettre
-la suivante. Le conteneur peut produire uniquement des expositions cibles et
-des logs ; il ne calcule jamais les ordres, fills, positions, cash, marge ou P&L.
+Le contrôleur conserve le dataset complet et ne transmet qu’une slice déjà
+disponible à la fois. Toutes les barres simultanées sont ajoutées aux historiques
+avant le callback, ce qui supprime la dépendance à l’ordre alphabétique des
+symboles. Il attend la réponse de la stratégie avant de transmettre la slice
+suivante. Le conteneur peut produire uniquement des expositions cibles et des
+logs ; il ne calcule jamais les ordres, fills, positions, cash, marge ou P&L.
 
 Le runner impose notamment :
 
@@ -97,7 +107,7 @@ Construction dans le checkout live :
 ```bash
 docker build \
   --file backtest_sandbox/runtime/Dockerfile \
-  --tag quant-terminal/backtest-sandbox:1.0.0 \
+  --tag quant-terminal/backtest-sandbox:2.0.0 \
   backtest_sandbox/runtime
 ```
 
@@ -124,8 +134,9 @@ La production et la promotion automatique restent toujours désactivées.
 
 ## Limites assumées
 
-- Résolution événementielle sur les observations fournies, sans rejeu natif de
-  carnet d’ordres ni priorité de queue.
+- La voie autoritaire par poids cibles reste en résolution bar-event. Le noyau
+  OMS L1 séparé modélise la liquidité visible et la priorité prix-temps, mais ne
+  constitue pas encore un rejeu L2/L3 de carnet ni la voie d’exécution du ledger.
 - Les calendriers exchange complets et les données point-in-time licenciées
   doivent provenir d’adaptateurs externes authentifiés.
 - Les options à règlement physique et la marge portefeuille broker/clearing

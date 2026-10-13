@@ -30,7 +30,12 @@ from backtest_sandbox.docker_runner import (
     SandboxExecutionError,
     SandboxUnavailableError,
 )
-from backtest_universal import AssetClass, UniversalBacktestEngine
+from backtest_universal import (
+    AssetClass,
+    OptionRight,
+    SettlementType,
+    UniversalBacktestEngine,
+)
 from backtest_universal.adapters import (
     UniversalDataset,
     parse_long_dataset,
@@ -208,7 +213,7 @@ def _render_hero(ticker: str) -> None:
     items = (
         ("Langages", "6 runtimes"),
         ("Données", "9 classes d’actifs"),
-        ("Horloge", "Barre par barre"),
+        ("Horloge", "Slices atomiques"),
         ("Sécurité", "Docker sans réseau"),
         ("Autorité", "Ledger exécuté"),
     )
@@ -372,8 +377,11 @@ def _tool_coverage(record: Mapping[str, Any]) -> pd.DataFrame:
         ),
         (
             "Causalité",
-            "Streaming barre par barre",
-            "PASS" if sandbox.diagnostics.get("causal_streaming") else "FAIL",
+            "Slices multi-actifs atomiques",
+            "PASS"
+            if sandbox.diagnostics.get("causal_streaming")
+            and sandbox.diagnostics.get("atomic_market_slices")
+            else "FAIL",
         ),
         (
             "Causalité",
@@ -569,12 +577,116 @@ def _dataset_controls(
                 "Série FX historique requise : passez au CSV multi-actifs pour une cotation différente de la devise du portefeuille."
             )
             return None, base, currency_authenticated
+        instrument_kwargs: dict[str, Any] = {
+            "instrument_id": st.text_input(
+                "Identifiant instrument",
+                str(ticker).upper(),
+                key="bt_code_instrument_id",
+            ).strip().upper(),
+            "exchange": st.text_input(
+                "Place / venue", "UNKNOWN", key="bt_code_exchange"
+            ).strip().upper(),
+        }
+        selected_asset = AssetClass(asset)
+        derivative = selected_asset in {AssetClass.FUTURE, AssetClass.OPTION}
+        with st.expander("Contrat, lots et cycle de vie", expanded=derivative):
+            instrument_kwargs["lot_size"] = st.number_input(
+                "Taille de lot",
+                min_value=0.00000001,
+                value=1.0 if derivative else 0.00000001,
+                format="%.8f",
+                key="bt_code_lot_size",
+            )
+            instrument_kwargs["tick_size"] = st.number_input(
+                "Tick size",
+                min_value=0.00000001,
+                value=0.01,
+                format="%.8f",
+                key="bt_code_tick_size",
+            )
+            if selected_asset == AssetClass.FX:
+                inferred_leg = str(ticker).replace("/", "").upper()[:3]
+                instrument_kwargs["base_currency"] = st.text_input(
+                    "Devise de base FX",
+                    inferred_leg if len(inferred_leg) == 3 else "EUR",
+                    max_chars=3,
+                    key="bt_code_fx_base_currency",
+                ).strip().upper()
+            elif selected_asset == AssetClass.FUTURE:
+                instrument_kwargs["root_symbol"] = st.text_input(
+                    "Racine future",
+                    str(ticker).upper(),
+                    key="bt_code_future_root",
+                ).strip().upper()
+                instrument_kwargs["multiplier"] = st.number_input(
+                    "Multiplicateur contrat",
+                    min_value=0.00000001,
+                    value=1.0,
+                    format="%.8f",
+                    key="bt_code_future_multiplier",
+                )
+                last_bar = pd.Timestamp(pd.DatetimeIndex(bars.index).max())
+                instrument_kwargs["expiry"] = pd.Timestamp(
+                    st.date_input(
+                        "Échéance",
+                        value=(last_bar + pd.Timedelta(days=90)).date(),
+                        key="bt_code_future_expiry",
+                    ),
+                    tz="UTC",
+                ).to_pydatetime()
+            elif selected_asset == AssetClass.OPTION:
+                instrument_kwargs["underlying_symbol"] = st.text_input(
+                    "Sous-jacent",
+                    str(ticker).upper(),
+                    key="bt_code_option_underlying",
+                ).strip().upper()
+                instrument_kwargs["strike"] = st.number_input(
+                    "Strike",
+                    min_value=0.00000001,
+                    value=float(
+                        pd.to_numeric(
+                            bars.iloc[-1].get("Close", bars.iloc[-1].get("close", 100.0)),
+                            errors="coerce",
+                        )
+                    ),
+                    key="bt_code_option_strike",
+                )
+                instrument_kwargs["option_right"] = OptionRight(
+                    st.selectbox(
+                        "Droit",
+                        [item.value for item in OptionRight],
+                        key="bt_code_option_right",
+                    )
+                )
+                instrument_kwargs["settlement_type"] = SettlementType(
+                    st.selectbox(
+                        "Règlement",
+                        [item.value for item in SettlementType],
+                        key="bt_code_option_settlement",
+                    )
+                )
+                instrument_kwargs["multiplier"] = st.number_input(
+                    "Multiplicateur option",
+                    min_value=0.00000001,
+                    value=100.0,
+                    key="bt_code_option_multiplier",
+                )
+                last_bar = pd.Timestamp(pd.DatetimeIndex(bars.index).max())
+                instrument_kwargs["expiry"] = pd.Timestamp(
+                    st.date_input(
+                        "Expiration",
+                        value=(last_bar + pd.Timedelta(days=30)).date(),
+                        key="bt_code_option_expiry",
+                    ),
+                    tz="UTC",
+                ).to_pydatetime()
         dataset = single_asset_dataset(
             ticker,
             bars,
             currency=quote,
-            asset_class=AssetClass(asset),
+            asset_class=selected_asset,
             settlement_days=1 if asset in {"EQUITY", "ETF"} else 0,
+            **instrument_kwargs,
         )
         dataset.cash_rates = {base: pd.Series(0.0, index=pd.DatetimeIndex(bars.index))}
         return dataset, base, currency_authenticated
@@ -750,7 +862,7 @@ def _render_studio(ticker: str, bars: pd.DataFrame, cfg: Any) -> None:
             f"<div class='{docker_tone}'>● Image Docker · {'IMMUTABLE' if digest else 'ABSENTE'}</div>"
             f"<div class='{data_tone}'>● Dataset · {'PRÊT' if dataset is not None else 'À FOURNIR'}</div>"
             f"<div class='bcs-muted'>SHA source · {report.source_sha256[:16]}<br>"
-            f"Image · {escape(digest[:24] if digest else 'quant-terminal/backtest-sandbox:1.0.0')}<br>"
+            f"Image · {escape(digest[:24] if digest else 'quant-terminal/backtest-sandbox:2.0.0')}<br>"
             "Réseau · coupé<br>RootFS · lecture seule<br>Utilisateur · 65532:65532<br>Capacités · aucune</div></div>",
             unsafe_allow_html=True,
         )

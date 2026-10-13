@@ -21,7 +21,12 @@ from backtest_universal import (
     UniversalBacktestEngine,
     UniversalEngineConfig,
 )
-from backtest_universal.adapters import build_sma_targets, parse_long_dataset, universal_csv_template
+from backtest_universal.adapters import (
+    build_sma_targets,
+    parse_long_dataset,
+    single_asset_dataset,
+    universal_csv_template,
+)
 from backtest_universal.strategy import (
     DEFAULT_STRATEGY_TEMPLATE,
     SandboxAttestation,
@@ -236,6 +241,80 @@ def test_long_dataset_adapter_and_sma_targets() -> None:
     assert sma.abs().sum(axis=1).max() <= 1.0
 
 
+def test_long_dataset_keys_contracts_by_instrument_id_not_display_symbol() -> None:
+    index = pd.date_range("2025-06-01", periods=2, freq="D", tz="UTC")
+    rows: list[dict[str, object]] = []
+    for contract, expiry, price in (
+        ("CME:ESM5", "2025-06-20T00:00:00Z", 5_300.0),
+        ("CME:ESU5", "2025-09-19T00:00:00Z", 5_320.0),
+    ):
+        for timestamp in index:
+            rows.append(
+                {
+                    "timestamp": timestamp,
+                    "symbol": "ES",
+                    "instrument_id": contract,
+                    "asset_class": "FUTURE",
+                    "quote_currency": "USD",
+                    "exchange": "CME",
+                    "root_symbol": "ES",
+                    "expiry": expiry,
+                    "multiplier": 50.0,
+                    "lot_size": 1.0,
+                    "tick_size": 0.25,
+                    "open": price,
+                    "high": price + 5.0,
+                    "low": price - 5.0,
+                    "close": price + 1.0,
+                    "volume": 50_000.0,
+                }
+            )
+
+    dataset = parse_long_dataset(pd.DataFrame(rows), base_currency="USD")
+
+    assert set(dataset.market_data) == {"CME:ESM5", "CME:ESU5"}
+    assert len(dataset.security_master.records()) == 2
+    assert all(len(frame) == 2 for frame in dataset.market_data.values())
+
+
+def test_long_dataset_rejects_inconsistent_metadata_within_instrument() -> None:
+    frame = universal_csv_template().iloc[:2].copy()
+    frame.loc[frame.index[-1], "quote_currency"] = "EUR"
+
+    with pytest.raises(ValueError, match="inconsistent instrument metadata"):
+        parse_long_dataset(frame, base_currency="USD")
+
+
+def test_single_asset_adapter_accepts_required_derivative_metadata() -> None:
+    index = pd.date_range("2025-01-01", periods=2, freq="D", tz="UTC")
+    bars = _bars(index, [1.10, 1.11])
+    fx_dataset = single_asset_dataset(
+        "EURUSD",
+        bars,
+        currency="USD",
+        asset_class=AssetClass.FX,
+        base_currency="EUR",
+        instrument_id="FX:EURUSD",
+        lot_size=1_000.0,
+        tick_size=0.00001,
+    )
+    assert fx_dataset.security_master.get("FX:EURUSD").base_currency == "EUR"
+
+    option_dataset = single_asset_dataset(
+        "SPY-C-500",
+        _bars(index, [5.0, 5.5]),
+        asset_class=AssetClass.OPTION,
+        underlying_symbol="SPY",
+        strike=500.0,
+        option_right=OptionRight.CALL,
+        expiry=index[-1].to_pydatetime(),
+        multiplier=100.0,
+    )
+    option = option_dataset.security_master.get("SPY-C-500")
+    assert option.asset_class == AssetClass.OPTION
+    assert option.lot_size == 1.0
+
+
 def test_strategy_policy_accepts_sdk_contract_and_blocks_escape_vectors() -> None:
     accepted = validate_strategy_source(DEFAULT_STRATEGY_TEMPLATE)
     assert accepted.passed, accepted.issues
@@ -447,3 +526,133 @@ def test_material_terminal_target_change_is_fail_closed() -> None:
     assert result.diagnostics["terminal_target_changes_without_execution"] == [
         instrument.key
     ]
+
+
+def test_persistent_portfolio_positions_cannot_bypass_gross_exposure_limit() -> None:
+    index = pd.date_range("2025-10-01", periods=5, freq="D", tz="UTC")
+    first = Instrument(
+        "FUT-A",
+        AssetClass.FUTURE,
+        "USD",
+        instrument_id="FUT-A",
+        lot_size=1.0,
+        initial_margin_rate=0.10,
+        maintenance_margin_rate=0.075,
+    )
+    second = Instrument(
+        "FUT-B",
+        AssetClass.FUTURE,
+        "USD",
+        instrument_id="FUT-B",
+        lot_size=1.0,
+        initial_margin_rate=0.10,
+        maintenance_margin_rate=0.075,
+    )
+    targets = pd.DataFrame(
+        {
+            first.key: [3.0, np.nan, np.nan, np.nan, np.nan],
+            second.key: [np.nan, 3.0, np.nan, np.nan, np.nan],
+        },
+        index=index,
+    )
+    result = UniversalBacktestEngine(
+        security_master=SecurityMaster([first, second]),
+        config=_config(max_gross_exposure=4.0),
+    ).run(
+        market_data={
+            first.key: _bars(index, [100.0] * len(index)),
+            second.key: _bars(index, [100.0] * len(index)),
+        },
+        target_weights=targets,
+    )
+
+    quantities = result.positions.set_index("instrument_id")["quantity"]
+    assert quantities[first.key] == pytest.approx(3_000.0)
+    assert quantities[second.key] == pytest.approx(1_000.0)
+    assert result.daily["gross_exposure"].max() <= 4.0 + 1e-12
+    assert result.diagnostics["gross_limit_clips"] >= 1
+    assert "pretrade_gross_clip" in set(result.events["kind"])
+    assert result.status == "PARTIAL"
+
+
+def test_partial_fill_remainder_is_retried_on_later_bars() -> None:
+    index = pd.date_range("2025-11-01", periods=4, freq="D", tz="UTC")
+    instrument = Instrument(
+        "RETRY",
+        AssetClass.FUTURE,
+        "USD",
+        instrument_id="RETRY",
+        lot_size=1.0,
+        initial_margin_rate=0.10,
+        maintenance_margin_rate=0.075,
+    )
+    targets = pd.DataFrame(
+        {instrument.key: [0.02, np.nan, np.nan, np.nan]}, index=index
+    )
+    result = UniversalBacktestEngine(
+        security_master=SecurityMaster([instrument]),
+        config=_config(max_participation=0.10),
+    ).run(
+        market_data={
+            instrument.key: _bars(index, [100.0] * len(index), volume=[100.0] * len(index))
+        },
+        target_weights=targets,
+    )
+
+    assert list(result.orders["status"]) == ["PARTIAL", "FILLED"]
+    assert list(result.fills["signed_quantity"]) == pytest.approx([10.0, 10.0])
+    assert result.positions.iloc[0]["quantity"] == pytest.approx(20.0)
+    assert result.diagnostics["terminal_target_changes_without_execution"] == []
+    assert "target_remainder" in set(result.events["kind"])
+
+
+def test_contract_lots_and_adverse_tick_rounding_are_enforced_by_default() -> None:
+    index = pd.date_range("2025-12-01", periods=4, freq="D", tz="UTC")
+    future = Instrument(
+        "LOT-FUT",
+        AssetClass.FUTURE,
+        "USD",
+        instrument_id="LOT-FUT",
+        lot_size=0.25,
+        tick_size=0.25,
+        initial_margin_rate=0.10,
+        maintenance_margin_rate=0.075,
+    )
+    option = Instrument(
+        "LOT-OPT",
+        AssetClass.OPTION,
+        "USD",
+        instrument_id="LOT-OPT",
+        lot_size=0.25,
+        tick_size=0.25,
+        underlying_symbol="UNDERLYING",
+        strike=100.0,
+        option_right=OptionRight.CALL,
+    )
+    targets = pd.DataFrame(
+        {
+            future.key: [0.0015, np.nan, 0.0, np.nan],
+            option.key: [0.0015, np.nan, 0.0, np.nan],
+        },
+        index=index,
+    )
+    result = UniversalBacktestEngine(
+        security_master=SecurityMaster([future, option]),
+        config=_config(allow_fractional=True),
+    ).run(
+        market_data={
+            future.key: _bars(index, [100.03] * len(index)),
+            option.key: _bars(index, [100.03] * len(index)),
+        },
+        target_weights=targets,
+    )
+
+    assert set(result.fills["signed_quantity"]) == {-1.0, 1.0}
+    buys = result.fills[result.fills["signed_quantity"] > 0]
+    sells = result.fills[result.fills["signed_quantity"] < 0]
+    assert np.allclose(buys["fill_price"], 100.25)
+    assert np.allclose(sells["fill_price"], 100.0)
+    assert all(
+        float(price) / 0.25 == pytest.approx(round(float(price) / 0.25))
+        for price in result.fills["fill_price"]
+    )

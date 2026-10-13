@@ -14,7 +14,7 @@ import re
 from typing import Any, Mapping, Protocol
 
 
-POLICY_VERSION = "strategy-policy-1"
+POLICY_VERSION = "strategy-policy-2"
 CONTRACT_VERSION = "StrategyJobV1"
 MAX_SOURCE_BYTES = 128 * 1024
 MAX_AST_NODES = 20_000
@@ -205,6 +205,13 @@ class _PolicyVisitor(ast.NodeVisitor):
                 )
         if isinstance(node.iter, ast.Call) and isinstance(node.iter.func, ast.Attribute):
             allowed = node.iter.func.attr == "history"
+            if node.iter.func.attr in {"items", "values"}:
+                owner = node.iter.func.value
+                allowed = (
+                    isinstance(owner, ast.Attribute)
+                    and owner.attr == "bars"
+                    and isinstance(owner.value, ast.Name)
+                )
         if not allowed:
             self.issue(node, "for-loop iterator must be bounded range() or ctx.history()")
         self.generic_visit(node)
@@ -252,7 +259,7 @@ def validate_strategy_source(source: str) -> StrategyPolicyReport:
     for item in tree.body:
         if isinstance(item, ast.FunctionDef):
             functions[item.name] = item
-            if item.name not in {"initialize", "on_bar"}:
+            if item.name not in {"initialize", "on_bar", "on_slice"}:
                 issues.append(f"line {item.lineno}: unsupported entrypoint {item.name!r}")
         elif isinstance(item, (ast.Import, ast.ImportFrom, ast.Assign, ast.AnnAssign)):
             continue
@@ -262,9 +269,9 @@ def validate_strategy_source(source: str) -> StrategyPolicyReport:
             issues.append(
                 f"line {getattr(item, 'lineno', 0)}: module-level {type(item).__name__} is forbidden"
             )
-    if "on_bar" not in functions:
-        issues.append("required entrypoint on_bar(ctx, bar) is missing")
-    for name, expected in (("initialize", 1), ("on_bar", 2)):
+    if "on_bar" not in functions and "on_slice" not in functions:
+        issues.append("required entrypoint on_slice(ctx, slice) or on_bar(ctx, bar) is missing")
+    for name, expected in (("initialize", 1), ("on_bar", 2), ("on_slice", 2)):
         function = functions.get(name)
         if function is None:
             continue

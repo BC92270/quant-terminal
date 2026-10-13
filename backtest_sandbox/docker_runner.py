@@ -34,7 +34,7 @@ from .contracts import (
 from .policy import validate_source
 
 
-DEFAULT_IMAGE = "quant-terminal/backtest-sandbox:1.0.0"
+DEFAULT_IMAGE = "quant-terminal/backtest-sandbox:2.0.0"
 
 
 class SandboxUnavailableError(RuntimeError):
@@ -488,6 +488,30 @@ class DockerStrategyRunner:
         return rows
 
     @staticmethod
+    def _slices(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Group observations with identical economic and knowledge clocks.
+
+        The controller never groups bars that became available at different
+        times.  This preserves point-in-time causality while eliminating
+        symbol-order dependence for truly simultaneous cross-sectional data.
+        """
+
+        slices: list[dict[str, Any]] = []
+        for row in rows:
+            key = (row["event_time"], row["available_at"])
+            if not slices or slices[-1]["key"] != key:
+                slices.append(
+                    {
+                        "key": key,
+                        "event_time": row["event_time"],
+                        "available_at": row["available_at"],
+                        "bars": [],
+                    }
+                )
+            slices[-1]["bars"].append(row)
+        return slices
+
+    @staticmethod
     def _parameters(parameters: Mapping[str, Any] | None) -> dict[str, float]:
         clean: dict[str, float] = {}
         for raw_key, raw_value in dict(parameters or {}).items():
@@ -518,6 +542,7 @@ class DockerStrategyRunner:
                 "strategy policy rejected: " + " · ".join(policy.issues[:8])
             )
         rows = self._bars(market_data)
+        slices = self._slices(rows)
         params = self._parameters(parameters)
         symbols = tuple(sorted(str(symbol).strip().upper() for symbol in market_data))
         symbol_set = set(symbols)
@@ -529,6 +554,7 @@ class DockerStrategyRunner:
         session = self._session()
         started = time.monotonic()
         compiler = ""
+        callback_mode = "on_bar"
         logs: list[dict[str, Any]] = []
         target_rows: dict[pd.Timestamp, dict[str, float]] = {}
         availability: dict[pd.Timestamp, pd.Timestamp] = {}
@@ -550,7 +576,10 @@ class DockerStrategyRunner:
             deadline = started + float(self.limits.wall_seconds)
             while True:
                 message = session.receive(
-                    min(10.0, max(0.01, deadline - time.monotonic()))
+                    min(
+                        float(self.limits.compile_seconds) + 10.0,
+                        max(0.01, deadline - time.monotonic()),
+                    )
                 )
                 if message.get("type") == "log":
                     logs.append(message)
@@ -558,22 +587,30 @@ class DockerStrategyRunner:
                 if message.get("type") != "ready" or message.get("status") != "PASS":
                     raise SandboxExecutionError("sandbox did not enter READY state")
                 compiler = str(message.get("compiler") or "")
+                callback_mode = str(message.get("callback_mode") or "on_bar")
                 break
-            for sequence, row in enumerate(rows):
+            for sequence, market_slice in enumerate(slices):
                 if time.monotonic() >= deadline:
                     raise TimeoutError("sandbox wall-clock limit exceeded")
                 session.send(
                     {
-                        "type": "bar",
+                        "type": "slice",
                         "sequence": sequence,
-                        "event_time": row["event_time"].isoformat(),
-                        "available_at": row["available_at"].isoformat(),
-                        "symbol": row["symbol"],
-                        "open": row["open"],
-                        "high": row["high"],
-                        "low": row["low"],
-                        "close": row["close"],
-                        "volume": row["volume"],
+                        "event_time": market_slice["event_time"].isoformat(),
+                        "available_at": market_slice["available_at"].isoformat(),
+                        "bars": [
+                            {
+                                "event_time": row["event_time"].isoformat(),
+                                "available_at": row["available_at"].isoformat(),
+                                "symbol": row["symbol"],
+                                "open": row["open"],
+                                "high": row["high"],
+                                "low": row["low"],
+                                "close": row["close"],
+                                "volume": row["volume"],
+                            }
+                            for row in market_slice["bars"]
+                        ],
                     }
                 )
                 while True:
@@ -592,10 +629,11 @@ class DockerStrategyRunner:
                     ):
                         raise SandboxExecutionError("out-of-order sandbox response")
                     break
-                event_time = row["event_time"]
+                event_time = market_slice["event_time"]
                 target_rows.setdefault(event_time, {})
                 availability[event_time] = max(
-                    availability.get(event_time, event_time), row["available_at"]
+                    availability.get(event_time, event_time),
+                    market_slice["available_at"],
                 )
                 for signal in message.get("signals") or []:
                     symbol = str(signal.get("symbol", "")).strip().upper()
@@ -644,6 +682,8 @@ class DockerStrategyRunner:
             "parameters": params,
             "limits": asdict(self.limits),
             "bars_processed": len(rows),
+            "slices_processed": len(slices),
+            "callback_mode": callback_mode,
             "signals_emitted": signal_count,
             "target_sha256": target_hash,
             "network_disabled": True,
@@ -675,10 +715,14 @@ class DockerStrategyRunner:
             duration_ms=duration_ms,
             bars_processed=len(rows),
             signals_emitted=signal_count,
+            slices_processed=len(slices),
+            callback_mode=callback_mode,
             logs=tuple(logs[-1000:]),
             diagnostics={
                 "protocol_version": SANDBOX_PROTOCOL_VERSION,
                 "causal_streaming": True,
+                "atomic_market_slices": True,
+                "callback_mode": callback_mode,
                 "future_data_exposed": False,
                 "container_flags": self.docker_command("qt-bt-evidence")[4:-1],
                 "limits": asdict(self.limits),
