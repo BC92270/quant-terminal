@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import shutil
@@ -8,6 +9,8 @@ import sys
 
 import pandas as pd
 import pytest
+
+from backtest_sdk import Bar, PortfolioSnapshot, Slice
 
 from backtest_sandbox import (
     DockerStrategyRunner,
@@ -316,3 +319,105 @@ def test_docker_executes_every_reference_language_causally(
     assert result.attestation.no_secrets_mounted
     assert result.targets.iloc[-1]["SPY"] == 1.0
     assert result.targets.iloc[-1]["QQQ"] == 1.0
+
+
+@pytest.mark.parametrize(
+    ("language", "source"),
+    [
+        (
+            StrategyLanguage.PYTHON,
+            "def on_slice(ctx, slice):\n    ctx.target_percent('AAA', ctx.portfolio.nav_base / 1000000.0, reason_code=ctx.portfolio.source)\n",
+        ),
+        (
+            StrategyLanguage.JAVASCRIPT,
+            "function onSlice(ctx, slice) { ctx.targetPercent('AAA', ctx.portfolio.navBase / 1000000.0, ctx.portfolio.source); }",
+        ),
+        (
+            StrategyLanguage.TYPESCRIPT,
+            "function onSlice(ctx: any, slice: any): void { ctx.targetPercent('AAA', ctx.portfolio.navBase / 1000000.0, ctx.portfolio.source); }",
+        ),
+        (
+            StrategyLanguage.CPP,
+            'void initialize(Context& ctx) {}\nvoid on_slice(Context& ctx, const Slice& slice) { ctx.target_percent("AAA", ctx.portfolio.nav_base / 1000000.0, ctx.portfolio.source); }',
+        ),
+        (
+            StrategyLanguage.RUST,
+            'fn initialize(ctx: &mut Context) {}\nfn on_slice(ctx: &mut Context, slice: &Slice) { let target=ctx.portfolio.nav_base/1000000.0; let reason=ctx.portfolio.source.clone(); ctx.target_percent("AAA",target,&reason); }',
+        ),
+        (
+            StrategyLanguage.CSHARP,
+            'public static void Initialize(Context ctx) {}\npublic static void OnSlice(Context ctx, Slice slice) { ctx.TargetPercent("AAA", ctx.Portfolio.NavBase / 1000000.0, ctx.Portfolio.Source); }',
+        ),
+    ],
+)
+def test_docker_causal_runtime_receives_authoritative_portfolio_in_every_language(
+    language: StrategyLanguage,
+    source: str,
+) -> None:
+    """Protocol v3 must transport the OMS snapshot inside the OCI boundary."""
+
+    runner = DockerStrategyRunner(
+        limits=SandboxLimits(
+            wall_seconds=90,
+            compile_seconds=45,
+            callback_seconds=5,
+            memory_mib=768,
+            max_bars=100,
+        )
+    )
+    if not runner.available:
+        pytest.skip("the immutable release image is not installed on this host")
+    timestamp = datetime(2025, 1, 2, tzinfo=timezone.utc)
+    portfolio = PortfolioSnapshot(
+        available=True,
+        as_of=timestamp,
+        positions={
+            "AAA": {
+                "quantity": 10.0,
+                "average_price": 9.0,
+                "last_price": 10.0,
+                "market_value_base": 100.0,
+            }
+        },
+        cash={"USD": 999_900.0},
+        base_currency="USD",
+        nav_base=1_000_000.0,
+        sequence=7,
+        ledger_sha256="a" * 64,
+        source="OMS_EXECUTION_LEDGER",
+        reason="",
+    )
+    market_slice = Slice(
+        event_time=timestamp,
+        available_at=timestamp,
+        bars={
+            "AAA": Bar(
+                symbol="AAA",
+                event_time=timestamp,
+                available_at=timestamp,
+                open=10.0,
+                high=11.0,
+                low=9.0,
+                close=10.0,
+                volume=1_000.0,
+            )
+        },
+    )
+
+    with runner.causal_runtime(
+        source=source,
+        language=language,
+        parameters={},
+        seed=41,
+    ) as runtime:
+        targets = runtime.on_slice(
+            portfolio=portfolio,
+            market_slice=market_slice,
+        )
+
+    result = runtime.result()
+    assert targets == {"AAA": 1.0}
+    assert result.passed
+    assert result.slices_processed == 1
+    assert result.diagnostics["portfolio_feedback_connected"] is True
+    assert result.diagnostics["portfolio_authority"] == "OMS_EXECUTION_LEDGER"

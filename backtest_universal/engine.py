@@ -9,17 +9,45 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from hashlib import sha256
+import json
 import math
 from typing import Any, Mapping
 
 import numpy as np
 import pandas as pd
 
+from backtest_sdk import Bar, PortfolioSnapshot, Slice
+
 from .fx import FXMatrix, MissingFXRate
-from .margin import MarginSnapshot, UniversalMarginModel
-from .portfolio import PortfolioLedger
+from .margin import MarginContext, MarginEngine, MarginSnapshot, UniversalMarginModel
+from .option_lifecycle import (
+    OptionLifecycleAction,
+    OptionLifecycleProcessor,
+    OptionLifecycleRequestKind,
+    OptionSettlementInstruction,
+    OptionSettlementReference,
+)
+from .orders import (
+    OrderKernel,
+    OrderRequest,
+    OrderSide,
+    OrderType,
+    TimeInForce,
+)
+from .portfolio import PortfolioLedger, Position
 from .security import SecurityMaster
-from .types import AssetClass, Instrument, OptionRight, SettlementType
+from .strategy import (
+    CausalStrategyRuntime,
+    StrategyRuntimeError,
+    request_causal_targets,
+)
+from .types import (
+    AssetClass,
+    Instrument,
+    OptionCalendarContract,
+    OptionRight,
+    SettlementType,
+)
 
 
 @dataclass(frozen=True)
@@ -92,6 +120,7 @@ class UniversalRunResult:
     positions: pd.DataFrame
     cash: pd.DataFrame
     diagnostics: dict[str, Any]
+    portfolio_snapshot: PortfolioSnapshot | None = None
 
     def records(self) -> dict[str, list[dict[str, Any]]]:
         def rows(frame: pd.DataFrame) -> list[dict[str, Any]]:
@@ -239,7 +268,7 @@ class UniversalBacktestEngine:
         *,
         security_master: SecurityMaster,
         config: UniversalEngineConfig | None = None,
-        margin_model: UniversalMarginModel | None = None,
+        margin_model: MarginEngine | None = None,
     ) -> None:
         self.security_master = security_master
         self.config = config or UniversalEngineConfig()
@@ -315,15 +344,38 @@ class UniversalBacktestEngine:
         self,
         *,
         market_data: Mapping[str, pd.DataFrame],
-        target_weights: pd.DataFrame,
+        target_weights: pd.DataFrame | None = None,
         fx_rates: Mapping[str, pd.Series] | None = None,
         cash_rates: Mapping[str, pd.Series] | None = None,
         target_available_at: pd.Series | None = None,
+        strategy_runtime: CausalStrategyRuntime | None = None,
+        option_calendars: Mapping[str, OptionCalendarContract] | None = None,
+        margin_sensitivities: Mapping[str, Mapping[str, float]] | None = None,
     ) -> UniversalRunResult:
         instruments, frames = self._instrument_map(market_data)
-        targets, available = self._targets(
-            target_weights, instruments, target_available_at
-        )
+        if (target_weights is None) == (strategy_runtime is None):
+            raise ValueError(
+                "exactly one signal source is required: target_weights or strategy_runtime"
+            )
+        if target_weights is None:
+            if target_available_at is not None:
+                raise ValueError(
+                    "target_available_at is only valid with target_weights"
+                )
+            targets = pd.DataFrame()
+            available = pd.Series(dtype="datetime64[ns, UTC]")
+        else:
+            targets, available = self._targets(
+                target_weights, instruments, target_available_at
+            )
+        calendar_contracts: dict[str, OptionCalendarContract] = {}
+        for supplied_id, calendar in dict(option_calendars or {}).items():
+            if not isinstance(calendar, OptionCalendarContract):
+                raise TypeError("option_calendars values must be OptionCalendarContract")
+            calendar_id = str(supplied_id).strip()
+            if calendar_id != calendar.calendar_id:
+                raise ValueError("option calendar mapping key must match calendar_id")
+            calendar_contracts[calendar_id] = calendar
         fx = FXMatrix(self.config.base_currency)
         start_stamp = min(frame.index.min() for frame in frames.values()).to_pydatetime()
         for pair, value in sorted(dict(self.config.initial_fx_rates).items()):
@@ -352,6 +404,9 @@ class UniversalBacktestEngine:
             timeline_values.update(series.index)
         for series in normalised_cash_rates.values():
             timeline_values.update(series.index)
+        for calendar in calendar_contracts.values():
+            timeline_values.add(pd.Timestamp(calendar.exercise_cutoff_at))
+            timeline_values.add(pd.Timestamp(calendar.settlement_at))
         for frame in frames.values():
             if "dividend_payable_at" not in frame:
                 continue
@@ -376,11 +431,13 @@ class UniversalBacktestEngine:
         portfolio = PortfolioLedger(
             str(self.config.base_currency).upper(), float(self.config.initial_cash)
         )
+        oms = OrderKernel()
         orders: list[dict[str, Any]] = []
         fills: list[dict[str, Any]] = []
         events: list[dict[str, Any]] = []
         valuations: list[dict[str, Any]] = []
         last_rows: dict[str, pd.Series] = {}
+        last_row_times: dict[str, pd.Timestamp] = {}
         rejections = 0
         partial_fills = 0
         gross_limit_clips = 0
@@ -393,18 +450,432 @@ class UniversalBacktestEngine:
         order_counter = 0
         active_cash_rates: dict[str, float] = {}
         previous_timestamp: pd.Timestamp | None = None
+        snapshot_sequence = 0
+        last_portfolio_snapshot: PortfolioSnapshot | None = None
+        last_margin_snapshot: MarginSnapshot | None = None
+        portfolio_feedback_slices = 0
+        option_lifecycle = OptionLifecycleProcessor()
+        pending_option_instructions: dict[
+            str, tuple[OptionSettlementInstruction, Instrument | None]
+        ] = {}
+        option_instructions_resolved = 0
+        option_instructions_applied = 0
+        physical_option_actions = 0
+        option_data_required = 0
+        option_data_required_ids: set[str] = set()
 
         def record_event(timestamp: pd.Timestamp, kind: str, **payload: Any) -> None:
             events.append({"timestamp": timestamp, "kind": kind, **payload})
 
-        def current_margin() -> MarginSnapshot:
+        def current_margin(
+            timestamp: pd.Timestamp,
+            *,
+            positions: Mapping[str, Position] | None = None,
+        ) -> MarginSnapshot:
             nav = portfolio.nav(fx, instruments)
-            return self.margin_model.requirements(
-                equity_base=nav,
-                positions=portfolio.positions,
-                instruments=instruments,
-                fx=fx,
+            return self.margin_model.calculate(
+                MarginContext(
+                    equity_base=nav,
+                    positions=(
+                        portfolio.positions if positions is None else positions
+                    ),
+                    instruments=instruments,
+                    fx=fx,
+                    as_of=timestamp.to_pydatetime(),
+                    sensitivities=margin_sensitivities or {},
+                )
             )
+
+        def candidate_margin(
+            timestamp: pd.Timestamp,
+            key: str,
+            desired_quantity: float,
+            price: float,
+        ) -> MarginSnapshot:
+            hypothetical = dict(portfolio.positions)
+            current = portfolio.position(key)
+            hypothetical[key] = Position(
+                symbol=current.symbol,
+                quantity=float(desired_quantity),
+                average_price=float(current.average_price),
+                last_price=float(price),
+                realized_pnl_quote=float(current.realized_pnl_quote),
+            )
+            return current_margin(timestamp, positions=hypothetical)
+
+        def build_portfolio_snapshot(
+            timestamp: pd.Timestamp,
+            nav: float,
+            margin: MarginSnapshot,
+        ) -> PortfolioSnapshot:
+            """Freeze ledger state after all events at ``timestamp``."""
+
+            nonlocal snapshot_sequence
+            snapshot_sequence += 1
+            position_rows = portfolio.positions_snapshot(fx, instruments)
+            positions: dict[str, dict[str, Any]] = {}
+            realized_base = 0.0
+            unrealized_base = 0.0
+            for row in position_rows:
+                key = str(row["instrument_id"])
+                instrument = instruments[key]
+                position = portfolio.position(key)
+                realized = fx.to_base(
+                    position.realized_pnl_quote, instrument.quote_currency
+                )
+                unrealized_quote = 0.0
+                if not instrument.uses_variation_margin:
+                    unrealized_quote = (
+                        position.quantity
+                        * (position.last_price - position.average_price)
+                        * float(instrument.multiplier)
+                    )
+                unrealized = fx.to_base(
+                    unrealized_quote, instrument.quote_currency
+                )
+                item = dict(row)
+                item["market_value_base"] = float(row["notional_base"])
+                item["realized_pnl_base"] = realized
+                item["unrealized_pnl_base"] = unrealized
+                positions[key] = item
+                realized_base += realized
+                unrealized_base += unrealized
+            cash_rows = portfolio.cash.snapshot(fx)
+            settled_cash = {
+                str(item["currency"]): float(item["settled"])
+                for item in cash_rows
+            }
+            unsettled_cash = {
+                str(item["currency"]): float(item["unsettled"])
+                for item in cash_rows
+            }
+            open_orders = [
+                {
+                    "order_id": item.order_id,
+                    "instrument_id": item.symbol,
+                    "side": item.side.value,
+                    "order_type": item.order_type.value,
+                    "time_in_force": item.time_in_force.value,
+                    "status": item.status.value,
+                    "quantity": float(item.quantity),
+                    "filled_quantity": float(item.filled_quantity),
+                    "remaining_quantity": float(item.remaining_quantity),
+                    "submitted_at": item.submitted_at.isoformat(),
+                    "updated_at": (
+                        item.updated_at.isoformat() if item.updated_at else None
+                    ),
+                }
+                for item in oms.active_orders()
+            ]
+            # Keep this language-neutral: protocol v3 transports margin values
+            # as finite numbers to Python, JS/TS, C++, Rust and C#.  Model
+            # identity and parameter provenance remain in run diagnostics.
+            margin_payload: dict[str, float | bool | None] = {
+                "available": bool(margin.available),
+                "initial_required_base": float(margin.initial_required_base),
+                "maintenance_required_base": float(
+                    margin.maintenance_required_base
+                ),
+                "maintenance_excess_base": float(
+                    margin.maintenance_excess_base
+                ),
+                "margin_call": bool(margin.margin_call),
+            }
+            pnl = {
+                "total_base": float(nav - self.config.initial_cash),
+                "realized_trade_base": float(realized_base),
+                "unrealized_base": float(unrealized_base),
+            }
+            authoritative_payload = {
+                "as_of": timestamp.isoformat(),
+                "sequence": snapshot_sequence,
+                "positions": positions,
+                "cash": settled_cash,
+                "unsettled_cash": unsettled_cash,
+                "open_orders": open_orders,
+                "nav_base": float(nav),
+                "margin": margin_payload,
+                "pnl": pnl,
+                "oms_fill_ledger_sha256": oms.fill_ledger_sha256,
+                "applied_fill_ids": sorted(portfolio.applied_oms_fill_ids),
+            }
+            ledger_sha256 = sha256(
+                json.dumps(
+                    authoritative_payload,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=True,
+                    default=str,
+                ).encode("utf-8")
+            ).hexdigest()
+            return PortfolioSnapshot(
+                available=True,
+                as_of=timestamp.to_pydatetime(),
+                positions=positions,
+                cash=settled_cash,
+                unsettled_cash=unsettled_cash,
+                open_orders=open_orders,
+                base_currency=self.config.base_currency,
+                nav_base=nav,
+                margin=margin_payload,
+                pnl=pnl,
+                sequence=snapshot_sequence,
+                ledger_sha256=ledger_sha256,
+                source="OMS_EXECUTION_LEDGER",
+                reason="",
+            )
+
+        def reject_order_intent(
+            key: str,
+            timestamp: pd.Timestamp,
+            desired_quantity: float,
+            *,
+            reason: str,
+            category: str,
+        ) -> None:
+            """Record a risk rejection through the same authoritative OMS."""
+
+            nonlocal order_counter, rejections
+            instrument = instruments[key]
+            delta = float(desired_quantity) - portfolio.position(key).quantity
+            if abs(delta) <= 1e-12:
+                return
+            order_counter += 1
+            order_id = f"UO-{order_counter:09d}"
+            oms.submit(
+                OrderRequest(
+                    symbol=key,
+                    side=OrderSide.BUY if delta > 0 else OrderSide.SELL,
+                    order_type=OrderType.MARKET,
+                    quantity=abs(delta),
+                    submitted_at=timestamp.to_pydatetime(),
+                    time_in_force=TimeInForce.IOC,
+                    order_id=order_id,
+                    metadata={
+                        "instrument_id": key,
+                        "display_symbol": instrument.symbol,
+                        "desired_quantity": float(desired_quantity),
+                        "reason": category,
+                    },
+                )
+            )
+            rejected = oms.reject(
+                order_id,
+                at=timestamp.to_pydatetime(),
+                reason=reason,
+            )
+            orders.append(
+                {
+                    "timestamp": timestamp,
+                    "order_id": order_id,
+                    "instrument_id": key,
+                    "symbol": instrument.symbol,
+                    "side": "BUY" if delta > 0 else "SELL",
+                    "requested_quantity": abs(delta),
+                    "desired_quantity": desired_quantity,
+                    "order_type": "MARKET",
+                    "reason": category,
+                    "status": "REJECTED",
+                    "oms_status": rejected.status.value,
+                    "rejection_reason": reason,
+                }
+            )
+            rejections += 1
+
+        def apply_option_instruction(
+            key: str,
+            instruction: OptionSettlementInstruction,
+            underlying: Instrument | None,
+            timestamp: pd.Timestamp,
+        ) -> None:
+            nonlocal option_instructions_applied, physical_option_actions
+            option = instruments[key]
+            option_lifecycle.apply(
+                ledger=portfolio,
+                instruction=instruction,
+                option=option,
+                underlying=underlying,
+                at=timestamp.to_pydatetime(),
+            )
+            event_kind = {
+                OptionLifecycleAction.CASH_SETTLEMENT: "option_cash_settlement",
+                OptionLifecycleAction.PHYSICAL_EXERCISE: "option_physical_exercise",
+                OptionLifecycleAction.PHYSICAL_ASSIGNMENT: "option_physical_assignment",
+                OptionLifecycleAction.LAPSE: "option_lapse",
+            }.get(instruction.action, "option_lifecycle")
+            record_event(
+                timestamp,
+                event_kind,
+                lifecycle_id=instruction.lifecycle_id,
+                instrument_id=key,
+                action=instruction.action.value,
+                option_quantity=instruction.option_quantity,
+                settlement_value=instruction.settlement_value,
+                underlying_instrument_id=instruction.underlying_instrument_id,
+                underlying_quantity_delta=instruction.underlying_quantity_delta,
+                cash_delta_quote=instruction.cash_delta_quote,
+                source=instruction.reference_source,
+                source_version=instruction.reference_version,
+            )
+            option_instructions_applied += 1
+            if instruction.action in {
+                OptionLifecycleAction.PHYSICAL_EXERCISE,
+                OptionLifecycleAction.PHYSICAL_ASSIGNMENT,
+            }:
+                physical_option_actions += 1
+            pending_option_instructions.pop(key, None)
+            pending.pop(key, None)
+            pending_is_change.pop(key, None)
+
+        def resolve_option_instruction(
+            key: str,
+            timestamp: pd.Timestamp,
+            rows_at_time: Mapping[str, pd.Series],
+        ) -> None:
+            nonlocal option_instructions_resolved, option_data_required
+            if key in pending_option_instructions:
+                return
+            option = instruments[key]
+            position = portfolio.position(key)
+            if option.asset_class != AssetClass.OPTION or not position.quantity:
+                return
+            option_row = rows_at_time.get(key, last_rows.get(key))
+            raw_request = ""
+            if option_row is not None:
+                raw_request = str(
+                    option_row.get("option_lifecycle_request", "") or ""
+                ).strip().upper()
+            calendar = (
+                calendar_contracts.get(option.option_calendar_id)
+                if option.option_calendar_id
+                else None
+            )
+            if raw_request:
+                try:
+                    request_kind = OptionLifecycleRequestKind(raw_request)
+                except ValueError as exc:
+                    raise ValueError(
+                        f"{key}: invalid option_lifecycle_request {raw_request!r}"
+                    ) from exc
+            else:
+                request_kind = OptionLifecycleRequestKind.EXPIRATION
+                eligible_at = (
+                    calendar.exercise_cutoff_at
+                    if calendar is not None
+                    else option.expiry
+                )
+                if eligible_at is None or timestamp.to_pydatetime() < eligible_at:
+                    return
+
+            underlying: Instrument | None = None
+            if option.underlying_symbol:
+                try:
+                    candidate = self.security_master.get(option.underlying_symbol)
+                    if candidate.key in instruments:
+                        underlying = candidate
+                except KeyError:
+                    underlying = None
+
+            underlying_row: pd.Series | None = None
+            underlying_observed_at: pd.Timestamp | None = None
+            if underlying is not None:
+                underlying_row = rows_at_time.get(
+                    underlying.key, last_rows.get(underlying.key)
+                )
+                underlying_observed_at = (
+                    timestamp
+                    if underlying.key in rows_at_time
+                    else last_row_times.get(underlying.key)
+                )
+            option_observed_at = (
+                timestamp if key in rows_at_time else last_row_times.get(key)
+            )
+            official_value: float | None = None
+            if option_row is not None:
+                raw_official = option_row.get("settlement_price", np.nan)
+                if pd.notna(raw_official):
+                    official_value = float(raw_official)
+            underlying_price = (
+                float(underlying_row["close"])
+                if underlying_row is not None
+                else None
+            )
+            observed_candidates = [
+                item
+                for item in (option_observed_at, underlying_observed_at)
+                if item is not None
+            ]
+            reference: OptionSettlementReference | None = None
+            if observed_candidates and (
+                official_value is not None or underlying_price is not None
+            ):
+                observed_at = max(observed_candidates)
+                source = (
+                    str(option_row.get("settlement_source", "") or "").strip()
+                    if option_row is not None
+                    else ""
+                ) or "subscribed_market_data"
+                source_version = (
+                    str(
+                        option_row.get("settlement_source_version", "") or ""
+                    ).strip()
+                    if option_row is not None
+                    else ""
+                ) or observed_at.isoformat()
+                reference = OptionSettlementReference(
+                    observed_at=observed_at.to_pydatetime(),
+                    available_at=observed_at.to_pydatetime(),
+                    source=source,
+                    source_version=source_version,
+                    underlying_price=underlying_price,
+                    official_settlement_value=official_value,
+                )
+            requested_contracts: float | None = None
+            if option_row is not None:
+                raw_requested = option_row.get("requested_contracts", np.nan)
+                if pd.notna(raw_requested):
+                    requested_contracts = float(raw_requested)
+            instruction = option_lifecycle.resolve(
+                instrument=option,
+                position_quantity=position.quantity,
+                at=timestamp.to_pydatetime(),
+                calendar=calendar,
+                reference=reference,
+                underlying=underlying,
+                request_kind=request_kind,
+                requested_contracts=requested_contracts,
+                strict=False,
+            )
+            if not instruction.available:
+                gap = f"{key}: option lifecycle data required ({'; '.join(instruction.reasons)})"
+                lifecycle_gaps.append(gap)
+                if instruction.lifecycle_id not in option_data_required_ids:
+                    option_data_required_ids.add(instruction.lifecycle_id)
+                    option_data_required += 1
+                    record_event(
+                        timestamp,
+                        "option_lifecycle_data_required",
+                        lifecycle_id=instruction.lifecycle_id,
+                        instrument_id=key,
+                        reasons=list(instruction.reasons),
+                    )
+                return
+            pending_option_instructions[key] = (instruction, underlying)
+            option_instructions_resolved += 1
+            record_event(
+                timestamp,
+                "option_lifecycle_resolved",
+                lifecycle_id=instruction.lifecycle_id,
+                instrument_id=key,
+                action=instruction.action.value,
+                settlement_at=instruction.settlement_at,
+                source=instruction.reference_source,
+                source_version=instruction.reference_version,
+            )
+            if instruction.settlement_at <= timestamp.to_pydatetime():
+                apply_option_instruction(
+                    key, instruction, underlying, timestamp
+                )
 
         def execute_delta(
             key: str,
@@ -425,6 +896,24 @@ class UniversalBacktestEngine:
             order_counter += 1
             order_id = f"UO-{order_counter:09d}"
             reference_price = float(row[reference_field])
+            oms_order = oms.submit(
+                OrderRequest(
+                    symbol=key,
+                    side=OrderSide.BUY if delta > 0 else OrderSide.SELL,
+                    order_type=OrderType.MARKET,
+                    quantity=abs(delta),
+                    submitted_at=timestamp.to_pydatetime(),
+                    time_in_force=TimeInForce.IOC,
+                    order_id=order_id,
+                    metadata={
+                        "instrument_id": key,
+                        "display_symbol": instrument.symbol,
+                        "desired_quantity": float(desired_quantity),
+                        "reason": reason,
+                        "forced": bool(forced),
+                    },
+                )
+            )
             order = {
                 "timestamp": timestamp,
                 "order_id": order_id,
@@ -436,12 +925,27 @@ class UniversalBacktestEngine:
                 "order_type": "MARKET",
                 "reason": reason,
                 "status": "NEW",
+                "oms_status": oms_order.status.value,
             }
-            if delta < 0 and desired_quantity < -1e-12 and not self.config.allow_short and not forced:
-                order.update(status="REJECTED", rejection_reason="short exposure disabled")
+
+            def reject_current(rejection_reason: str) -> str:
+                nonlocal rejections
+                rejected = oms.reject(
+                    order_id,
+                    at=timestamp.to_pydatetime(),
+                    reason=rejection_reason,
+                )
+                order.update(
+                    status="REJECTED",
+                    oms_status=rejected.status.value,
+                    rejection_reason=rejection_reason,
+                )
                 orders.append(order)
                 rejections += 1
                 return "REJECTED"
+
+            if delta < 0 and desired_quantity < -1e-12 and not self.config.allow_short and not forced:
+                return reject_current("short exposure disabled")
             available_quantity = abs(delta)
             volume = float(row.get("volume", np.nan))
             # A margin call or expiry does not create infinite liquidity.
@@ -457,19 +961,19 @@ class UniversalBacktestEngine:
                     remaining_volume,
                 )
             elif self.config.require_volume:
-                order.update(status="REJECTED", rejection_reason="causal volume unavailable")
-                orders.append(order)
-                rejections += 1
-                return "REJECTED"
+                return reject_current("causal volume unavailable")
             fill_quantity = _round_instrument_quantity(
                 available_quantity, instrument, self.config
             )
             if fill_quantity <= 0:
-                order.update(status="REJECTED", rejection_reason="quantity below tradable lot")
-                orders.append(order)
-                rejections += 1
-                return "REJECTED"
+                return reject_current("quantity below tradable lot")
             fill_quantity = math.copysign(fill_quantity, delta)
+            # Floating lot arithmetic may place the rounded value a few ulps
+            # above the remaining OMS quantity.  An authoritative OMS must
+            # never accept an overfill, so cap that numerical residue to the
+            # exact client intent before costs and accounting are computed.
+            if abs(fill_quantity) > abs(delta):
+                fill_quantity = float(delta)
             quantity_tolerance = _quantity_tolerance(delta, instrument, self.config)
             if abs(fill_quantity) + quantity_tolerance < abs(delta):
                 partial_fills += 1
@@ -523,13 +1027,9 @@ class UniversalBacktestEngine:
                         affordable_quantity, instrument, self.config
                     )
                     if fill_quantity <= 0:
-                        order.update(
-                            status="REJECTED",
-                            rejection_reason="insufficient settled cash after costs",
+                        return reject_current(
+                            "insufficient settled cash after costs"
                         )
-                        orders.append(order)
-                        rejections += 1
-                        return "REJECTED"
                     partial_fills += 1
                     order["status"] = "PARTIAL"
                     participation = (
@@ -550,6 +1050,9 @@ class UniversalBacktestEngine:
                         instrument.tick_size,
                         fill_quantity,
                     )
+            oms_remaining = float(oms.get(order_id).remaining_quantity)
+            if abs(fill_quantity) > oms_remaining:
+                fill_quantity = math.copysign(oms_remaining, fill_quantity)
             notional_quote = abs(
                 fill_quantity * fill_price * float(instrument.multiplier)
             )
@@ -570,20 +1073,24 @@ class UniversalBacktestEngine:
                         fee_bps=self.config.fx_conversion_bps,
                     )
             except (ValueError, MissingFXRate) as exc:
-                order.update(status="REJECTED", rejection_reason=str(exc))
-                orders.append(order)
-                rejections += 1
-                return "REJECTED"
+                return reject_current(str(exc))
 
             settle_at = _settlement_at(timestamp, instrument.settlement_days)
-            portfolio.apply_fill(
+            authoritative_fill = oms.apply_fill(
+                order_id,
+                at=timestamp.to_pydatetime(),
+                quantity=abs(fill_quantity),
+                price=fill_price,
+                source="UNIVERSAL_BAR_EXECUTION",
+            )
+            portfolio.apply_oms_fill(
                 instrument,
-                fill_quantity,
-                fill_price,
+                authoritative_fill,
                 commission,
-                timestamp.to_pydatetime(),
                 settle_at,
             )
+            fill_quantity = float(authoritative_fill.signed_quantity)
+            fill_price = float(authoritative_fill.price)
             volume_used[(timestamp, key)] = volume_used.get((timestamp, key), 0.0) + abs(
                 fill_quantity
             )
@@ -594,13 +1101,10 @@ class UniversalBacktestEngine:
                     timestamp.to_pydatetime(),
                     kind="gas_fee",
                 )
-            fill_id = "UF-" + sha256(
-                f"{order_id}|{timestamp.isoformat()}|{fill_quantity}|{fill_price}".encode("utf-8")
-            ).hexdigest()[:16].upper()
             fills.append(
                 {
                     "timestamp": timestamp,
-                    "fill_id": fill_id,
+                    "fill_id": authoritative_fill.fill_id,
                     "order_id": order_id,
                     "instrument_id": key,
                     "symbol": instrument.symbol,
@@ -614,18 +1118,30 @@ class UniversalBacktestEngine:
                     "settlement_at": settle_at,
                     "quote_currency": instrument.quote_currency,
                     "forced": forced,
+                    "source": authoritative_fill.source,
+                    "authority": "OMS",
                 }
             )
             order["filled_quantity"] = abs(fill_quantity)
+            current_oms_order = oms.get(order_id)
+            if current_oms_order.active:
+                current_oms_order = oms.cancel(
+                    order_id,
+                    at=timestamp.to_pydatetime(),
+                    reason="BAR_REMAINDER_REQUEUED",
+                )
+            order["oms_status"] = current_oms_order.status.value
             orders.append(order)
             record_event(
                 timestamp,
                 "fill",
                 instrument_id=key,
                 order_id=order_id,
+                fill_id=authoritative_fill.fill_id,
                 quantity=fill_quantity,
                 price=fill_price,
                 forced=forced,
+                authority="OMS",
             )
             return str(order["status"])
 
@@ -917,7 +1433,7 @@ class UniversalBacktestEngine:
                     # Enforce gross exposure against the positions that actually
                     # persist in the portfolio, not merely the non-null targets
                     # present on this signal row.
-                    snapshot = current_margin()
+                    snapshot = current_margin(timestamp)
                     current_notional_base = abs(
                         current
                         * float(row["open"])
@@ -993,59 +1509,157 @@ class UniversalBacktestEngine:
                         pending.pop(key, None)
                         pending_is_change.pop(key, None)
                         continue
-                    if abs(desired_quantity) > abs(current) + 1e-12:
+                    rates = getattr(self.margin_model, "rates", None)
+                    # Scenario/portfolio models must assess every target
+                    # transition: reducing one leg can remove a hedge and
+                    # increase portfolio margin.  The legacy independent-rate
+                    # model only needs the historical increase check.
+                    margin_check_required = (
+                        not callable(rates)
+                        or abs(desired_quantity) > abs(current) + 1e-12
+                    )
+                    if margin_check_required:
                         try:
-                            initial_rate, _ = self.margin_model.rates(
-                                instrument, desired_quantity
-                            )
-                            snapshot = current_margin()
-                            current_notional = abs(
-                                current
-                                * float(row["open"])
-                                * float(instrument.multiplier)
-                                * quote_to_base
-                            )
-                            current_requirement = current_notional * initial_rate
-                            other_requirement = max(
-                                snapshot.initial_required_base - current_requirement, 0.0
-                            )
-                            affordable = max(pretrade_nav - other_requirement, 0.0)
-                            max_quantity = affordable / max(
-                                initial_rate
-                                * float(row["open"])
-                                * float(instrument.multiplier)
-                                * quote_to_base,
-                                1e-12,
-                            )
-                            if abs(desired_quantity) > max_quantity + 1e-12:
-                                desired_quantity = math.copysign(
-                                    _round_instrument_quantity(
-                                        max_quantity, instrument, self.config
-                                    ),
-                                    desired_quantity,
+                            if callable(rates):
+                                initial_rate, _ = rates(
+                                    instrument, desired_quantity
                                 )
-                                target_was_clipped = True
-                                partial_fills += 1
-                                record_event(
+                                snapshot = current_margin(timestamp)
+                                current_notional = abs(
+                                    current
+                                    * float(row["open"])
+                                    * float(instrument.multiplier)
+                                    * quote_to_base
+                                )
+                                current_requirement = current_notional * initial_rate
+                                other_requirement = max(
+                                    snapshot.initial_required_base
+                                    - current_requirement,
+                                    0.0,
+                                )
+                                affordable = max(
+                                    pretrade_nav - other_requirement, 0.0
+                                )
+                                max_quantity = affordable / max(
+                                    initial_rate
+                                    * float(row["open"])
+                                    * float(instrument.multiplier)
+                                    * quote_to_base,
+                                    1e-12,
+                                )
+                                if abs(desired_quantity) > max_quantity + 1e-12:
+                                    desired_quantity = math.copysign(
+                                        _round_instrument_quantity(
+                                            max_quantity, instrument, self.config
+                                        ),
+                                        desired_quantity,
+                                    )
+                                    target_was_clipped = True
+                                    partial_fills += 1
+                                    record_event(
+                                        timestamp,
+                                        "pretrade_margin_clip",
+                                        instrument_id=key,
+                                        requested_quantity=abs(
+                                            requested_desired_quantity
+                                        ),
+                                        max_quantity=abs(desired_quantity),
+                                        method=snapshot.method,
+                                    )
+                            else:
+                                requested_margin = candidate_margin(
                                     timestamp,
-                                    "pretrade_margin_clip",
-                                    instrument_id=key,
-                                    max_quantity=abs(desired_quantity),
+                                    key,
+                                    desired_quantity,
+                                    float(row["open"]),
                                 )
-                        except ValueError as exc:
-                            rejections += 1
-                            orders.append(
-                                {
-                                    "timestamp": timestamp,
-                                    "order_id": f"UO-R{rejections:08d}",
-                                    "instrument_id": key,
-                                    "symbol": instrument.symbol,
-                                    "status": "REJECTED",
-                                    "rejection_reason": str(exc),
-                                    "reason": "pretrade_margin",
-                                }
+                                if not requested_margin.available:
+                                    raise ValueError(
+                                        "; ".join(requested_margin.reasons)
+                                        or "margin model unavailable"
+                                    )
+                                if (
+                                    requested_margin.initial_required_base
+                                    > pretrade_nav + 1e-12
+                                ):
+                                    current_margin_snapshot = candidate_margin(
+                                        timestamp,
+                                        key,
+                                        current,
+                                        float(row["open"]),
+                                    )
+                                    if not current_margin_snapshot.available:
+                                        raise ValueError(
+                                            "; ".join(
+                                                current_margin_snapshot.reasons
+                                            )
+                                            or "current portfolio margin unavailable"
+                                        )
+                                    if (
+                                        current_margin_snapshot.initial_required_base
+                                        > pretrade_nav + 1e-12
+                                    ):
+                                        raise ValueError(
+                                            "current portfolio already exceeds initial margin"
+                                        )
+                                    low_fraction = 0.0
+                                    high_fraction = 1.0
+                                    for _ in range(56):
+                                        midpoint = (
+                                            low_fraction + high_fraction
+                                        ) / 2.0
+                                        candidate_quantity = current + midpoint * (
+                                            desired_quantity - current
+                                        )
+                                        midpoint_margin = candidate_margin(
+                                            timestamp,
+                                            key,
+                                            candidate_quantity,
+                                            float(row["open"]),
+                                        )
+                                        if not midpoint_margin.available:
+                                            raise ValueError(
+                                                "; ".join(midpoint_margin.reasons)
+                                                or "margin model unavailable"
+                                            )
+                                        if (
+                                            midpoint_margin.initial_required_base
+                                            <= pretrade_nav + 1e-12
+                                        ):
+                                            low_fraction = midpoint
+                                        else:
+                                            high_fraction = midpoint
+                                    max_quantity = current + low_fraction * (
+                                        desired_quantity - current
+                                    )
+                                    desired_quantity = _round_instrument_quantity(
+                                        max_quantity, instrument, self.config
+                                    )
+                                    target_was_clipped = True
+                                    partial_fills += 1
+                                    record_event(
+                                        timestamp,
+                                        "pretrade_margin_clip",
+                                        instrument_id=key,
+                                        requested_quantity=abs(
+                                            requested_desired_quantity
+                                        ),
+                                        max_quantity=abs(desired_quantity),
+                                        method=requested_margin.method,
+                                        parameter_version=(
+                                            requested_margin.parameter_version
+                                        ),
+                                    )
+                        except (LookupError, TypeError, ValueError) as exc:
+                            reject_order_intent(
+                                key,
+                                timestamp,
+                                desired_quantity,
+                                reason=str(exc),
+                                category="pretrade_margin",
                             )
                             pending.pop(key, None)
+                            pending_is_change.pop(key, None)
                             continue
                     execution_status = execute_delta(
                         key,
@@ -1081,6 +1695,7 @@ class UniversalBacktestEngine:
                     row = rows_at_time[key]
                     portfolio.mark(instrument, float(row["close"]), stamp_dt)
                     last_rows[key] = row
+                    last_row_times[key] = timestamp
                     position = portfolio.position(key)
                     if position.quantity:
                         funding_rate = float(row.get("funding_rate", 0.0) or 0.0)
@@ -1131,6 +1746,11 @@ class UniversalBacktestEngine:
                     delisted = bool(row.get("delisted", False))
                     expired = instrument.expiry is not None and stamp_dt >= instrument.expiry
                     if position.quantity and expired and instrument.asset_class == AssetClass.OPTION:
+                        if instrument.option_calendar_id:
+                            # The strict lifecycle processor resolves this
+                            # position after all same-clock closing marks are
+                            # available.  Never fall back to a synthetic sale.
+                            continue
                         settlement_value = float(row.get("settlement_price", np.nan))
                         settlement_source = "official settlement"
                         if not np.isfinite(settlement_value) or settlement_value < 0:
@@ -1282,6 +1902,36 @@ class UniversalBacktestEngine:
                                 f"{key}: residual position remained after lifecycle close"
                             )
 
+                for key, (instruction, underlying) in sorted(
+                    list(pending_option_instructions.items())
+                ):
+                    if instruction.settlement_at > stamp_dt:
+                        continue
+                    try:
+                        apply_option_instruction(
+                            key, instruction, underlying, timestamp
+                        )
+                    except ValueError as exc:
+                        lifecycle_gaps.append(
+                            f"{key}: option settlement failed ({exc})"
+                        )
+                        pending_option_instructions.pop(key, None)
+
+                for key in sorted(instruments):
+                    instrument = instruments[key]
+                    if instrument.asset_class != AssetClass.OPTION:
+                        continue
+                    row = rows_at_time.get(key)
+                    explicit_request = bool(
+                        row is not None
+                        and str(
+                            row.get("option_lifecycle_request", "") or ""
+                        ).strip()
+                    )
+                    if not instrument.option_calendar_id and not explicit_request:
+                        continue
+                    resolve_option_instruction(key, timestamp, rows_at_time)
+
                 same_day = portfolio.cash.settle(stamp_dt)
                 for item in same_day:
                     record_event(
@@ -1292,7 +1942,7 @@ class UniversalBacktestEngine:
                         reference=item.reference,
                     )
                 nav = portfolio.nav(fx, instruments)
-                margin = current_margin()
+                margin = current_margin(timestamp)
                 if margin.margin_call:
                     margin_calls += 1
                     record_event(
@@ -1321,7 +1971,9 @@ class UniversalBacktestEngine:
                             )
                             forced_liquidations += 1
                         nav = portfolio.nav(fx, instruments)
-                        margin = current_margin()
+                        margin = current_margin(timestamp)
+
+                last_margin_snapshot = margin
 
                 gross = margin.gross_notional_base / nav if nav > 0 else np.nan
                 valuations.append(
@@ -1335,8 +1987,93 @@ class UniversalBacktestEngine:
                         "margin_available": margin.available,
                     }
                 )
+                last_portfolio_snapshot = build_portfolio_snapshot(
+                    timestamp, nav, margin
+                )
                 if not margin.available:
                     lifecycle_gaps.extend(margin.reasons)
+
+                if strategy_runtime is not None and rows_at_time:
+                    bars: dict[str, Bar] = {}
+                    for key in sorted(rows_at_time):
+                        row = rows_at_time[key]
+                        volume_value = row.get("volume", np.nan)
+                        bars[key] = Bar(
+                            symbol=key,
+                            event_time=timestamp.to_pydatetime(),
+                            available_at=timestamp.to_pydatetime(),
+                            open=float(row["open"]),
+                            high=float(row["high"]),
+                            low=float(row["low"]),
+                            close=float(row["close"]),
+                            volume=(
+                                float(volume_value)
+                                if pd.notna(volume_value)
+                                else None
+                            ),
+                            fields={
+                                "instrument_id": key,
+                                "display_symbol": instruments[key].symbol,
+                                "asset_class": instruments[key].asset_class.value,
+                            },
+                        )
+                    market_slice = Slice(
+                        event_time=timestamp.to_pydatetime(),
+                        available_at=timestamp.to_pydatetime(),
+                        bars=bars,
+                    )
+                    runtime_targets = request_causal_targets(
+                        strategy_runtime,
+                        portfolio=last_portfolio_snapshot,
+                        market_slice=market_slice,
+                    )
+                    resolved_targets: dict[str, float] = {}
+                    for supplied_key, value in runtime_targets.items():
+                        instrument = self.security_master.get(supplied_key)
+                        if instrument.key not in instruments:
+                            raise StrategyRuntimeError(
+                                "strategy runtime targeted unsubscribed instrument "
+                                f"{supplied_key!r}"
+                            )
+                        if abs(value) > float(self.config.max_target_weight):
+                            raise StrategyRuntimeError(
+                                f"target for {instrument.key} exceeds the per-instrument limit"
+                            )
+                        if instrument.key in resolved_targets:
+                            raise StrategyRuntimeError(
+                                "multiple runtime targets resolve to "
+                                f"{instrument.key}"
+                            )
+                        resolved_targets[instrument.key] = float(value)
+                    candidate_state = dict(last_target_values)
+                    candidate_state.update(resolved_targets)
+                    if (
+                        sum(abs(value) for value in candidate_state.values())
+                        > float(self.config.max_gross_exposure) + 1e-12
+                    ):
+                        raise StrategyRuntimeError(
+                            "strategy runtime target state exceeds the gross exposure limit"
+                        )
+                    for key, value in sorted(resolved_targets.items()):
+                        prior_target = last_target_values.get(key)
+                        pending[key] = (timestamp, value)
+                        pending_is_change[key] = bool(
+                            prior_target is None
+                            or abs(value - prior_target)
+                            > float(self.config.rebalance_tolerance_weight)
+                        )
+                        last_target_values[key] = value
+                        record_event(
+                            timestamp,
+                            "strategy_target",
+                            event_time=timestamp,
+                            instrument_id=key,
+                            target_weight=value,
+                            source="causal_strategy_runtime",
+                            portfolio_snapshot_sequence=last_portfolio_snapshot.sequence,
+                            portfolio_ledger_sha256=last_portfolio_snapshot.ledger_sha256,
+                        )
+                    portfolio_feedback_slices += 1
 
                 for event_time in sorted(signals_by_clock.get(timestamp, [])):
                     row = targets.loc[event_time]
@@ -1399,6 +2136,37 @@ class UniversalBacktestEngine:
             and abs(reconciliation_residual)
             <= max(1e-6, abs(final_nav) * 1e-10)
         )
+        oms_fill_ids = [item.fill_id for item in oms.authoritative_fills]
+        engine_fill_ids = (
+            [str(item) for item in fill_frame["fill_id"].tolist()]
+            if "fill_id" in fill_frame
+            else []
+        )
+        ledger_fill_ids = sorted(portfolio.applied_oms_fill_ids)
+        oms_ledger_reconciled = bool(
+            oms_fill_ids == engine_fill_ids
+            and sorted(oms_fill_ids) == ledger_fill_ids
+        )
+        if not oms_ledger_reconciled:
+            fatal_reasons.append("OMS fill ledger does not reconcile to portfolio accounting")
+        if pending_option_instructions:
+            lifecycle_gaps.extend(
+                f"{key}: option lifecycle instruction remains unsettled"
+                for key in sorted(pending_option_instructions)
+            )
+        oms_events = [
+            {
+                "event_id": item.event_id,
+                "order_id": item.order_id,
+                "occurred_at": item.occurred_at.isoformat(),
+                "kind": item.kind.value,
+                "previous_status": item.previous_status.value,
+                "status": item.status.value,
+                "reason": item.reason,
+                "details": dict(item.details),
+            }
+            for item in oms.events
+        ]
         terminal_target_changes = sorted(
             key for key in pending if pending_is_change.get(key, False)
         )
@@ -1413,7 +2181,7 @@ class UniversalBacktestEngine:
             reason = "Universal event ledger complete"
         diagnostics = {
             "engine": "universal_bar_event_kernel",
-            "engine_version": "0.2.0",
+            "engine_version": "0.3.0",
             "research_only": True,
             "automatic_production_authorization": False,
             "base_currency": self.config.base_currency,
@@ -1429,12 +2197,67 @@ class UniversalBacktestEngine:
             "event_clock": "UTC knowledge/effective time",
             "target_timing_contract": "target known at t; execution strictly after t on next eligible bar",
             "causal_inputs_only": True,
+            "signal_source": (
+                "causal_strategy_runtime"
+                if strategy_runtime is not None
+                else "precomputed_target_weights"
+            ),
+            "portfolio_feedback_contract": (
+                "OMS and ledger reconciled through t; immutable snapshot delivered "
+                "with slice t; returned target executes strictly after t"
+            ),
+            "portfolio_feedback_slices": portfolio_feedback_slices,
+            "last_portfolio_snapshot_sequence": (
+                last_portfolio_snapshot.sequence
+                if last_portfolio_snapshot is not None
+                else 0
+            ),
+            "last_portfolio_ledger_sha256": (
+                last_portfolio_snapshot.ledger_sha256
+                if last_portfolio_snapshot is not None
+                else ""
+            ),
             "multi_currency_cashbook": True,
             "cash_settlement_enforced": True,
             "margin_pretrade": True,
             "maintenance_margin_enforced": True,
+            "margin_method": (
+                last_margin_snapshot.method
+                if last_margin_snapshot is not None
+                else getattr(
+                    getattr(self.margin_model, "method", None),
+                    "value",
+                    str(getattr(self.margin_model, "method", "UNKNOWN")),
+                )
+            ),
+            "margin_parameter_version": (
+                last_margin_snapshot.parameter_version
+                if last_margin_snapshot is not None
+                else None
+            ),
+            "margin_parameter_sha256": (
+                last_margin_snapshot.parameter_sha256
+                if last_margin_snapshot is not None
+                else None
+            ),
+            "margin_certified": bool(
+                last_margin_snapshot.certified
+                if last_margin_snapshot is not None
+                else False
+            ),
+            "margin_reference_model": bool(
+                last_margin_snapshot.reference_model
+                if last_margin_snapshot is not None
+                else True
+            ),
             "orders": len(order_frame),
             "fills": len(fill_frame),
+            "oms_authoritative": True,
+            "ledger_fill_authority": "OrderKernel.authoritative_fills",
+            "oms_fill_ledger_sha256": oms.fill_ledger_sha256,
+            "oms_ledger_reconciled": oms_ledger_reconciled,
+            "oms_active_orders": len(oms.active_orders()),
+            "oms_events": oms_events,
             "rejections": rejections,
             "partial_fills": partial_fills,
             "gross_limit_clips": gross_limit_clips,
@@ -1447,6 +2270,16 @@ class UniversalBacktestEngine:
             "accounting_reconciled": accounting_reconciled,
             "accounting_reconciliation_residual_base": reconciliation_residual,
             "pending_settlements": len(portfolio.cash.pending),
+            "physical_option_lifecycle": {
+                "processor_connected": True,
+                "calendar_contracts": len(calendar_contracts),
+                "instructions_resolved": option_instructions_resolved,
+                "instructions_applied": option_instructions_applied,
+                "physical_actions_applied": physical_option_actions,
+                "data_required": option_data_required,
+                "pending_instructions": len(pending_option_instructions),
+                "fail_closed": True,
+            },
             "lifecycle_gaps": sorted(set(lifecycle_gaps)),
             "terminal_targets_without_execution": sorted(pending),
             "terminal_target_changes_without_execution": terminal_target_changes,
@@ -1465,4 +2298,5 @@ class UniversalBacktestEngine:
             positions=position_frame,
             cash=cash_frame,
             diagnostics=diagnostics,
+            portfolio_snapshot=last_portfolio_snapshot,
         )

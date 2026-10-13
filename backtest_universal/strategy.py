@@ -10,8 +10,11 @@ import ast
 from dataclasses import asdict, dataclass, field
 from hashlib import sha256
 import json
+import math
 import re
 from typing import Any, Mapping, Protocol
+
+from backtest_sdk import PortfolioSnapshot, Slice
 
 
 POLICY_VERSION = "strategy-policy-2"
@@ -132,6 +135,83 @@ class StrategySandboxClient(Protocol):
 
 class SandboxRequiredError(RuntimeError):
     pass
+
+
+class StrategyRuntimeError(ValueError):
+    """Fail-closed error raised by the causal strategy/ledger bridge."""
+
+
+class CausalStrategyRuntime(Protocol):
+    """Synchronous slice-by-slice strategy orchestration contract.
+
+    The universal engine calls ``on_slice`` only after all OMS fills and
+    accounting events through ``market_slice.available_at`` have been applied.
+    The returned sparse mapping is interpreted as target-weight changes known
+    at that same timestamp and therefore remains ineligible for execution
+    until a strictly later market bar.
+
+    A Docker controller can implement this protocol by sending ``portfolio``
+    and ``market_slice`` to an already-running sandbox process and waiting for
+    its target response.  The strategy process never receives the ledger
+    object itself.
+    """
+
+    def on_slice(
+        self,
+        *,
+        portfolio: PortfolioSnapshot,
+        market_slice: Slice,
+    ) -> Mapping[str, float] | None: ...
+
+
+def request_causal_targets(
+    runtime: CausalStrategyRuntime,
+    *,
+    portfolio: PortfolioSnapshot,
+    market_slice: Slice,
+) -> dict[str, float]:
+    """Invoke a runtime against an authoritative, non-future snapshot.
+
+    This validation lives outside the sandbox transport so every orchestrator
+    receives identical fail-closed semantics.
+    """
+
+    if not portfolio.available:
+        raise StrategyRuntimeError(
+            portfolio.reason or "authoritative portfolio snapshot unavailable"
+        )
+    if portfolio.as_of is None or portfolio.as_of > market_slice.available_at:
+        raise StrategyRuntimeError("portfolio snapshot is not causal for this slice")
+    if portfolio.source != "OMS_EXECUTION_LEDGER" or not portfolio.ledger_sha256:
+        raise StrategyRuntimeError("portfolio snapshot lacks OMS ledger authority")
+    callback = getattr(runtime, "on_slice", None)
+    if not callable(callback):
+        raise StrategyRuntimeError("strategy runtime must implement on_slice")
+    try:
+        raw = callback(portfolio=portfolio, market_slice=market_slice)
+    except Exception as exc:
+        raise StrategyRuntimeError(
+            f"strategy runtime callback failed: {type(exc).__name__}: {exc}"
+        ) from exc
+    if raw is None:
+        return {}
+    if not isinstance(raw, Mapping):
+        raise StrategyRuntimeError("strategy runtime must return a target mapping or None")
+    targets: dict[str, float] = {}
+    for raw_symbol, raw_value in raw.items():
+        symbol = str(raw_symbol).strip().upper()
+        if not symbol:
+            raise StrategyRuntimeError("strategy runtime returned a blank symbol")
+        if isinstance(raw_value, bool):
+            raise StrategyRuntimeError(f"target for {symbol} must be numeric, not boolean")
+        try:
+            value = float(raw_value)
+        except (TypeError, ValueError) as exc:
+            raise StrategyRuntimeError(f"target for {symbol} must be numeric") from exc
+        if not math.isfinite(value):
+            raise StrategyRuntimeError(f"target for {symbol} must be finite")
+        targets[symbol] = value
+    return dict(sorted(targets.items()))
 
 
 def _depth(node: ast.AST) -> int:

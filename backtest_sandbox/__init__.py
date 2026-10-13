@@ -12,12 +12,17 @@ from .contracts import (
     SandboxRunResult,
     StrategyLanguage,
 )
-from .docker_runner import DockerStrategyRunner, SandboxUnavailableError
+from .docker_runner import (
+    DockerCausalStrategyRuntime,
+    DockerStrategyRunner,
+    SandboxUnavailableError,
+)
 from .policy import validate_source
 from .templates import STRATEGY_TEMPLATES, template_for
 
 __all__ = [
     "CompileResult",
+    "DockerCausalStrategyRuntime",
     "DockerStrategyRunner",
     "SandboxLimits",
     "SandboxRunResult",

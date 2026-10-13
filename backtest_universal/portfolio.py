@@ -7,6 +7,7 @@ import math
 from typing import Mapping
 
 from .fx import FXMatrix
+from .orders import Fill
 from .types import AssetClass, Instrument, SettlementType
 
 
@@ -203,6 +204,7 @@ class PortfolioLedger:
     cash: CashBook = field(init=False)
     positions: dict[str, Position] = field(default_factory=dict)
     realized_events: list[dict[str, object]] = field(default_factory=list)
+    applied_oms_fill_ids: set[str] = field(default_factory=set)
 
     def __post_init__(self) -> None:
         self.cash = CashBook(self.base_currency, self.initial_cash)
@@ -284,6 +286,56 @@ class PortfolioLedger:
                 "realized_pnl": realized,
             }
         )
+        return realized
+
+    def apply_oms_fill(
+        self,
+        instrument: Instrument,
+        fill: Fill,
+        commission_quote: float,
+        settle_at: datetime,
+    ) -> float:
+        """Book one authoritative OMS fill exactly once.
+
+        The universal engine uses this method exclusively.  Keeping the
+        legacy numeric ``apply_fill`` method preserves compatibility for
+        low-level accounting callers, while this boundary prevents an engine
+        integration from inventing a quantity or price that is absent from the
+        OMS ledger.
+        """
+
+        if not isinstance(fill, Fill):
+            raise TypeError("fill must be an OMS Fill")
+        if fill.symbol != instrument.key:
+            raise ValueError(
+                "OMS fill instrument mismatch: "
+                f"{fill.symbol!r} != {instrument.key!r}"
+            )
+        if fill.fill_id in self.applied_oms_fill_ids:
+            raise ValueError(f"duplicate OMS fill rejected: {fill.fill_id}")
+        settlement = _utc(settle_at)
+        if settlement < fill.occurred_at:
+            raise ValueError("fill settlement cannot precede execution")
+        realized = self.apply_fill(
+            instrument,
+            float(fill.signed_quantity),
+            float(fill.price),
+            commission_quote,
+            fill.occurred_at,
+            settlement,
+        )
+        event = self.realized_events[-1]
+        if event.get("kind") != "fill":
+            raise RuntimeError("OMS fill did not create an accounting fill event")
+        event.update(
+            {
+                "fill_id": fill.fill_id,
+                "order_id": fill.order_id,
+                "fill_source": fill.source,
+                "authority": "OMS",
+            }
+        )
+        self.applied_oms_fill_ids.add(fill.fill_id)
         return realized
 
     def apply_split(self, instrument: Instrument, ratio: float, at: datetime) -> None:

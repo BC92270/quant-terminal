@@ -46,12 +46,40 @@ def _bar(symbol: str, close: float) -> dict[str, object]:
     }
 
 
+def _portfolio() -> dict[str, object]:
+    return {
+        "available": True,
+        "as_of": T0.isoformat(),
+        "base_currency": "USD",
+        "nav_base": 1_000_000.0,
+        "sequence": 7,
+        "ledger_sha256": "a" * 64,
+        "source": "OMS_EXECUTION_LEDGER",
+        "reason": "",
+        "positions": {
+            "AAA": {
+                "quantity": 10.0,
+                "average_price": 9.0,
+                "last_price": 10.0,
+                "market_value_base": 100.0,
+                "realized_pnl_base": 2.0,
+                "unrealized_pnl_base": 10.0,
+            }
+        },
+        "cash": {"USD": 999_900.0},
+        "unsettled_cash": {"USD": 0.0},
+        "open_orders": [],
+        "margin": {"available": True, "initial_required_base": 50.0},
+        "pnl": {"total_base": 12.0},
+    }
+
+
 def test_public_slice_is_frozen_atomic_and_symbol_addressable() -> None:
     first = Bar("AAA", T0, T0, 10, 11, 9, 10.5, 100)
     second = Bar("BBB", T0, T0, 20, 21, 19, 20.5, 200)
     market_slice = Slice(T0, T0, {"BBB": second, "AAA": first})
 
-    assert SDK_CONTRACT_VERSION == "2"
+    assert SDK_CONTRACT_VERSION == "3"
     assert market_slice.symbols == ("AAA", "BBB")
     assert market_slice["aaa"] is first
     with pytest.raises(TypeError):
@@ -85,7 +113,7 @@ def on_slice(ctx, slice):
             "compile_only": False,
             "compile_seconds": 10,
             "callback_seconds": 3,
-            "protocol_version": "quant-strategy-jsonl-2",
+            "protocol_version": "quant-strategy-jsonl-3",
         },
         {
             "type": "slice",
@@ -103,6 +131,39 @@ def on_slice(ctx, slice):
     signals = next(item["signals"] for item in output if item["type"] == "signals")
     assert [item["symbol"] for item in signals] == ["AAA", "BBB"]
     assert [item["target"] for item in signals] == [3.0, 3.0]
+
+
+def test_python_callback_receives_authoritative_portfolio_before_slice() -> None:
+    source = '''def on_slice(ctx, slice):
+    if not ctx.portfolio.available or ctx.portfolio.source != "OMS_EXECUTION_LEDGER":
+        raise ValueError("missing authority")
+    ctx.target_percent("AAA", ctx.portfolio.nav_base / 1000000.0, reason_code=str(ctx.portfolio.sequence))
+'''
+    output = _runtime(
+        [
+            {
+                "type": "prepare",
+                "language": "python",
+                "source": source,
+                "parameters": {},
+                "seed": 41,
+                "compile_only": False,
+                "compile_seconds": 10,
+                "callback_seconds": 3,
+            },
+            {
+                "type": "slice",
+                "sequence": 0,
+                "event_time": T0.isoformat(),
+                "available_at": T0.isoformat(),
+                "portfolio": _portfolio(),
+                "bars": [_bar("AAA", 10.0)],
+            },
+            {"type": "stop"},
+        ]
+    )
+    signals = next(item["signals"] for item in output if item["type"] == "signals")
+    assert signals == [{"reason": "7", "symbol": "AAA", "target": 1.0}]
 
 
 def test_controller_groups_only_identical_event_and_availability_clocks() -> None:
@@ -189,7 +250,7 @@ def test_installed_language_runtime_executes_atomic_slice(
                 "compile_only": False,
                 "compile_seconds": 30,
                 "callback_seconds": 5,
-                "protocol_version": "quant-strategy-jsonl-2",
+                "protocol_version": "quant-strategy-jsonl-3",
             },
             {
                 "type": "slice",
@@ -204,3 +265,73 @@ def test_installed_language_runtime_executes_atomic_slice(
     assert output[0]["callback_mode"] == "on_slice"
     signals = next(item["signals"] for item in output if item["type"] == "signals")
     assert signals == [{"reason": "SLICE", "symbol": "AAA", "target": 1.0}]
+
+
+@pytest.mark.parametrize(
+    ("language", "binary", "source"),
+    [
+        (
+            "python",
+            "python3",
+            "def on_slice(ctx, slice):\n    ctx.target_percent('AAA', ctx.portfolio.nav_base / 1000000.0, reason_code=ctx.portfolio.source)\n",
+        ),
+        (
+            "javascript",
+            "node",
+            "function onSlice(ctx, slice) { ctx.targetPercent('AAA', ctx.portfolio.navBase / 1000000.0, ctx.portfolio.source); }",
+        ),
+        (
+            "typescript",
+            "tsc",
+            "function onSlice(ctx: any, slice: any): void { ctx.targetPercent('AAA', ctx.portfolio.navBase / 1000000.0, ctx.portfolio.source); }",
+        ),
+        (
+            "cpp",
+            "g++",
+            "void initialize(Context& ctx) {}\nvoid on_slice(Context& ctx, const Slice& slice) { ctx.target_percent(\"AAA\", ctx.portfolio.nav_base / 1000000.0, ctx.portfolio.source); }",
+        ),
+        (
+            "rust",
+            "rustc",
+            "fn initialize(ctx: &mut Context) {}\nfn on_slice(ctx: &mut Context, slice: &Slice) { let target=ctx.portfolio.nav_base/1000000.0; let reason=ctx.portfolio.source.clone(); ctx.target_percent(\"AAA\",target,&reason); }",
+        ),
+        (
+            "csharp",
+            "mcs",
+            "public static void Initialize(Context ctx) {}\npublic static void OnSlice(Context ctx, Slice slice) { ctx.TargetPercent(\"AAA\", ctx.Portfolio.NavBase / 1000000.0, ctx.Portfolio.Source); }",
+        ),
+    ],
+)
+def test_installed_language_runtime_receives_authoritative_portfolio(
+    language: str, binary: str, source: str
+) -> None:
+    if shutil.which(binary) is None:
+        pytest.skip(f"{binary} is installed in the Docker image, not this host")
+    output = _runtime(
+        [
+            {
+                "type": "prepare",
+                "language": language,
+                "source": source,
+                "parameters": {},
+                "seed": 41,
+                "compile_only": False,
+                "compile_seconds": 30,
+                "callback_seconds": 5,
+                "protocol_version": "quant-strategy-jsonl-3",
+            },
+            {
+                "type": "slice",
+                "sequence": 0,
+                "event_time": T0.isoformat(),
+                "available_at": T0.isoformat(),
+                "portfolio": _portfolio(),
+                "bars": [_bar("AAA", 10.0)],
+            },
+            {"type": "stop"},
+        ]
+    )
+    signals = next(item["signals"] for item in output if item["type"] == "signals")
+    assert signals == [
+        {"reason": "OMS_EXECUTION_LEDGER", "symbol": "AAA", "target": 1.0}
+    ]

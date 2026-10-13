@@ -21,6 +21,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 import numpy as np
 import pandas as pd
 
+from backtest_sdk import PortfolioSnapshot, Slice
 from backtest_universal.strategy import SandboxAttestation
 
 from .contracts import (
@@ -34,7 +35,7 @@ from .contracts import (
 from .policy import validate_source
 
 
-DEFAULT_IMAGE = "quant-terminal/backtest-sandbox:2.0.0"
+DEFAULT_IMAGE = "quant-terminal/backtest-sandbox:3.0.0"
 
 
 class SandboxUnavailableError(RuntimeError):
@@ -406,6 +407,24 @@ class DockerStrategyRunner:
         finally:
             session.close(force=session.process.poll() is None)
 
+    def causal_runtime(
+        self,
+        *,
+        source: str,
+        language: str | StrategyLanguage,
+        parameters: Mapping[str, Any] | None = None,
+        seed: int = 41,
+    ) -> "DockerCausalStrategyRuntime":
+        """Create a persistent runtime driven slice-by-slice by the OMS engine."""
+
+        return DockerCausalStrategyRuntime(
+            runner=self,
+            source=source,
+            language=language,
+            parameters=parameters,
+            seed=seed,
+        )
+
     @staticmethod
     def _column(frame: pd.DataFrame, name: str) -> str:
         lookup = {str(column).strip().lower(): str(column) for column in frame.columns}
@@ -735,8 +754,304 @@ class DockerStrategyRunner:
         )
 
 
+def _portfolio_payload(snapshot: PortfolioSnapshot) -> dict[str, Any]:
+    return {
+        "available": bool(snapshot.available),
+        "as_of": snapshot.as_of.isoformat() if snapshot.as_of else "",
+        "positions": {
+            str(symbol): dict(values) for symbol, values in snapshot.positions.items()
+        },
+        "cash": dict(snapshot.cash),
+        "unsettled_cash": dict(snapshot.unsettled_cash),
+        "open_orders": [dict(item) for item in snapshot.open_orders],
+        "base_currency": snapshot.base_currency,
+        "nav_base": snapshot.nav_base,
+        "margin": dict(snapshot.margin),
+        "pnl": dict(snapshot.pnl),
+        "sequence": int(snapshot.sequence),
+        "ledger_sha256": snapshot.ledger_sha256,
+        "source": snapshot.source,
+        "reason": snapshot.reason,
+    }
+
+
+class DockerCausalStrategyRuntime:
+    """Persistent OCI strategy process implementing ``CausalStrategyRuntime``.
+
+    The trusted engine owns the clock and supplies an immutable OMS snapshot
+    before each atomic market slice.  This object only transports that state
+    and validates strategy targets; it never creates fills or accounting.
+    """
+
+    def __init__(
+        self,
+        *,
+        runner: DockerStrategyRunner,
+        source: str,
+        language: str | StrategyLanguage,
+        parameters: Mapping[str, Any] | None,
+        seed: int,
+    ) -> None:
+        self.runner = runner
+        self.source = str(source)
+        self.language = StrategyLanguage.parse(language)
+        self.parameters = runner._parameters(parameters)
+        self.seed = int(seed)
+        self.policy = validate_source(self.source, self.language)
+        if not self.policy.passed:
+            raise SandboxExecutionError(
+                "strategy policy rejected: " + " · ".join(self.policy.issues[:8])
+            )
+        self.image_digest = runner.image_digest()
+        if not self.image_digest:
+            raise SandboxUnavailableError(
+                "SANDBOX REQUIRED: immutable Docker image is unavailable"
+            )
+        self._session_obj: _DockerSession | None = None
+        self._started_at = 0.0
+        self._deadline = 0.0
+        self._compiler = ""
+        self._callback_mode = "on_bar"
+        self._logs: list[dict[str, Any]] = []
+        self._target_rows: list[dict[str, Any]] = []
+        self._signals = 0
+        self._bars = 0
+        self._slices = 0
+        self._result: SandboxRunResult | None = None
+
+    def __enter__(self) -> "DockerCausalStrategyRuntime":
+        self.start()
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        if exc is None:
+            self.result()
+        else:
+            self.close(force=True)
+
+    @property
+    def session(self) -> _DockerSession:
+        if self._session_obj is None:
+            raise SandboxExecutionError("causal strategy runtime has not started")
+        return self._session_obj
+
+    def start(self) -> None:
+        if self._session_obj is not None:
+            return
+        self._session_obj = self.runner._session()
+        self._started_at = time.monotonic()
+        self._deadline = self._started_at + float(self.runner.limits.wall_seconds)
+        self.session.send(
+            {
+                "type": "prepare",
+                "language": self.language.value,
+                "source": self.source,
+                "parameters": self.parameters,
+                "seed": self.seed,
+                "compile_only": False,
+                "compile_seconds": int(self.runner.limits.compile_seconds),
+                "callback_seconds": int(self.runner.limits.callback_seconds),
+                "protocol_version": SANDBOX_PROTOCOL_VERSION,
+            }
+        )
+        while True:
+            message = self.session.receive(
+                min(
+                    float(self.runner.limits.compile_seconds) + 10.0,
+                    max(0.01, self._deadline - time.monotonic()),
+                )
+            )
+            if message.get("type") == "log":
+                self._logs.append(message)
+                continue
+            if message.get("type") != "ready" or message.get("status") != "PASS":
+                raise SandboxExecutionError("sandbox did not enter READY state")
+            self._compiler = str(message.get("compiler") or "")
+            self._callback_mode = str(message.get("callback_mode") or "on_bar")
+            return
+
+    def on_slice(
+        self,
+        *,
+        portfolio: PortfolioSnapshot,
+        market_slice: Slice,
+    ) -> Mapping[str, float]:
+        self.start()
+        if time.monotonic() >= self._deadline:
+            raise TimeoutError("sandbox wall-clock limit exceeded")
+        if self._bars + len(market_slice) > int(self.runner.limits.max_bars):
+            raise SandboxExecutionError("sandbox bar limit exceeded")
+        sequence = self._slices
+        bars = []
+        for symbol in market_slice.symbols:
+            bar = market_slice[symbol]
+            bars.append(
+                {
+                    "event_time": bar.event_time.isoformat(),
+                    "available_at": bar.available_at.isoformat(),
+                    "symbol": bar.symbol,
+                    "open": float(bar.open),
+                    "high": float(bar.high),
+                    "low": float(bar.low),
+                    "close": float(bar.close),
+                    "volume": 0.0 if bar.volume is None else float(bar.volume),
+                }
+            )
+        self.session.send(
+            {
+                "type": "slice",
+                "sequence": sequence,
+                "event_time": market_slice.event_time.isoformat(),
+                "available_at": market_slice.available_at.isoformat(),
+                "portfolio": _portfolio_payload(portfolio),
+                "bars": bars,
+            }
+        )
+        while True:
+            message = self.session.receive(
+                min(
+                    float(self.runner.limits.callback_seconds) + 1.0,
+                    max(0.01, self._deadline - time.monotonic()),
+                )
+            )
+            if message.get("type") == "log":
+                self._logs.append(message)
+                continue
+            if (
+                message.get("type") != "signals"
+                or int(message.get("sequence", -1)) != sequence
+            ):
+                raise SandboxExecutionError("out-of-order sandbox response")
+            break
+        targets: dict[str, float] = {}
+        for signal in message.get("signals") or []:
+            symbol = str(signal.get("symbol", "")).strip().upper()
+            target = float(signal.get("target"))
+            if not symbol:
+                raise SandboxExecutionError("strategy emitted a blank symbol")
+            if not math.isfinite(target) or not -4.0 <= target <= 4.0:
+                raise SandboxExecutionError(
+                    "strategy target is outside the SDK safety envelope"
+                )
+            targets[symbol] = target
+            self._target_rows.append(
+                {
+                    "event_time": pd.Timestamp(market_slice.event_time),
+                    "available_at": pd.Timestamp(market_slice.available_at),
+                    "symbol": symbol,
+                    "target": target,
+                }
+            )
+            self._signals += 1
+        self._bars += len(bars)
+        self._slices += 1
+        return dict(sorted(targets.items()))
+
+    def close(self, *, force: bool = False) -> None:
+        if self._session_obj is None:
+            return
+        self._session_obj.close(force=force)
+
+    def result(self) -> SandboxRunResult:
+        if self._result is not None:
+            return self._result
+        if self._session_obj is None:
+            raise SandboxExecutionError("causal strategy runtime never started")
+        try:
+            self.session.send({"type": "stop"})
+            stopped = self.session.receive(3.0)
+            if stopped.get("type") != "stopped":
+                raise SandboxExecutionError("sandbox stop acknowledgement missing")
+        except (TimeoutError, SandboxExecutionError):
+            self.close(force=True)
+            raise
+        finally:
+            if self._session_obj.process.poll() is None:
+                self.close(force=False)
+
+        if self._target_rows:
+            long = pd.DataFrame(self._target_rows)
+            targets = long.pivot_table(
+                index="event_time", columns="symbol", values="target", aggfunc="last"
+            ).sort_index()
+            available = (
+                long.groupby("event_time")["available_at"].max().reindex(targets.index)
+            )
+        else:
+            targets = pd.DataFrame(dtype=float)
+            available = pd.Series(dtype="datetime64[ns, UTC]", name="available_at")
+        target_hash = sha256(targets.to_csv(index=True).encode("utf-8")).hexdigest()
+        diagnostics = {
+            "protocol_version": SANDBOX_PROTOCOL_VERSION,
+            "causal_streaming": True,
+            "atomic_market_slices": True,
+            "portfolio_feedback_connected": True,
+            "portfolio_authority": "OMS_EXECUTION_LEDGER",
+            "future_data_exposed": False,
+            "callback_mode": self._callback_mode,
+            "container_flags": self.runner.docker_command("qt-bt-evidence")[4:-1],
+            "limits": asdict(self.runner.limits),
+            "target_sha256": target_hash,
+            "stderr_tail": tuple(self._session_obj.stderr[-20:]),
+        }
+        signed_evidence = {
+            "protocol_version": SANDBOX_PROTOCOL_VERSION,
+            "language": self.language.value,
+            "source_sha256": self.policy.source_sha256,
+            "image_digest": self.image_digest,
+            "compiler": self._compiler,
+            "seed": self.seed,
+            "parameters": self.parameters,
+            "limits": asdict(self.runner.limits),
+            "bars_processed": self._bars,
+            "slices_processed": self._slices,
+            "callback_mode": self._callback_mode,
+            "signals_emitted": self._signals,
+            "target_sha256": target_hash,
+            "portfolio_feedback_connected": True,
+            "network_disabled": True,
+            "read_only_root": True,
+            "no_secrets_mounted": True,
+            "non_root": True,
+        }
+        payload = canonical_json(signed_evidence).encode("utf-8")
+        signature, public_key, verified = self.runner._signer.sign(payload)
+        attestation = SandboxAttestation(
+            available=True,
+            runner_image_digest=self.image_digest,
+            network_disabled=True,
+            read_only_root=True,
+            no_secrets_mounted=True,
+            non_root=True,
+            signature_verified=verified,
+            reason="",
+        )
+        self._result = SandboxRunResult(
+            status="PASS",
+            language=self.language,
+            source_sha256=self.policy.source_sha256,
+            targets=targets,
+            target_available_at=available,
+            attestation=attestation,
+            image_digest=self.image_digest,
+            compiler=self._compiler,
+            duration_ms=int((time.monotonic() - self._started_at) * 1000),
+            bars_processed=self._bars,
+            signals_emitted=self._signals,
+            slices_processed=self._slices,
+            callback_mode=self._callback_mode,
+            logs=tuple(self._logs[-1000:]),
+            diagnostics=diagnostics,
+            signature=signature,
+            public_key=public_key,
+            signed_payload_sha256=sha256(payload).hexdigest(),
+        )
+        return self._result
+
+
 __all__ = [
     "DEFAULT_IMAGE",
+    "DockerCausalStrategyRuntime",
     "DockerStrategyRunner",
     "SandboxExecutionError",
     "SandboxUnavailableError",

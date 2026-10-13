@@ -1,15 +1,23 @@
 """Data adapters for the universal kernel and Streamlit workspace."""
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
+from datetime import date, datetime, timezone
 from typing import Mapping
 
 import numpy as np
 import pandas as pd
 
 from .security import SecurityMaster
-from .types import AssetClass, Instrument, OptionRight, SettlementType
+from .margin import MarginMethod, MarginParameterSet
+from .types import (
+    AssetClass,
+    Instrument,
+    OptionCalendarContract,
+    OptionExerciseStyle,
+    OptionRight,
+    SettlementType,
+)
 
 
 @dataclass
@@ -20,6 +28,7 @@ class UniversalDataset:
     target_weights: pd.DataFrame | None = None
     target_available_at: pd.Series | None = None
     cash_rates: dict[str, pd.Series] | None = None
+    option_calendars: dict[str, OptionCalendarContract] = field(default_factory=dict)
 
 
 def _first(group: pd.DataFrame, column: str, default: object = None) -> object:
@@ -44,6 +53,55 @@ def _optional_timestamp(value: object, timezone_name: str) -> pd.Timestamp | Non
     if stamp.tzinfo is None:
         stamp = stamp.tz_localize(timezone_name)
     return stamp.tz_convert("UTC")
+
+
+def _required_timestamp(value: object, timezone_name: str, field_name: str) -> datetime:
+    stamp = _optional_timestamp(value, timezone_name)
+    if stamp is None:
+        raise ValueError(f"{field_name} is required")
+    return stamp.to_pydatetime()
+
+
+def _date_tuple(value: object) -> tuple[date, ...]:
+    if value is None or (isinstance(value, float) and np.isnan(value)):
+        return ()
+    if isinstance(value, (list, tuple, set)):
+        raw_items = value
+    else:
+        raw_items = [item for item in str(value).split(",") if item.strip()]
+    return tuple(sorted({pd.Timestamp(item).date() for item in raw_items}))
+
+
+def parse_margin_parameter_set(
+    payload: Mapping[str, object],
+    *,
+    timezone_name: str = "UTC",
+) -> MarginParameterSet:
+    """Normalize a future provider payload into the versioned margin contract."""
+
+    if not isinstance(payload, Mapping):
+        raise TypeError("margin parameter payload must be a mapping")
+    try:
+        method = MarginMethod(str(payload["method"]).strip().upper())
+        parameters = payload["parameters"]
+    except KeyError as exc:
+        raise ValueError(f"missing margin parameter field: {exc.args[0]}") from exc
+    if not isinstance(parameters, Mapping):
+        raise ValueError("margin parameters must be a mapping")
+    return MarginParameterSet(
+        method=method,
+        version=str(payload.get("version", "")),
+        effective_from=_required_timestamp(
+            payload.get("effective_from"), timezone_name, "effective_from"
+        ),
+        available_at=_required_timestamp(
+            payload.get("available_at"), timezone_name, "available_at"
+        ),
+        source=str(payload.get("source", "")),
+        source_sha256=str(payload.get("source_sha256", "")),
+        official=bool(payload.get("official", False)),
+        parameters=dict(parameters),
+    )
 
 
 def parse_long_dataset(
@@ -89,6 +147,7 @@ def parse_long_dataset(
         raise ValueError("duplicate timestamp/instrument_id rows")
 
     instruments: list[Instrument] = []
+    option_calendars: dict[str, OptionCalendarContract] = {}
     market_data: dict[str, pd.DataFrame] = {}
     target_rows: list[pd.DataFrame] = []
     availability_by_event: dict[pd.Timestamp, pd.Timestamp] = {}
@@ -114,6 +173,17 @@ def parse_long_dataset(
             "strike",
             "option_right",
             "settlement_type",
+            "option_exercise_style",
+            "option_calendar_id",
+            "automatic_exercise_threshold",
+            "deliverable_quantity",
+            "option_calendar_timezone",
+            "exercise_cutoff_at",
+            "settlement_at",
+            "calendar_source",
+            "calendar_source_version",
+            "calendar_available_at",
+            "early_exercise_dates",
         )
         for column in invariant_columns:
             if column not in group:
@@ -137,6 +207,14 @@ def parse_long_dataset(
         option_right_raw = str(_first(group, "option_right", "")).strip().upper()
         option_right = OptionRight(option_right_raw) if option_right_raw else None
         settlement_raw = str(_first(group, "settlement_type", "CASH")).strip().upper()
+        exercise_style_raw = str(
+            _first(group, "option_exercise_style", "")
+        ).strip().upper()
+        exercise_style = (
+            OptionExerciseStyle(exercise_style_raw) if exercise_style_raw else None
+        )
+        calendar_id = str(_first(group, "option_calendar_id", "")).strip() or None
+        expiry_stamp = _optional_timestamp(_first(group, "expiry"), timezone_name)
         instrument = Instrument(
             symbol=symbol,
             instrument_id=str(identity),
@@ -154,23 +232,66 @@ def parse_long_dataset(
                 str(_first(group, "underlying_symbol", "")).strip().upper() or None
             ),
             root_symbol=str(_first(group, "root_symbol", "")).strip().upper() or None,
-            expiry=(
-                _optional_timestamp(_first(group, "expiry"), timezone_name).to_pydatetime()
-                if _optional_timestamp(_first(group, "expiry"), timezone_name) is not None
-                else None
-            ),
+            expiry=expiry_stamp.to_pydatetime() if expiry_stamp is not None else None,
             strike=_optional_float(_first(group, "strike")),
             option_right=option_right,
             settlement_type=SettlementType(settlement_raw),
+            option_exercise_style=exercise_style,
+            option_calendar_id=calendar_id,
+            automatic_exercise_threshold=float(
+                _first(group, "automatic_exercise_threshold", 0.0)
+            ),
+            deliverable_quantity=_optional_float(_first(group, "deliverable_quantity")),
         )
         instruments.append(instrument)
+        if calendar_id:
+            if instrument.asset_class != AssetClass.OPTION:
+                raise ValueError(f"{identity}: option_calendar_id requires an option")
+            if instrument.expiry is None or exercise_style is None:
+                raise ValueError(
+                    f"{identity}: option calendar requires expiry and option_exercise_style"
+                )
+            calendar = OptionCalendarContract(
+                calendar_id=calendar_id,
+                timezone_name=str(
+                    _first(group, "option_calendar_timezone", "")
+                ).strip(),
+                expiration_at=instrument.expiry,
+                exercise_cutoff_at=_required_timestamp(
+                    _first(group, "exercise_cutoff_at"),
+                    timezone_name,
+                    "exercise_cutoff_at",
+                ),
+                settlement_at=_required_timestamp(
+                    _first(group, "settlement_at"), timezone_name, "settlement_at"
+                ),
+                exercise_style=exercise_style,
+                source=str(_first(group, "calendar_source", "")),
+                source_version=str(_first(group, "calendar_source_version", "")),
+                available_at=_required_timestamp(
+                    _first(group, "calendar_available_at"),
+                    timezone_name,
+                    "calendar_available_at",
+                ),
+                early_exercise_dates=_date_tuple(
+                    _first(group, "early_exercise_dates")
+                ),
+            )
+            prior_calendar = option_calendars.get(calendar_id)
+            if prior_calendar is not None and prior_calendar != calendar:
+                raise ValueError(f"{identity}: conflicting option calendar contract")
+            option_calendars[calendar_id] = calendar
         metadata_columns = {
             "timestamp", "symbol", "instrument_id", "asset_class", "quote_currency",
             "base_currency", "exchange", "multiplier", "lot_size", "tick_size",
             "settlement_days", "initial_margin_rate", "maintenance_margin_rate",
             "underlying_symbol", "root_symbol", "expiry", "strike", "option_right",
             "settlement_type", "fx_to_base", "target_weight", "target_available_at",
-            "cash_rate_annual", "_instrument_identity",
+            "option_exercise_style", "option_calendar_id",
+            "automatic_exercise_threshold", "deliverable_quantity",
+            "option_calendar_timezone", "exercise_cutoff_at", "settlement_at",
+            "calendar_source", "calendar_source_version", "calendar_available_at",
+            "early_exercise_dates", "cash_rate_annual", "_instrument_identity",
         }
         bars = group.drop(columns=[c for c in metadata_columns if c in group.columns]).copy()
         bars.index = pd.DatetimeIndex(group["timestamp"])
@@ -247,6 +368,7 @@ def parse_long_dataset(
         targets,
         target_available,
         cash_rates,
+        option_calendars,
     )
 
 
@@ -269,6 +391,10 @@ def single_asset_dataset(
     strike: float | None = None,
     option_right: OptionRight | None = None,
     settlement_type: SettlementType = SettlementType.CASH,
+    option_exercise_style: OptionExerciseStyle | None = None,
+    option_calendar: OptionCalendarContract | None = None,
+    automatic_exercise_threshold: float = 0.0,
+    deliverable_quantity: float | None = None,
     initial_margin_rate: float | None = None,
     maintenance_margin_rate: float | None = None,
 ) -> UniversalDataset:
@@ -290,6 +416,12 @@ def single_asset_dataset(
         strike=strike,
         option_right=option_right,
         settlement_type=settlement_type,
+        option_exercise_style=(
+            option_calendar.exercise_style if option_calendar else option_exercise_style
+        ),
+        option_calendar_id=option_calendar.calendar_id if option_calendar else None,
+        automatic_exercise_threshold=automatic_exercise_threshold,
+        deliverable_quantity=deliverable_quantity,
         initial_margin_rate=initial_margin_rate,
         maintenance_margin_rate=maintenance_margin_rate,
     )
@@ -297,6 +429,9 @@ def single_asset_dataset(
         SecurityMaster([instrument]),
         {instrument.key: bars.copy()},
         {},
+        option_calendars=(
+            {option_calendar.calendar_id: option_calendar} if option_calendar else {}
+        ),
     )
 
 

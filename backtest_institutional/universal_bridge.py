@@ -24,7 +24,7 @@ class UniversalInstitutionalEnvelope:
     gate: dict[str, Any]
     model_card: dict[str, Any]
     bundle: bytes
-    authoritative_source: str = "universal_event_ledger"
+    authoritative_source: str = "oms_execution_ledger"
 
 
 def _long_market_frame(market_data: Mapping[str, pd.DataFrame]) -> pd.DataFrame:
@@ -73,11 +73,38 @@ def _checks(
         "PASS" if statistical_pass else "FAIL" if statistical_supplied else "UNAVAILABLE"
     )
     lifecycle_gaps = list(result.diagnostics.get("lifecycle_gaps") or [])
+    oms_reconciled = bool(
+        result.diagnostics.get("oms_authoritative")
+        and result.diagnostics.get("oms_ledger_reconciled")
+    )
+    feedback_connected = bool(
+        result.diagnostics.get("signal_source") == "causal_strategy_runtime"
+        and int(result.diagnostics.get("portfolio_feedback_slices") or 0) > 0
+        and result.diagnostics.get("last_portfolio_ledger_sha256")
+    )
     return [
         {
             "gate": "Universal event ledger",
             "state": ledger_state,
             "detail": result.reason,
+        },
+        {
+            "gate": "OMS execution authority",
+            "state": "PASS" if oms_reconciled else "FAIL",
+            "detail": "OMS fills, engine journal and portfolio ledger reconcile"
+            if oms_reconciled
+            else "OMS and accounting fill ledgers do not reconcile",
+        },
+        {
+            "gate": "Causal portfolio feedback",
+            "state": "PASS"
+            if not code_mode or feedback_connected
+            else "UNAVAILABLE",
+            "detail": "OMS snapshot was delivered before every code callback"
+            if code_mode and feedback_connected
+            else "not required for precomputed/native targets"
+            if not code_mode
+            else "code runtime did not receive authoritative portfolio feedback",
         },
         {
             "gate": "Point-in-time data contract",
@@ -264,8 +291,8 @@ def build_universal_institutional_envelope(
         symbol="PORTFOLIO[" + ",".join(symbols) + "]",
         seed=int(seed),
         code_path="backtest_lab.py",
-        engine_version="universal-0.2.0",
-        tags=("UNIVERSAL_KERNEL", "RESEARCH_ONLY"),
+        engine_version="universal-0.3.0",
+        tags=("UNIVERSAL_KERNEL", "OMS_AUTHORITY", "RESEARCH_ONLY"),
         metadata={
             "base_currency": config.base_currency,
             "point_in_time": bool(point_in_time_authenticated),
@@ -296,7 +323,7 @@ def build_universal_institutional_envelope(
         "research_only": True,
         "automatic_production_authorization": False,
         "run_id": manifest.run_id,
-        "authoritative_source": "universal_event_ledger",
+        "authoritative_source": "oms_execution_ledger",
     }
     daily = result.daily
     returns = (
@@ -306,22 +333,29 @@ def build_universal_institutional_envelope(
     )
     model_card = {
         "model": "Universal Backtest Kernel",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "purpose": "Multi-asset and multi-currency research simulation",
-        "authoritative_source": "universal_event_ledger",
+        "authoritative_source": "oms_execution_ledger",
         "native_capabilities": [
             "causal next-bar target execution",
             "multi-currency cashbook and historical FX conversion",
             "settled and unsettled cash",
             "asset-aware initial and maintenance margin",
             "variation margin, funding, rollover, borrow and lifecycle accounting",
-            "deterministic L1 order-kernel foundation with price-time priority",
+            "OMS-authoritative order/fill transitions reconciled to the portfolio ledger",
+            "causal OMS portfolio feedback contract for isolated strategy runtimes",
+            "cash and physical option exercise/assignment reference lifecycle",
+            "versioned SPAN, SIMM, OCC-TIMS and portfolio-margin reference adapters",
+            "deterministic real-versus-synthetic L2/L3 replay foundation",
+            "idempotent distributed-job and content-addressed artifact contracts",
         ],
         "limitations": [
-            "the target-weight engine remains bar-event based; the L1 OMS kernel is not yet its authoritative execution path",
-            "no L2/L3 historical order-book queue replay",
+            "the default execution model remains bar-event unless an authenticated L2/L3 feed is attached",
+            "the L2/L3 replay core is not an exchange-certified matching engine",
             "exchange holiday calendars require an external calendar adapter",
-            "option exercise, assignment and broker portfolio-margin evidence remain fail-closed",
+            "physical option lifecycle requires point-in-time venue calendars and deliverables",
+            "SPAN, SIMM, OCC-TIMS and broker portfolio margin require official versioned parameter packages",
+            "the bundled distributed coordinator is a local reference, not a deployed cluster",
             "user code requires a separately attested OCI sandbox",
             "production authorization is never automatic",
         ],

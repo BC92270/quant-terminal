@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from enum import Enum, IntEnum
 from hashlib import sha256
 import json
@@ -31,6 +31,14 @@ class OptionRight(str, Enum):
     PUT = "PUT"
 
 
+class OptionExerciseStyle(str, Enum):
+    """Contractual exercise convention for a listed option."""
+
+    AMERICAN = "AMERICAN"
+    EUROPEAN = "EUROPEAN"
+    BERMUDAN = "BERMUDAN"
+
+
 class SettlementType(str, Enum):
     CASH = "CASH"
     PHYSICAL = "PHYSICAL"
@@ -52,6 +60,7 @@ class EventKind(IntEnum):
     """
 
     CORPORATE_ACTION = 10
+    OPTION_LIFECYCLE = 15
     SETTLEMENT = 20
     FX_RATE = 30
     MARKET_DATA = 40
@@ -69,6 +78,71 @@ def _utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         raise ValueError("timezone-aware timestamp required")
     return value.astimezone(timezone.utc)
+
+
+@dataclass(frozen=True)
+class OptionCalendarContract:
+    """Versionable option calendar facts supplied by a reference-data adapter.
+
+    Calendar facts deliberately live outside :class:`Instrument`: exchanges
+    can revise cut-offs and settlement dates after a security master snapshot
+    was created.  The ``available_at`` timestamp prevents a corrected calendar
+    from leaking backwards into a point-in-time simulation.
+    """
+
+    calendar_id: str
+    timezone_name: str
+    expiration_at: datetime
+    exercise_cutoff_at: datetime
+    settlement_at: datetime
+    exercise_style: OptionExerciseStyle
+    source: str
+    source_version: str
+    available_at: datetime
+    early_exercise_dates: tuple[date, ...] = ()
+
+    def __post_init__(self) -> None:
+        calendar_id = str(self.calendar_id).strip()
+        timezone_name = str(self.timezone_name).strip()
+        source = str(self.source).strip()
+        source_version = str(self.source_version).strip()
+        if not calendar_id:
+            raise ValueError("option calendar_id is required")
+        if not timezone_name:
+            raise ValueError("option calendar timezone is required")
+        if not source or not source_version:
+            raise ValueError("option calendar source and source_version are required")
+        expiration = _utc(self.expiration_at)
+        cutoff = _utc(self.exercise_cutoff_at)
+        settlement = _utc(self.settlement_at)
+        available = _utc(self.available_at)
+        if settlement < expiration or settlement < cutoff:
+            raise ValueError("option settlement_at cannot precede expiry or exercise cutoff")
+        dates = tuple(sorted(set(self.early_exercise_dates)))
+        if any(not isinstance(item, date) for item in dates):
+            raise TypeError("early_exercise_dates must contain date values")
+        object.__setattr__(self, "calendar_id", calendar_id)
+        object.__setattr__(self, "timezone_name", timezone_name)
+        object.__setattr__(self, "source", source)
+        object.__setattr__(self, "source_version", source_version)
+        object.__setattr__(self, "expiration_at", expiration)
+        object.__setattr__(self, "exercise_cutoff_at", cutoff)
+        object.__setattr__(self, "settlement_at", settlement)
+        object.__setattr__(self, "available_at", available)
+        object.__setattr__(self, "early_exercise_dates", dates)
+
+    def is_known_at(self, at: datetime) -> bool:
+        return self.available_at <= _utc(at)
+
+    def permits_early_exercise(self, at: datetime) -> bool:
+        stamp = _utc(at)
+        if stamp >= self.expiration_at or stamp > self.exercise_cutoff_at:
+            return False
+        if self.exercise_style == OptionExerciseStyle.AMERICAN:
+            return True
+        if self.exercise_style == OptionExerciseStyle.BERMUDAN:
+            return stamp.date() in self.early_exercise_dates
+        return False
 
 
 @dataclass(frozen=True)
@@ -91,6 +165,10 @@ class Instrument:
     strike: float | None = None
     option_right: OptionRight | None = None
     settlement_type: SettlementType = SettlementType.CASH
+    option_exercise_style: OptionExerciseStyle | None = None
+    option_calendar_id: str | None = None
+    automatic_exercise_threshold: float = 0.0
+    deliverable_quantity: float | None = None
     active_from: datetime | None = None
     active_to: datetime | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
@@ -121,8 +199,21 @@ class Instrument:
         if self.asset_class == AssetClass.OPTION:
             if not self.underlying_symbol or self.strike is None or self.option_right is None:
                 raise ValueError("options require underlying_symbol, strike and option_right")
+        threshold = float(self.automatic_exercise_threshold)
+        if not math.isfinite(threshold) or threshold < 0:
+            raise ValueError("automatic_exercise_threshold must be finite and non-negative")
+        if self.deliverable_quantity is not None:
+            deliverable = float(self.deliverable_quantity)
+            if not math.isfinite(deliverable) or deliverable <= 0:
+                raise ValueError("deliverable_quantity must be finite and positive")
         object.__setattr__(self, "symbol", symbol)
         object.__setattr__(self, "quote_currency", quote)
+        object.__setattr__(self, "automatic_exercise_threshold", threshold)
+        if self.option_calendar_id is not None:
+            calendar_id = str(self.option_calendar_id).strip()
+            object.__setattr__(self, "option_calendar_id", calendar_id or None)
+        if self.deliverable_quantity is not None:
+            object.__setattr__(self, "deliverable_quantity", float(self.deliverable_quantity))
         if self.base_currency is not None:
             object.__setattr__(self, "base_currency", str(self.base_currency).strip().upper())
         if self.expiry is not None:

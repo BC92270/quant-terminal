@@ -1,9 +1,9 @@
 # Backtest Lab universel
 
 Le moteur universel est un noyau de recherche multi-instruments, multi-actifs et
-multi-devises. Il complète le moteur historique sans le remplacer. Le ledger
-d’exécution reste la source autoritaire des rendements, coûts, positions et
-mouvements de cash.
+multi-devises. L’OMS est la voie autoritaire de chaque ordre, rejet et fill ; le
+ledger portefeuille ne comptabilise que les fills issus de cet OMS et réconcilie
+leurs identifiants avant de publier rendements, coûts, positions et cash.
 
 ## Contrat causal
 
@@ -37,7 +37,10 @@ Champs dérivés et cycle de vie :
 
 ```text
 root_symbol,expiry,roll_to,underlying_symbol,strike,option_right,
-settlement_type,settlement_price,initial_margin_rate,
+settlement_type,settlement_price,option_exercise_style,option_calendar_id,
+exercise_cutoff_at,settlement_at,calendar_source,calendar_source_version,
+calendar_available_at,automatic_exercise_threshold,deliverable_quantity,
+initial_margin_rate,
 maintenance_margin_rate,funding_rate,rollover_rate,borrow_rate,gas_fee,
 split,dividend,dividend_payable_at,spinoff_ratio,spinoff_instrument_id,
 rights_ratio,rights_instrument_id,merger_cash,symbol_change_to,delisted
@@ -55,18 +58,22 @@ devises, les taux FX, les taux cash et des cibles causales.
 | Crypto perpétuelle | funding, variation de marge et liquidation |
 | FX / CFD | P&L en devise de cotation, rollover et conversion historique |
 | Futures | multiplier, tick/lot, marge initiale/maintenance, variation margin et roll explicite |
-| Options | prime, marge short explicite, règlement cash intrinsèque ou officiel |
+| Options | prime, marge short explicite, règlement cash ou physique, exercice, assignation, lapse et calendrier PIT |
 | Cash multi-devises | soldes réglés/non réglés, FX PIT, staleness maximale et taux cash historiques |
 | Exécution | spread, slippage, impact, participation agrégée et bande de non-intervention |
 | Cycle de vie | splits, dividendes, spin-offs, droits, fusions cash et changements d’identifiant explicites |
-| OMS autonome | ordres market/limit/stop/stop-limit, GTC/IOC/FOK/DAY, amend/cancel, fills partiels et priorité prix-temps L1 |
+| OMS autoritaire | ordres market/limit/stop/stop-limit, GTC/IOC/FOK/DAY, amend/cancel, rejets, fills partiels et réconciliation du ledger |
+| Marge avancée | interfaces versionnées SPAN, SIMM, OCC-TIMS et portfolio margin, fermées sans paramètres officiels PIT |
+| Microstructure | replay L2/L3 déterministe, contrôle séquence/gaps et séparation REAL_REPLAY / SYNTHETIC_MODEL |
+| Calcul distribué | jobs idempotents, leases clôturés, retries bornés et artefacts adressés par SHA-256 |
 
-Les événements de cycle de vie ne sont comptabilisés que si leurs champs et les
-marks contemporains requis sont présents. Les assignments/exercices physiques
-et restructurations complexes restent fermés tant qu’un adaptateur spécialisé
-et ses données point-in-time ne sont pas fournis. Le noyau OMS autonome est une
-fondation testée mais n’est pas encore la voie d’exécution autoritaire du moteur
-de poids cibles.
+Les événements de cycle de vie ne sont comptabilisés que si leurs champs, leurs
+calendriers et les marks contemporains requis sont présents. Le processeur
+d’options sait créer la livraison physique du sous-jacent et le flux de strike,
+mais refuse l’opération si le calendrier, le deliverable ou le prix de règlement
+point-in-time manque. Les moteurs de marge avancée sont des modèles de référence
+non certifiés tant qu’un jeu de paramètres officiel, versionné et disponible à
+la date simulée n’est pas chargé.
 
 ## Strategy Studio et code de stratégie
 
@@ -86,6 +93,10 @@ avant le callback, ce qui supprime la dépendance à l’ordre alphabétique des
 symboles. Il attend la réponse de la stratégie avant de transmettre la slice
 suivante. Le conteneur peut produire uniquement des expositions cibles et des
 logs ; il ne calcule jamais les ordres, fills, positions, cash, marge ou P&L.
+Avant chaque callback, le moteur lui transmet toutefois un `PortfolioSnapshot`
+immuable : positions, cash réglé/non réglé, ordres ouverts, NAV, marge et P&L,
+horodatés et liés au hash du ledger OMS. Le callback termine avant que l’horloge
+avance ; sa cible reste inexécutable avant une observation strictement ultérieure.
 
 Le runner impose notamment :
 
@@ -107,13 +118,35 @@ Construction dans le checkout live :
 ```bash
 docker build \
   --file backtest_sandbox/runtime/Dockerfile \
-  --tag quant-terminal/backtest-sandbox:2.0.0 \
+  --tag quant-terminal/backtest-sandbox:3.0.0 \
   backtest_sandbox/runtime
 ```
 
-Le workflow visible est `Studio → Runs → Compare → Validation → Evidence`.
+Le workflow visible est `Studio → Architecture → Runs → Compare → Validation → Evidence`.
 `Compare` est descriptif : l’autorisation de recherche exige toujours un
 protocole purgé hors-échantillon et une correction du multiple testing.
+
+## Six fondations extensibles
+
+1. **OMS autoritaire** : le journal OMS, les fills du moteur et les fills
+   appliqués au portefeuille doivent avoir exactement les mêmes identifiants.
+2. **SDK causal** : une stratégie code reçoit l’état réconcilié à `t`, jamais un
+   portefeuille reconstruit a posteriori.
+3. **Options physiques** : cash/physical, exercise/assignment/lapse, cut-off et
+   deliverables sont des contrats explicites.
+4. **Marge pluggable** : SPAN, SIMM, OCC-TIMS et portfolio margin partagent une
+   interface et un registre de paramètres point-in-time.
+5. **L2/L3** : l’état du carnet est hashé après chaque séquence ; gaps,
+   duplications et recul de knowledge-time sont bloquants. Un carnet synthétique
+   ne peut jamais être étiqueté comme replay réel.
+6. **Distribué** : l’identité d’un job dépend du code, du dataset, du moteur, des
+   paramètres et du seed. Le coordinateur local prouve la sémantique, pas la
+   présence d’un cluster.
+
+Le manifest `universal-data-contract-1` prépare l’arrivée des fournisseurs :
+capabilities, partitions immuables, `event_time`, `available_at`, lineage,
+licence, signature et SHA-256 vérifié hors bande. Sans ces preuves, l’interface
+reste utilisable pour la recherche mais affiche `NOT_CERTIFIED`.
 
 ## Gate institutionnel
 
@@ -134,13 +167,15 @@ La production et la promotion automatique restent toujours désactivées.
 
 ## Limites assumées
 
-- La voie autoritaire par poids cibles reste en résolution bar-event. Le noyau
-  OMS L1 séparé modélise la liquidité visible et la priorité prix-temps, mais ne
-  constitue pas encore un rejeu L2/L3 de carnet ni la voie d’exécution du ledger.
-- Les calendriers exchange complets et les données point-in-time licenciées
-  doivent provenir d’adaptateurs externes authentifiés.
-- Les options à règlement physique et la marge portefeuille broker/clearing
-  nécessitent un modèle dédié.
+- Sans flux microstructure authentifié, l’exécution demeure bar-event ; le
+  module L2/L3 est une fondation de replay et non une preuve de qualité de fill.
+- Les calendriers exchange complets, données point-in-time licenciées,
+  deliverables d’options et paramètres de clearing viennent d’adaptateurs
+  externes authentifiés.
+- Les moteurs SPAN/SIMM/TIMS/portfolio margin sont des références non certifiées
+  et échouent fermé sans leur package de paramètres.
+- Le coordinateur distribué inclus est local ; une base transactionnelle, une
+  queue durable, un object store et des workers déployés restent nécessaires.
 - Le calcul monétaire utilise actuellement des flottants avec réconciliation et
   tolérance stricte ; une comptabilité en unités monétaires entières reste la
   cible pour un déploiement de clearing.

@@ -107,7 +107,7 @@ def test_bridge_fails_closed_without_point_in_time_evidence() -> None:
     assert envelope.gate["decision"] == "HOLD — DATA REQUIRED"
     assert "Point-in-time data contract" in envelope.gate["blocking_gates"]
     assert envelope.gate["automatic_production_authorization"] is False
-    assert envelope.authoritative_source == "universal_event_ledger"
+    assert envelope.authoritative_source == "oms_execution_ledger"
 
 
 def test_bridge_can_approve_research_but_never_production() -> None:
@@ -115,7 +115,7 @@ def test_bridge_can_approve_research_but_never_production() -> None:
     assert envelope.execution.status == "AVAILABLE"
     assert envelope.gate["decision"] == "RESEARCH APPROVED"
     assert envelope.gate["research_only"] is True
-    assert envelope.model_card["authoritative_source"] == "universal_event_ledger"
+    assert envelope.model_card["authoritative_source"] == "oms_execution_ledger"
 
 
 @pytest.mark.parametrize(
@@ -135,7 +135,8 @@ def test_code_modes_require_attested_sandbox(mode: str) -> None:
     assert blocked.gate["decision"] == "HOLD — DATA REQUIRED"
     assert "Strategy sandbox" in blocked.gate["blocking_gates"]
     accepted = _envelope(pit=True, mode=mode, sandbox=True, complete_evidence=True)
-    assert accepted.gate["decision"] == "RESEARCH APPROVED"
+    assert accepted.gate["decision"] == "HOLD — DATA REQUIRED"
+    assert "Causal portfolio feedback" in accepted.gate["blocking_gates"]
 
 
 def test_manifest_identity_and_bundle_are_complete() -> None:

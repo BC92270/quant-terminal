@@ -21,6 +21,8 @@ from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from enum import Enum
+from hashlib import sha256
+import json
 from types import MappingProxyType
 from typing import Any, Mapping
 
@@ -346,6 +348,42 @@ class OrderKernel:
     @property
     def fills(self) -> tuple[Fill, ...]:
         return tuple(self._fills)
+
+    @property
+    def authoritative_fills(self) -> tuple[Fill, ...]:
+        """Return the immutable fill stream owned by the OMS.
+
+        Portfolio ledgers must consume this stream (or an individual
+        :class:`Fill` from it) rather than fabricating executions from order
+        intent.  ``fills`` remains as a compatibility alias; the explicit
+        name documents the accounting authority at integration boundaries.
+        """
+
+        return tuple(self._fills)
+
+    @property
+    def fill_ledger_sha256(self) -> str:
+        """Content hash of the ordered OMS fill stream."""
+
+        payload = [
+            {
+                "fill_id": item.fill_id,
+                "order_id": item.order_id,
+                "symbol": item.symbol,
+                "side": item.side.value,
+                "occurred_at": item.occurred_at.isoformat(),
+                "quantity": str(item.quantity),
+                "price": str(item.price),
+                "cumulative_quantity": str(item.cumulative_quantity),
+                "remaining_quantity": str(item.remaining_quantity),
+                "source": item.source,
+            }
+            for item in self._fills
+        ]
+        encoded = json.dumps(
+            payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+        ).encode("utf-8")
+        return sha256(encoded).hexdigest()
 
     @property
     def orders(self) -> tuple[Order, ...]:

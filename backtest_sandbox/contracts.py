@@ -13,9 +13,11 @@ from backtest_universal.strategy import SandboxAttestation
 
 
 LEGACY_SANDBOX_PROTOCOL_VERSION = "quant-strategy-jsonl-1"
-SANDBOX_PROTOCOL_VERSION = "quant-strategy-jsonl-2"
+PORTFOLIOLESS_SANDBOX_PROTOCOL_VERSION = "quant-strategy-jsonl-2"
+SANDBOX_PROTOCOL_VERSION = "quant-strategy-jsonl-3"
 SUPPORTED_SANDBOX_PROTOCOL_VERSIONS = (
     LEGACY_SANDBOX_PROTOCOL_VERSION,
+    PORTFOLIOLESS_SANDBOX_PROTOCOL_VERSION,
     SANDBOX_PROTOCOL_VERSION,
 )
 SANDBOX_POLICY_VERSION = "polyglot-policy-2"

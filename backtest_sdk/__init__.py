@@ -13,7 +13,7 @@ from types import MappingProxyType
 from typing import Any, Iterator, Mapping, Protocol, Sequence
 
 
-SDK_CONTRACT_VERSION = "2"
+SDK_CONTRACT_VERSION = "3"
 
 
 def _utc(value: datetime) -> datetime:
@@ -96,21 +96,36 @@ class Slice(Mapping[str, Bar]):
 class PortfolioSnapshot:
     """Read-only portfolio state supplied by the trusted host.
 
-    The current batch target runner deliberately sets ``available=False``:
-    authoritative positions are created later by ``backtest_universal``.  The
-    explicit availability flag prevents an empty mapping from being mistaken
-    for a flat, fully reconciled portfolio.
+    ``available=False`` remains the safe default for batch runners that are
+    not connected to the execution ledger.  A connected causal runtime sets
+    ``available=True`` only after the OMS fills have been applied and the
+    portfolio has been reconciled for ``as_of``.  Empty positions in such a
+    snapshot therefore mean flat; empty positions in the default snapshot do
+    not.
     """
 
     available: bool = False
     as_of: datetime | None = None
     positions: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
     cash: Mapping[str, float] = field(default_factory=dict)
+    unsettled_cash: Mapping[str, float] = field(default_factory=dict)
     open_orders: Sequence[Mapping[str, Any]] = field(default_factory=tuple)
+    base_currency: str = ""
+    nav_base: float | None = None
+    margin: Mapping[str, float | bool | None] = field(default_factory=dict)
+    pnl: Mapping[str, float] = field(default_factory=dict)
+    sequence: int = 0
+    ledger_sha256: str = ""
+    source: str = ""
     reason: str = "AUTHORITATIVE_PORTFOLIO_NOT_CONNECTED"
 
     def __post_init__(self) -> None:
         as_of = _utc(self.as_of) if self.as_of is not None else None
+        if self.available and as_of is None:
+            raise ValueError("an available portfolio snapshot requires as_of")
+        sequence = int(self.sequence)
+        if sequence < 0:
+            raise ValueError("portfolio snapshot sequence must be non-negative")
         positions = {
             str(symbol).strip().upper(): MappingProxyType(dict(values))
             for symbol, values in dict(self.positions).items()
@@ -119,13 +134,34 @@ class PortfolioSnapshot:
             str(currency).strip().upper(): float(balance)
             for currency, balance in dict(self.cash).items()
         }
+        unsettled_cash = {
+            str(currency).strip().upper(): float(balance)
+            for currency, balance in dict(self.unsettled_cash).items()
+        }
+        nav = None if self.nav_base is None else float(self.nav_base)
+        margin = MappingProxyType(dict(self.margin))
+        pnl = MappingProxyType(
+            {str(name): float(value) for name, value in dict(self.pnl).items()}
+        )
         orders = tuple(MappingProxyType(dict(order)) for order in self.open_orders)
         object.__setattr__(self, "as_of", as_of)
         object.__setattr__(
             self, "positions", MappingProxyType(dict(sorted(positions.items())))
         )
         object.__setattr__(self, "cash", MappingProxyType(dict(sorted(cash.items()))))
+        object.__setattr__(
+            self,
+            "unsettled_cash",
+            MappingProxyType(dict(sorted(unsettled_cash.items()))),
+        )
         object.__setattr__(self, "open_orders", orders)
+        object.__setattr__(self, "base_currency", str(self.base_currency).upper())
+        object.__setattr__(self, "nav_base", nav)
+        object.__setattr__(self, "margin", margin)
+        object.__setattr__(self, "pnl", pnl)
+        object.__setattr__(self, "sequence", sequence)
+        object.__setattr__(self, "ledger_sha256", str(self.ledger_sha256))
+        object.__setattr__(self, "source", str(self.source))
         object.__setattr__(self, "reason", str(self.reason))
 
 

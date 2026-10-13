@@ -139,6 +139,7 @@ def _execute(
         fx_rates=dataset.fx_rates,
         cash_rates=dataset.cash_rates or {},
         target_available_at=target_available_at,
+        option_calendars=dataset.option_calendars,
     )
     return build_universal_institutional_envelope(
         result=result,

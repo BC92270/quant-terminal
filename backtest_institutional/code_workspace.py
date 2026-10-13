@@ -42,6 +42,7 @@ from backtest_universal.adapters import (
     single_asset_dataset,
     universal_csv_template,
 )
+from backtest_universal.data_contracts import DataCapability, DatasetManifest
 
 from .universal_bridge import (
     UniversalInstitutionalEnvelope,
@@ -60,11 +61,12 @@ from .universal_workspace import (
 
 
 _STUDIO = "Studio"
+_ARCHITECTURE = "Architecture"
 _RUNS = "Runs"
 _COMPARE = "Compare"
 _VALIDATION = "Validation"
 _EVIDENCE = "Evidence"
-_WORKFLOW = (_STUDIO, _RUNS, _COMPARE, _VALIDATION, _EVIDENCE)
+_WORKFLOW = (_STUDIO, _ARCHITECTURE, _RUNS, _COMPARE, _VALIDATION, _EVIDENCE)
 _LANGUAGES = tuple(StrategyLanguage)
 _ASSET_CLASSES = tuple(item.value for item in AssetClass)
 
@@ -87,8 +89,11 @@ def _inject_css() -> None:
         .bcs-gate{border:1px solid rgba(148,163,184,.16);border-left:4px solid #64748b;border-radius:10px;padding:11px;background:rgba(15,23,42,.58)}
         .bcs-gate.pass{border-left-color:#34d399}.bcs-gate.fail{border-left-color:#fb7185}.bcs-gate.unavailable{border-left-color:#fbbf24}
         .bcs-gate-name{color:#e5edf7;font-size:.73rem;font-weight:730}.bcs-gate-state{float:right;font-size:.62rem;letter-spacing:.06em}.bcs-gate-detail{color:#899bb1;font-size:.67rem;line-height:1.35;margin-top:.35rem}
+        .bcs-foundations{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.65rem;margin:.7rem 0 1rem}
+        .bcs-foundation{border:1px solid rgba(148,163,184,.18);border-radius:13px;padding:14px;background:linear-gradient(145deg,rgba(15,23,42,.78),rgba(8,47,73,.34))}
+        .bcs-foundation-n{font-size:.64rem;color:#67e8f9;letter-spacing:.12em;text-transform:uppercase}.bcs-foundation-title{color:#f1f5f9;font-size:.86rem;font-weight:760;margin:.32rem 0}.bcs-foundation-state{font-size:.67rem;color:#fbbf24;font-weight:750}.bcs-foundation-copy{font-size:.69rem;line-height:1.42;color:#91a4ba;margin-top:.35rem}
         div[data-testid="stTextArea"] textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.78rem;line-height:1.45}
-        @media(max-width:900px){.bcs-strip{grid-template-columns:repeat(2,1fr)}.bcs-gates{grid-template-columns:1fr}}
+        @media(max-width:900px){.bcs-strip{grid-template-columns:repeat(2,1fr)}.bcs-gates,.bcs-foundations{grid-template-columns:1fr}}
         </style>
         """,
         unsafe_allow_html=True,
@@ -226,6 +231,183 @@ def _render_hero(ticker: str) -> None:
         + "</div>",
         unsafe_allow_html=True,
     )
+
+
+def _data_manifest_template() -> dict[str, Any]:
+    return {
+        "contract_version": "universal-data-contract-1",
+        "dataset_id": "vendor-dataset-immutable-id",
+        "vendor": "DATA_VENDOR",
+        "mode": "POINT_IN_TIME",
+        "capabilities": [
+            "BARS",
+            "FX",
+            "SECURITY_MASTER",
+            "CALENDARS",
+        ],
+        "created_at": "2026-01-01T00:00:00+00:00",
+        "schema_version": "vendor-schema-1",
+        "license_id": "LICENSE_REFERENCE",
+        "signer": "VENDOR_KEY_ID",
+        "signature": "DETACHED_SIGNATURE",
+        "lineage": ["raw-feed-id", "normalisation-job-id"],
+        "partitions": [
+            {
+                "partition_id": "venue-symbol-session",
+                "uri": "s3://immutable-bucket/path/partition.parquet",
+                "sha256": "0" * 64,
+                "observed_from": "2025-12-31T14:30:00+00:00",
+                "observed_to": "2025-12-31T21:00:00+00:00",
+                "available_at": "2025-12-31T21:00:01+00:00",
+                "rows": 0,
+                "bytes": 0,
+                "revision": "original",
+                "metadata": {},
+            }
+        ],
+        "metadata": {"research_only": True},
+    }
+
+
+def _render_architecture() -> None:
+    st.markdown("### Architecture d’exécution & accueil des données")
+    st.caption(
+        "Les fondations logicielles sont séparées des preuves externes. Une interface prête "
+        "n’est jamais affichée comme certifiée tant que le flux, les paramètres de clearing "
+        "ou l’infrastructure correspondante ne sont pas authentifiés."
+    )
+    foundations = (
+        (
+            "01 · Autorité",
+            "OMS → ledger unique",
+            "INTÉGRÉ AU NOYAU",
+            "Ordres, transitions, fills et rejets alimentent une seule comptabilité exécutée; les rendements ne viennent jamais des signaux bruts.",
+        ),
+        (
+            "02 · SDK causal",
+            "Portfolio feedback",
+            "CONTRAT TEMPS RÉEL",
+            "Snapshot immuable après réconciliation du ledger, horodaté et séquencé, disponible au callback suivant sans information future.",
+        ),
+        (
+            "03 · Options",
+            "Exercice & assignation",
+            "MOTEUR DE RÉFÉRENCE",
+            "Règlement cash ou physique, création du sous-jacent et flux de strike; les règles venue/broker restent des données requises.",
+        ),
+        (
+            "04 · Marge",
+            "SPAN / SIMM / portfolio",
+            "ADAPTATEURS FAIL-CLOSED",
+            "Interface commune, modèles de référence et chargement de paramètres versionnés; aucune approximation ne remplace un jeu officiel absent.",
+        ),
+        (
+            "05 · Microstructure",
+            "Replay L2 / L3",
+            "REPLAY DÉTERMINISTE",
+            "Séquence, knowledge-time, gaps et hash d’état contrôlés. Les carnets simulés restent marqués SYNTHETIC_MODEL.",
+        ),
+        (
+            "06 · Calcul",
+            "Jobs distribués",
+            "COORDINATEUR LOCAL",
+            "Identité idempotente, leases clôturés, retries bornés et artefacts adressés par contenu; cluster externe non revendiqué.",
+        ),
+    )
+    st.markdown(
+        "<div class='bcs-foundations'>"
+        + "".join(
+            "<div class='bcs-foundation'>"
+            f"<div class='bcs-foundation-n'>{escape(number)}</div>"
+            f"<div class='bcs-foundation-title'>{escape(title)}</div>"
+            f"<div class='bcs-foundation-state'>{escape(state)}</div>"
+            f"<div class='bcs-foundation-copy'>{escape(copy)}</div></div>"
+            for number, title, state, copy in foundations
+        )
+        + "</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("#### Data intake point-in-time")
+    left, right = st.columns([1, 1.35], gap="large")
+    with left:
+        st.download_button(
+            "Télécharger le contrat de manifest",
+            data=(
+                json.dumps(
+                    _data_manifest_template(), indent=2, sort_keys=True
+                )
+                + "\n"
+            ).encode("utf-8"),
+            file_name="backtest-data-manifest.json",
+            mime="application/json",
+            key="bt_data_manifest_template",
+            width="stretch",
+        )
+        uploaded = st.file_uploader(
+            "Valider un manifest fournisseur",
+            type=["json"],
+            key="bt_data_manifest_upload",
+        )
+        required_values = st.multiselect(
+            "Capacités exigées pour ce dataset",
+            options=[item.value for item in DataCapability],
+            default=[
+                DataCapability.BARS.value,
+                DataCapability.SECURITY_MASTER.value,
+                DataCapability.CALENDARS.value,
+            ],
+            key="bt_data_required_capabilities",
+        )
+        verified_digest = st.text_input(
+            "SHA-256 vérifié hors bande",
+            value="",
+            placeholder="64 caractères hexadécimaux",
+            key="bt_data_verified_digest",
+        ).strip().lower()
+    with right:
+        readiness_rows = [
+            ("Prix / transactions", "BARS · TRADES · QUOTES", "SOURCE ABSENTE"),
+            ("Microstructure", "L2 · L3 · séquences", "SOURCE ABSENTE"),
+            ("Référentiel", "Security master · calendriers", "SOURCE ABSENTE"),
+            ("Actions", "Corporate actions · borrow", "SOURCE ABSENTE"),
+            ("Dérivés", "Chaînes · IV · expirations", "SOURCE ABSENTE"),
+            ("Clearing", "SPAN · SIMM · TIMS parameters", "SOURCE ABSENTE"),
+            ("Multi-devises", "FX · courbes de taux", "SOURCE ABSENTE"),
+            ("Crypto", "Funding · venue rules · gas", "SOURCE ABSENTE"),
+        ]
+        st.dataframe(
+            pd.DataFrame(
+                readiness_rows,
+                columns=["Domaine", "Contrat attendu", "État"],
+            ),
+            width="stretch",
+            hide_index=True,
+        )
+        st.info(
+            "Le moteur peut recevoir ces familles maintenant. La certification reste bloquée tant que le manifest, ses partitions et sa signature ne sont pas vérifiés."
+        )
+
+    if uploaded is not None:
+        try:
+            raw = json.loads(uploaded.getvalue().decode("utf-8"))
+            manifest = DatasetManifest.from_dict(raw)
+            assessment = manifest.assess(
+                tuple(DataCapability(item) for item in required_values),
+                verified_manifest_sha256=verified_digest,
+            )
+            metrics = st.columns(4)
+            metrics[0].metric("Dataset", manifest.dataset_id)
+            metrics[1].metric("Mode", manifest.mode.value)
+            metrics[2].metric("Partitions", str(len(manifest.partitions)))
+            metrics[3].metric("Gate", assessment.state)
+            st.code(manifest.content_sha256, language="text")
+            if assessment.ready:
+                st.success("Manifest point-in-time authentifié et capacités complètes.")
+            else:
+                st.warning(" · ".join(assessment.blockers))
+        except Exception as exc:
+            st.error(f"Manifest refusé · {exc}")
 
 
 def _gate_grid(envelope: UniversalInstitutionalEnvelope) -> None:
@@ -391,9 +573,23 @@ def _tool_coverage(record: Mapping[str, Any]) -> pd.DataFrame:
             else "FAIL",
         ),
         (
+            "Causalité",
+            "PortfolioSnapshot ledger → SDK",
+            "PASS"
+            if sandbox.diagnostics.get("portfolio_feedback_connected")
+            else "ARCHITECTURE READY",
+        ),
+        (
             "Ledger",
             "Ordres, fills et comptabilité",
             gates.get("Universal event ledger", "UNAVAILABLE"),
+        ),
+        (
+            "Ledger",
+            "OMS comme voie autoritaire",
+            "PASS"
+            if envelope.execution.diagnostics.get("oms_authoritative")
+            else "UNAVAILABLE",
         ),
         (
             "Ledger",
@@ -409,6 +605,30 @@ def _tool_coverage(record: Mapping[str, Any]) -> pd.DataFrame:
             "Ledger",
             "Corporate actions / lifecycle",
             gates.get("Instrument lifecycle", "UNAVAILABLE"),
+        ),
+        (
+            "Dérivés",
+            "Exercice / assignation physique",
+            "AVAILABLE"
+            if dict(
+                envelope.execution.diagnostics.get("physical_option_lifecycle") or {}
+            ).get("processor_connected")
+            else "ARCHITECTURE READY",
+        ),
+        (
+            "Risque",
+            "SPAN / SIMM / TIMS / portfolio margin",
+            "PARAMETERS REQUIRED",
+        ),
+        (
+            "Microstructure",
+            "Replay déterministe L2 / L3",
+            "DATA REQUIRED",
+        ),
+        (
+            "Infrastructure",
+            "Jobs idempotents et artefacts CAS",
+            "LOCAL REFERENCE",
         ),
         (
             "Exécution",
@@ -862,7 +1082,7 @@ def _render_studio(ticker: str, bars: pd.DataFrame, cfg: Any) -> None:
             f"<div class='{docker_tone}'>● Image Docker · {'IMMUTABLE' if digest else 'ABSENTE'}</div>"
             f"<div class='{data_tone}'>● Dataset · {'PRÊT' if dataset is not None else 'À FOURNIR'}</div>"
             f"<div class='bcs-muted'>SHA source · {report.source_sha256[:16]}<br>"
-            f"Image · {escape(digest[:24] if digest else 'quant-terminal/backtest-sandbox:2.0.0')}<br>"
+            f"Image · {escape(digest[:24] if digest else 'quant-terminal/backtest-sandbox:3.0.0')}<br>"
             "Réseau · coupé<br>RootFS · lecture seule<br>Utilisateur · 65532:65532<br>Capacités · aucune</div></div>",
             unsafe_allow_html=True,
         )
@@ -931,13 +1151,6 @@ def _render_studio(ticker: str, bars: pd.DataFrame, cfg: Any) -> None:
             with st.spinner(
                 f"Run causal {language.label} · sandbox Docker → ledger universel…"
             ):
-                sandbox = runner.run(
-                    source=source,
-                    language=language,
-                    market_data=dataset.market_data,
-                    parameters=parameters,
-                    seed=execution["seed"],
-                )
                 price_basis, corporate_actions = _price_contract(bars)
                 config = _engine_config(
                     base_currency=base_currency,
@@ -956,16 +1169,23 @@ def _render_studio(ticker: str, bars: pd.DataFrame, cfg: Any) -> None:
                         "impact_bps_at_full_participation": float(execution["impact"]),
                     }
                 )
-                result = UniversalBacktestEngine(
-                    security_master=dataset.security_master,
-                    config=config,
-                ).run(
-                    market_data=dataset.market_data,
-                    target_weights=sandbox.targets,
-                    fx_rates=dataset.fx_rates,
-                    cash_rates=dataset.cash_rates or {},
-                    target_available_at=sandbox.target_available_at,
-                )
+                with runner.causal_runtime(
+                    source=source,
+                    language=language,
+                    parameters=parameters,
+                    seed=execution["seed"],
+                ) as runtime:
+                    result = UniversalBacktestEngine(
+                        security_master=dataset.security_master,
+                        config=config,
+                    ).run(
+                        market_data=dataset.market_data,
+                        fx_rates=dataset.fx_rates,
+                        cash_rates=dataset.cash_rates or {},
+                        strategy_runtime=runtime,
+                        option_calendars=dataset.option_calendars,
+                    )
+                    sandbox = runtime.result()
                 artifact = {
                     "kind": "sandbox_strategy",
                     "language": language.value,
@@ -1372,6 +1592,8 @@ def render_code_workspace(*, ticker: str, bars: pd.DataFrame, cfg: Any) -> None:
     runs = _runs()
     if workflow == _STUDIO:
         _render_studio(ticker, bars, cfg)
+    elif workflow == _ARCHITECTURE:
+        _render_architecture()
     elif workflow == _RUNS:
         _render_runs(runs)
     elif workflow == _COMPARE:
