@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 
+import pandas as pd
 import pytest
 
 from backtest_sandbox import (
@@ -181,3 +182,52 @@ def test_installed_language_runtime_compiles_reference_template(
     assert code == 0, stderr + repr(output)
     assert output[-1]["type"] == "compiled"
     assert output[-1]["status"] == "PASS"
+
+
+@pytest.mark.parametrize("language", list(StrategyLanguage))
+def test_docker_executes_every_reference_language_causally(
+    language: StrategyLanguage,
+) -> None:
+    """The release image must execute, not merely compile, every public SDK."""
+    runner = DockerStrategyRunner(
+        limits=SandboxLimits(
+            wall_seconds=90,
+            compile_seconds=45,
+            callback_seconds=5,
+            memory_mib=768,
+            max_bars=100,
+        )
+    )
+    if not runner.available:
+        pytest.skip("the immutable release image is not installed on this host")
+    index = pd.date_range("2025-01-01", periods=5, freq="D", tz="UTC")
+    market = {
+        "SPY": pd.DataFrame(
+            {
+                "open": [100.0, 101.0, 102.0, 103.0, 104.0],
+                "high": [101.0, 102.0, 103.0, 104.0, 105.0],
+                "low": [99.0, 100.0, 101.0, 102.0, 103.0],
+                "close": [100.0, 101.0, 102.0, 103.0, 104.0],
+                "volume": [1_000_000.0] * 5,
+            },
+            index=index,
+        )
+    }
+
+    result = runner.run(
+        source=template_for(language),
+        language=language,
+        market_data=market,
+        parameters={"fast": 2, "slow": 3},
+        seed=41,
+    )
+
+    assert result.passed
+    assert result.bars_processed == 5
+    assert result.signals_emitted == 5
+    assert result.diagnostics["causal_streaming"] is True
+    assert result.diagnostics["future_data_exposed"] is False
+    assert result.attestation.network_disabled
+    assert result.attestation.read_only_root
+    assert result.attestation.no_secrets_mounted
+    assert result.targets.iloc[-1]["SPY"] == 1.0
