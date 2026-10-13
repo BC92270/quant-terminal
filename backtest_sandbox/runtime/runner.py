@@ -302,6 +302,10 @@ def compile_strategy(
         path = ROOT / ("strategy" + suffix)
         prefix = (
             "declare const require: any; declare const process: any;\n"
+            "interface Context { parameters: Record<string, number>; "
+            "state: Record<string, any>; seed: number; now: string | null; "
+            "_history: Map<string, number[]>; "
+            "_pending: Map<string, [number, string]>; }\n"
             if language == "typescript"
             else ""
         )

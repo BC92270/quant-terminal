@@ -281,7 +281,7 @@ class DockerStrategyRunner:
             f"--tmpfs=/tmp:rw,exec,nosuid,nodev,size={int(limits.tmp_mib)}m,mode=1777",
             "--ulimit=nofile=64:64",
             "--ulimit=core=0:0",
-            f"--ulimit=fsize={int(limits.output_mib) * 1024}:{int(limits.output_mib) * 1024}",
+            f"--ulimit=fsize={int(limits.output_mib) * 1024 * 1024}:{int(limits.output_mib) * 1024 * 1024}",
             "--env=LANG=C.UTF-8",
             "--env=LC_ALL=C.UTF-8",
             self.image,

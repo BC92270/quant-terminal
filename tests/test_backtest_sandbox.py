@@ -84,6 +84,7 @@ def test_docker_command_enforces_the_security_boundary() -> None:
     assert "--memory-swap=512m" in command
     assert "--cpus=0.5" in command
     assert "--pull=never" in command
+    assert "--ulimit=fsize=16777216:16777216" in command
     assert "--tmpfs=/tmp:rw,exec,nosuid,nodev" in joined
     assert not any("--volume" in item or item == "-v" for item in command)
 
