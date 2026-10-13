@@ -30869,6 +30869,34 @@ def render_backtest_lab_mode(ticker: str, price_data: pd.DataFrame, analysis: di
         st.error("Données insuffisantes pour lancer le Backtest Lab.")
         return
 
+    entry_options = ["Strategy Studio", "Backtest guidé"]
+    if hasattr(st, "segmented_control"):
+        entry = st.segmented_control(
+            "Parcours Backtest Lab",
+            entry_options,
+            default="Strategy Studio",
+            key="bt_primary_journey",
+            label_visibility="collapsed",
+            width="stretch",
+        )
+    else:
+        entry = st.radio(
+            "Parcours Backtest Lab",
+            entry_options,
+            index=0,
+            horizontal=True,
+            key="bt_primary_journey",
+            label_visibility="collapsed",
+        )
+    if str(entry or "Strategy Studio") == "Strategy Studio":
+        # Code is the primary workflow.  It is rendered before any legacy
+        # configuration or explicit guided run so the sandbox is never hidden
+        # behind a pre-existing backtest result.
+        from backtest_institutional.code_workspace import render_code_workspace
+
+        render_code_workspace(ticker=ticker, bars=df, cfg=None)
+        return
+
     with st.expander("Configurer la stratégie et les hypothèses", expanded=False):
         st.caption("Réglages essentiels en premier · exécution, risque et sizing disponibles à la demande.")
 

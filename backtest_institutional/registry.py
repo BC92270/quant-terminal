@@ -336,6 +336,7 @@ def repository_provenance(
     requested = _resolve_requested_path(code_path, package)
     universal_package = package.parent / "backtest_universal"
     strategy_sdk_package = package.parent / "backtest_sdk"
+    sandbox_package = package.parent / "backtest_sandbox"
     starts = [package if package.is_dir() else package.parent, requested if requested.is_dir() else requested.parent]
     root: Path | None = None
     for start in starts:
@@ -365,6 +366,7 @@ def repository_provenance(
             relative_scope(requested),
             relative_scope(universal_package) if universal_package.is_dir() else None,
             relative_scope(strategy_sdk_package) if strategy_sdk_package.is_dir() else None,
+            relative_scope(sandbox_package) if sandbox_package.is_dir() else None,
         )
         if item
     })
@@ -393,6 +395,16 @@ def repository_provenance(
             for relative in [relative_scope(path)]
             if relative
         )
+    if sandbox_package.is_dir():
+        code_files.update(
+            relative
+            for path in sandbox_package.rglob("*")
+            if path.is_file()
+            and "__pycache__" not in path.parts
+            and (path.suffix == ".py" or path.name == "Dockerfile")
+            for relative in [relative_scope(path)]
+            if relative
+        )
     if requested.is_file():
         relative = relative_scope(requested)
         if relative:
@@ -413,7 +425,10 @@ def repository_provenance(
             relative
             for encoded in head_files.split(b"\0")
             for relative in [encoded.decode("utf-8", errors="replace")]
-            if relative.endswith(".py") and "__pycache__" not in Path(relative).parts
+            if (
+                (relative.endswith(".py") or Path(relative).name == "Dockerfile")
+                and "__pycache__" not in Path(relative).parts
+            )
         )
     commit_bytes = _git_bytes(root, "rev-parse", "HEAD")
     commit = commit_bytes.decode("ascii", errors="replace").strip() if commit_bytes else "UNAVAILABLE"
@@ -560,6 +575,15 @@ def _code_snapshot(
         for path in sorted(strategy_sdk_package.rglob("*.py")):
             if "__pycache__" not in path.parts:
                 files[f"backtest_sdk/{path.relative_to(strategy_sdk_package).as_posix()}"] = path
+    sandbox_package = package.parent / "backtest_sandbox"
+    if sandbox_package.is_dir():
+        for path in sorted(sandbox_package.rglob("*")):
+            if (
+                path.is_file()
+                and "__pycache__" not in path.parts
+                and (path.suffix == ".py" or path.name == "Dockerfile")
+            ):
+                files[f"backtest_sandbox/{path.relative_to(sandbox_package).as_posix()}"] = path
 
     requested = _resolve_requested_path(code_path, package)
     if requested.is_file():

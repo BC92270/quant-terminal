@@ -41,6 +41,20 @@ render_backtest_lab_mode("NVDA", prices)
 def test_explicit_run_renders_the_complete_workspace_without_ui_errors() -> None:
     app = AppTest.from_string(_APP, default_timeout=120).run()
     assert not app.exception
+    journeys = [
+        group for group in app.button_group if group.label == "Parcours Backtest Lab"
+    ]
+    assert journeys and journeys[0].value == "Strategy Studio"
+    language = next(item for item in app.selectbox if item.label == "Langage")
+    assert len(language.options) == 6
+    assert {button.label for button in app.button} == {
+        "Valider",
+        "Compiler Docker",
+        "Exécuter",
+    }
+
+    app = journeys[0].set_value("Backtest guidé").run(timeout=120)
+    assert not app.exception
     assert [button.label for button in app.button] == ["Lancer le backtest"]
     assert any("Configuration prête" in item.value for item in app.markdown)
     assert not app.tabs
@@ -68,21 +82,28 @@ def test_explicit_run_renders_the_complete_workspace_without_ui_errors() -> None
     ]
     assert labels[10] == "Preuves"
     assert labels[11:15] == ["Données", "Exécution", "Statistiques", "Gouvernance"]
-    assert labels[15] == "Moteur universel"
+    assert len(labels) == 15
     assert any(
         "Spirale de liquidité (liquidity trap) calculée" in item.value
         for item in app.success
     )
     automation_messages = [*app.success, *app.warning, *app.error]
     assert any("Automatisation moteur" in item.value for item in automation_messages)
-    assert any(
-        "Stress de marge désactivé" in item.value for item in app.info
-    )
+    assert any("Stress de marge désactivé" in item.value for item in app.info)
     assert any("Dernier run exécuté" in item.value for item in app.markdown)
 
 
 def test_draft_change_keeps_the_last_executed_run_and_marks_it_dirty() -> None:
     app = AppTest.from_string(_APP, default_timeout=120).run()
+    app = (
+        next(
+            group
+            for group in app.button_group
+            if group.label == "Parcours Backtest Lab"
+        )
+        .set_value("Backtest guidé")
+        .run(timeout=120)
+    )
     app = (
         next(button for button in app.button if button.label == "Lancer le backtest")
         .click()
@@ -105,4 +126,4 @@ def test_draft_change_keeps_the_last_executed_run_and_marks_it_dirty() -> None:
         "Stress & capacité",
     ]
     assert labels[10] == "Preuves"
-    assert labels[15] == "Moteur universel"
+    assert len(labels) == 15

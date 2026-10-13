@@ -62,16 +62,48 @@ Les spin-offs, droits, fusions, changements d’identifiant et assignments
 physiques sont détectés mais restent fermés tant qu’un adaptateur spécialisé et
 ses données point-in-time ne sont pas fournis.
 
-## Code de stratégie
+## Strategy Studio et code de stratégie
 
-L’éditeur effectue uniquement une validation statique et calcule l’empreinte du
-source. Aucun code utilisateur n’est exécuté dans Streamlit ou dans le processus
-hôte.
+Le code est le point d’entrée principal du Backtest Lab. Six runtimes sont
+supportés par le même contrat fonctionnel : Python 3, JavaScript, TypeScript,
+C++20, Rust et C#. Chaque langage expose `initialize` et `on_bar`/`onBar`, un
+historique limité aux observations déjà reçues, des paramètres numériques, un
+état persistant et une primitive `target_percent`.
 
-L’exécution demande un runner OCI séparé attestant au minimum : image immuable,
-réseau coupé, filesystem racine en lecture seule, aucun secret monté,
-utilisateur non-root et résultat signé. Sans ces preuves, l’état reste
-`SANDBOX REQUIRED`.
+L’éditeur et le processus Streamlit ne chargent jamais le source. Le contrôleur
+envoie le code au conteneur par `stdin`, sans volume, sans secret et sans réseau.
+Le contrôleur conserve le dataset complet et ne transmet qu’une barre déjà
+disponible à la fois. Il attend la réponse de la stratégie avant de transmettre
+la suivante. Le conteneur peut produire uniquement des expositions cibles et
+des logs ; il ne calcule jamais les ordres, fills, positions, cash, marge ou P&L.
+
+Le runner impose notamment :
+
+- image identifiée par son `sha256`, `--pull=never` ;
+- `--network=none`, `--ipc=none`, aucune capability ;
+- root filesystem en lecture seule et unique `tmpfs` borné pour compiler ;
+- UID/GID `65532:65532`, `no-new-privileges` ;
+- plafonds CPU, mémoire, swap, PID, taille de fichier, output et wall clock ;
+- validation stricte du protocole, des symboles et des expositions ;
+- signature Ed25519 côté contrôleur, dont la clé privée n’entre jamais dans le
+  conteneur.
+
+La politique statique multi-langage est une défense supplémentaire et non la
+frontière de sécurité. Sans image Docker immuable et attestation vérifiée, le
+run échoue fermé avec `SANDBOX REQUIRED`.
+
+Construction dans le checkout live :
+
+```bash
+docker build \
+  --file backtest_sandbox/runtime/Dockerfile \
+  --tag quant-terminal/backtest-sandbox:1.0.0 \
+  backtest_sandbox/runtime
+```
+
+Le workflow visible est `Studio → Runs → Compare → Validation → Evidence`.
+`Compare` est descriptif : l’autorisation de recherche exige toujours un
+protocole purgé hors-échantillon et une correction du multiple testing.
 
 ## Gate institutionnel
 

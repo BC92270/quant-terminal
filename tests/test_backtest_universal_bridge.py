@@ -4,8 +4,11 @@ from io import BytesIO
 from zipfile import ZipFile
 
 import pandas as pd
+import pytest
 
-from backtest_institutional.universal_bridge import build_universal_institutional_envelope
+from backtest_institutional.universal_bridge import (
+    build_universal_institutional_envelope,
+)
 from backtest_universal import (
     AssetClass,
     Instrument,
@@ -15,7 +18,15 @@ from backtest_universal import (
 )
 
 
-def _run() -> tuple[object, SecurityMaster, dict[str, pd.DataFrame], pd.DataFrame, UniversalEngineConfig]:
+def _run() -> (
+    tuple[
+        object,
+        SecurityMaster,
+        dict[str, pd.DataFrame],
+        pd.DataFrame,
+        UniversalEngineConfig,
+    ]
+):
     index = pd.date_range("2025-01-02", periods=6, freq="B", tz="UTC")
     bars = pd.DataFrame(
         {
@@ -107,15 +118,23 @@ def test_bridge_can_approve_research_but_never_production() -> None:
     assert envelope.model_card["authoritative_source"] == "universal_event_ledger"
 
 
-def test_python_mode_requires_attested_sandbox() -> None:
-    blocked = _envelope(
-        pit=True, mode="python", sandbox=False, complete_evidence=True
-    )
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "python",
+        "code:python",
+        "code:javascript",
+        "code:typescript",
+        "code:cpp",
+        "code:rust",
+        "code:csharp",
+    ],
+)
+def test_code_modes_require_attested_sandbox(mode: str) -> None:
+    blocked = _envelope(pit=True, mode=mode, sandbox=False, complete_evidence=True)
     assert blocked.gate["decision"] == "HOLD — DATA REQUIRED"
     assert "Strategy sandbox" in blocked.gate["blocking_gates"]
-    accepted = _envelope(
-        pit=True, mode="python", sandbox=True, complete_evidence=True
-    )
+    accepted = _envelope(pit=True, mode=mode, sandbox=True, complete_evidence=True)
     assert accepted.gate["decision"] == "RESEARCH APPROVED"
 
 

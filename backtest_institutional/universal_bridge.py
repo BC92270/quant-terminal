@@ -54,7 +54,11 @@ def _checks(
         not result.daily.empty
         and result.daily.get("margin_available", pd.Series(dtype=bool)).fillna(False).all()
     )
-    code_mode = str(strategy_mode).lower() in {"python", "python_strategy", "code"}
+    normalized_mode = str(strategy_mode).strip().lower()
+    code_mode = normalized_mode in {
+        "python", "python_strategy", "javascript", "typescript", "cpp",
+        "rust", "csharp", "code",
+    } or normalized_mode.startswith("code:")
     statistical = dict(statistical_validation or {})
     statistical_requirements = (
         "purged_oos_pass",
