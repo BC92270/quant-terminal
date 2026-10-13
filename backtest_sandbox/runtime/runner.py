@@ -309,7 +309,14 @@ def compile_strategy(
             if language == "typescript"
             else ""
         )
-        write(path, prefix + JS_PRELUDE + "\n" + source + "\n" + JS_POSTLUDE)
+        postlude = JS_POSTLUDE
+        if language == "typescript":
+            postlude = postlude.replace(
+                "const parameters = {}; let seed = 41; let ctx = null;",
+                "const parameters: Record<string, number> = {}; "
+                "let seed = 41; let ctx: Context | null = null;",
+            )
+        write(path, prefix + JS_PRELUDE + "\n" + source + "\n" + postlude)
         if language == "typescript":
             command = [
                 "tsc",
