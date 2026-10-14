@@ -19,6 +19,7 @@ from backtest_sandbox import (
     template_for,
     validate_source,
 )
+from backtest_sandbox.runtime.runner import javascript_postlude
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +46,28 @@ def test_every_language_template_passes_its_policy() -> None:
         report = validate_source(template_for(language), language)
         assert report.passed, (language, report.issues)
         assert report.source_bytes > 100
+
+
+def test_typescript_gateway_does_not_require_optional_initialize() -> None:
+    source_without_initializer = (
+        "function onSlice(ctx: any, slice: any): void { "
+        "ctx.targetPercent('AAA', 1.0); }"
+    )
+    source_with_initializer = (
+        "function initialize(ctx: any): void { ctx.state.ready = true; }\n"
+        + source_without_initializer
+    )
+
+    without_initializer = javascript_postlude(
+        "typescript", source_without_initializer, "on_slice"
+    )
+    with_initializer = javascript_postlude(
+        "typescript", source_with_initializer, "on_slice"
+    )
+
+    assert "initialize(ctx);" not in without_initializer
+    assert "initialize(ctx);" in with_initializer
+    assert 'typeof initialize === "function"' not in without_initializer
 
 
 @pytest.mark.parametrize(

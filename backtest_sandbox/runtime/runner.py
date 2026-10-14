@@ -514,6 +514,39 @@ def callback_mode(language: str, source: str) -> str:
     return "on_slice" if pattern and re.search(pattern, source) else "on_bar"
 
 
+def javascript_postlude(language: str, source: str, mode: str) -> str:
+    """Build the JavaScript-family gateway without inventing SDK callbacks.
+
+    JavaScript permits ``typeof initialize`` when the identifier is absent,
+    whereas TypeScript rejects that same expression at compile time.  The
+    TypeScript wrapper therefore emits the optional initialization call only
+    when user code actually declares the callback.
+    """
+
+    postlude = JS_POSTLUDE.replace(
+        "__CALLBACK_JS__",
+        "onSlice(ctx, slice);"
+        if mode == "on_slice"
+        else "for (const item of sliceBars) onBar(ctx, item);",
+    )
+    if language != "typescript":
+        return postlude
+
+    postlude = postlude.replace(
+        "const parameters = {}; let seed = 41; let ctx = null;",
+        "const parameters: Record<string, number> = {}; "
+        "let seed = 41; let ctx: Context | null = null;",
+    )
+    initializer_declared = re.search(
+        r"\b(?:function\s+initialize\s*\(|(?:const|let|var)\s+initialize\b)",
+        source,
+    )
+    return postlude.replace(
+        'if (typeof initialize === "function") initialize(ctx);',
+        "initialize(ctx);" if initializer_declared else "",
+    )
+
+
 def compile_strategy(
     language: str, source: str, timeout: int
 ) -> tuple[list[str], str, str, str]:
@@ -542,18 +575,7 @@ def compile_strategy(
             if language == "typescript"
             else ""
         )
-        postlude = JS_POSTLUDE.replace(
-            "__CALLBACK_JS__",
-            "onSlice(ctx, slice);"
-            if mode == "on_slice"
-            else "for (const item of sliceBars) onBar(ctx, item);",
-        )
-        if language == "typescript":
-            postlude = postlude.replace(
-                "const parameters = {}; let seed = 41; let ctx = null;",
-                "const parameters: Record<string, number> = {}; "
-                "let seed = 41; let ctx: Context | null = null;",
-            )
+        postlude = javascript_postlude(language, source, mode)
         write(path, prefix + JS_PRELUDE + "\n" + source + "\n" + postlude)
         if language == "typescript":
             command = [
